@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 
 /// Example demonstrating AnimatedPositioned usage for token movement
-/// 
+///
 /// This is a standalone example showing how AnimatedPositioned works
 /// for animating player tokens between tiles.
 class AnimatedPositionedExample extends StatefulWidget {
   const AnimatedPositionedExample({super.key});
 
   @override
-  State<AnimatedPositionedExample> createState() => _AnimatedPositionedExampleState();
+  State<AnimatedPositionedExample> createState() =>
+      _AnimatedPositionedExampleState();
 }
 
 class _AnimatedPositionedExampleState extends State<AnimatedPositionedExample> {
   // Current token position (0 = first tile, 9 = last tile)
   int _currentPosition = 0;
-  
+
   // Animation duration
   static const Duration animationDuration = Duration(milliseconds: 600);
-  
+
   // Animation curve
   static const Curve animationCurve = Curves.easeInOut;
 
@@ -54,20 +55,23 @@ class _AnimatedPositionedExampleState extends State<AnimatedPositionedExample> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Move button
             ElevatedButton(
               onPressed: _moveToken,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.brown.shade600,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 textStyle: const TextStyle(fontSize: 18),
               ),
               child: const Text('Move Token'),
             ),
             const SizedBox(height: 30),
-            
+
             // Board with animated token
             _buildBoard(),
           ],
@@ -97,12 +101,12 @@ class _AnimatedPositionedExampleState extends State<AnimatedPositionedExample> {
                     margin: const EdgeInsets.symmetric(horizontal: 2),
                     height: 120,
                     decoration: BoxDecoration(
-                      color: index == _currentPosition 
-                          ? Colors.yellow.shade200 
+                      color: index == _currentPosition
+                          ? Colors.yellow.shade200
                           : Colors.white,
                       border: Border.all(
-                        color: index == _currentPosition 
-                            ? Colors.yellow.shade700 
+                        color: index == _currentPosition
+                            ? Colors.yellow.shade700
                             : Colors.grey.shade400,
                         width: index == _currentPosition ? 3 : 1,
                       ),
@@ -122,7 +126,7 @@ class _AnimatedPositionedExampleState extends State<AnimatedPositionedExample> {
                 );
               }),
             ),
-            
+
             // Animated token overlay
             // This is the key component - AnimatedPositioned
             _buildAnimatedToken(),
@@ -135,22 +139,24 @@ class _AnimatedPositionedExampleState extends State<AnimatedPositionedExample> {
   Widget _buildAnimatedToken() {
     // Calculate the horizontal position based on current tile
     // Total width is divided among 10 tiles
-    final double tileWidth = (MediaQuery.of(context).size.width - 64) / 10; // 64 = margins
-    final double tokenX = _currentPosition * tileWidth + (tileWidth / 2) - 16; // -16 to center 32px token
-    
+    final double tileWidth =
+        (MediaQuery.of(context).size.width - 64) / 10; // 64 = margins
+    final double tokenX =
+        _currentPosition * tileWidth +
+        (tileWidth / 2) -
+        16; // -16 to center 32px token
+
     return AnimatedPositioned(
       // Animation duration - controls how fast the movement is
       duration: animationDuration,
-      
+
       // Animation curve - controls the easing (acceleration/deceleration)
       curve: animationCurve,
-      
+
       // Left position - animates from old X to new X
       left: tokenX + 16, // +16 for padding adjustment
-      
       // Top position - animates from old Y to new Y (fixed in this example)
       top: 44, // Center vertically in 120px tile (120/2 - 32/2 + padding)
-      
       // The token widget to animate
       child: _buildPlayerToken(),
     );
@@ -163,13 +169,10 @@ class _AnimatedPositionedExampleState extends State<AnimatedPositionedExample> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.red.shade600,
-        border: Border.all(
-          color: Colors.white,
-          width: 2,
-        ),
+        border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -194,7 +197,8 @@ class DiagonalMovementExample extends StatefulWidget {
   const DiagonalMovementExample({super.key});
 
   @override
-  State<DiagonalMovementExample> createState() => _DiagonalMovementExampleState();
+  State<DiagonalMovementExample> createState() =>
+      _DiagonalMovementExampleState();
 }
 
 class _DiagonalMovementExampleState extends State<DiagonalMovementExample> {
@@ -261,12 +265,12 @@ class _DiagonalMovementExampleState extends State<DiagonalMovementExample> {
                         child: Container(
                           margin: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: isCurrentTile 
-                                ? Colors.yellow.shade200 
+                            color: isCurrentTile
+                                ? Colors.yellow.shade200
                                 : Colors.white,
                             border: Border.all(
-                              color: isCurrentTile 
-                                  ? Colors.yellow.shade700 
+                              color: isCurrentTile
+                                  ? Colors.yellow.shade700
                                   : Colors.grey.shade400,
                               width: isCurrentTile ? 3 : 1,
                             ),
@@ -289,7 +293,7 @@ class _DiagonalMovementExampleState extends State<DiagonalMovementExample> {
                 );
               }),
             ),
-            
+
             // Animated token with diagonal movement
             _buildDiagonalToken(),
           ],
@@ -299,12 +303,13 @@ class _DiagonalMovementExampleState extends State<DiagonalMovementExample> {
   }
 
   Widget _buildDiagonalToken() {
-    final double tileWidth = (MediaQuery.of(context).size.width - 64) / gridWidth;
+    final double tileWidth =
+        (MediaQuery.of(context).size.width - 64) / gridWidth;
     final double tileHeight = 300 / gridHeight;
-    
+
     final double tokenX = _tileX * tileWidth + (tileWidth / 2) - 16;
     final double tokenY = _tileY * tileHeight + (tileHeight / 2) - 16;
-    
+
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeInOut,
@@ -324,7 +329,7 @@ class _DiagonalMovementExampleState extends State<DiagonalMovementExample> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -373,7 +378,10 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
         child: Column(
           children: [
             // Curve selector
-            const Text('Select Animation Curve:', style: TextStyle(fontSize: 16)),
+            const Text(
+              'Select Animation Curve:',
+              style: TextStyle(fontSize: 16),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -391,7 +399,7 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            
+
             ElevatedButton(
               onPressed: _moveToken,
               style: ElevatedButton.styleFrom(
@@ -401,7 +409,7 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
               child: const Text('Move Token'),
             ),
             const SizedBox(height: 30),
-            
+
             // Animation demo
             _buildAnimationDemo(),
           ],
@@ -414,7 +422,7 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
     final double screenWidth = MediaQuery.of(context).size.width - 64;
     final double tileWidth = screenWidth / 3;
     final double tokenX = _position * tileWidth + (tileWidth / 2) - 16;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -433,12 +441,12 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 2),
                     decoration: BoxDecoration(
-                      color: index == _position 
-                          ? Colors.yellow.shade200 
+                      color: index == _position
+                          ? Colors.yellow.shade200
                           : Colors.white,
                       border: Border.all(
-                        color: index == _position 
-                            ? Colors.yellow.shade700 
+                        color: index == _position
+                            ? Colors.yellow.shade700
                             : Colors.grey.shade400,
                         width: index == _position ? 3 : 1,
                       ),
@@ -481,7 +489,7 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -493,9 +501,7 @@ class _AnimationCurveExampleState extends State<AnimationCurveExample> {
 
 /// Main example launcher
 void main() {
-  runApp(const MaterialApp(
-    home: AnimatedPositionedExampleLauncher(),
-  ));
+  runApp(const MaterialApp(home: AnimatedPositionedExampleLauncher()));
 }
 
 class AnimatedPositionedExampleLauncher extends StatelessWidget {
@@ -534,7 +540,10 @@ class AnimatedPositionedExampleLauncher extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Basic Movement', style: TextStyle(fontSize: 18)),
+              child: const Text(
+                'Basic Movement',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -551,7 +560,10 @@ class AnimatedPositionedExampleLauncher extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Diagonal Movement', style: TextStyle(fontSize: 18)),
+              child: const Text(
+                'Diagonal Movement',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -568,7 +580,10 @@ class AnimatedPositionedExampleLauncher extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Animation Curves', style: TextStyle(fontSize: 18)),
+              child: const Text(
+                'Animation Curves',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
           ],
         ),

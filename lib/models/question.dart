@@ -6,11 +6,7 @@ enum QuestionCategory {
   eserKarakter,
 }
 
-enum Difficulty {
-  easy,
-  medium,
-  hard,
-}
+enum Difficulty { easy, medium, hard }
 
 class Question {
   final String id;
@@ -19,6 +15,7 @@ class Question {
   final String question;
   final String answer;
   final List<String>? options; // Optional multiple choice options
+  final String? hint; // Optional hint for the question
 
   const Question({
     required this.id,
@@ -27,6 +24,7 @@ class Question {
     required this.question,
     required this.answer,
     this.options,
+    this.hint,
   });
 
   // Calculate star reward based on difficulty
@@ -51,9 +49,12 @@ class Question {
 
   // Check if multiple choice option is correct
   bool isOptionCorrect(int selectedIndex) {
-    if (!isMultipleChoice || selectedIndex < 0 || selectedIndex >= options!.length) {
+    if (!isMultipleChoice ||
+        selectedIndex < 0 ||
+        selectedIndex >= options!.length) {
       return false;
     }
-    return options![selectedIndex].trim().toLowerCase() == answer.trim().toLowerCase();
+    return options![selectedIndex].trim().toLowerCase() ==
+        answer.trim().toLowerCase();
   }
 }

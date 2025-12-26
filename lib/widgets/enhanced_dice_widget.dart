@@ -20,7 +20,6 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
   late Animation<double> _rollAnimation;
   late Animation<double> _scaleAnimation;
 
-  int _displayValue = 1;
   bool _isRolling = false;
 
   @override
@@ -59,11 +58,6 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
     // Start rolling animation
     await _rollController.forward();
 
-    // Get actual dice roll from game provider
-    final gameState = ref.read(gameProvider);
-    final rollResult =
-        gameState.lastDiceRoll?.total ?? math.Random().nextInt(6) + 1;
-
     // Stop rolling and show result
     await _rollController.reverse();
 
@@ -71,7 +65,6 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
     ref.read(gameProvider.notifier).rollDice();
 
     setState(() {
-      _displayValue = rollResult;
       _isRolling = false;
     });
   }
@@ -90,7 +83,7 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -198,20 +191,23 @@ class _ActivePlayerHighlightState extends State<_ActivePlayerHighlight>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Color(
-                int.parse('FF${widget.player.color.substring(1)}'),
-              ).withOpacity(0.2),
+                int.parse(widget.player.color.substring(1), radix: 16) +
+                    0xFF000000,
+              ).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: Color(
-                  int.parse('FF${widget.player.color.substring(1)}'),
+                  int.parse(widget.player.color.substring(1), radix: 16) +
+                      0xFF000000,
                 ),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
                   color: Color(
-                    int.parse('FF${widget.player.color.substring(1)}'),
-                  ).withOpacity(0.3),
+                    int.parse(widget.player.color.substring(1), radix: 16) +
+                        0xFF000000,
+                  ).withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -223,7 +219,8 @@ class _ActivePlayerHighlightState extends State<_ActivePlayerHighlight>
                 Icon(
                   Icons.play_arrow,
                   color: Color(
-                    int.parse('FF${widget.player.color.substring(1)}'),
+                    int.parse(widget.player.color.substring(1), radix: 16) +
+                        0xFF000000,
                   ),
                   size: 20,
                 ),
@@ -267,14 +264,14 @@ class _DiceFace extends StatelessWidget {
         boxShadow: isRolling
             ? [
                 BoxShadow(
-                  color: Colors.orange.withOpacity(0.4),
+                  color: Colors.orange.withValues(alpha: 0.4),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -366,7 +363,7 @@ class _Dot extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),

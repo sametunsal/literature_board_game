@@ -8,9 +8,16 @@ List<Question> generateQuestions() {
       id: 'q1',
       category: QuestionCategory.benKimim,
       difficulty: Difficulty.easy,
-      question: 'Türk edebiyatında "Çağlayan" takma adıyla bilinen şair kimdir?',
+      question:
+          'Türk edebiyatında "Çağlayan" takma adıyla bilinen şair kimdir?',
       answer: 'Orhan Veli',
-      options: ['Orhan Veli', 'Nazım Hikmet', 'Can Yücel', 'Melih Cevdet Anday'],
+      options: [
+        'Orhan Veli',
+        'Nazım Hikmet',
+        'Can Yücel',
+        'Melih Cevdet Anday',
+      ],
+      hint: 'Garip akımının kurucusudur',
     ),
     Question(
       id: 'q2',
@@ -18,7 +25,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.medium,
       question: '"Uçurtma Avcısı" romanının yazarı kimdir?',
       answer: 'Ahmet Hamdi Tanpınar',
-      options: ['Ahmet Hamdi Tanpınar', 'Yaşar Kemal', 'Ömer Seyfettin', 'Sait Faik Abasıyanık'],
+      options: [
+        'Ahmet Hamdi Tanpınar',
+        'Yaşar Kemal',
+        'Ömer Seyfettin',
+        'Sait Faik Abasıyanık',
+      ],
+      hint: 'Aynı zamanda "Saatleri Ayarlama Enstitüsü"nün yazarıdır',
     ),
     Question(
       id: 'q3',
@@ -26,7 +39,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.hard,
       question: '"Saatleri Ayarlama Enstitüsü" romanını kim yazmıştır?',
       answer: 'Ahmet Hamdi Tanpınar',
-      options: ['Ahmet Hamdi Tanpınar', 'Orhan Pamuk', 'Yaşar Kemal', 'Elif Şafak'],
+      options: [
+        'Ahmet Hamdi Tanpınar',
+        'Orhan Pamuk',
+        'Yaşar Kemal',
+        'Elif Şafak',
+      ],
+      hint: 'Türk edebiyatında modernist romanın öncülerindendir',
     ),
 
     // Türk Edebiyatında İlkler Questions
@@ -36,7 +55,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.easy,
       question: 'Türk edebiyatında ilk roman hangisidir?',
       answer: 'İntibah',
-      options: ['İntibah', 'Araba Sevdası', 'Taaşşuk-ı Talat ve Fitnat', 'İnce Memed'],
+      options: [
+        'İntibah',
+        'Araba Sevdası',
+        'Taaşşuk-ı Talat ve Fitnat',
+        'İnce Memed',
+      ],
+      hint: 'Namık Kemal eseridir',
     ),
     Question(
       id: 'q5',
@@ -45,6 +70,7 @@ List<Question> generateQuestions() {
       question: 'Türk edebiyatında ilk tiyatro oyunu yazarı kimdir?',
       answer: 'Şinasi',
       options: ['Şinasi', 'Namık Kemal', 'Ziya Paşa', 'Ahmet Mithat Efendi'],
+      hint: 'Şair Şinasi aynı zamanda tiyatro yazarıdır',
     ),
     Question(
       id: 'q6',
@@ -52,7 +78,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.hard,
       question: 'İlk Türkçe gazetenin adı nedir?',
       answer: 'Takvim-i Vekayi',
-      options: ['Takvim-i Vekayi', 'Tercüman-ı Ahval', 'Ceride-i Havadis', 'Bosphor'],
+      options: [
+        'Takvim-i Vekayi',
+        'Tercüman-ı Ahval',
+        'Ceride-i Havadis',
+        'Bosphor',
+      ],
+      hint: 'Osmanlı döneminde çıkarılmıştır',
     ),
 
     // Edebiyat Akilları Questions
@@ -63,6 +95,7 @@ List<Question> generateQuestions() {
       question: 'Nazım Hikmet Ran hangi sanat akımıyla ilişkilendirilir?',
       answer: 'Gerçekçilik',
       options: ['Gerçekçilik', 'Romantizm', 'Sembolizm', 'Yedinci Meşverci'],
+      hint: 'Toplumcu şiir akımıdır',
     ),
     Question(
       id: 'q8',
@@ -70,7 +103,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.medium,
       question: 'Yaşar Kemal\'in "İnce Memed" romanında ana tema nedir?',
       answer: 'Ağa sisteminin eleştirisi',
-      options: ['Ağa sisteminin eleştirisi', 'Şehir hayatı', 'Aşk hikayeleri', 'Tarihsel olaylar'],
+      options: [
+        'Ağa sisteminin eleştirisi',
+        'Şehir hayatı',
+        'Aşk hikayeleri',
+        'Tarihsel olaylar',
+      ],
+      hint: 'Çukurova bölgesinde geçer',
     ),
     Question(
       id: 'q9',
@@ -78,7 +117,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.hard,
       question: 'Orhan Pamuk hangi ödülü 2006 yılında kazanmıştır?',
       answer: 'Nobel Edebiyat Ödülü',
-      options: ['Nobel Edebiyat Ödülü', 'Pulitzer', 'Man Booker', 'Goethe Ödülü'],
+      options: [
+        'Nobel Edebiyat Ödülü',
+        'Pulitzer',
+        'Man Booker',
+        'Goethe Ödülü',
+      ],
+      hint: 'Türkiye\'den ilk alan kişidir',
     ),
 
     // Edebiyat Sanatları Questions
@@ -86,9 +131,10 @@ List<Question> generateQuestions() {
       id: 'q10',
       category: QuestionCategory.edebiyatSanatlari,
       difficulty: Difficulty.easy,
-      question: 'İki satırlık dörtlük benzerliklerine verilen ad nedir?',
+      question: 'İki satırlı dörtlük benzerliklerine verilen ad nedir?',
       answer: 'Kafiye',
       options: ['Kafiye', 'Redif', 'Cağ', 'Aruz'],
+      hint: 'Ses uyumudur',
     ),
     Question(
       id: 'q11',
@@ -97,6 +143,7 @@ List<Question> generateQuestions() {
       question: 'Divan edebiyatında beyit kaç dizeden oluşur?',
       answer: '2',
       options: ['2', '3', '4', '5'],
+      hint: 'Mesnevi ve Divan şiirinin temel birimidir',
     ),
     Question(
       id: 'q12',
@@ -105,6 +152,7 @@ List<Question> generateQuestions() {
       question: 'Şiirde kelime oyunu ve tezat sanatına verilen genel ad nedir?',
       answer: 'Belagat',
       options: ['Belagat', 'Bedi', 'Ravz', 'Sade'],
+      hint: 'Dil sanatlarının tümüdür',
     ),
 
     // Eser/Karakter Questions
@@ -115,6 +163,7 @@ List<Question> generateQuestions() {
       question: '"Siyah İnci" romanının ana karakteri kimdir?',
       answer: 'Karaibrahim',
       options: ['Karaibrahim', 'Memed', 'Şeker Pasha', 'Celal'],
+      hint: 'Ahmet Hamdi Tanpınar romanıdır',
     ),
     Question(
       id: 'q14',
@@ -123,6 +172,7 @@ List<Question> generateQuestions() {
       question: '"Yer Demir Gök Bakır" romanının yazarı kimdir?',
       answer: 'Yaşar Kemal',
       options: ['Yaşar Kemal', 'Orhan Kemal', 'Kemal Tahir', 'Fakir Baykurt'],
+      hint: 'Anadolu insanını anlatan bir yazardır',
     ),
     Question(
       id: 'q15',
@@ -131,8 +181,9 @@ List<Question> generateQuestions() {
       question: '"Suç ve Ceza" romanının yazarı kimdir?',
       answer: 'Dostoyevski',
       options: ['Dostoyevski', 'Tolstoy', 'Çehov', 'Gorki'],
+      hint: 'Rus yazardır',
     ),
-    
+
     // More questions for variety
     Question(
       id: 'q16',
@@ -140,7 +191,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.easy,
       question: '"Kırlangıç Yuvası" romanının yazarı kimdir?',
       answer: 'Sait Faik Abasıyanık',
-      options: ['Sait Faik Abasıyanık', 'Yaşar Kemal', 'Orhan Kemal', 'Sabahattin Ali'],
+      options: [
+        'Sait Faik Abasıyanık',
+        'Yaşar Kemal',
+        'Orhan Kemal',
+        'Sabahattin Ali',
+      ],
+      hint: 'Hikaye ustasıdır',
     ),
     Question(
       id: 'q17',
@@ -148,7 +205,13 @@ List<Question> generateQuestions() {
       difficulty: Difficulty.easy,
       question: 'İlk Türk kadın romancı kimdir?',
       answer: 'Halide Edip Adıvar',
-      options: ['Halide Edip Adıvar', 'Afet İnan', 'Emine Semiye', 'Fatma Aliye'],
+      options: [
+        'Halide Edip Adıvar',
+        'Afet İnan',
+        'Emine Semiye',
+        'Fatma Aliye',
+      ],
+      hint: 'Kurtuluş Savaşı romanlarıyla bilinir',
     ),
     Question(
       id: 'q18',
@@ -157,6 +220,7 @@ List<Question> generateQuestions() {
       question: '"Tutunamayanlar" romanının yazarı kimdir?',
       answer: 'Oğuz Atay',
       options: ['Oğuz Atay', 'Bilge Karasu', 'Orhan Pamuk', 'Latife Tekin'],
+      hint: 'Postmodernist roman öncüsüdür',
     ),
     Question(
       id: 'q19',
@@ -165,6 +229,7 @@ List<Question> generateQuestions() {
       question: 'Anlatımda olayların gerçekleşme sırasına ne denir?',
       answer: 'Kronoloji',
       options: ['Kronoloji', 'Gerileme', 'Hızlanma', 'Paragraf'],
+      hint: 'Zaman akışıdır',
     ),
     Question(
       id: 'q20',
@@ -173,6 +238,7 @@ List<Question> generateQuestions() {
       question: '"Sefiller" romanının yazarı kimdir?',
       answer: 'Victor Hugo',
       options: ['Victor Hugo', 'Dostoyevski', 'Balzac', 'Flaubert'],
+      hint: 'Fransız yazardır',
     ),
   ];
 }

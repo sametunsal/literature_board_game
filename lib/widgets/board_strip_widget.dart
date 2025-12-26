@@ -17,7 +17,7 @@ class BoardStripWidget extends ConsumerStatefulWidget {
 class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
   // Store global keys for each tile to get their positions
   final Map<int, GlobalKey> _tileKeys = {};
-  
+
   // Store animated token positions
   final Map<String, TokenPosition> _tokenPositions = {};
 
@@ -30,7 +30,7 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = ref.watch(currentPlayerProvider);
-    
+
     final tiles = gameState.tiles;
     final currentPos = currentPlayer?.position;
     final lastDiceRoll = ref.watch(lastDiceRollProvider);
@@ -58,13 +58,15 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
               alignment: WrapAlignment.center,
               children: tiles.map((tile) {
                 final isActive = tile.id == currentPos;
-                final playersOnTile = gameState.players.where((p) => p.position == tile.id).toList();
-                
+                final playersOnTile = gameState.players
+                    .where((p) => p.position == tile.id)
+                    .toList();
+
                 // Ensure key exists for this tile
                 _tileKeys.putIfAbsent(tile.id, () => GlobalKey());
-                
+
                 return _buildTile(
-                  key: _tileKeys[tile.id],
+                  key: _tileKeys[tile.id] as Key,
                   tile: tile,
                   isActive: isActive,
                   playersOnTile: playersOnTile,
@@ -74,10 +76,9 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
               }).toList(),
             ),
           ),
-          
+
           // Animated tokens layer - overlay for smooth movement
-          if (turnPhase == TurnPhase.moving)
-            ..._buildAnimatedTokens(gameState),
+          if (turnPhase == TurnPhase.moving) ..._buildAnimatedTokens(gameState),
         ],
       ),
     );
@@ -90,7 +91,7 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
     }
 
     final currentPlayer = gameState.currentPlayer!;
-    
+
     // Get old and new tile positions
     final oldKey = _tileKeys[gameState.oldPosition];
     final newKey = _tileKeys[gameState.newPosition];
@@ -107,20 +108,24 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
           // Get positions relative to the board container
           final oldPosition = oldRenderBox.localToGlobal(Offset.zero);
           final newPosition = newRenderBox.localToGlobal(Offset.zero);
-          
+
           // Get the board container's position
           final boardContext = context;
           final boardRenderBox = boardContext.findRenderObject() as RenderBox?;
-          
+
           if (boardRenderBox != null) {
             final boardPosition = boardRenderBox.localToGlobal(Offset.zero);
-            
+
             // Calculate relative positions
             final startOffset = Offset(
-              oldPosition.dx - boardPosition.dx + 50, // +50 for center of tile (100/2)
-              oldPosition.dy - boardPosition.dy + 60, // +60 for center of tile (120/2)
+              oldPosition.dx -
+                  boardPosition.dx +
+                  50, // +50 for center of tile (100/2)
+              oldPosition.dy -
+                  boardPosition.dy +
+                  60, // +60 for center of tile (120/2)
             );
-            
+
             final endOffset = Offset(
               newPosition.dx - boardPosition.dx + 50,
               newPosition.dy - boardPosition.dy + 60,
@@ -177,14 +182,16 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
       decoration: BoxDecoration(
         color: isYellowHighlight ? Colors.yellow.shade200 : tileColor,
         border: Border.all(
-          color: isYellowHighlight ? Colors.yellow.shade700 : Colors.brown.shade400,
+          color: isYellowHighlight
+              ? Colors.yellow.shade700
+              : Colors.brown.shade400,
           width: isYellowHighlight ? 3 : 1,
         ),
         borderRadius: BorderRadius.circular(8),
         boxShadow: isYellowHighlight
             ? [
                 BoxShadow(
-                  color: Colors.yellow.shade700.withOpacity(0.4),
+                  color: Colors.yellow.shade700.withValues(alpha: 0.4),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),
@@ -227,7 +234,7 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
                       ),
                     ],
                   ),
-                  
+
                   // Last dice roll if this is active tile
                   if (lastDiceRoll != null) ...[
                     const SizedBox(height: 4),
@@ -237,7 +244,7 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
               ),
             ),
           ),
-          
+
           // Player tokens stacked on top of tile
           // Only show static tokens when not animating
           if (showStaticTokens && playersOnTile.isNotEmpty)
@@ -272,13 +279,10 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Color(playerColor),
-        border: Border.all(
-          color: Colors.white,
-          width: 2,
-        ),
+        border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

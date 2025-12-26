@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/player.dart';
 import '../providers/game_provider.dart';
 
 /// Enhanced player info panel with animated star/point increments
@@ -27,7 +26,7 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -101,7 +100,7 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
 class _AnimatedStarsDisplay extends StatelessWidget {
   final int stars;
 
-  const _AnimatedStarsDisplay({required this.stars, super.key});
+  const _AnimatedStarsDisplay({required this.stars});
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +112,7 @@ class _AnimatedStarsDisplay extends StatelessWidget {
         border: Border.all(color: Colors.amber, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withOpacity(0.3),
+            color: Colors.amber.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -153,7 +152,7 @@ class _AnimatedNumber extends StatelessWidget {
   final int value;
   final TextStyle style;
 
-  const _AnimatedNumber({required this.value, required this.style, super.key});
+  const _AnimatedNumber({required this.value, required this.style});
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,7 @@ import '../providers/game_provider.dart';
 import '../models/player.dart';
 import '../widgets/enhanced_tile_widget.dart';
 import '../widgets/enhanced_dice_widget.dart';
+import '../widgets/question_dialog.dart';
 
 class GameView extends ConsumerWidget {
   const GameView({super.key});
@@ -13,10 +14,33 @@ class GameView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
+    final questionState = ref.watch(questionStateProvider);
+    final currentQuestion = ref.watch(currentQuestionProvider);
 
-    final screenWidth = MediaQuery.of(context).size.width;
+    // Check if game is initialized
+    if (gameState.tiles.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Edebiyat Oyunu',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Oyun yükleniyor...', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+      );
+    }
+
     final tileCount = gameState.tiles.length;
-    final tileWidth = (screenWidth / 6).clamp(60.0, 120.0);
     final currentPos = currentPlayer?.position;
 
     return Scaffold(
@@ -27,61 +51,83 @@ class GameView extends ConsumerWidget {
         ),
         centerTitle: true,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Oyun tahtası - Horizontal scrollable with enhanced tiles
-          SizedBox(
-            height: 140,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: tileCount,
-              itemBuilder: (context, index) {
-                final tile = gameState.tiles[index];
-                final isCurrent = currentPos != null && currentPos == tile.id;
-                return Padding(
+          Column(
+            children: [
+              // Oyun tahtası - Horizontal scrollable with enhanced tiles
+              SizedBox(
+                height: 140,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  itemCount: tileCount,
+                  itemBuilder: (context, index) {
+                    final tile = gameState.tiles[index];
+                    final isCurrent =
+                        currentPos != null && currentPos == tile.id;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 4,
+                      ),
+                      child: EnhancedTileWidget(
+                        tile: tile,
+                        isHighlighted: isCurrent,
+                        onTap: () {
+                          // Handle tile tap if needed
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Enhanced dice widget and player info
+              Expanded(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 2,
+                    horizontal: 8,
                     vertical: 4,
                   ),
-                  child: EnhancedTileWidget(
-                    tile: tile,
-                    isHighlighted: isCurrent,
-                    onTap: () {
-                      // Handle tile tap if needed
-                    },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Enhanced Dice Widget
+                      const EnhancedDiceWidget(),
+                      const SizedBox(height: 16),
+
+                      // Player cards
+                      ...gameState.players.asMap().entries.map((entry) {
+                        return _buildPlayerCard(
+                          player: entry.value,
+                          isCurrent:
+                              currentPlayer != null &&
+                              entry.value.id == currentPlayer.id,
+                          ref: ref,
+                        );
+                      }),
+                    ],
                   ),
-                );
+                ),
+              ),
+            ],
+          ),
+
+          // Question dialog overlay
+          if (questionState == QuestionState.answering &&
+              currentQuestion != null)
+            QuestionDialog(
+              question: currentQuestion!,
+              onAnswer: (isCorrect) {
+                if (isCorrect) {
+                  ref.read(gameProvider.notifier).answerQuestionCorrect();
+                } else {
+                  ref.read(gameProvider.notifier).answerQuestionWrong();
+                }
               },
             ),
-          ),
-          const SizedBox(height: 12),
-
-          // Enhanced dice widget and player info
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Enhanced Dice Widget
-                  const EnhancedDiceWidget(),
-                  const SizedBox(height: 16),
-
-                  // Player cards
-                  ...gameState.players.map(
-                    (player) => _buildPlayerCard(
-                      player: player,
-                      isCurrent:
-                          currentPlayer != null &&
-                          player.id == currentPlayer.id,
-                      ref: ref,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -105,14 +151,14 @@ class GameView extends ConsumerWidget {
         boxShadow: isCurrent
             ? [
                 BoxShadow(
-                  color: Colors.green.withOpacity(0.2),
+                  color: Colors.green.withValues(alpha: 0.2),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
@@ -129,7 +175,10 @@ class GameView extends ConsumerWidget {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Color(int.parse('FF${player.color.substring(1)}')),
+                  color: Color(
+                    int.parse(player.color.substring(1), radix: 16) +
+                        0xFF000000,
+                  ),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -210,9 +259,9 @@ class GameView extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

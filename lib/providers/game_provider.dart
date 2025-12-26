@@ -4,15 +4,25 @@ import '../models/tile.dart';
 import '../models/question.dart';
 import '../models/card.dart';
 import '../models/dice_roll.dart';
-import '../engine/game_engine.dart';
+import '../constants/game_constants.dart';
 
 // Turn Phase State Machine
 enum TurnPhase {
-  waitingRoll,    // Waiting for player to roll dice
-  rolling,        // Dice rolling animation
-  moving,         // Player pawn moving
-  resolvingTile,  // Processing tile effects
-  turnEnd,       // Turn ending, preparing next player
+  waitingRoll, // Waiting for player to roll dice
+  rolling, // Dice rolling animation
+  moving, // Player pawn moving
+  resolvingTile, // Processing tile effects
+  answering, // Player answering a question
+  turnEnd, // Turn ending, preparing next player
+}
+
+// Question answering state
+enum QuestionState {
+  waiting, // Waiting for player to answer
+  answering, // Player is answering
+  correct, // Answer was correct
+  wrong, // Answer was wrong
+  skipped, // Question was skipped
 }
 
 // Game State
@@ -22,20 +32,27 @@ class GameState {
   final List<Question> questionPool;
   final List<Card> sansCards;
   final List<Card> kaderCards;
-  
+
   final int currentPlayerIndex;
   final DiceRoll? lastDiceRoll;
   final String? lastMessage;
   final List<String> logMessages;
-  
+
   // Turn phase state machine
   final TurnPhase turnPhase;
-  
+
   // Movement state
   final int? oldPosition;
   final int? newPosition;
   final bool passedStart;
-  
+
+  // Question answering state
+  final QuestionState questionState;
+  final Question? currentQuestion;
+  final int? questionTimer;
+  final int correctAnswers;
+  final int wrongAnswers;
+
   // Flags
   final bool isGameOver;
 
@@ -54,17 +71,25 @@ class GameState {
     this.newPosition,
     this.passedStart = false,
     this.isGameOver = false,
+    this.questionState = QuestionState.waiting,
+    this.currentQuestion,
+    this.questionTimer = 0,
+    this.correctAnswers = 0,
+    this.wrongAnswers = 0,
   });
 
   Player? get currentPlayer {
-    if (players.isEmpty || currentPlayerIndex < 0 || currentPlayerIndex >= players.length) {
+    if (players.isEmpty ||
+        currentPlayerIndex < 0 ||
+        currentPlayerIndex >= players.length) {
       return null;
     }
     return players[currentPlayerIndex];
   }
 
   bool get isCurrentPlayerBankrupt => currentPlayer?.isBankrupt ?? false;
-  bool get canRoll => turnPhase == TurnPhase.waitingRoll && !isCurrentPlayerBankrupt;
+  bool get canRoll =>
+      turnPhase == TurnPhase.waitingRoll && !isCurrentPlayerBankrupt;
 
   GameState copyWith({
     List<Player>? players,
@@ -81,6 +106,11 @@ class GameState {
     int? newPosition,
     bool? passedStart,
     bool? isGameOver,
+    QuestionState? questionState,
+    Question? currentQuestion,
+    int? questionTimer,
+    int? correctAnswers,
+    int? wrongAnswers,
   }) {
     return GameState(
       players: players ?? this.players,
@@ -97,6 +127,11 @@ class GameState {
       newPosition: newPosition ?? this.newPosition,
       passedStart: passedStart ?? this.passedStart,
       isGameOver: isGameOver ?? this.isGameOver,
+      questionState: questionState ?? this.questionState,
+      currentQuestion: currentQuestion ?? this.currentQuestion,
+      questionTimer: questionTimer ?? this.questionTimer,
+      correctAnswers: correctAnswers ?? this.correctAnswers,
+      wrongAnswers: wrongAnswers ?? this.wrongAnswers,
     );
   }
 
@@ -114,18 +149,17 @@ class GameState {
 
 // Game Notifier
 class GameNotifier extends StateNotifier<GameState> {
-  late GameEngine _engine;
-  static const int passStartReward = 50; // Stars earned when passing BAŞLANGIÇ
-  static const int boardSize = 40; // Total tiles on board
-
-  GameNotifier() : super(const GameState(
-    players: [],
-    tiles: [],
-    questionPool: [],
-    sansCards: [],
-    kaderCards: [],
-    currentPlayerIndex: 0,
-  ));
+  GameNotifier()
+    : super(
+        const GameState(
+          players: [],
+          tiles: [],
+          questionPool: [],
+          sansCards: [],
+          kaderCards: [],
+          currentPlayerIndex: 0,
+        ),
+      );
 
   // Initialize game with data
   void initializeGame({
@@ -135,39 +169,26 @@ class GameNotifier extends StateNotifier<GameState> {
     required List<Card> sansCards,
     required List<Card> kaderCards,
   }) {
-    _engine = GameEngine(
-      players: players,
-      tiles: tiles,
-      questionPool: questionPool,
-      sansCards: sansCards,
-      kaderCards: kaderCards,
-      onLogMessage: (message) {
-        // Engine logs are handled by our state machine
-      },
-      onStarsChanged: (player, newAmount) {
-        _updatePlayerStars(player.id, newAmount);
-      },
-      onPlayerMoved: (player, newPosition) {
-        _updatePlayerPosition(player.id, newPosition);
-      },
-      onQuestionAsked: (player, question) {
-        // Not used in simplified turn flow
-      },
-      onCardDrawn: (card) {
-        // Not used in simplified turn flow
-      },
-    );
+    // Initialize game state with provided data
+    state = state
+        .copyWith(
+          players: players,
+          tiles: tiles,
+          questionPool: questionPool,
+          sansCards: sansCards,
+          kaderCards: kaderCards,
+          currentPlayerIndex: 0,
+          turnPhase: TurnPhase.waitingRoll,
+        )
+        .withLogMessage('Oyun başlatılıyor...');
 
-    _engine.initializeGame();
-    
-    state = state.copyWith(
-      players: _engine.players,
-      tiles: _engine.tiles,
-      questionPool: _engine.questionPool,
-      sansCards: _engine.sansCards,
-      kaderCards: kaderCards,
-      currentPlayerIndex: _engine.currentPlayerIndex,
-      turnPhase: TurnPhase.waitingRoll,
+    // Log initial player order
+    for (int i = 0; i < players.length; i++) {
+      state = state.withLogMessage('Sıra ${i + 1}: ${players[i].name}');
+    }
+
+    state = state.withLogMessage(
+      'Oyun başladı! Sıra: ${state.currentPlayer?.name}',
     );
   }
 
@@ -177,46 +198,56 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.currentPlayer == null) return;
 
     // Update phase to rolling
-    state = state.copyWith(
-      turnPhase: TurnPhase.rolling,
-    );
+    state = state.copyWith(turnPhase: TurnPhase.rolling);
 
     // Generate random dice roll
     final diceRoll = DiceRoll.random();
-    
-    // Set lastRoll on current player
-    state.currentPlayer!.lastRoll = diceRoll.total;
-    
+
+    // Get current player
+    final currentPlayer = state.currentPlayer!;
+
+    // Update player immutably
+    final updatedPlayer = currentPlayer.copyWith(
+      lastRoll: diceRoll.total,
+      doubleDiceCount: diceRoll.isDouble
+          ? currentPlayer.doubleDiceCount + 1
+          : 0,
+    );
+
+    // Update players list with updated player
+    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
     // Log dice roll
-    String logMessage = '${state.currentPlayer!.name} zar attı: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}';
+    String logMessage =
+        '${currentPlayer.name} zar attı: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}';
     if (diceRoll.isDouble) {
       logMessage += ' (ÇİFT!)';
     }
-    
-    state = state.copyWith(
-      lastDiceRoll: diceRoll,
-    ).withLogMessage(logMessage);
+
+    state = state
+        .copyWith(lastDiceRoll: diceRoll, players: updatedPlayers)
+        .withLogMessage(logMessage);
 
     // Handle double dice
     if (diceRoll.isDouble) {
-      state.currentPlayer!.incrementDoubleCount();
-      state = state.withLogMessage('${state.currentPlayer!.name}: Çift zar sayısı: ${state.currentPlayer!.doubleDiceCount}/3');
-      
+      state = state.withLogMessage(
+        '${currentPlayer.name}: Çift zar sayısı: ${updatedPlayer.doubleDiceCount}/3',
+      );
+
       // Check for 3x double → Library Watch
-      if (state.currentPlayer!.doubleDiceCount >= 3) {
+      if (updatedPlayer.doubleDiceCount >= 3) {
         _handleTripleDouble();
         return;
       }
     } else {
-      state.currentPlayer!.resetDoubleCount();
-      state = state.withLogMessage('${state.currentPlayer!.name}: Çift zar sayacı sıfırlandı');
+      state = state.withLogMessage(
+        '${currentPlayer.name}: Çift zar sayacı sıfırlandı',
+      );
     }
 
     // Move to moving phase
-    state = state.copyWith(
-      turnPhase: TurnPhase.moving,
-    );
-    
+    state = state.copyWith(turnPhase: TurnPhase.moving);
+
     // Calculate new position
     moveCurrentPlayer(diceRoll.total);
   }
@@ -224,33 +255,49 @@ class GameNotifier extends StateNotifier<GameState> {
   // Move player - Step 2 of turn
   void moveCurrentPlayer(int diceTotal) {
     if (state.currentPlayer == null) return;
-    
-    final oldPosition = state.currentPlayer!.position;
-    
+
+    final currentPlayer = state.currentPlayer!;
+    final oldPosition = currentPlayer.position;
+
     // Counter-clockwise movement: position increases
     // Board is 1-40, moving counter-clockwise means increasing position
     final newPosition = _calculateNewPosition(oldPosition, diceTotal);
-    
+
     // Check if passed START (tile 1)
     final passedStart = _passedStart(oldPosition, newPosition);
-    
-    // Update player position
-    state.currentPlayer!.position = newPosition;
-    
-    // Log movement
-    state = state.copyWith(
-      oldPosition: oldPosition,
-      newPosition: newPosition,
-      passedStart: passedStart,
-      turnPhase: TurnPhase.resolvingTile,
-    ).withLogMessage('${state.currentPlayer!.name} kutucuk $oldPosition\'den $newPosition\'e hareket etti');
-    
+
+    // Update player immutably
+    var updatedPlayer = currentPlayer.copyWith(position: newPosition);
+
     // Award stars if passed START
     if (passedStart) {
-      state.currentPlayer!.addStars(passStartReward);
-      state = state.withLogMessage('${state.currentPlayer!.name} BAŞLANGIÇ\'ten geçti! +$passStartReward yıldız');
+      updatedPlayer = updatedPlayer.copyWith(
+        stars: updatedPlayer.stars + GameConstants.passStartReward,
+      );
     }
-    
+
+    // Update players list
+    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    // Log movement
+    state = state
+        .copyWith(
+          players: updatedPlayers,
+          oldPosition: oldPosition,
+          newPosition: newPosition,
+          passedStart: passedStart,
+          turnPhase: TurnPhase.resolvingTile,
+        )
+        .withLogMessage(
+          '${currentPlayer.name} kutucuk $oldPosition\'den $newPosition\'e hareket etti',
+        );
+
+    if (passedStart) {
+      state = state.withLogMessage(
+        '${currentPlayer.name} BAŞLANGIÇ\'ten geçti! +${GameConstants.passStartReward} yıldız',
+      );
+    }
+
     // Resolve tile effect
     resolveCurrentTile();
   }
@@ -258,14 +305,16 @@ class GameNotifier extends StateNotifier<GameState> {
   // Calculate new position (counter-clockwise, 1-40)
   int _calculateNewPosition(int currentPosition, int diceTotal) {
     // Counter-clockwise: positions increase from 1 to 40, then wrap to 1
-    int newPosition = (currentPosition + diceTotal - 1) % boardSize + 1;
+    int newPosition =
+        (currentPosition + diceTotal - 1) % GameConstants.boardSize + 1;
     return newPosition;
   }
 
   // Check if player passed START (tile 1)
   bool _passedStart(int oldPosition, int newPosition) {
     // Passing from 40 to lower number means passed START (tile 1)
-    if (oldPosition >= 35 && newPosition <= 5) {
+    if (oldPosition >= GameConstants.startPassThresholdOld &&
+        newPosition <= GameConstants.startPassThresholdNew) {
       return true;
     }
     return false;
@@ -274,131 +323,272 @@ class GameNotifier extends StateNotifier<GameState> {
   // Handle 3x double dice - Library Watch
   void _handleTripleDouble() {
     if (state.currentPlayer == null) return;
-    
-    state = state.withLogMessage('${state.currentPlayer!.name}: 3x Çift Zar! KÜTÜPHANE NÖBETİ tetiklendi!');
-    
-    state.currentPlayer!.enterLibraryWatch();
-    state.currentPlayer!.position = 11; // Teleport to KÜTÜPHANE NÖBETİ
-    
-    state = state.copyWith(
-      oldPosition: state.oldPosition,
-      newPosition: 11,
-      passedStart: false,
-    ).withLogMessage('${state.currentPlayer!.name} kutucuk 11\'e (KÜTÜPHANE NÖBETİ) ışınlandı');
-    
+
+    final currentPlayer = state.currentPlayer!;
+
+    state = state.withLogMessage(
+      '${currentPlayer.name}: 3x Çift Zar! KÜTÜPHANE NÖBETİ tetiklendi!',
+    );
+
+    // Update player immutably
+    final updatedPlayer = currentPlayer.copyWith(
+      position: 11,
+      isInLibraryWatch: true,
+      libraryWatchTurnsRemaining: GameConstants.libraryWatchTurns,
+      doubleDiceCount: 0,
+    );
+
+    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    state = state
+        .copyWith(
+          players: updatedPlayers,
+          oldPosition: state.oldPosition,
+          newPosition: 11,
+          passedStart: false,
+        )
+        .withLogMessage(
+          '${currentPlayer.name} kutucuk 11\'e (KÜTÜPHANE NÖBETİ) ışınlandı',
+        );
+
     endTurn();
   }
 
   // Resolve current tile - Step 3 of turn
   void resolveCurrentTile() {
     if (state.currentPlayer == null) return;
-    
+
     final tileNumber = state.newPosition ?? state.currentPlayer!.position;
     final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-    
+
     String tileLog = 'Kutucuk: ${tile.name} (${tile.type})';
-    
+
     // Handle different tile types
     switch (tile.type) {
       case TileType.corner:
         _handleCornerTile(tile);
         break;
-      
+
       case TileType.book:
-        tileLog += ' - Telif ücreti: ${tile.copyrightFee}';
-        state = state.withLogMessage(tileLog);
-        break;
-      
       case TileType.publisher:
-        tileLog += ' - Telif ücreti: ${tile.copyrightFee}';
-        state = state.withLogMessage(tileLog);
+        // Show question for book/publisher tiles
+        _showQuestion(tile);
         break;
-      
+
       case TileType.chance:
         tileLog += ' - ŞANS kartı çekilecek (basitleştirilmiş)';
         state = state.withLogMessage(tileLog);
         break;
-      
+
       case TileType.fate:
         tileLog += ' - KADER kartı çekilecek (basitleştirilmiş)';
         state = state.withLogMessage(tileLog);
         break;
-      
+
       case TileType.tax:
         tileLog += ' - Vergi: %${tile.taxRate}';
         state = state.withLogMessage(tileLog);
         break;
-      
+
       case TileType.special:
         tileLog += ' - Özel kutucuk';
         state = state.withLogMessage(tileLog);
         break;
     }
-    
+
     // Move to turn end
-    state = state.copyWith(
-      turnPhase: TurnPhase.turnEnd,
-    );
-    
+    state = state.copyWith(turnPhase: TurnPhase.turnEnd);
+
     endTurn();
+  }
+
+  // Show question for book/publisher tiles
+  void _showQuestion(Tile tile) {
+    // Get a random question from the pool
+    final question = _getRandomQuestion();
+
+    state = state
+        .copyWith(
+          questionState: QuestionState.answering,
+          currentQuestion: question,
+          questionTimer: GameConstants.questionTimerDuration,
+        )
+        .withLogMessage('${tile.name} için soru soruluyor...');
+  }
+
+  // Get a random question from the pool
+  Question _getRandomQuestion() {
+    if (state.questionPool.isEmpty) {
+      return Question(
+        id: 'default',
+        category: QuestionCategory.benKimim,
+        difficulty: Difficulty.easy,
+        question: 'Soru havuzu boş!',
+        answer: 'Boş',
+      );
+    }
+
+    final randomIndex =
+        (DateTime.now().millisecondsSinceEpoch) % state.questionPool.length;
+    return state.questionPool[randomIndex];
+  }
+
+  // Answer question - correct
+  void answerQuestionCorrect() {
+    if (state.currentQuestion == null) return;
+
+    final question = state.currentQuestion!;
+    final reward = question.starReward;
+    final currentPlayer = state.currentPlayer!;
+
+    // Update player stars
+    final updatedPlayer = currentPlayer.copyWith(
+      stars: currentPlayer.stars + reward,
+    );
+    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    state = state
+        .copyWith(
+          players: updatedPlayers,
+          questionState: QuestionState.correct,
+          correctAnswers: state.correctAnswers + 1,
+        )
+        .withLogMessage(
+          '${currentPlayer.name} doğru cevap verdi! +$reward yıldız kazandı.',
+        );
+  }
+
+  // Answer question - wrong
+  void answerQuestionWrong() {
+    if (state.currentQuestion == null) return;
+
+    final penalty = GameConstants.wrongAnswerPenalty;
+    final currentPlayer = state.currentPlayer!;
+
+    // Update player stars
+    final updatedPlayer = currentPlayer.copyWith(
+      stars: (currentPlayer.stars - penalty).clamp(
+        GameConstants.bankruptcyThreshold,
+        currentPlayer.stars,
+      ),
+    );
+    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    state = state
+        .copyWith(
+          players: updatedPlayers,
+          questionState: QuestionState.wrong,
+          wrongAnswers: state.wrongAnswers + 1,
+        )
+        .withLogMessage(
+          '${currentPlayer.name} yanlış cevap verdi! -$penalty yıldız kaybetti.',
+        );
+  }
+
+  // Skip question
+  void skipQuestion() {
+    state = state
+        .copyWith(questionState: QuestionState.skipped)
+        .withLogMessage(
+          '${state.currentPlayer?.name ?? 'Oyuncu'} soruyu atladı.',
+        );
   }
 
   // Handle corner tile effects
   void _handleCornerTile(Tile tile) {
     if (state.currentPlayer == null) return;
-    
+
+    final currentPlayer = state.currentPlayer!;
+    Player? updatedPlayer;
+
     switch (tile.cornerEffect) {
       case CornerEffect.baslangic:
         // BAŞLANGIÇ - handled by passing bonus
-        state = state.withLogMessage('Kutucuk: ${tile.name} - Başlangıç kutucuğu');
+        state = state.withLogMessage(
+          'Kutucuk: ${tile.name} - Başlangıç kutucuğu',
+        );
         break;
-      
+
       case CornerEffect.kutuphaneNobeti:
         // KÜTÜPHANE NÖBETİ - skip turns
-        state.currentPlayer!.enterLibraryWatch();
-        state = state.withLogMessage('KÜTÜPHANE NÖBETİ! ${state.currentPlayer!.name}: 2 tur ceza');
+        updatedPlayer = currentPlayer.copyWith(
+          isInLibraryWatch: true,
+          libraryWatchTurnsRemaining: GameConstants.libraryWatchTurns,
+        );
+        state = state.withLogMessage(
+          'KÜTÜPHANE NÖBETİ! ${currentPlayer.name}: 2 tur ceza',
+        );
         break;
-      
+
       case CornerEffect.imzaGunu:
         // İMZA GÜNÜ - skip next turn
-        state.currentPlayer!.markTurnSkipped();
-        state = state.withLogMessage('İMZA GÜNÜ! ${state.currentPlayer!.name}: Bir sonraki tur atlanacak');
+        updatedPlayer = currentPlayer.copyWith(skippedTurn: true);
+        state = state.withLogMessage(
+          'İMZA GÜNÜ! ${currentPlayer.name}: Bir sonraki tur atlanacak',
+        );
         break;
-      
+
       case CornerEffect.iflasRiski:
         // İFLAS RİSKİ - 50% star loss
-        final lossAmount = (state.currentPlayer!.stars * 0.5).toInt();
-        state.currentPlayer!.removeStars(lossAmount);
-        state = state.withLogMessage('İFLAS RİSKİ! ${state.currentPlayer!.name}: -$lossAmount yıldız (%50 kayıp)');
+        final lossAmount =
+            (currentPlayer.stars * GameConstants.bankruptcyLossPercentage)
+                .toInt();
+        final newStars = (currentPlayer.stars - lossAmount).clamp(
+          GameConstants.bankruptcyThreshold,
+          currentPlayer.stars,
+        );
+        updatedPlayer = currentPlayer.copyWith(
+          stars: newStars,
+          isBankrupt: newStars <= 0,
+        );
+        state = state.withLogMessage(
+          'İFLAS RİSKİ! ${currentPlayer.name}: -$lossAmount yıldız (%50 kayıp)',
+        );
         _checkBankruptcy();
         break;
 
       case null:
-      break;
+        break;
+    }
 
+    // Update players list if player was modified
+    if (updatedPlayer != null) {
+      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+      state = state.copyWith(players: updatedPlayers);
     }
   }
 
   // End turn - Step 4 of turn
   void endTurn() {
     if (state.currentPlayer == null) return;
-    
+
+    final currentPlayer = state.currentPlayer!;
+    Player? updatedPlayer;
+
     // Check for bankruptcy
-    if (state.currentPlayer!.stars <= 0) {
-      state.currentPlayer!.isBankrupt = true;
-      state = state.withLogMessage('${state.currentPlayer!.name} İFLAS OLDU!');
-      
+    if (currentPlayer.stars <= GameConstants.bankruptcyThreshold) {
+      updatedPlayer = currentPlayer.copyWith(isBankrupt: true);
+      state = state.withLogMessage('${currentPlayer.name} İFLAS OLDU!');
+
       if (_isGameOver()) {
         _announceWinner();
         return;
       }
     }
-    
+
+    // Update players list if player was modified
+    if (updatedPlayer != null) {
+      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+      state = state.copyWith(players: updatedPlayers);
+    }
+
     // Check if player rolled double (gets another turn)
     final wasDouble = state.lastDiceRoll?.isDouble ?? false;
-    
+
     if (wasDouble) {
-      state = state.withLogMessage('Çift zar attı! ${state.currentPlayer!.name} tekrar zar atacak.');
+      state = state.withLogMessage(
+        'Çift zar attı! ${currentPlayer.name} tekrar zar atacak.',
+      );
       state = state.copyWith(
         turnPhase: TurnPhase.waitingRoll,
         oldPosition: null,
@@ -407,7 +597,7 @@ class GameNotifier extends StateNotifier<GameState> {
       );
       return;
     }
-    
+
     // Move to next player
     _nextPlayer();
   }
@@ -431,22 +621,29 @@ class GameNotifier extends StateNotifier<GameState> {
     } while (state.currentPlayer?.isBankrupt ?? false);
 
     if (state.currentPlayer != null) {
-      state = state.copyWith(
-        turnPhase: TurnPhase.waitingRoll,
-        oldPosition: null,
-        newPosition: null,
-        passedStart: false,
-      ).withLogMessage('Sıra: ${state.currentPlayer!.name}');
+      state = state
+          .copyWith(
+            turnPhase: TurnPhase.waitingRoll,
+            oldPosition: null,
+            newPosition: null,
+            passedStart: false,
+          )
+          .withLogMessage('Sıra: ${state.currentPlayer!.name}');
     }
   }
 
   // Check bankruptcy
   void _checkBankruptcy() {
     if (state.currentPlayer == null) return;
-    
-    if (state.currentPlayer!.stars <= 0) {
-      state.currentPlayer!.isBankrupt = true;
-      state = state.withLogMessage('${state.currentPlayer!.name} İFLAS OLDU!');
+
+    final currentPlayer = state.currentPlayer!;
+
+    if (currentPlayer.stars <= GameConstants.bankruptcyThreshold) {
+      final updatedPlayer = currentPlayer.copyWith(isBankrupt: true);
+      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+      state = state
+          .copyWith(players: updatedPlayers)
+          .withLogMessage('${currentPlayer.name} İFLAS OLDU!');
     }
   }
 
@@ -462,41 +659,22 @@ class GameNotifier extends StateNotifier<GameState> {
       (p) => !p.isBankrupt,
       orElse: () => state.players.first,
     );
-    
-    state = state.copyWith(
-      isGameOver: true,
-      turnPhase: TurnPhase.turnEnd,
-    ).withLogMessage('\n========================================');
-    state = state.withLogMessage('KAZANAN: ${winner.name} - ${winner.stars} yıldız');
+
+    state = state
+        .copyWith(isGameOver: true, turnPhase: TurnPhase.turnEnd)
+        .withLogMessage('\n========================================');
+    state = state.withLogMessage(
+      'KAZANAN: ${winner.name} - ${winner.stars} yıldız',
+    );
     state = state.withLogMessage('========================================\n');
     state = state.withLogMessage('OYUN BİTTİ!');
   }
 
-  // Get player by ID
-  Player? _getPlayerById(String playerId) {
-    try {
-      return state.players.firstWhere(
-        (p) => p.id == playerId,
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Update player stars
-  void _updatePlayerStars(String playerId, int newAmount) {
-    final player = _getPlayerById(playerId);
-    if (player != null) {
-      player.stars = newAmount;
-    }
-  }
-
-  // Update player position
-  void _updatePlayerPosition(String playerId, int newPosition) {
-    final player = _getPlayerById(playerId);
-    if (player != null) {
-      player.position = newPosition;
-    }
+  // Helper method to update a player in players list immutably
+  List<Player> _updatePlayerInList(List<Player> players, Player updatedPlayer) {
+    return players
+        .map((p) => p.id == updatedPlayer.id ? updatedPlayer : p)
+        .toList();
   }
 }
 
@@ -539,4 +717,34 @@ final canRollProvider = Provider<bool>((ref) {
 final lastDiceRollProvider = Provider<DiceRoll?>((ref) {
   final gameState = ref.watch(gameProvider);
   return gameState.lastDiceRoll;
+});
+
+// Question state provider
+final questionStateProvider = Provider<QuestionState>((ref) {
+  final gameState = ref.watch(gameProvider);
+  return gameState.questionState;
+});
+
+// Current question provider
+final currentQuestionProvider = Provider<Question?>((ref) {
+  final gameState = ref.watch(gameProvider);
+  return gameState.currentQuestion;
+});
+
+// Question timer provider
+final questionTimerProvider = Provider<int>((ref) {
+  final gameState = ref.watch(gameProvider);
+  return gameState.questionTimer ?? 0;
+});
+
+// Correct answers provider
+final correctAnswersProvider = Provider<int>((ref) {
+  final gameState = ref.watch(gameProvider);
+  return gameState.correctAnswers;
+});
+
+// Wrong answers provider
+final wrongAnswersProvider = Provider<int>((ref) {
+  final gameState = ref.watch(gameProvider);
+  return gameState.wrongAnswers;
 });

@@ -16,7 +16,9 @@ class GameInfoPanel extends ConsumerWidget {
 
     // Get current tile name from position (1-40)
     Tile? currentTile;
-    if (currentPlayer != null && currentPlayer.position >= 1 && currentPlayer.position <= gameState.tiles.length) {
+    if (currentPlayer != null &&
+        currentPlayer.position >= 1 &&
+        currentPlayer.position <= gameState.tiles.length) {
       currentTile = gameState.tiles.firstWhere(
         (t) => t.id == currentPlayer.position,
         orElse: () => Tile(
@@ -35,7 +37,7 @@ class GameInfoPanel extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -60,7 +62,7 @@ class GameInfoPanel extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Active player name
           _buildInfoRow(
             icon: Icons.person,
@@ -73,7 +75,7 @@ class GameInfoPanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Stars
           _buildInfoRow(
             icon: Icons.star,
@@ -86,7 +88,7 @@ class GameInfoPanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Current position
           _buildInfoRow(
             icon: Icons.location_on,
@@ -99,7 +101,7 @@ class GameInfoPanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Current tile name
           _buildInfoRow(
             icon: Icons.place,
@@ -112,24 +114,28 @@ class GameInfoPanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Last dice roll
           if (lastDiceRoll != null) ...[
             _buildInfoRow(
               icon: Icons.casino,
               label: 'Son Zar:',
-              value: '${lastDiceRoll!.die1} + ${lastDiceRoll!.die2} = ${lastDiceRoll!.total}',
+              value:
+                  '${lastDiceRoll.die1} + ${lastDiceRoll.die2} = ${lastDiceRoll.total}',
               valueStyle: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.purple.shade700,
               ),
             ),
-            if (lastDiceRoll!.isDouble)
+            if (lastDiceRoll.isDouble)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.purple.shade100,
                     borderRadius: BorderRadius.circular(6),
@@ -163,10 +169,7 @@ class GameInfoPanel extends ConsumerWidget {
         const SizedBox(width: 12),
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-          ),
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade700),
         ),
         const SizedBox(width: 8),
         Expanded(

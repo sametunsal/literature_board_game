@@ -45,7 +45,7 @@ class GameEngine {
   // Initialize game with turn order based on initial dice rolls
   void initializeGame() {
     _log('Oyun baslatiliyor...');
-    
+
     // Roll dice to determine turn order
     final playerRolls = <MapEntry<Player, int>>[];
     for (final player in players) {
@@ -53,16 +53,16 @@ class GameEngine {
       playerRolls.add(MapEntry(player, roll.total));
       _log('${player.name} zar atti: ${roll.total}');
     }
-    
+
     // Sort players by dice total (highest first)
     playerRolls.sort((a, b) => b.value.compareTo(a.value));
-    
+
     // Update player order based on rolls
     final newPlayerOrder = playerRolls.map((e) => e.key).toList();
     for (int i = 0; i < newPlayerOrder.length; i++) {
       _log('Sira ${i + 1}: ${newPlayerOrder[i].name}');
     }
-    
+
     _log('Oyun basladi! Sira: ${currentPlayer.name}');
   }
 
@@ -90,7 +90,7 @@ class GameEngine {
     if (diceRoll.isDouble) {
       currentPlayer.incrementDoubleCount();
       _log('Cift zar! (Sira: ${currentPlayer.doubleDiceCount})');
-      
+
       // Check for 3x double
       if (currentPlayer.doubleDiceCount >= 3) {
         _triggerLibraryWatch();
@@ -102,7 +102,10 @@ class GameEngine {
 
     // Step 4: Move player
     final oldPosition = currentPlayer.position;
-    final newPosition = _calculateNewPosition(currentPlayer.position, diceRoll.total);
+    final newPosition = _calculateNewPosition(
+      currentPlayer.position,
+      diceRoll.total,
+    );
     _movePlayer(currentPlayer, newPosition);
 
     // Check if passed START
@@ -133,7 +136,7 @@ class GameEngine {
   void _movePlayer(Player player, int newPosition) {
     player.position = newPosition;
     onPlayerMoved?.call(player, newPosition);
-    _log('${player.name} kutucuk ${newPosition}\'e hareket etti');
+    _log('${player.name} kutucuk $newPosition\'e hareket etti');
   }
 
   // Check if player passed START (tile 1)
@@ -156,9 +159,11 @@ class GameEngine {
     _log('Tur atlaniyor...');
 
     if (currentPlayer.isInLibraryWatch) {
-      _log('KUTUPHANE NOBETI: ${currentPlayer.libraryWatchTurnsRemaining} tur kaldi');
+      _log(
+        'KUTUPHANE NOBETI: ${currentPlayer.libraryWatchTurnsRemaining} tur kaldi',
+      );
       currentPlayer.decrementLibraryWatchTurns();
-      
+
       if (!currentPlayer.isInLibraryWatch) {
         _log('KUTUPHANE NOBETI bitti! ${currentPlayer.name} oyununa dondu');
       }
@@ -188,20 +193,20 @@ class GameEngine {
       case TileType.publisher:
         _handleBookTile(player, tile);
         break;
-      
+
       case TileType.corner:
         _handleCornerTile(player, tile);
         break;
-      
+
       case TileType.chance:
       case TileType.fate:
         _log('Kart cekilecek (basitlestirilmis)');
         break;
-      
+
       case TileType.tax:
         _handleTaxTile(player, tile);
         break;
-      
+
       case TileType.special:
         _log('Ozel kutucuk');
         break;
@@ -219,17 +224,17 @@ class GameEngine {
       case CornerEffect.baslangic:
         _log('Kutucuk: Baslangic kutucugu');
         break;
-      
+
       case CornerEffect.kutuphaneNobeti:
         _log('KUTUPHANE NOBETI! 2 tur ceza.');
         player.enterLibraryWatch();
         break;
-      
+
       case CornerEffect.imzaGunu:
         _log('IMZA GUNU! Tur atlaniyor.');
         player.markTurnSkipped();
         break;
-      
+
       case CornerEffect.iflasRiski:
         _log('IFLAS RISKI! %50 yildiz kaybi.');
         player.losePercentageOfStars(50);
@@ -239,14 +244,13 @@ class GameEngine {
 
       case null:
         break;
-
     }
   }
 
   // Handle tax tiles
   void _handleTaxTile(Player player, Tile tile) {
     int taxAmount;
-    
+
     if (tile.taxType == TaxType.gelirVergisi) {
       taxAmount = _calculateTax(player.stars, 10);
       _log('GELIR VERGISI: -$taxAmount yildiz (%10)');
@@ -256,7 +260,7 @@ class GameEngine {
     } else {
       return;
     }
-    
+
     player.removeStars(taxAmount);
     onStarsChanged?.call(player, player.stars);
     _checkBankruptcy(player);
@@ -266,7 +270,7 @@ class GameEngine {
   int _calculateTax(int stars, int percentage) {
     final percentageTax = (stars * percentage) ~/ 100;
     final minTax = percentage == 10 ? 20 : 30;
-    return percentageTax < minTax ? percentageTax : minTax;
+    return percentageTax > minTax ? percentageTax : minTax;
   }
 
   // Determine next turn
@@ -284,17 +288,17 @@ class GameEngine {
     currentPlayer.resetSkippedTurn();
     int attempts = 0;
     final totalPlayers = players.length;
-    
+
     do {
       currentPlayerIndex = (currentPlayerIndex + 1) % totalPlayers;
       attempts++;
-      
+
       if (attempts > totalPlayers) {
         _log('Tum oyuncular iflas oldu!');
         break;
       }
     } while (currentPlayer.isBankrupt);
-    
+
     _log('Sira: ${currentPlayer.name}');
   }
 
@@ -303,7 +307,7 @@ class GameEngine {
     if (player.isBankrupt) {
       _log('${player.name} IFLAS OLDU!');
       _log('${player.name} oyundan cikti.');
-      
+
       if (isGameOver) {
         _announceWinner();
       }
@@ -316,11 +320,11 @@ class GameEngine {
       (p) => !p.isBankrupt,
       orElse: () => players.first,
     );
-    
+
     _log('\n========================================');
     _log('KAZANAN: ${winner.name}');
     _log('========================================\n');
-    
+
     if (isGameOver) {
       _log('Oyun bitti!');
     }

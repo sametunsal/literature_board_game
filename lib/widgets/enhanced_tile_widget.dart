@@ -22,24 +22,27 @@ class EnhancedTileWidget extends StatefulWidget {
 }
 
 class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shimmerController;
-  late Animation<double> _shimmerAnimation;
+    with TickerProviderStateMixin {
+  late final AnimationController _shimmerController;
+  late final Animation<double> _shimmerAnimation;
 
   @override
   void initState() {
     super.initState();
 
+    // Create animation controller
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.linear),
+    );
+
     // Only animate special tiles
     if (_isSpecialTile()) {
-      _shimmerController = AnimationController(
-        duration: const Duration(milliseconds: 2000),
-        vsync: this,
-      )..repeat();
-
-      _shimmerAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(
-        CurvedAnimation(parent: _shimmerController, curve: Curves.linear),
-      );
+      _shimmerController.repeat();
     }
   }
 
@@ -61,7 +64,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedBuilder(
-        animation: _shimmerController,
+        animation: _shimmerAnimation,
         builder: (context, child) {
           return Container(
             width: 100,
@@ -78,18 +81,18 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
               boxShadow: [
                 if (widget.isHighlighted)
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.5),
+                    color: Colors.orange.withValues(alpha: 0.5),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
               ],
             ),
-            child: _isSpecialTile() ? _buildSpecialTile(child!) : child,
+            child: _isSpecialTile() ? _buildSpecialTile() : child,
           );
         },
         child: _buildNormalTile(),
@@ -143,26 +146,25 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
             ),
           ),
         ),
-        // Tile content (if any)
-        if (widget.tile.name != null)
-          Center(
-            child: Text(
-              widget.tile.name ?? '',
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.brown.shade800,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+        // Tile content
+        Center(
+          child: Text(
+            widget.tile.name,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.brown.shade800,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
+        ),
       ],
     );
   }
 
-  Widget _buildSpecialTile(Widget child) {
+  Widget _buildSpecialTile() {
     return Stack(
       children: [
         // Shimmer effect
@@ -174,14 +176,16 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
               end: Alignment.bottomRight,
               colors: [
                 _getTileColor(),
-                _getTileColor().withOpacity(0.8),
+                _getTileColor().withValues(alpha: 0.8),
                 _getTileColor(),
               ],
               stops: [0.0, 0.5, 1.0],
-              transform: _SlidingGradientTransform(_shimmerAnimation.value),
+              transform: _SlidingGradientTransform(
+                _shimmerAnimation?.value ?? 0,
+              ),
             ).createShader(bounds);
           },
-          child: child,
+          child: _buildNormalTile(),
         ),
         // Glow effect
         Container(
@@ -209,20 +213,6 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
             ],
           ),
         ),
-        // Tile name
-        Center(
-          child: Text(
-            widget.tile.name ?? '',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.brown.shade900,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
         // Sparkle particles (subtle animation)
         if (_isSpecialTile())
           ...List.generate(3, (index) {
@@ -231,7 +221,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
               right: 10 + (index * 10),
               top: 30 + (index * 5),
               child: AnimatedBuilder(
-                animation: _shimmerController,
+                animation: _shimmerAnimation,
                 builder: (context, child) {
                   final opacity =
                       (math.sin(
@@ -244,7 +234,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
                     child: Icon(
                       Icons.star,
                       size: 8,
-                      color: Colors.amber.withOpacity(opacity * 0.6),
+                      color: Colors.amber.withValues(alpha: opacity * 0.6),
                     ),
                   );
                 },
@@ -279,7 +269,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
 class _SlidingGradientTransform extends GradientTransform {
   final double percent;
 
-  _SlidingGradientTransform(this.percent);
+  const _SlidingGradientTransform(this.percent);
 
   @override
   Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
