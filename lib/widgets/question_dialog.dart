@@ -1,25 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/question.dart';
+// ignore: unused_import
+import '../models/turn_phase.dart';
+import '../models/player_type.dart';
+// ignore: unused_import
+import '../models/turn_result.dart';
+import '../providers/game_provider.dart';
 
-class QuestionDialog extends StatelessWidget {
+/// Question dialog - Phase 3 adaptation
+///
+/// Phase 3 Orchestration:
+/// - UI is PASSIVE observer (watches turnPhase, questionState)
+/// - UI calls ONLY playTurn() via _handleAnswer()
+/// - Buttons are GATED by TurnPhase.questionResolved
+/// - No direct game logic method calls (answerQuestionCorrect/answerQuestionWrong are internal)
+///
+/// Flow:
+/// 1. User selects answer (or skips)
+/// 2. _handleAnswer() sets answer state
+/// 3. _handleAnswer() calls playTurn()
+/// 4. playTurn() advances to next phase (turnEnded)
+class QuestionDialog extends ConsumerWidget {
   final Question question;
-  final Function(bool isCorrect) onAnswer;
   final int remainingTime;
 
   const QuestionDialog({
     super.key,
     required this.question,
-    required this.onAnswer,
     this.remainingTime = 30,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gameState = ref.watch(gameProvider);
+    final turnPhase = ref.watch(turnPhaseProvider);
+    // ignore: unused_local_variable
+    final lastTurnResult = ref.watch(lastTurnResultProvider);
+
+    final currentPlayer = gameState.currentPlayer;
+
+    // Phase 5.1: Bot auto-resolve - Dialog not rendered for bots
+    // Bot always answers wrong (dummy logic)
+    if (currentPlayer?.type == PlayerType.bot) {
+      // Bot auto-resolves with delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _handleAnswer(ref, false); // Always wrong
+      });
+      return const SizedBox.shrink();
+    }
+
+    // Question dialog buttons are only enabled during TurnPhase.questionResolved
+    final canAnswer = turnPhase == TurnPhase.questionResolved;
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.quiz, color: Colors.brown.shade700, size: 28),
+          const Text('❓', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
           Text(
             'Soru',
@@ -160,7 +197,7 @@ class QuestionDialog extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Answer options
-              ...question.options.asMap().entries.map((entry) {
+              ...(question.options ?? []).asMap().entries.map((entry) {
                 final index = entry.key;
                 final option = entry.value;
                 final isCorrectAnswer = option == question.answer;
@@ -169,62 +206,69 @@ class QuestionDialog extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    child: ElevatedButton(
-                      onPressed: () => onAnswer(isCorrectAnswer),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isCorrectAnswer
-                            ? Colors.green.shade600
-                            : Colors.white,
-                        foregroundColor: isCorrectAnswer
-                            ? Colors.white
-                            : Colors.brown.shade900,
-                        elevation: 2,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: Colors.brown.shade300,
-                            width: 1,
+                    child: Opacity(
+                      opacity: canAnswer ? 1.0 : 0.5,
+                      child: ElevatedButton(
+                        onPressed: canAnswer
+                            ? () => _handleAnswer(ref, isCorrectAnswer)
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isCorrectAnswer
+                              ? Colors.green.shade600
+                              : Colors.white,
+                          foregroundColor: isCorrectAnswer
+                              ? Colors.white
+                              : Colors.brown.shade900,
+                          elevation: canAnswer ? 2 : 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: canAnswer
+                                  ? Colors.brown.shade300
+                                  : Colors.grey.shade300,
+                              width: 1,
+                            ),
                           ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isCorrectAnswer
-                                  ? Colors.white
-                                  : Colors.brown.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                String.fromCharCode(65 + index), // A, B, C, D
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.bold,
-                                  color: isCorrectAnswer
-                                      ? Colors.green.shade600
-                                      : Colors.brown.shade700,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isCorrectAnswer
+                                    ? Colors.white
+                                    : Colors.brown.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  String.fromCharCode(65 + index), // A, B, C, D
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.bold,
+                                    color: isCorrectAnswer
+                                        ? Colors.green.shade600
+                                        : Colors.brown.shade700,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              option,
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                option,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -235,17 +279,41 @@ class QuestionDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton.icon(
-          onPressed: () => onAnswer(false), // Skip = wrong
-          icon: const Icon(Icons.skip_next),
-          label: Text(
-            'Atla',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        Opacity(
+          opacity: canAnswer ? 1.0 : 0.5,
+          child: TextButton.icon(
+            onPressed: canAnswer
+                ? () => _handleAnswer(ref, false)
+                : null, // Skip = wrong
+            icon: const Icon(Icons.skip_next),
+            label: Text(
+              'Atla',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: canAnswer
+                  ? Colors.grey.shade700
+                  : Colors.grey.shade400,
+            ),
           ),
-          style: TextButton.styleFrom(foregroundColor: Colors.grey.shade700),
         ),
       ],
     );
+  }
+
+  // Handles answer selection and triggers Phase 2 orchestration
+  // Phase 2: UI only calls playTurn(), no direct game logic
+  static void _handleAnswer(WidgetRef ref, bool isCorrect) {
+    // Set answer state (this updates game state)
+    if (isCorrect) {
+      ref.read(gameProvider.notifier).answerQuestionCorrect();
+    } else {
+      ref.read(gameProvider.notifier).answerQuestionWrong();
+    }
+
+    // Trigger Phase 2 orchestration
+    // playTurn() will handle next phase progression
+    ref.read(gameProvider.notifier).playTurn();
   }
 
   Color _getCategoryColor() {

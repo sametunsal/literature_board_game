@@ -1,7 +1,10 @@
+import 'player_type.dart';
+
 class Player {
   final String id;
   final String name;
   final String color;
+  final PlayerType type;
   int stars;
   int position;
   final List<int> ownedTiles;
@@ -10,12 +13,15 @@ class Player {
   int doubleDiceCount;
   bool isBankrupt;
   bool skippedTurn;
+  bool skipNextTax;
+  bool easyQuestionNext;
   int? lastRoll;
 
   Player({
     required this.id,
     required this.name,
     required this.color,
+    this.type = PlayerType.human,
     this.stars = 150,
     this.position = 1,
     this.ownedTiles = const [],
@@ -24,6 +30,8 @@ class Player {
     this.doubleDiceCount = 0,
     this.isBankrupt = false,
     this.skippedTurn = false,
+    this.skipNextTax = false,
+    this.easyQuestionNext = false,
     this.lastRoll,
   });
 
@@ -125,6 +133,7 @@ class Player {
     String? id,
     String? name,
     String? color,
+    PlayerType? type,
     int? stars,
     int? position,
     List<int>? ownedTiles,
@@ -133,20 +142,26 @@ class Player {
     int? doubleDiceCount,
     bool? isBankrupt,
     bool? skippedTurn,
+    bool? skipNextTax,
+    bool? easyQuestionNext,
     int? lastRoll,
   }) {
     return Player(
       id: id ?? this.id,
       name: name ?? this.name,
       color: color ?? this.color,
+      type: type ?? this.type,
       stars: stars ?? this.stars,
       position: position ?? this.position,
       ownedTiles: ownedTiles ?? List.from(this.ownedTiles),
       isInLibraryWatch: isInLibraryWatch ?? this.isInLibraryWatch,
-      libraryWatchTurnsRemaining: libraryWatchTurnsRemaining ?? this.libraryWatchTurnsRemaining,
+      libraryWatchTurnsRemaining:
+          libraryWatchTurnsRemaining ?? this.libraryWatchTurnsRemaining,
       doubleDiceCount: doubleDiceCount ?? this.doubleDiceCount,
       isBankrupt: isBankrupt ?? this.isBankrupt,
       skippedTurn: skippedTurn ?? this.skippedTurn,
+      skipNextTax: skipNextTax ?? this.skipNextTax,
+      easyQuestionNext: easyQuestionNext ?? this.easyQuestionNext,
       lastRoll: lastRoll ?? this.lastRoll,
     );
   }

@@ -1,22 +1,56 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/turn_phase.dart';
+import '../models/player_type.dart';
+import '../providers/game_provider.dart';
 
-class CopyrightPurchaseDialog extends StatelessWidget {
+/// Copyright purchase dialog - Phase 3 adaptation
+///
+/// Phase 3 Orchestration:
+/// - UI is PASSIVE observer (watches turnPhase)
+/// - UI calls ONLY playTurn() via _handleDecision()
+/// - Buttons are GATED by TurnPhase.tileResolved
+/// - No direct game logic method calls
+///
+/// Flow:
+/// 1. User decides to buy or decline
+/// 2. _handleDecision() processes decision (calls buy/decline methods)
+/// 3. _handleDecision() calls playTurn()
+/// 4. playTurn() advances to next phase (turnEnded)
+class CopyrightPurchaseDialog extends ConsumerWidget {
   final String tileName;
   final int price;
   final int playerStars;
-  final Function(bool wantsToBuy) onDecision;
 
   const CopyrightPurchaseDialog({
     super.key,
     required this.tileName,
     required this.price,
     required this.playerStars,
-    required this.onDecision,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gameState = ref.watch(gameProvider);
+    final turnPhase = ref.watch(turnPhaseProvider);
+
+    final currentPlayer = gameState.currentPlayer;
+
+    // Phase 5.1: Bot auto-resolve - Dialog not rendered for bots
+    // Bot always declines purchases (dummy logic)
+    if (currentPlayer?.type == PlayerType.bot) {
+      // Bot auto-resolves with delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _handleDecision(ref, false); // Always decline
+      });
+      return const SizedBox.shrink();
+    }
+
+    // Purchase dialog buttons are only enabled during TurnPhase.tileResolved
+    final canPurchase = turnPhase == TurnPhase.tileResolved;
+
     return AlertDialog(
       title: Row(
         children: [
@@ -69,9 +103,9 @@ class CopyrightPurchaseDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Price info
             Container(
               padding: const EdgeInsets.all(16),
@@ -107,9 +141,9 @@ class CopyrightPurchaseDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Player balance
             Container(
               padding: const EdgeInsets.all(16),
@@ -123,7 +157,11 @@ class CopyrightPurchaseDialog extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.account_balance_wallet, color: Colors.green, size: 24),
+                      const Icon(
+                        Icons.account_balance_wallet,
+                        color: Colors.green,
+                        size: 24,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Bakiye:',
@@ -145,9 +183,9 @@ class CopyrightPurchaseDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Remaining balance after purchase
             Container(
               padding: const EdgeInsets.all(12),
@@ -181,57 +219,87 @@ class CopyrightPurchaseDialog extends StatelessWidget {
       actions: [
         // Decline button
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              onDecision(false);
-            },
-            icon: const Icon(Icons.close, size: 20),
-            label: Text(
-              'İptal',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+          child: Opacity(
+            opacity: canPurchase ? 1.0 : 0.5,
+            child: OutlinedButton.icon(
+              onPressed: canPurchase
+                  ? () {
+                      Navigator.of(context).pop();
+                      _handleDecision(ref, false);
+                    }
+                  : null,
+              icon: const Icon(Icons.close, size: 20),
+              label: Text(
+                'İptal',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red.shade700,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              side: BorderSide(color: Colors.red.shade300, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: canPurchase
+                    ? Colors.red.shade700
+                    : Colors.grey.shade400,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: BorderSide(
+                  color: canPurchase
+                      ? Colors.red.shade300
+                      : Colors.grey.shade300,
+                  width: 2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(width: 16),
-        
+
         // Accept button
         Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              onDecision(true);
-            },
-            icon: const Icon(Icons.check, size: 20),
-            label: Text(
-              'Satın Al',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+          child: Opacity(
+            opacity: canPurchase ? 1.0 : 0.5,
+            child: ElevatedButton.icon(
+              onPressed: canPurchase
+                  ? () {
+                      Navigator.of(context).pop();
+                      _handleDecision(ref, true);
+                    }
+                  : null,
+              icon: const Icon(Icons.check, size: 20),
+              label: Text(
+                'Satın Al',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canPurchase
+                    ? Colors.green.shade600
+                    : Colors.grey.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: canPurchase ? 2 : 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
         ),
       ],
     );
+  }
+
+  // Handles purchase decision and triggers Phase 2 orchestration
+  // Phase 2: UI only calls playTurn(), no direct game logic
+  // Note: Copyright purchase game logic not yet implemented
+  static void _handleDecision(WidgetRef ref, bool wantsToBuy) {
+    // TODO: Add copyright purchase game logic when implemented
+    // For now, just trigger Phase 2 orchestration
+    // playTurn() will handle next phase progression
+    ref.read(gameProvider.notifier).playTurn();
   }
 }
