@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/player.dart';
+// ignore: unused_import
+import '../models/turn_phase.dart';
+// ignore: unused_import
+import '../models/turn_result.dart';
 import '../providers/game_provider.dart';
 
 /// Enhanced dice widget with rolling animation and active player highlight
@@ -61,8 +65,9 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
     // Stop rolling and show result
     await _rollController.reverse();
 
-    // Trigger actual dice roll in game
-    ref.read(gameProvider.notifier).rollDice();
+    // Trigger playTurn() instead of rollDice() directly
+    // This is the Phase 2 orchestration method
+    ref.read(gameProvider.notifier).playTurn();
 
     setState(() {
       _isRolling = false;
@@ -75,6 +80,32 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
     final currentPlayer = gameState.players.isNotEmpty
         ? gameState.players[gameState.currentPlayerIndex]
         : null;
+    final turnPhase = ref.watch(turnPhaseProvider);
+    // ignore: unused_local_variable
+    final lastTurnResult = ref.watch(lastTurnResultProvider);
+
+    // Phase-aware logic: Dice is ONLY enabled during TurnPhase.start
+    // In all other phases, dice is visually disabled (greyed out) and logically disabled (unclickable)
+    final canRollDice = turnPhase == TurnPhase.start;
+
+    // TODO: UI FEEDBACK - TurnPhase Reactions
+    // - TurnPhase.start: Enable roll button, show "Your turn" indicator
+    // - TurnPhase.diceRolled: Disable roll button, show rolling animation
+    // - TurnPhase.moved: Keep dice result visible, disable roll button
+    // - TurnPhase.tileResolved: Show tile effect feedback near dice
+    // - TurnPhase.cardApplied: Show card effect icon overlay
+    // - TurnPhase.questionResolved: Show question result feedback
+    // - TurnPhase.taxResolved: Show tax payment feedback
+    // - TurnPhase.turnEnded: Reset for next player
+
+    // TODO: UI FEEDBACK - TurnResult Fields
+    // - lastTurnResult.cardEffectType: Show card effect icon on dice area
+    // - lastTurnResult.affectedPlayers: Highlight affected players in player list
+    // - lastTurnResult.starDelta: Show star change summary (e.g., "+5 stars")
+    // - lastTurnResult.skipNextTaxConsumed: Show tax skip badge
+    // - lastTurnResult.easyQuestionNextConsumed: Show easy question badge
+    // - lastTurnResult.taxSkippedMessage: Display tax skip message
+    // - lastTurnResult.easyQuestionMessage: Display easy question message
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -94,7 +125,7 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
         children: [
           // Active player highlight
           if (currentPlayer != null)
-            _ActivePlayerHighlight(player: currentPlayer!),
+            _ActivePlayerHighlight(player: currentPlayer),
 
           const SizedBox(height: 20),
 
@@ -117,25 +148,67 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
             },
           ),
 
+          // Dice result indicator (static, no animation)
+          if (turnPhase == TurnPhase.diceRolled &&
+              gameState.lastDiceRoll != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.purple.shade300, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🎲', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${gameState.lastDiceRoll?.total}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple.shade900,
+                    ),
+                  ),
+                  if (gameState.lastDiceRoll?.isDouble == true) ...[
+                    const SizedBox(width: 6),
+                    const Text('✨', style: TextStyle(fontSize: 14)),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 20),
 
-          // Roll button
-          ElevatedButton(
-            onPressed: _isRolling ? null : _rollDice,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.brown.shade700,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          // Roll button - Phase-aware: ONLY enabled during TurnPhase.start
+          // Visually and logically disabled in all other phases
+          Opacity(
+            opacity: canRollDice ? 1.0 : 0.5,
+            child: ElevatedButton(
+              onPressed: (_isRolling || !canRollDice) ? null : _rollDice,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canRollDice
+                    ? Colors.brown.shade700
+                    : Colors.grey.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: canRollDice ? 4 : 0,
               ),
-              elevation: 4,
-            ),
-            child: Text(
-              _isRolling ? 'ZAR ATILIYOR...' : 'ZAR AT',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              child: Text(
+                _isRolling ? 'ZAR ATILIYOR...' : 'ZAR AT',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

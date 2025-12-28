@@ -180,9 +180,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
                 _getTileColor(),
               ],
               stops: [0.0, 0.5, 1.0],
-              transform: _SlidingGradientTransform(
-                _shimmerAnimation?.value ?? 0,
-              ),
+              transform: _SlidingGradientTransform(_shimmerAnimation.value),
             ).createShader(bounds);
           },
           child: _buildNormalTile(),

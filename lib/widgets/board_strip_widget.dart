@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/tile.dart';
 import '../models/player.dart';
 import '../models/dice_roll.dart';
+import '../models/turn_phase.dart';
+// ignore: unused_import
+import '../models/turn_result.dart';
 import '../providers/game_provider.dart';
 
 // Enhanced visual board strip to show player positions with animated movement
@@ -35,6 +38,27 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
     final currentPos = currentPlayer?.position;
     final lastDiceRoll = ref.watch(lastDiceRollProvider);
     final turnPhase = ref.watch(turnPhaseProvider);
+    // ignore: unused_local_variable
+    final lastTurnResult = ref.watch(lastTurnResultProvider);
+
+    // TODO: UI FEEDBACK - TurnPhase Reactions
+    // - TurnPhase.start: Show "Ready to roll" indicator on active player's tile
+    // - TurnPhase.diceRolled: Highlight dice result on board
+    // - TurnPhase.moved: Animate player token movement (already implemented)
+    // - TurnPhase.tileResolved: Show tile effect feedback overlay
+    // - TurnPhase.cardApplied: Show card effect animation on affected tiles
+    // - TurnPhase.questionResolved: Show question result feedback (correct/wrong)
+    // - TurnPhase.taxResolved: Show tax payment feedback
+    // - TurnPhase.turnEnded: Show turn transition animation
+
+    // TODO: UI FEEDBACK - TurnResult Fields
+    // - lastTurnResult.cardEffectType: Display card effect icon/animation
+    // - lastTurnResult.affectedPlayers: Highlight affected player tokens
+    // - lastTurnResult.starDelta: Show star change floating text on affected players
+    // - lastTurnResult.skipNextTaxConsumed: Show tax skip notification
+    // - lastTurnResult.easyQuestionNextConsumed: Show easy question notification
+    // - lastTurnResult.taxSkippedMessage: Display tax skip message
+    // - lastTurnResult.easyQuestionMessage: Display easy question message
 
     // Update token positions when game state changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,14 +95,14 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
                   isActive: isActive,
                   playersOnTile: playersOnTile,
                   lastDiceRoll: isActive ? lastDiceRoll : null,
-                  showStaticTokens: turnPhase != TurnPhase.moving,
+                  showStaticTokens: turnPhase != TurnPhase.moved,
                 );
               }).toList(),
             ),
           ),
 
           // Animated tokens layer - overlay for smooth movement
-          if (turnPhase == TurnPhase.moving) ..._buildAnimatedTokens(gameState),
+          if (turnPhase == TurnPhase.moved) ..._buildAnimatedTokens(gameState),
         ],
       ),
     );
@@ -86,7 +110,7 @@ class _BoardStripWidgetState extends ConsumerState<BoardStripWidget> {
 
   // Update token positions based on game state
   void _updateTokenPositions(GameState gameState, TurnPhase turnPhase) {
-    if (turnPhase != TurnPhase.moving || gameState.currentPlayer == null) {
+    if (turnPhase != TurnPhase.moved || gameState.currentPlayer == null) {
       return;
     }
 

@@ -249,6 +249,8 @@ class GameNotifier extends StateNotifier<GameState> {
 
   /// Main orchestration method - the ONLY method UI should call
   void playTurn() {
+    debugPrint('🎮 playTurn() called - Current phase: ${state.turnPhase}');
+
     // Phase 5.1: Bot trigger - ONLY automation point
     // If current player is bot, auto-trigger playTurn() with delay
     if (state.turnPhase == TurnPhase.start &&
@@ -263,36 +265,43 @@ class GameNotifier extends StateNotifier<GameState> {
     switch (state.turnPhase) {
       // Phase 1: Start of turn - roll the dice
       case TurnPhase.start:
+        debugPrint('🎲 Phase: start → rolling dice');
         rollDice();
         break;
 
       // Phase 2: Dice rolled - move player
       case TurnPhase.diceRolled:
+        debugPrint('🚶 Phase: diceRolled → moving player');
         moveCurrentPlayer(state.lastDiceRoll?.total ?? 0);
         break;
 
       // Phase 3: Player moved - resolve tile effects
       case TurnPhase.moved:
+        debugPrint('🏠 Phase: moved → resolving tile');
         resolveCurrentTile();
         break;
 
       // Phase 4: Tile resolved - determine next action based on tile type
       case TurnPhase.tileResolved:
+        debugPrint('🎯 Phase: tileResolved → handling tile effect');
         _handleTileResolved();
         break;
 
       // Phase 5: Card applied - end turn
       case TurnPhase.cardApplied:
+        debugPrint('🃏 Phase: cardApplied → ending turn');
         endTurn();
         break;
 
       // Phase 5: Question resolved - end turn
       case TurnPhase.questionResolved:
+        debugPrint('❓ Phase: questionResolved → ending turn');
         endTurn();
         break;
 
       // Phase 5: Tax resolved - end turn
       case TurnPhase.taxResolved:
+        debugPrint('💰 Phase: taxResolved → ending turn');
         endTurn();
         break;
 
@@ -357,12 +366,14 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Roll dice - Step 1 of turn
   void rollDice() {
+    debugPrint('🎲 rollDice() called');
     if (!_requirePhase(TurnPhase.start, 'rollDice')) return;
     if (!state.canRoll) return;
     if (state.currentPlayer == null) return;
 
     // Update phase to diceRolled
     state = state.copyWith(turnPhase: TurnPhase.diceRolled);
+    debugPrint('🎲 Phase updated to: diceRolled');
 
     // Generate random dice roll
     final diceRoll = DiceRoll.random();
@@ -416,6 +427,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Move player - Step 2 of turn
   void moveCurrentPlayer(int diceTotal) {
+    debugPrint('🚶 moveCurrentPlayer() called - Dice total: $diceTotal');
     if (!_requirePhase(TurnPhase.diceRolled, 'moveCurrentPlayer')) return;
     if (state.currentPlayer == null) return;
 
@@ -428,6 +440,10 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Check if passed START (tile 1)
     final passedStart = _passedStart(oldPosition, newPosition);
+
+    debugPrint(
+      '🚶 Player moving: $oldPosition → $newPosition (passed start: $passedStart)',
+    );
 
     // Update player immutably
     var updatedPlayer = currentPlayer.copyWith(position: newPosition);
@@ -454,6 +470,8 @@ class GameNotifier extends StateNotifier<GameState> {
         .withLogMessage(
           '${currentPlayer.name} kutucuk $oldPosition\'den $newPosition\'e hareket etti',
         );
+
+    debugPrint('🚶 Phase updated to: moved');
 
     // GAMEPLAY LOG: Passing START bonus
     if (passedStart) {

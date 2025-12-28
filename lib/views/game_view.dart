@@ -3,19 +3,50 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/game_provider.dart';
 import '../models/player.dart';
+import '../models/turn_phase.dart';
 import '../widgets/enhanced_tile_widget.dart';
 import '../widgets/enhanced_dice_widget.dart';
 import '../widgets/question_dialog.dart';
+import '../widgets/turn_end_overlay.dart';
 
-class GameView extends ConsumerWidget {
+class GameView extends ConsumerStatefulWidget {
   const GameView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameView> createState() => _GameViewState();
+}
+
+class _GameViewState extends ConsumerState<GameView> {
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
     final questionState = ref.watch(questionStateProvider);
     final currentQuestion = ref.watch(currentQuestionProvider);
+    final turnPhase = ref.watch(turnPhaseProvider);
+
+    // Phase 2 Orchestration Listener
+    // Automatically call playTurn() when phase changes, except for phases that need user interaction
+    // - TurnPhase.start: Wait for user to click roll button
+    // - TurnPhase.diceRolled: Auto-advance to move player
+    // - TurnPhase.moved: Auto-advance to resolve tile
+    // - TurnPhase.tileResolved: Auto-advance (handles card/question/tax)
+    // - TurnPhase.cardApplied: Auto-advance to end turn
+    // - TurnPhase.questionResolved: Wait for question dialog to handle
+    // - TurnPhase.taxResolved: Auto-advance to end turn
+    // - TurnPhase.turnEnded: Wait for turn end overlay to handle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (turnPhase == TurnPhase.diceRolled ||
+          turnPhase == TurnPhase.moved ||
+          turnPhase == TurnPhase.tileResolved ||
+          turnPhase == TurnPhase.taxResolved ||
+          turnPhase == TurnPhase.cardApplied) {
+        // Small delay for visual feedback before auto-advancing
+        Future.delayed(const Duration(milliseconds: 300), () {
+          ref.read(gameProvider.notifier).playTurn();
+        });
+      }
+    });
 
     // Check if game is initialized
     if (gameState.tiles.isEmpty) {
@@ -116,18 +147,15 @@ class GameView extends ConsumerWidget {
           ),
 
           // Question dialog overlay
+          // Phase 3: UI is passive observer, QuestionDialog handles orchestration internally
           if (questionState == QuestionState.answering &&
               currentQuestion != null)
-            QuestionDialog(
-              question: currentQuestion!,
-              onAnswer: (isCorrect) {
-                if (isCorrect) {
-                  ref.read(gameProvider.notifier).answerQuestionCorrect();
-                } else {
-                  ref.read(gameProvider.notifier).answerQuestionWrong();
-                }
-              },
-            ),
+            QuestionDialog(question: currentQuestion),
+
+          // Phase 4: Turn End Overlay - Manual transition between turns
+          // Visible ONLY during TurnPhase.turnEnded
+          // Provides clear, intentional turn transition
+          const TurnEndOverlay(),
         ],
       ),
     );
@@ -239,7 +267,7 @@ class GameView extends ConsumerWidget {
                 child: _buildStatItem(
                   icon: Icons.casino,
                   label: 'Son Zar',
-                  value: '${player.lastRoll ?? "-"}',
+                  value: player.lastRoll?.toString() ?? '-',
                   color: Colors.purple,
                 ),
               ),

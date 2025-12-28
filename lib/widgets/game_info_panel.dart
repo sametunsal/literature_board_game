@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/tile.dart';
+import '../models/turn_phase.dart';
 import '../providers/game_provider.dart';
 
 // Reusable info panel widget to display current game state
@@ -13,6 +14,7 @@ class GameInfoPanel extends ConsumerWidget {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = ref.watch(currentPlayerProvider);
     final lastDiceRoll = ref.watch(lastDiceRollProvider);
+    final turnPhase = ref.watch(turnPhaseProvider);
 
     // Get current tile name from position (1-40)
     Tile? currentTile;
@@ -152,6 +154,23 @@ class GameInfoPanel extends ConsumerWidget {
                 ),
               ),
           ],
+
+          // Turn Feedback Section
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text(
+            'Tur Bilgisi',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.brown.shade900,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Turn Phase Feedback
+          _buildTurnFeedback(turnPhase, gameState),
         ],
       ),
     );
@@ -180,6 +199,322 @@ class GameInfoPanel extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildTurnFeedback(TurnPhase turnPhase, GameState gameState) {
+    final currentPlayer = gameState.currentPlayer;
+
+    switch (turnPhase) {
+      case TurnPhase.start:
+        return _buildFeedbackSection(
+          icon: '🎯',
+          title: 'Tur Başlangıcı',
+          color: Colors.grey.shade700,
+          children: [
+            Text(
+              'Zar atmaya hazır',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        );
+
+      case TurnPhase.diceRolled:
+        final diceRoll = gameState.lastDiceRoll;
+        if (diceRoll != null) {
+          return _buildFeedbackSection(
+            icon: '🎲',
+            title: 'Zar Atıldı',
+            color: Colors.purple.shade700,
+            children: [
+              Text(
+                'Zar: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.purple.shade700,
+                ),
+              ),
+              if (diceRoll.isDouble)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '✨ Çift zar attı!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.purple.shade900,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+
+      case TurnPhase.moved:
+        final oldPos = gameState.oldPosition;
+        final newPos = gameState.newPosition;
+        if (oldPos != null && newPos != null) {
+          return _buildFeedbackSection(
+            icon: '🚀',
+            title: 'Hareket',
+            color: Colors.blue.shade700,
+            children: [
+              Text(
+                'Konum: $oldPos → $newPos',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+              if (gameState.passedStart)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '⭐ Başlangıçtan geçti! +10 yıldız',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+
+      case TurnPhase.tileResolved:
+        final tile = gameState.tiles.firstWhere(
+          (t) => t.id == (gameState.newPosition ?? currentPlayer?.position),
+          orElse: () => Tile(
+            id: gameState.newPosition ?? currentPlayer?.position ?? 0,
+            name: 'Bilinmiyor',
+            type: TileType.book,
+          ),
+        );
+        return _buildFeedbackSection(
+          icon: '📍',
+          title: 'Kutucuk',
+          color: Colors.brown.shade800,
+          children: [
+            Text(
+              tile.name,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.brown.shade800,
+              ),
+            ),
+            Text(
+              'Tür: ${tile.type.toString().split('.').last}',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        );
+
+      case TurnPhase.cardApplied:
+        return _buildFeedbackSection(
+          icon: '🃏',
+          title: 'Kart Etkisi',
+          color: Colors.orange.shade700,
+          children: [
+            Text(
+              'Kart etkisi uygulandı',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            // Card effect details are logged in the game log
+            Text(
+              'Detaylar için oyun günlüğüne bakın',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        );
+
+      case TurnPhase.questionResolved:
+        return _buildFeedbackSection(
+          icon: '❓',
+          title: 'Soru',
+          color: Colors.blue.shade700,
+          children: [
+            if (gameState.questionState == QuestionState.correct)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '✅ Doğru cevap! +${gameState.currentQuestion?.starReward ?? 0} yıldız',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            if (gameState.questionState == QuestionState.wrong)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '❌ Yanlış cevap! -${gameState.wrongAnswers > 0 ? '5' : '0'} yıldız',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.red.shade700,
+                  ),
+                ),
+              ),
+            if (gameState.questionState == QuestionState.skipped)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '⏭️ Soru atlandı',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+          ],
+        );
+
+      case TurnPhase.taxResolved:
+        // Check if tax was skipped by looking at the last log message
+        final taxSkipped =
+            gameState.logMessages.isNotEmpty &&
+            gameState.logMessages.last.contains('atlandı');
+
+        return _buildFeedbackSection(
+          icon: '💰',
+          title: 'Vergi',
+          color: Colors.red.shade700,
+          children: [
+            if (taxSkipped)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '✅ Vergi atlandı (kart kullanıldı)',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            if (!taxSkipped)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '💸 Vergi ödendi',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.red.shade700,
+                  ),
+                ),
+              ),
+          ],
+        );
+
+      case TurnPhase.turnEnded:
+        return _buildFeedbackSection(
+          icon: '🏁',
+          title: 'Tur Sonu',
+          color: Colors.brown.shade800,
+          children: [
+            Text(
+              'Tur tamamlandı',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.brown.shade800,
+              ),
+            ),
+            // Star changes are logged in the game log
+            Text(
+              'Yıldız değişiklikleri için oyun günlüğüne bakın',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
+  Widget _buildFeedbackSection({
+    required String icon,
+    required String title,
+    required Color color,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header with icon
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Content
+        ...children,
       ],
     );
   }
