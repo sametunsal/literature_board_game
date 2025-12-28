@@ -249,12 +249,15 @@ class GameNotifier extends StateNotifier<GameState> {
 
   /// Main orchestration method - the ONLY method UI should call
   void playTurn() {
-    debugPrint('🎮 playTurn() called - Current phase: ${state.turnPhase}');
+    debugPrint(
+      '🎮 playTurn() called - Current phase: ${state.turnPhase}, Player type: ${state.currentPlayer?.type}',
+    );
 
     // Phase 5.1: Bot trigger - ONLY automation point
     // If current player is bot, auto-trigger playTurn() with delay
     if (state.turnPhase == TurnPhase.start &&
         state.currentPlayer?.type == PlayerType.bot) {
+      debugPrint('🤖 Bot detected! Scheduling auto-play in 700ms...');
       Future.delayed(const Duration(milliseconds: 700), () {
         playTurn();
       });
