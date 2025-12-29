@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/game_provider.dart';
 import '../models/player.dart';
+import '../models/player_type.dart';
 import '../models/turn_phase.dart';
 import '../widgets/enhanced_tile_widget.dart';
 import '../widgets/enhanced_dice_widget.dart';
+import '../widgets/square_board_widget.dart';
 import '../widgets/question_dialog.dart';
 import '../widgets/copyright_purchase_dialog.dart';
 import '../widgets/turn_summary_overlay.dart';
@@ -46,11 +48,34 @@ class _GameViewState extends ConsumerState<GameView> {
 
       // Execute timing based on directive from GameNotifier
       // Auto-advance for both human and bot players
+      // CRITICAL: Never auto-advance for human players at TurnPhase.start
       if (directive != null) {
+        // Guard: Don't auto-play human's turn start phase
+        if (directive == 'rollDice' &&
+            currentPlayer?.type == PlayerType.human) {
+          debugPrint(
+            '🛑 Human player at start phase - waiting for manual roll',
+          );
+          return;
+        }
+
         // Slower delay to allow UI animations to complete
         Future.delayed(const Duration(milliseconds: 1500), () {
-          debugPrint('🎮 Auto-advancing playTurn() for directive: $directive');
-          ref.read(gameProvider.notifier).playTurn();
+          // SAFETY CHECK: Ensure we still have a directive after the delay!
+          // This prevents stale timers from auto-playing for humans.
+          final freshDirective = ref
+              .read(gameProvider.notifier)
+              .getAutoAdvanceDirective();
+          if (freshDirective != null) {
+            debugPrint(
+              '🎮 Auto-advancing playTurn() for directive: $directive',
+            );
+            ref.read(gameProvider.notifier).playTurn();
+          } else {
+            debugPrint(
+              '🛑 Auto-advance cancelled: Directive became null (Human turn?)',
+            );
+          }
         });
       }
     });
@@ -82,71 +107,168 @@ class _GameViewState extends ConsumerState<GameView> {
     final currentPos = currentPlayer?.position;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Edebiyat Oyunu',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
       body: Stack(
         children: [
-          Column(
+          // LAYOUT: Row with Left (Board) and Right (Controls)
+          Row(
             children: [
-              // Oyun tahtası - Horizontal scrollable with enhanced tiles
-              // Note: Corner tiles (indices 0, 10, 20, 30) are 1.5x larger
-              SizedBox(
-                height: 180, // Accommodate larger corner tiles
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  itemCount: tileCount,
-                  itemBuilder: (context, index) {
-                    final tile = gameState.tiles[index];
-                    final isCurrent =
-                        currentPos != null && currentPos == tile.id;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 2,
-                        vertical: 4,
-                      ),
-                      child: EnhancedTileWidget(
-                        tile: tile,
-                        isHighlighted: isCurrent,
-                        onTap: () {
-                          // Handle tile tap if needed
-                        },
-                      ),
-                    );
-                  },
+              // LEFT PANEL: The Board
+              Expanded(
+                flex: 7,
+                child: Container(
+                  padding: const EdgeInsets.all(8.0),
+                  child: const Center(
+                    child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: SquareBoardWidget(),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
 
-              // Enhanced dice widget and player info
+              // RIGHT PANEL: Control Center
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                flex: 3, // Give slightly more room to panel
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 8),
+                    ],
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Enhanced Dice Widget
-                      const EnhancedDiceWidget(),
-                      const SizedBox(height: 16),
+                      // 1. CURRENT TURN HEADER (Compact)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Color(
+                                int.parse(
+                                  currentPlayer?.color.replaceFirst(
+                                        '#',
+                                        '0xFF',
+                                      ) ??
+                                      '0xFF000000',
+                                ),
+                              ),
+                              child: Text(
+                                currentPlayer?.name[0] ?? "?",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                currentPlayer?.name ?? "...",
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (currentPlayer?.type == PlayerType.human)
+                              const Chip(
+                                label: Text(
+                                  "SEN",
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
+                        ),
+                      ),
 
-                      // Player cards
-                      ...gameState.players.asMap().entries.map((entry) {
-                        return _buildPlayerCard(
-                          player: entry.value,
-                          isCurrent:
-                              currentPlayer != null &&
-                              entry.value.id == currentPlayer.id,
-                          ref: ref,
-                        );
-                      }),
+                      const Divider(height: 1),
+
+                      // 2. PLAYER LIST (Scrollable - Takes remaining space)
+                      Expanded(
+                        child: ListView.separated(
+                          padding: EdgeInsets.zero,
+                          itemCount: gameState.players.length,
+                          separatorBuilder: (c, i) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final p = gameState.players[index];
+                            return ListTile(
+                              visualDensity:
+                                  VisualDensity.compact, // Dense list
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              leading: const Icon(
+                                Icons.star,
+                                size: 16,
+                                color: Colors.amber,
+                              ),
+                              title: Text(
+                                p.name,
+                                style: GoogleFonts.poppins(fontSize: 12),
+                              ),
+                              trailing: Text(
+                                "${p.stars}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      const Divider(height: 1),
+
+                      // 3. DICE AREA (Fixed Footer - Priority)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        color: Colors.amber.shade50,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Smaller Dice Container
+                            SizedBox(
+                              height: 80, // Restrict height to prevent overflow
+                              child: Center(
+                                child: Transform.scale(
+                                  scale: 0.8,
+                                  child: EnhancedDiceWidget(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // Visible instruction
+                            Text(
+                              turnPhase == TurnPhase.start &&
+                                      currentPlayer?.type == PlayerType.human
+                                  ? "ZAR AT!"
+                                  : "BEKLENİYOR...",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -174,7 +296,7 @@ class _GameViewState extends ConsumerState<GameView> {
           // Phase 4: Turn Summary Overlay - Shows summary of completed turn
           // Visible ONLY during TurnPhase.turnEnded
           // Provides clear, concise summary of what just happened
-          const TurnSummaryOverlay(),
+          if (turnPhase == TurnPhase.turnEnded) const TurnSummaryOverlay(),
 
           // DEV TOOL: Turn Result Inspector - Debug overlay for turn validation
           // ONLY visible in debug mode (kDebugMode == true)

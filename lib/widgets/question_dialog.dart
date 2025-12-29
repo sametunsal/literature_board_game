@@ -88,6 +88,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       if (_remainingTime <= 0) {
         timer.cancel();
         _timerRunning = false;
+        _handleAnswer(false); // Auto-fail the question
       }
     });
   }
@@ -108,13 +109,15 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
     if (currentPlayer?.type == PlayerType.bot) {
       // Bot auto-resolves with delay
       Future.delayed(const Duration(milliseconds: 500), () {
+        // Guard: Check if widget is still mounted before using ref
+        if (!mounted) return;
         _handleAnswer(false); // Always wrong
       });
       return const SizedBox.shrink();
     }
 
-    // Question dialog buttons are only enabled during TurnPhase.questionResolved
-    final canAnswer = turnPhase == TurnPhase.questionResolved;
+    // Question dialog buttons are only enabled during TurnPhase.questionWaiting
+    final canAnswer = turnPhase == TurnPhase.questionWaiting;
     return AlertDialog(
       title: Row(
         children: [
@@ -402,6 +405,9 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
   // Handles answer selection and triggers Phase 2 orchestration
   // Phase 2: UI only calls playTurn(), no direct game logic
   void _handleAnswer(bool isCorrect) {
+    // Guard: Check if widget is still mounted before using ref
+    if (!mounted) return;
+
     // Set answer state (this updates game state)
     if (isCorrect) {
       ref.read(gameProvider.notifier).answerQuestionCorrect();

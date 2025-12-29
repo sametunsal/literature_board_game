@@ -351,7 +351,13 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Handle tile resolved phase - route to appropriate action based on tile type
   void _handleTileResolved() {
     final tileNumber = state.newPosition ?? state.currentPlayer!.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
+    final tile = state.tiles.firstWhere(
+      (t) => t.id == tileNumber,
+      orElse: () {
+        debugPrint('CRITICAL ERROR: Tile ID $tileNumber not found!');
+        return state.tiles[0]; // Fallback to Start
+      },
+    );
 
     // Route based on tile type
     switch (tile.type) {
@@ -518,12 +524,10 @@ class GameNotifier extends StateNotifier<GameState> {
     // Now: Orchestration layer (playTurn) handles calling the next method
   }
 
-  // Calculate new position (counter-clockwise, 1-40)
+  // Calculate new position (counter-clockwise, 0-39)
   int _calculateNewPosition(int currentPosition, int diceTotal) {
-    // Counter-clockwise: positions increase from 1 to 40, then wrap to 1
-    int newPosition =
-        (currentPosition + diceTotal - 1) % GameConstants.boardSize + 1;
-    return newPosition;
+    // Correct 0-based wrapping: (0..39)
+    return (currentPosition + diceTotal) % GameConstants.boardSize;
   }
 
   // Check if player passed START (tile 1)
@@ -578,7 +582,13 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.currentPlayer == null) return;
 
     final tileNumber = state.newPosition ?? state.currentPlayer!.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
+    final tile = state.tiles.firstWhere(
+      (t) => t.id == tileNumber,
+      orElse: () {
+        debugPrint('CRITICAL ERROR: Tile ID $tileNumber not found!');
+        return state.tiles[0]; // Fallback to Start
+      },
+    );
 
     // Update phase to tileResolved
     state = state.copyWith(turnPhase: TurnPhase.tileResolved);

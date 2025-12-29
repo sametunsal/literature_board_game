@@ -5,9 +5,6 @@ import '../models/tile.dart';
 import '../models/player.dart';
 import '../providers/game_provider.dart';
 
-/// Square Board Widget - 40 tiles (10 per side)
-/// Counter-clockwise layout starting from Bottom-Left (START - tile 0)
-/// Corner tiles have flex ratio 1.5, regular tiles have flex ratio 1.0
 class SquareBoardWidget extends ConsumerWidget {
   const SquareBoardWidget({super.key});
 
@@ -15,204 +12,147 @@ class SquareBoardWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameProvider);
     final tiles = gameState.tiles;
-    final currentPlayer = gameState.currentPlayer;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.brown.shade100,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.brown.shade400, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+    if (tiles.isEmpty) return const SizedBox();
+
+    // 12x12 Grid System
+    // Corners: 1.5 units. Edges: 9 tiles * 1.0 units. Total = 12.0 units.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boardSize = constraints.biggest.shortestSide;
+        final u = boardSize / 12.0; // Unit size
+
+        return Container(
+          width: boardSize,
+          height: boardSize,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD7CCC8),
+            border: Border.all(color: const Color(0xFF5D4037), width: 4),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [const BoxShadow(blurRadius: 12, color: Colors.black54)],
           ),
-        ],
-      ),
-      child: AspectRatio(
-        aspectRatio: 1.0,
-        child: Stack(
-          children: [
-            // Board tiles
-            _buildBoardLayout(tiles),
+          child: Stack(
+            children: [
+              // --- DRAW TILES ---
+              for (int i = 0; i < 40; i++) _buildPositionedTile(tiles, i, u),
 
-            // Center area
-            _buildCenterArea(),
+              // --- CENTER LOGO ---
+              Positioned(
+                left: 1.5 * u,
+                top: 1.5 * u,
+                width: 9 * u,
+                height: 9 * u,
+                child: const CenterArea(),
+              ),
 
-            // Player tokens
-            ..._buildPlayerTokens(gameState.players, currentPlayer),
-          ],
-        ),
-      ),
+              // --- PLAYER TOKENS ---
+              ..._buildPlayerTokens(gameState.players, u),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildBoardLayout(List<Tile> tiles) {
-    return Column(
-      children: [
-        // Top Row (Left to Right: tiles 20-29)
-        Expanded(
-          child: Row(
-            children: [
-              // Corner 20 (Top-Left - SIGNING DAY)
-              Expanded(flex: 15, child: _buildTile(tiles[20])),
-              // Tiles 21-29
-              for (int i = 21; i <= 29; i++)
-                Expanded(flex: 10, child: _buildTile(tiles[i])),
-            ],
-          ),
-        ),
+  // Visual Rect Calculator (0,0 is Top-Left of Screen)
+  Rect _getTileRect(int id, double u) {
+    final c = 1.5 * u; // Corner size
+    final total = 12.0 * u; // Total size
 
-        // Middle section
-        Expanded(
-          child: Row(
-            children: [
-              // Left Column (Bottom to Top: tiles 10-19)
-              Expanded(
-                child: Column(
-                  children: [
-                    for (int i = 19; i >= 10; i--)
-                      Expanded(flex: 10, child: _buildTile(tiles[i])),
-                  ],
-                ),
-              ),
+    // 0: Bottom-Left Corner (START)
+    if (id == 0) return Rect.fromLTWH(0, total - c, c, c);
 
-              // Center empty space
-              const Expanded(flex: 70, child: SizedBox.shrink()),
+    // 1-9: Left Side (Bottom -> Top)
+    if (id >= 1 && id <= 9) {
+      // id 1 is directly above corner (0).
+      // index 1..9
+      double bottomY = total - c; // Top of BL corner
+      double myY = bottomY - (id * u);
+      return Rect.fromLTWH(
+        0,
+        myY,
+        c,
+        u,
+      ); // Use 'c' width for left column visual consistency
+    }
 
-              // Right Column (Top to Bottom: tiles 30-39)
-              Expanded(
-                child: Column(
-                  children: [
-                    for (int i = 30; i <= 39; i++)
-                      Expanded(flex: 10, child: _buildTile(tiles[i])),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+    // 10: Top-Left Corner
+    if (id == 10) return Rect.fromLTWH(0, 0, c, c);
 
-        // Bottom Row (Right to Left: tiles 0-9)
-        Expanded(
-          child: Row(
-            children: [
-              // Tiles 9-1
-              for (int i = 9; i >= 1; i--)
-                Expanded(flex: 10, child: _buildTile(tiles[i])),
-              // Corner 0 (Bottom-Left - START)
-              Expanded(flex: 15, child: _buildTile(tiles[0])),
-            ],
-          ),
-        ),
-      ],
-    );
+    // 11-19: Top Side (Left -> Right)
+    if (id >= 11 && id <= 19) {
+      int idx = id - 10; // 1..9
+      double myX = c + ((idx - 1) * u);
+      return Rect.fromLTWH(myX, 0, u, c);
+    }
+
+    // 20: Top-Right Corner
+    if (id == 20) return Rect.fromLTWH(total - c, 0, c, c);
+
+    // 21-29: Right Side (Top -> Bottom)
+    if (id >= 21 && id <= 29) {
+      int idx = id - 20; // 1..9
+      double myY = c + ((idx - 1) * u);
+      return Rect.fromLTWH(total - c, myY, c, u);
+    }
+
+    // 30: Bottom-Right Corner
+    if (id == 30) return Rect.fromLTWH(total - c, total - c, c, c);
+
+    // 31-39: Bottom Side (Right -> Left)
+    if (id >= 31 && id <= 39) {
+      int idx = id - 30; // 1..9
+      // Moving left from BR corner
+      double rightX = total - c;
+      double myX = rightX - (idx * u);
+      return Rect.fromLTWH(myX, total - c, u, c);
+    }
+    return Rect.zero;
   }
 
-  Widget _buildTile(Tile tile) {
-    final tileColor = _getTileColor(tile.type);
-    final isCorner = tile.id % 10 == 0;
-
-    return Container(
-      margin: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: tileColor,
-        border: Border.all(
-          color: tile.type == TileType.corner
-              ? Colors.brown.shade700
-              : Colors.brown.shade400,
-          width: isCorner ? 3 : 2,
-        ),
-        borderRadius: BorderRadius.circular(isCorner ? 12 : 6),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Tile number
-          Text(
-            '${tile.id}',
-            style: GoogleFonts.poppins(
-              fontSize: isCorner ? 16 : 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.brown.shade900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Tile name
-          Text(
-            tile.name,
-            style: GoogleFonts.poppins(
-              fontSize: isCorner ? 10 : 8,
-              fontWeight: FontWeight.w600,
-              color: Colors.brown.shade800,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          // Show purchase price or fee if applicable
-          if (tile.purchasePrice != null || tile.copyrightFee != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              tile.purchasePrice != null
-                  ? '${tile.purchasePrice}★'
-                  : '${tile.copyrightFee}★',
-              style: GoogleFonts.poppins(
-                fontSize: isCorner ? 9 : 7,
-                fontWeight: FontWeight.bold,
-                color: Colors.amber.shade800,
-              ),
-            ),
-          ],
-        ],
+  Widget _buildPositionedTile(List<Tile> allTiles, int id, double u) {
+    final tile = allTiles.firstWhere(
+      (t) => t.id == id,
+      orElse: () => Tile(
+        id: id,
+        name: '',
+        type: TileType.book,
+        purchasePrice: 0,
+        copyrightFee: 0,
       ),
     );
-  }
+    final rect = _getTileRect(id, u);
+    final isCorner = id % 10 == 0;
 
-  Widget _buildCenterArea() {
-    return Center(
+    return Positioned(
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
       child: Container(
-        width: 150,
-        height: 150,
         decoration: BoxDecoration(
-          color: Colors.brown.shade800,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.amber, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: _getTileColor(tile.type),
+          border: Border.all(color: Colors.black26, width: 0.5),
         ),
+        padding: const EdgeInsets.all(2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.menu_book, size: 56, color: Colors.amber),
-            const SizedBox(height: 12),
-            Text(
-              'EDEBİYAT',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              'OYUNU',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            if (isCorner)
+              Icon(_getIconForCorner(id), size: u * 0.3, color: Colors.black54),
+            Expanded(
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    tile.name,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: u * 0.2,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -221,129 +161,132 @@ class SquareBoardWidget extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildPlayerTokens(List<Player> players, Player? currentPlayer) {
-    final tokens = <Widget>[];
+  List<Widget> _buildPlayerTokens(List<Player> players, double u) {
+    final Map<int, List<Player>> groups = {};
+    for (var p in players) groups.putIfAbsent(p.position, () => []).add(p);
 
-    for (int i = 0; i < players.length; i++) {
-      final player = players[i];
-      final position = player.position;
-      final isCurrentPlayer = currentPlayer?.id == player.id;
+    List<Widget> tokens = [];
+    double tokenSize = u * 0.45; // Token is 45% of a unit size
 
-      tokens.add(
-        Positioned(
-          left: _calculateTokenX(position),
-          top: _calculateTokenY(position),
-          child: _buildPlayerToken(player, isCurrentPlayer, i),
-        ),
-      );
-    }
+    groups.forEach((tileId, group) {
+      final rect = _getTileRect(tileId, u);
+      // Center of the tile
+      double cx = rect.left + (rect.width / 2);
+      double cy = rect.top + (rect.height / 2);
 
+      // 2x2 Grid Offsets (Pixel values)
+      double off = tokenSize * 0.3;
+      List<Offset> offsets = [
+        Offset(-off, -off),
+        Offset(off, -off),
+        Offset(-off, off),
+        Offset(off, off),
+      ];
+
+      for (int i = 0; i < group.length; i++) {
+        final p = group[i];
+        final o = i < 4 ? offsets[i] : Offset.zero;
+
+        // Final position: Center + Offset - (Half Token Size to center the widget itself)
+        final double left = cx + o.dx - (tokenSize / 2);
+        final double top = cy + o.dy - (tokenSize / 2);
+
+        tokens.add(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 500),
+            left: left,
+            top: top,
+            child: Container(
+              width: tokenSize,
+              height: tokenSize,
+              decoration: BoxDecoration(
+                color: Color(int.parse(p.color.replaceFirst('#', '0xFF'))),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  const BoxShadow(color: Colors.black45, blurRadius: 3),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  p.name[0],
+                  style: TextStyle(
+                    fontSize: tokenSize * 0.6,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    });
     return tokens;
-  }
-
-  double _calculateTokenX(int position) {
-    // Calculate X position based on tile index (0-39)
-    // Counter-clockwise from Bottom-Left
-    if (position >= 0 && position <= 9) {
-      // Bottom row (0-9): Right to Left
-      return 0.5 - (position * 0.1); // Start at 0.5, move left
-    } else if (position >= 10 && position <= 19) {
-      // Left column (10-19): Bottom to Top
-      return 0.5; // Left edge
-    } else if (position >= 20 && position <= 29) {
-      // Top row (20-29): Left to Right
-      return 0.5 + ((position - 20) * 0.1); // Start at 0.5, move right
-    } else {
-      // Right column (30-39): Top to Bottom
-      return 0.5; // Right edge
-    }
-  }
-
-  double _calculateTokenY(int position) {
-    // Calculate Y position based on tile index (0-39)
-    // Counter-clockwise from Bottom-Left
-    if (position >= 0 && position <= 9) {
-      // Bottom row (0-9): Right to Left
-      return 0.5; // Bottom edge
-    } else if (position >= 10 && position <= 19) {
-      // Left column (10-19): Bottom to Top
-      return 0.5 - ((position - 10) * 0.1); // Start at 0.5, move up
-    } else if (position >= 20 && position <= 29) {
-      // Top row (20-29): Left to Right
-      return 0.5; // Top edge
-    } else {
-      // Right column (30-39): Top to Bottom
-      return 0.5 + ((position - 30) * 0.1); // Start at 0.5, move down
-    }
-  }
-
-  Widget _buildPlayerToken(Player player, bool isCurrentPlayer, int index) {
-    final playerColor = player.color.startsWith('#')
-        ? int.parse(player.color.substring(1), radix: 16)
-        : 0xFF888888;
-
-    // Add slight offset for multiple players on same tile
-    final offsetX = (index % 3) * 8.0 - 8.0;
-    final offsetY = (index ~/ 3) * 8.0 - 8.0;
-
-    return Transform.translate(
-      offset: Offset(offsetX, offsetY),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Color(playerColor),
-          border: Border.all(
-            color: isCurrentPlayer ? Colors.amber : Colors.white,
-            width: isCurrentPlayer ? 3 : 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-            if (isCurrentPlayer)
-              BoxShadow(
-                color: Colors.amber.withValues(alpha: 0.5),
-                blurRadius: 8,
-                spreadRadius: 2,
-              ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            player.name.length > 2
-                ? player.name.substring(0, 2).toUpperCase()
-                : player.name.toUpperCase(),
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Color _getTileColor(TileType type) {
     switch (type) {
       case TileType.corner:
-        return Colors.orange.shade200;
+        return const Color(0xFFFFCC80);
       case TileType.book:
-        return Colors.blue.shade100;
+        return const Color(0xFFE3F2FD);
       case TileType.publisher:
-        return Colors.green.shade200;
+        return const Color(0xFFC8E6C9);
       case TileType.chance:
-        return Colors.purple.shade200;
+        return const Color(0xFFF3E5F5);
       case TileType.fate:
-        return Colors.red.shade200;
+        return const Color(0xFFFFEBEE);
       case TileType.tax:
-        return Colors.grey.shade300;
-      case TileType.special:
-        return Colors.teal.shade200;
+        return const Color(0xFFCFD8DC);
+      default:
+        return Colors.white;
     }
+  }
+
+  IconData _getIconForCorner(int id) {
+    switch (id) {
+      case 0:
+        return Icons.flag;
+      case 10:
+        return Icons.local_library;
+      case 20:
+        return Icons.edit_note;
+      case 30:
+        return Icons.warning_amber;
+      default:
+        return Icons.circle;
+    }
+  }
+}
+
+class CenterArea extends StatelessWidget {
+  const CenterArea({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFEBE9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.brown.shade200),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Transform.rotate(
+            angle: -0.1,
+            child: const Icon(Icons.school, size: 48, color: Colors.amber),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "EDEBINGO",
+            style: GoogleFonts.titanOne(
+              fontSize: 28,
+              color: Colors.brown.shade800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
