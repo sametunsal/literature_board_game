@@ -2,7 +2,7 @@
 ///
 /// This enum tracks the current phase of a player's turn in the game.
 /// The turn lifecycle progresses through these phases in order:
-/// start → diceRolled → moved → tileResolved → (cardApplied | questionResolved | taxResolved) → turnEnded
+/// start → diceRolled → moved → tileResolved → (cardApplied | questionWaiting | taxResolved) → turnEnded
 ///
 /// Phase transitions are deterministic and always progress forward.
 enum TurnPhase {
@@ -20,6 +20,9 @@ enum TurnPhase {
 
   /// Card has been drawn and effect applied
   cardApplied,
+
+  /// Question is being displayed, waiting for player answer
+  questionWaiting,
 
   /// Question has been asked and answered
   questionResolved,

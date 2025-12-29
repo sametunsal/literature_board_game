@@ -61,14 +61,19 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Corner tiles are 1.5x larger than regular tiles
+    final isCorner = widget.tile.type == TileType.corner;
+    final tileWidth = isCorner ? 150.0 : 100.0;
+    final tileHeight = isCorner ? 180.0 : 120.0;
+
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedBuilder(
         animation: _shimmerAnimation,
         builder: (context, child) {
           return Container(
-            width: 100,
-            height: 120,
+            width: tileWidth,
+            height: tileHeight,
             decoration: BoxDecoration(
               color: _getTileColor(),
               borderRadius: BorderRadius.circular(8),
@@ -131,6 +136,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
   }
 
   Widget _buildNormalTile() {
+    // Corner tiles have larger text
+    final isCorner = widget.tile.type == TileType.corner;
+    final fontSize = isCorner ? 14.0 : 10.0;
+    final nameFontSize = isCorner ? 12.0 : 10.0;
+
     return Stack(
       children: [
         // Tile number
@@ -140,7 +150,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
           child: Text(
             '${widget.tile.id}',
             style: GoogleFonts.poppins(
-              fontSize: 12,
+              fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: Colors.brown.shade700,
             ),
@@ -148,16 +158,19 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
         ),
         // Tile content
         Center(
-          child: Text(
-            widget.tile.name,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.brown.shade800,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              widget.tile.name,
+              style: GoogleFonts.poppins(
+                fontSize: nameFontSize,
+                fontWeight: FontWeight.w600,
+                color: Colors.brown.shade800,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: isCorner ? 3 : 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

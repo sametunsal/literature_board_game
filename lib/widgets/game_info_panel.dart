@@ -355,6 +355,22 @@ class GameInfoPanel extends ConsumerWidget {
           ],
         );
 
+      case TurnPhase.questionWaiting:
+        return _buildFeedbackSection(
+          icon: '❓',
+          title: 'Soru Bekleniyor',
+          color: Colors.blue.shade700,
+          children: [
+            Text(
+              'Cevap bekleniyor...',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.blue.shade700,
+              ),
+            ),
+          ],
+        );
+
       case TurnPhase.questionResolved:
         return _buildFeedbackSection(
           icon: '❓',

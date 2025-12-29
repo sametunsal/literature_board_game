@@ -71,12 +71,6 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
     // Stop rolling and show result
     await _rollController.reverse();
 
-    // Mark animation as complete - allows phase listener to auto-advance
-    // The phase listener will automatically call playTurn() when this flag is true
-    ref.read(gameProvider.notifier).state = ref
-        .read(gameProvider)
-        .copyWith(isDiceAnimationComplete: true);
-
     setState(() {
       _isRolling = false;
     });

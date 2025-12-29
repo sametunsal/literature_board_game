@@ -3,6 +3,7 @@ import '../models/tile.dart';
 import '../models/question.dart';
 import '../models/card.dart';
 import '../models/dice_roll.dart';
+import '../repositories/question_repository.dart';
 
 class GameEngine {
   final List<Player> players;
@@ -22,6 +23,10 @@ class GameEngine {
   final Function(Player player, int position)? onPlayerMoved;
   final Function(Player player, Question question)? onQuestionAsked;
   final Function(Card card)? onCardDrawn;
+  final Function(String message)? onRentPaid;
+  final Function(Tile tile, Player owner, int cost, int balance)?
+  onCopyrightPurchaseOffered;
+  final Function(Player player, int amount)? onQuestionAnswered;
 
   GameEngine({
     required this.players,
@@ -36,6 +41,9 @@ class GameEngine {
     this.onPlayerMoved,
     this.onQuestionAsked,
     this.onCardDrawn,
+    this.onRentPaid,
+    this.onCopyrightPurchaseOffered,
+    this.onQuestionAnswered,
   });
 
   Player get currentPlayer => players[currentPlayerIndex];
@@ -126,10 +134,9 @@ class GameEngine {
     return roll;
   }
 
-  // Calculate new position (counter-clockwise, 1-40)
+  // Calculate new position (counter-clockwise, 0-39)
   int _calculateNewPosition(int currentPosition, int diceTotal) {
-    int newPosition = (currentPosition + diceTotal - 1) % 40 + 1;
-    return newPosition;
+    return (currentPosition + diceTotal) % 40;
   }
 
   // Move player to new position
@@ -139,12 +146,9 @@ class GameEngine {
     _log('${player.name} kutucuk $newPosition\'e hareket etti');
   }
 
-  // Check if player passed START (tile 1)
+  // Check if player passed START (tile 0)
   bool _passedStart(int oldPosition, int newPosition) {
-    if (newPosition < oldPosition) {
-      return true;
-    }
-    return false;
+    return newPosition < oldPosition;
   }
 
   // Award stars for passing START
@@ -177,8 +181,7 @@ class GameEngine {
   void _triggerLibraryWatch() {
     _log('3x Cift Zar! KUTUPHANE NOBETI tetiklendi!');
     currentPlayer.enterLibraryWatch();
-    onPlayerMoved?.call(currentPlayer, 11);
-    _log('${currentPlayer.name} kutucuk 11\'e (KUTUPHANE NOBETI) isinlandi');
+    _movePlayer(currentPlayer, 10); // Tile 10 is Library Duty
     _nextPlayer();
   }
 
@@ -213,9 +216,157 @@ class GameEngine {
     }
   }
 
-  // Handle book/publisher tile - simplified
+  // Handle book/publisher tile - Question & Economy flow
   void _handleBookTile(Player player, Tile tile) {
-    _log('Telif ucreti: ${tile.copyrightFee}');
+    // Step 1: Check ownership
+    if (tile.owner == null) {
+      // Unowned tile - Trigger Question Phase
+      _triggerQuestionPhase(player, tile);
+    } else if (tile.owner == player.id) {
+      // Owned by current player - Do nothing
+      _log('${player.name} kendi telifine indi. Islem gerektirmiyor.');
+    } else {
+      // Owned by another player - Collect rent
+      _collectRent(player, tile);
+    }
+  }
+
+  // Trigger Question Phase for unowned tile
+  void _triggerQuestionPhase(Player player, Tile tile) {
+    _log('${tile.name} telifi sahipsiz. Soru soruluyor...');
+
+    // Get a random question from any category
+    final randomCategory = QuestionCategory
+        .values[DateTime.now().millisecond % QuestionCategory.values.length];
+    final question = QuestionRepository.getRandomQuestion(randomCategory);
+
+    // Trigger question display callback
+    onQuestionAsked?.call(player, question);
+  }
+
+  // Handle correct answer
+  void handleQuestionCorrect(Player player, Tile tile, Question question) {
+    // Add star reward
+    final reward = question.starReward;
+    player.addStars(reward);
+    onStarsChanged?.call(player, player.stars);
+    onQuestionAnswered?.call(player, reward);
+
+    _log('${player.name} doğru cevap verdi! +$reward yıldız kazandı.');
+
+    // Offer copyright purchase
+    _offerCopyrightPurchase(player, tile);
+  }
+
+  // Handle wrong answer
+  void handleQuestionWrong(Player player, Question question) {
+    // No penalty points (as per task requirement)
+    onQuestionAnswered?.call(player, 0);
+
+    _log('${player.name} yanlış cevap verdi. Puan kazanmadı.');
+  }
+
+  // Offer copyright purchase after correct answer
+  void _offerCopyrightPurchase(Player player, Tile tile) {
+    final cost = tile.purchasePrice ?? 0;
+    if (cost <= 0) {
+      _log('${tile.name} için satın alma fiyatı ayarlanmamış.');
+      return;
+    }
+
+    _log('${tile.name} telifi için satın alma teklifi: $cost yıldız');
+
+    // Trigger copyright purchase offer callback
+    onCopyrightPurchaseOffered?.call(tile, player, cost, player.stars);
+  }
+
+  // Handle copyright purchase - YES
+  void handleCopyrightPurchase(Player player, Tile tile) {
+    final cost = tile.purchasePrice ?? 0;
+
+    if (cost > player.stars) {
+      _log(
+        '${player.name} yetersiz bakiye! Gerekli: $cost, Sahip: ${player.stars}',
+      );
+      return;
+    }
+
+    // Deduct cost and assign ownership
+    player.removeStars(cost);
+    player.ownedTiles.add(tile.id);
+
+    // Update tile with new owner using copyWith
+    final tileIndex = tiles.indexWhere((t) => t.id == tile.id);
+    if (tileIndex >= 0) {
+      tiles[tileIndex] = tile.copyWith(owner: player.id);
+    }
+
+    onStarsChanged?.call(player, player.stars);
+
+    _log('${player.name} ${tile.name} telifini satın aldı! -$cost yıldız');
+  }
+
+  // Handle copyright purchase - NO (skip purchase)
+  void handleCopyrightSkip(Player player, Tile tile) {
+    _log('${player.name} ${tile.name} telifini satın almadı.');
+  }
+
+  // Collect rent when player lands on owned tile
+  void _collectRent(Player player, Tile tile) {
+    // Find owner player
+    final owner = players.firstWhere(
+      (p) => p.id == tile.owner,
+      orElse: () => players.first,
+    );
+
+    // Check if owner is in Library Watch
+    if (owner.isInLibraryWatch) {
+      _log(
+        'Telif sahibi (${owner.name}) KÜTÜPHANE NÖBETİ\'nde. Kira gerekmiyor.',
+      );
+      return;
+    }
+
+    // Check if owner is bankrupt
+    if (owner.isBankrupt) {
+      _log('Telif sahibi (${owner.name}) iflas olmuş. Kira gerekmiyor.');
+      return;
+    }
+
+    // Calculate rent amount
+    final rentAmount = tile.copyrightFee ?? 0;
+    if (rentAmount <= 0) {
+      _log('${tile.name} için kira ücreti ayarlanmamış.');
+      return;
+    }
+
+    // Check if player can pay rent
+    if (player.stars < rentAmount) {
+      // Player goes bankrupt from rent
+      player.stars = 0;
+      player.isBankrupt = true;
+      onStarsChanged?.call(player, player.stars);
+
+      _log('${player.name} kira ödeyemedi! İFLAS OLDU!');
+      _log('${player.name} oyundan çıktı.');
+      _checkBankruptcy(player);
+      return;
+    }
+
+    // Transfer stars from player to owner
+    player.removeStars(rentAmount);
+    owner.addStars(rentAmount);
+
+    onStarsChanged?.call(player, player.stars);
+    onStarsChanged?.call(owner, owner.stars);
+
+    // Trigger rent paid callback for UI
+    onRentPaid?.call(
+      '${player.name} kira ödedi: -$rentAmount yıldız → ${owner.name}: +$rentAmount yıldız',
+    );
+
+    _log('${player.name} ${tile.name} için kira ödedi: -$rentAmount yıldız');
+    _log('${owner.name} kira aldı: +$rentAmount yıldız');
   }
 
   // Handle corner tiles
@@ -236,9 +387,15 @@ class GameEngine {
         break;
 
       case CornerEffect.iflasRiski:
-        _log('IFLAS RISKI! %50 yildiz kaybi.');
+        _log('IFLAS RISKI! %50 yildiz kaybi ve KUTUPHANE NOBETI!');
         player.losePercentageOfStars(50);
         onStarsChanged?.call(player, player.stars);
+
+        // Move to Library Duty immediately
+        _movePlayer(player, 10);
+        player.enterLibraryWatch();
+        _log('${player.name} kutucuk 10\'a (KUTUPHANE NOBETI) gonderildi');
+
         _checkBankruptcy(player);
         break;
 

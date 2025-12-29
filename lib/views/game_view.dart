@@ -38,11 +38,18 @@ class _GameViewState extends ConsumerState<GameView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Ask GameNotifier for auto-advance directive
       // GameNotifier decides based on phase + player type (including bot logic)
-      final directive = GameNotifier.getAutoAdvanceDirective(gameState);
+      final directive = ref
+          .read(gameProvider.notifier)
+          .getAutoAdvanceDirective();
+
+      debugPrint('🎮 Auto-advance directive: $directive, Phase: $turnPhase');
 
       // Execute timing based on directive from GameNotifier
-      if (directive.shouldAutoAdvance) {
-        Future.delayed(directive.delay, () {
+      // Auto-advance for both human and bot players
+      if (directive != null) {
+        // Slower delay to allow UI animations to complete
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          debugPrint('🎮 Auto-advancing playTurn() for directive: $directive');
           ref.read(gameProvider.notifier).playTurn();
         });
       }
@@ -87,8 +94,9 @@ class _GameViewState extends ConsumerState<GameView> {
           Column(
             children: [
               // Oyun tahtası - Horizontal scrollable with enhanced tiles
+              // Note: Corner tiles (indices 0, 10, 20, 30) are 1.5x larger
               SizedBox(
-                height: 140,
+                height: 180, // Accommodate larger corner tiles
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 8),

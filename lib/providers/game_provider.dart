@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,12 +8,10 @@ import '../models/question.dart';
 import '../models/card.dart';
 import '../models/dice_roll.dart';
 import '../models/turn_result.dart';
-import '../models/turn_history.dart';
 import '../models/turn_phase.dart';
+import '../models/turn_history.dart';
 import '../models/player_type.dart';
-import '../models/phase_transition.dart';
 import '../constants/game_constants.dart';
-import '../engine/turn_history_validator.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -49,46 +48,6 @@ enum QuestionState {
   skipped, // Question was skipped
 }
 
-/// Phase behavior classification for documentation and validation
-enum PhaseBehavior {
-  /// Terminal phase - turn is complete, game has been updated
-  /// Example: turnEnded - phase reset to start by endTurn()
-  terminal,
-
-  /// Manual phase - requires user interaction to advance
-  /// UI must wait for user action before calling playTurn()
-  /// Examples: start (roll button), questionResolved (answer button)
-  manual,
-
-  /// Auto-advance phase - automatically progresses after brief delay
-  /// UI phase listener calls playTurn() automatically
-  /// Examples: diceRolled, moved, tileResolved, cardApplied, taxResolved
-  autoAdvance,
-}
-
-/// Auto-advance directive for UI-controlled timing
-///
-/// This encapsulates the decision of whether a phase should auto-advance and
-/// what delay should be used. UI only executes the delay, GameNotifier
-/// decides based on game rules (phase + player type).
-class AutoAdvanceDirective {
-  /// Whether the current phase should auto-advance
-  final bool shouldAutoAdvance;
-
-  /// Delay to use before calling playTurn()
-  final Duration delay;
-
-  const AutoAdvanceDirective({
-    required this.shouldAutoAdvance,
-    required this.delay,
-  });
-
-  /// Directive for phases that should not auto-advance
-  const AutoAdvanceDirective.noAdvance()
-    : shouldAutoAdvance = false,
-      delay = Duration.zero;
-}
-
 // Game State
 class GameState {
   final List<Player> players;
@@ -123,12 +82,11 @@ class GameState {
   // Turn result for UI feedback
   final TurnResult lastTurnResult;
 
-  // Turn history for game analysis
+  // Turn history - storage of completed turns
   final TurnHistory turnHistory;
 
   // Flags
   final bool isGameOver;
-  final bool isDiceAnimationComplete; // Track dice animation completion
 
   const GameState({
     required this.players,
@@ -153,8 +111,6 @@ class GameState {
     this.currentCard,
     this.lastTurnResult = TurnResult.empty,
     this.turnHistory = const TurnHistory.empty(),
-    this.isDiceAnimationComplete =
-        true, // Default to true (no animation in progress)
   });
 
   Player? get currentPlayer {
@@ -192,7 +148,6 @@ class GameState {
     Card? currentCard,
     TurnResult? lastTurnResult,
     TurnHistory? turnHistory,
-    bool? isDiceAnimationComplete,
   }) {
     return GameState(
       players: players ?? this.players,
@@ -217,8 +172,6 @@ class GameState {
       currentCard: currentCard ?? this.currentCard,
       lastTurnResult: lastTurnResult ?? this.lastTurnResult,
       turnHistory: turnHistory ?? this.turnHistory,
-      isDiceAnimationComplete:
-          isDiceAnimationComplete ?? this.isDiceAnimationComplete,
     );
   }
 
@@ -236,6 +189,9 @@ class GameState {
 
 // Game Notifier
 class GameNotifier extends StateNotifier<GameState> {
+  // Guard flag to prevent re-entry during turn processing
+  bool _isProcessingTurn = false;
+
   GameNotifier()
     : super(
         const GameState(
@@ -247,48 +203,6 @@ class GameNotifier extends StateNotifier<GameState> {
           currentPlayerIndex: 0,
         ),
       );
-
-  // ============================================================================
-  // TURN BOUNDARIES & TRANSCRIPT SYSTEM
-  // ============================================================================
-  ///
-  /// Turn Lifecycle:
-  /// 1. TURN START: _nextPlayer() creates new TurnTranscript
-  /// 2. TURN IN PROGRESS: Events incrementally added to _currentTranscript
-  /// 3. TURN END (COMMIT): endTurn() finalizes transcript and creates TurnResult
-  ///
-  /// Commit Point:
-  /// - Only endTurn() can commit (when phase = turnEnded)
-  /// - Phase guard prevents turnEnded from calling playTurn()
-  /// - Guarantees exactly one commit per turn
-  ///
-  /// Correctness:
-  /// - No partial transcripts leak (_currentTranscript is private)
-  /// - No duplicate commits (only one call to endTurn() per turn)
-  /// - Immutable after commit (TurnTranscript uses copyWith pattern)
-  /// - Single source of truth (state.lastTurnResult)
-
-  /// Private: Current turn's transcript (never exposed directly)
-  /// Only accessible via committed TurnResult after turn ends
-  TurnTranscript _currentTranscript = TurnTranscript.empty;
-
-  /// Private: Snapshot of player state at turn START
-  ///
-  /// Used to calculate accurate starsDelta and positionDelta by comparing
-  /// start values with final values at turn COMMIT. This is the single
-  /// source of truth for delta calculation, avoiding double counting that
-  /// would occur if we inferred deltas from transcript events.
-  ///
-  /// Why snapshot-based delta?
-  /// - Avoids double counting (e.g., card effect + passing START)
-  /// - Single source of truth (compare start vs end, not sum of events)
-  /// - Simpler and more accurate than parsing transcript events
-  ///
-  /// Lifecycle:
-  /// - Created exactly once in _nextPlayer() at TURN START
-  /// - Cleared/replaced on next turn start
-  /// - Used only in endTurn() at TURN COMMIT
-  TurnSnapshot? _turnStartSnapshot;
 
   // Initialize game with data
   void initializeGame({
@@ -330,323 +244,145 @@ class GameNotifier extends StateNotifier<GameState> {
   /// It deterministically runs the next step based on currentTurnPhase.
   ///
   /// Phase progression:
-  /// - start → diceRolled → moved → tileResolved → (cardApplied | questionResolved | taxResolved) → turnEnded → start
+  /// - start → diceRolled → moved → tileResolved → (cardApplied | questionResolved | taxResolved) → turnEnded
   ///
   /// Each call to playTurn() advances exactly one phase.
   /// No gameplay rules are changed - this is pure orchestration.
   ///
   /// UI flow:
   /// 1. UI calls playTurn()
-  /// 2. playTurn() validates phase transition
-  /// 3. playTurn() switches on currentTurnPhase
-  /// 4. Calls the appropriate method (rollDice, moveCurrentPlayer, etc.)
-  /// 5. That method advances the phase
-  /// 6. UI reads updated state and calls playTurn() again
-  /// 7. Repeat until turnEnded, then playTurn() resets to start for next player
-  ///
-  /// HARDENING: Phase transition guard ensures only valid phases can call playTurn().
-  /// Invalid playTurn() calls are logged (debug) and safely ignored.
-  ///
-  /// IMPORTANT: This guard does NOT enforce a single "next phase" rule.
-  /// The switch-case logic below determines the correct next phase based on game rules.
-  /// This guard only validates whether playTurn() can be called from current phase.
+  /// 2. playTurn() switches on currentTurnPhase
+  /// 3. Calls the appropriate method (rollDice, moveCurrentPlayer, etc.)
+  /// 4. That method advances the phase
+  /// 5. UI reads updated state and calls playTurn() again
+  /// 6. Repeat until turnEnded, then playTurn() resets to start for next player
 
-  /// Maps each phase to its behavior type
-  /// Used for validation and documentation only
-  static const Map<TurnPhase, PhaseBehavior> _phaseBehavior = {
-    // Manual phases - require user interaction
-    TurnPhase.start: PhaseBehavior.manual,
-    TurnPhase.questionResolved: PhaseBehavior.manual,
-    TurnPhase.copyrightPurchased: PhaseBehavior.manual,
-
-    // Auto-advance phases - UI phase listener triggers next step
-    TurnPhase.diceRolled: PhaseBehavior.autoAdvance,
-    TurnPhase.moved: PhaseBehavior.autoAdvance,
-    TurnPhase.tileResolved: PhaseBehavior.autoAdvance,
-    TurnPhase.cardApplied: PhaseBehavior.autoAdvance,
-    TurnPhase.taxResolved: PhaseBehavior.autoAdvance,
-
-    // Terminal phase - turn complete, already reset by endTurn()
-    TurnPhase.turnEnded: PhaseBehavior.terminal,
-  };
-
-  /// Set of phases that are allowed to call playTurn()
-  /// All phases except terminal can call playTurn()
-  static const Set<TurnPhase> _playablePhases = {
-    TurnPhase.start,
-    TurnPhase.diceRolled,
-    TurnPhase.moved,
-    TurnPhase.tileResolved,
-    TurnPhase.cardApplied,
-    TurnPhase.questionResolved,
-    TurnPhase.copyrightPurchased,
-    TurnPhase.taxResolved,
-    // Note: TurnPhase.turnEnded is EXCLUDED - it's terminal and should not call playTurn()
-  };
-
-  /// Check if a phase should auto-advance (UI-controlled timing)
-  ///
-  /// This helper is called by UI to determine whether to schedule a delayed playTurn() call.
-  /// GameNotifier remains time-agnostic - it only defines WHICH phases are auto-advance,
-  /// not WHEN the advance should happen.
-  ///
-  /// Separation of concerns:
-  /// - GameNotifier: Defines phase behavior (manual vs auto-advance)
-  /// - UI: Controls timing (300ms delay for auto-advance phases)
-  /// Get auto-advance directive for UI-controlled timing
-  ///
-  /// This method encapsulates ALL game rules about timing:
-  /// - Whether current phase should auto-advance
-  /// - What delay should be used (short vs long)
-  ///
-  /// Separation of concerns:
-  /// - GameNotifier: Defines game rules (phase + player type → directive)
-  /// - UI: Controls timing execution (uses directive.delay)
-  ///
-  /// UI must NOT know about bot logic or delay categories.
-  /// GameNotifier decides based on current state only.
-  static AutoAdvanceDirective getAutoAdvanceDirective(GameState state) {
-    final phase = state.turnPhase;
-    final currentPlayerType = state.currentPlayer?.type;
-
-    // Bot start phase: Manual phase that auto-plays with long delay
-    if (phase == TurnPhase.start && currentPlayerType == PlayerType.bot) {
-      return const AutoAdvanceDirective(
-        shouldAutoAdvance: true,
-        delay: Duration(milliseconds: 700),
-      );
-    }
-
-    // SPECIAL CASE: diceRolled phase - wait for animation to complete
-    // Only auto-advance if animation is finished
-    if (phase == TurnPhase.diceRolled) {
-      if (state.isDiceAnimationComplete) {
-        return const AutoAdvanceDirective(
-          shouldAutoAdvance: true,
-          delay: Duration(milliseconds: 300),
-        );
-      } else {
-        // Animation in progress - don't auto-advance
-        return const AutoAdvanceDirective.noAdvance();
-      }
-    }
-
-    // Standard auto-advance phases: Short delay
-    if (_phaseBehavior[phase] == PhaseBehavior.autoAdvance) {
-      return const AutoAdvanceDirective(
-        shouldAutoAdvance: true,
-        delay: Duration(milliseconds: 300),
-      );
-    }
-
-    // Manual phases: No auto-advance
-    return const AutoAdvanceDirective.noAdvance();
-  }
-
-  /// Main orchestration method - ONLY method UI should call
-  ///
-  /// Uses PhaseTransitionMap to find and execute the next phase transition.
-  /// This makes the state machine explicit and declarative.
+  /// Main orchestration method - the ONLY method UI should call
   void playTurn() {
     debugPrint(
       '🎮 playTurn() called - Current phase: ${state.turnPhase}, Player type: ${state.currentPlayer?.type}',
     );
 
-    // HARDENING: Phase transition guard
-    // Prevents accidental state corruption from invalid phase transitions
-    final currentPhase = state.turnPhase;
-
-    // Validate that current phase is allowed to call playTurn()
-    if (!_playablePhases.contains(currentPhase)) {
-      debugPrint(
-        '⛔ PHASE GUARD VIOLATION: playTurn() called in invalid phase: $currentPhase',
-      );
-      debugPrint(
-        '   Valid phases for playTurn(): ${_playablePhases.join(", ")}',
-      );
-      // Safely return without mutating state
+    // Guard clause: Prevent re-entry during turn processing
+    if (_isProcessingTurn) {
+      debugPrint('🛑 Turn already processing, ignoring duplicate call');
       return;
     }
 
-    // NOTE: Bot auto-play timing is now handled by UI, not GameNotifier.
-    // UI phase listener uses shouldAutoAdvance() and applies 700ms delay for bot start phase.
-    // This keeps GameNotifier completely time-agnostic.
+    // Set processing flag to prevent recursion
+    _isProcessingTurn = true;
 
-    // Use PhaseTransitionMap to find the next transition
-    final transition = PhaseTransitionMap.findTransition(currentPhase, state);
+    try {
+      // Switch on current phase to determine next action
+      switch (state.turnPhase) {
+        // Phase 1: Start of turn - roll the dice
+        case TurnPhase.start:
+          debugPrint('🎲 Phase: start → rolling dice');
+          rollDice();
+          break;
 
-    if (transition == null) {
-      debugPrint('⛔ No valid transition found from phase: $currentPhase');
-      debugPrint('   This should not happen if state is valid.');
-      return;
+        // Phase 2: Dice rolled - move player
+        case TurnPhase.diceRolled:
+          debugPrint('🚶 Phase: diceRolled → moving player');
+          moveCurrentPlayer(state.lastDiceRoll?.total ?? 0);
+          break;
+
+        // Phase 3: Player moved - resolve tile effects
+        case TurnPhase.moved:
+          debugPrint('🏠 Phase: moved → resolving tile');
+          resolveCurrentTile();
+          break;
+
+        // Phase 4: Tile resolved - determine next action based on tile type
+        case TurnPhase.tileResolved:
+          debugPrint('🎯 Phase: tileResolved → handling tile effect');
+          _handleTileResolved();
+          break;
+
+        // Phase 5: Card applied - end turn
+        case TurnPhase.cardApplied:
+          debugPrint('🃏 Phase: cardApplied → ending turn');
+          endTurn();
+          break;
+
+        // Phase 5: Question waiting - bot answers, human waits
+        case TurnPhase.questionWaiting:
+          debugPrint('❓ Phase: questionWaiting → waiting for answer');
+          // Bot auto-answers, human waits for user input
+          if (state.currentPlayer?.type == PlayerType.bot) {
+            _botAnswerQuestion();
+          } else {
+            debugPrint('👤 Human player waiting for question answer');
+          }
+          break;
+
+        // Phase 5: Question resolved - end turn
+        case TurnPhase.questionResolved:
+          debugPrint('✅ Phase: questionResolved → ending turn');
+          endTurn();
+          break;
+
+        // Phase 5: Copyright purchased - end turn
+        case TurnPhase.copyrightPurchased:
+          debugPrint('📋 Phase: copyrightPurchased → ending turn');
+          endTurn();
+          break;
+
+        // Phase 5: Tax resolved - end turn
+        case TurnPhase.taxResolved:
+          debugPrint('💰 Phase: taxResolved → ending turn');
+          endTurn();
+          break;
+
+        // Phase 6: Turn ended - this phase is transient, next call will start new turn
+        case TurnPhase.turnEnded:
+          // This shouldn't happen - turnEnded is reset to start by endTurn()
+          debugPrint(
+            '⚠️ playTurn called in turnEnded phase - should be reset to start',
+          );
+          break;
+      }
+    } finally {
+      // Always reset guard flag after processing completes
+      _isProcessingTurn = false;
     }
+  }
 
-    // Record transition in transcript
-    _currentTranscript = _currentTranscript.addTransition(
-      transition.name,
-      transition.from,
-      transition.to,
-    );
+  /// Handle tile resolved phase - route to appropriate action based on tile type
+  void _handleTileResolved() {
+    final tileNumber = state.newPosition ?? state.currentPlayer!.position;
+    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
 
-    // Log to transition for debugging
-    debugPrint(
-      '🔄 Transition: ${transition.name} (${transition.from} → ${transition.to})',
-    );
-
-    // Execute transition based on destination phase
-    // The PhaseTransitionMap tells us WHAT should happen next,
-    // but we delegate to existing GameNotifier methods
-    switch (transition.to) {
-      case TurnPhase.diceRolled:
-        rollDice();
+    // Route based on tile type
+    switch (tile.type) {
+      case TileType.chance:
+      case TileType.fate:
+        // Card tile - draw and apply card
+        drawCard(tile.type == TileType.chance ? CardType.sans : CardType.kader);
+        // Note: drawCard stores the card, then we need to apply it
+        // But drawCard doesn't auto-apply, so we need to call applyCardEffect
+        if (state.currentCard != null) {
+          applyCardEffect(state.currentCard!);
+        }
         break;
 
-      case TurnPhase.moved:
-        moveCurrentPlayer(state.lastDiceRoll!.total);
+      case TileType.book:
+      case TileType.publisher:
+        // Question tile - show question
+        _showQuestion(tile);
         break;
 
-      case TurnPhase.tileResolved:
-        resolveCurrentTile();
+      case TileType.tax:
+        // Tax tile - handle tax
+        _handleTaxTile(tile);
         break;
 
-      case TurnPhase.cardApplied:
-        // Transition: draw_and_apply_card (chance/fate tile)
-        drawCardAndApplyEffect();
-        break;
-
-      case TurnPhase.questionResolved:
-        // Transition: show_question (book/publisher tile)
-        showQuestionForCurrentTile();
-        break;
-
-      case TurnPhase.taxResolved:
-        // Transition: handle_tax (tax tile)
-        handleTaxForCurrentTile();
-        break;
-
-      case TurnPhase.copyrightPurchased:
-        // Copyright purchase phase - UI shows dialog
-        // Phase advances when user completes purchase or skips
-        debugPrint('📜 Copyright purchase phase - waiting for user action');
-        break;
-
-      case TurnPhase.turnEnded:
-        // Transition: resolve_corner_or_special (corner/special tile)
-        // or: end_turn_after_card/question/tax
+      case TileType.corner:
+      case TileType.special:
+        // Corner or special tile - no additional action needed, end turn
         endTurn();
         break;
-
-      case TurnPhase.start:
-        // Start phase should only be reached by resetting from turnEnded
-        // If we reach here via a transition, something is wrong
-        debugPrint(
-          '⚠️ Unexpected transition to start phase - should only be reached by reset',
-        );
-        break;
     }
-
-    // ============================================================================
-    // DEBUG-ONLY: Validate transition events match transcript
-    // ============================================================================
-    ///
-    /// This ensures semantic consistency between phase transitions and
-    /// transcript events. If a transition executes, its expected
-    /// event types should appear in the transcript.
-    ///
-    /// IMPORTANT:
-    /// - Only runs in debug mode (kDebugMode)
-    /// - Does NOT affect gameplay logic or state
-    /// - If validation fails, logs detailed TransitionValidationResult
-    /// - Uses assert() to halt execution in debug builds
-    ///
-    /// Validation rules:
-    /// - Each transition declares expected event types
-    /// - All expected types must be present in transcript
-    /// - Empty expected list means no validation needed
-    if (kDebugMode) {
-      final validationResult = PhaseTransitionMap.validateTransitionEvents(
-        transition,
-        _currentTranscript,
-      );
-
-      if (!validationResult.isValid) {
-        // Log validation failure with clear details
-        debugPrint(
-          '╔══════════════════════════════════════════════╗',
-        );
-        debugPrint(
-          '║  🔴 TRANSITION EVENT VALIDATION FAILED                    ║',
-        );
-        debugPrint(
-          '╠════════════════════════════════════════╣',
-        );
-        debugPrint(
-          '║  Transition: ${validationResult.transitionName}                        ║',
-        );
-        debugPrint(
-          '║  From → To: ${validationResult.from} → ${validationResult.to}                   ║',
-        );
-        debugPrint(
-          '║  Found events: ${validationResult.foundEvents.join(", ")}                       ║',
-        );
-        debugPrint(
-          '║  Missing events: ${validationResult.missingEvents.join(", ")}                   ║',
-        );
-        debugPrint(
-          '╚══════════════════════════════════════════╝',
-        );
-
-        // Assert to halt execution in debug builds
-        assert(
-          false,
-          'Transition event validation failed for ${validationResult.transitionName}: '
-          'Missing events: ${validationResult.missingEvents.join(", ")}',
-        );
-      } else {
-        // Log successful validation (optional, can be removed if too verbose)
-        debugPrint(
-          '✅ Transition events validated: ${transition.name} - '
-          'Expected events found: ${validationResult.foundEvents.length}',
-        );
-      }
-    }
-  }
-
-  /// Draw and apply card effect (chance/fate tile)
-  ///
-  /// Called when PhaseTransitionMap routes: tileResolved → cardApplied
-  void drawCardAndApplyEffect() {
-    final tileNumber = state.newPosition ?? state.currentPlayer!.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-
-    // Draw and apply card for chance/fate tiles
-    final cardType = tile.type == TileType.chance
-        ? CardType.sans
-        : CardType.kader;
-    drawCard(cardType);
-
-    // Apply the drawn card effect
-    if (state.currentCard != null) {
-      applyCardEffect(state.currentCard!);
-    }
-  }
-
-  /// Show question for current tile (book/publisher tile)
-  ///
-  /// Called when PhaseTransitionMap routes: tileResolved → questionResolved
-  void showQuestionForCurrentTile() {
-    final tileNumber = state.newPosition ?? state.currentPlayer!.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-    _showQuestion(tile);
-  }
-
-  /// Handle tax for current tile (tax tile)
-  ///
-  /// Called when PhaseTransitionMap routes: tileResolved → taxResolved
-  void handleTaxForCurrentTile() {
-    final tileNumber = state.newPosition ?? state.currentPlayer!.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-    _handleTaxTile(tile);
   }
 
   // Phase guard helper method
@@ -668,12 +404,9 @@ class GameNotifier extends StateNotifier<GameState> {
     if (!state.canRoll) return;
     if (state.currentPlayer == null) return;
 
-    // Update phase to diceRolled and mark animation as in progress
-    state = state.copyWith(
-      turnPhase: TurnPhase.diceRolled,
-      isDiceAnimationComplete: false,
-    );
-    debugPrint('🎲 Phase updated to: diceRolled, animation in progress');
+    // Update phase to diceRolled
+    state = state.copyWith(turnPhase: TurnPhase.diceRolled);
+    debugPrint('🎲 Phase updated to: diceRolled');
 
     // Generate random dice roll
     final diceRoll = DiceRoll.random();
@@ -702,14 +435,6 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state
         .copyWith(lastDiceRoll: diceRoll, players: updatedPlayers)
         .withLogMessage(logMessage);
-
-    // TRANSCRIPT: Record dice roll
-    _currentTranscript = _currentTranscript.addDiceRoll(
-      diceRoll.die1,
-      diceRoll.die2,
-      diceRoll.total,
-      diceRoll.isDouble,
-    );
 
     // UI FEEDBACK LOG: Double dice counter status
     if (diceRoll.isDouble) {
@@ -778,13 +503,6 @@ class GameNotifier extends StateNotifier<GameState> {
         .withLogMessage(
           '${currentPlayer.name} kutucuk $oldPosition\'den $newPosition\'e hareket etti',
         );
-
-    // TRANSCRIPT: Record movement
-    _currentTranscript = _currentTranscript.addMove(
-      oldPosition,
-      newPosition,
-      passedStart,
-    );
 
     debugPrint('🚶 Phase updated to: moved');
 
@@ -865,23 +583,8 @@ class GameNotifier extends StateNotifier<GameState> {
     // Update phase to tileResolved
     state = state.copyWith(turnPhase: TurnPhase.tileResolved);
 
-    // TRANSCRIPT: Record tile resolution
-    _currentTranscript = _currentTranscript.addTileResolved(
-      tile.id,
-      tile.name,
-      tile.type.toString(),
-    );
-
     // UI FEEDBACK LOG: Tile type information
     String tileLog = 'Kutucuk: ${tile.name} (${tile.type})';
-
-    // CHECK FOR RENT FIRST (for owned tiles)
-    if (tile.canBeOwned &&
-        tile.owner != null &&
-        state.currentPlayer!.id != tile.owner) {
-      collectRent();
-      return; // Don't ask question or draw card on owned tiles
-    }
 
     // Handle different tile types
     switch (tile.type) {
@@ -916,7 +619,6 @@ class GameNotifier extends StateNotifier<GameState> {
       case TileType.special:
         tileLog += ' - Özel kutucuk';
         state = state.withLogMessage(tileLog);
-        _handleSpecialTile(tile);
         break;
     }
 
@@ -931,10 +633,10 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.currentPlayer == null) return;
     final currentPlayer = state.currentPlayer!;
 
-    // Update phase to questionResolved
-    state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+    // Update phase to questionWaiting (dialog stays open until answered)
+    state = state.copyWith(turnPhase: TurnPhase.questionWaiting);
 
-    // Get a random question from pool
+    // Get a random question from the pool
     Question question = _getRandomQuestion();
 
     // If player has easyQuestionNext flag, consume it and get an easy question
@@ -954,16 +656,30 @@ class GameNotifier extends StateNotifier<GameState> {
           questionTimer: GameConstants.questionTimerDuration,
         )
         .withLogMessage('${tile.name} için soru soruluyor...');
-
-    // TRANSCRIPT: Record question asked
-    _currentTranscript = _currentTranscript.addQuestionAsked(
-      question.question,
-      question.category.toString(),
-    );
-    debugPrint('❓ Question asked: ${question.question}');
   }
 
-  // Get a random question from pool
+  // Bot auto-answer question
+  void _botAnswerQuestion() {
+    debugPrint('🤖 Bot answering question...');
+
+    if (state.currentQuestion == null) return;
+
+    // Bot has 70% chance to answer correctly
+    final willAnswerCorrectly = _random.nextDouble() < 0.7;
+
+    if (willAnswerCorrectly) {
+      answerQuestionCorrect();
+      debugPrint('🤖 Bot answered correctly');
+    } else {
+      answerQuestionWrong();
+      debugPrint('🤖 Bot answered incorrectly');
+    }
+
+    // Advance phase to questionResolved
+    state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+  }
+
+  // Get a random question from the pool
   Question _getRandomQuestion() {
     if (state.questionPool.isEmpty) {
       return Question(
@@ -979,7 +695,7 @@ class GameNotifier extends StateNotifier<GameState> {
     return state.questionPool[randomIndex];
   }
 
-  // Get an easy question from pool
+  // Get an easy question from the pool
   Question _getEasyQuestion() {
     if (state.questionPool.isEmpty) {
       return Question(
@@ -1005,7 +721,7 @@ class GameNotifier extends StateNotifier<GameState> {
     return easyQuestions[randomIndex];
   }
 
-  // Draw a card from appropriate deck
+  // Draw a card from the appropriate deck
   void drawCard(CardType cardType) {
     // Select the appropriate card deck based on card type
     final cardDeck = cardType == CardType.sans
@@ -1017,7 +733,7 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    // Randomly select a card from deck
+    // Randomly select a card from the deck
     final randomIndex = _random.nextInt(cardDeck.length);
     final drawnCard = cardDeck[randomIndex];
 
@@ -1029,13 +745,6 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.withLogMessage(
       '$cardTypeName kartı çekildi: ${drawnCard.description}',
     );
-
-    // TRANSCRIPT: Record card drawn
-    _currentTranscript = _currentTranscript.addCardDrawn(
-      cardTypeName,
-      drawnCard.description,
-    );
-    debugPrint('🃏 Card drawn: $cardTypeName - ${drawnCard.description}');
   }
 
   // Apply card effect
@@ -1142,16 +851,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // GAMEPLAY LOG: Card effect result
     state = state.withLogMessage(logMessage);
-
-    // TRANSCRIPT: Record card applied (only for effects with star changes)
-    if (card.starAmount != null && card.starAmount! != 0) {
-      _currentTranscript = _currentTranscript.addCardApplied(
-        cardTypeName,
-        card.description,
-        card.starAmount,
-      );
-      debugPrint('🃏 Card applied: $cardTypeName - ${card.description}');
-    }
 
     // Centralized bankruptcy checks
     if (isPersonalEffect) {
@@ -1299,6 +998,59 @@ class GameNotifier extends StateNotifier<GameState> {
     return richestId;
   }
 
+  // Auto-advance directive for bot and human turns
+  String? getAutoAdvanceDirective() {
+    final isBot = state.currentPlayer?.type == PlayerType.bot;
+
+    // Humans need to manually click button for Phase.start and questionWaiting
+    // Bots auto-advance through all phases
+    // Both auto-advance through all other phases
+    switch (state.turnPhase) {
+      case TurnPhase.start:
+        // Only bots auto-roll dice, humans must click button
+        return isBot ? 'rollDice' : null;
+      case TurnPhase.diceRolled:
+        return 'movePlayer';
+      case TurnPhase.moved:
+        return 'resolveTile';
+      case TurnPhase.tileResolved:
+        return 'handleTileEffect';
+      case TurnPhase.questionWaiting:
+        // Bots auto-answer questions, humans wait for input
+        return isBot ? 'answerQuestion' : null;
+      case TurnPhase.cardApplied:
+      case TurnPhase.questionResolved:
+      case TurnPhase.taxResolved:
+      case TurnPhase.copyrightPurchased:
+        return 'endTurn';
+      case TurnPhase.turnEnded:
+        return 'nextTurn';
+      default:
+        return null;
+    }
+  }
+
+  // Copyright purchase method
+  void purchaseCopyright() {
+    if (state.currentPlayer == null) return;
+
+    // Update phase to copyrightPurchased
+    state = state.copyWith(turnPhase: TurnPhase.copyrightPurchased);
+
+    // GAMEPLAY LOG: Copyright purchase
+    state = state.withLogMessage(
+      '${state.currentPlayer!.name} telif satın aldı!',
+    );
+  }
+
+  // Tick question timer
+  void tickQuestionTimer() {
+    if (state.questionTimer == null || state.questionTimer! <= 0) return;
+
+    final newTimer = state.questionTimer! - 1;
+    state = state.copyWith(questionTimer: newTimer);
+  }
+
   // Check bankruptcy for all players
   void _checkAllPlayersBankruptcy() {
     List<Player> updatedPlayers = [];
@@ -1309,10 +1061,6 @@ class GameNotifier extends StateNotifier<GameState> {
         updatedPlayers.add(updatedPlayer);
         // GAMEPLAY LOG: Bankruptcy event
         state = state.withLogMessage('${player.name} İFLAS OLDU!');
-
-        // TRANSCRIPT: Record bankruptcy event
-        _currentTranscript = _currentTranscript.addBankruptcy(player.name);
-        debugPrint('💀 Bankruptcy: ${player.name} is bankrupt');
       } else {
         updatedPlayers.add(player);
       }
@@ -1340,21 +1088,11 @@ class GameNotifier extends StateNotifier<GameState> {
           players: updatedPlayers,
           questionState: QuestionState.correct,
           correctAnswers: state.correctAnswers + 1,
+          turnPhase: TurnPhase.questionResolved,
         )
         .withLogMessage(
           '${currentPlayer.name} doğru cevap verdi! +$reward yıldız kazandı.',
         );
-
-    // TRANSCRIPT: Record correct answer
-    _currentTranscript = _currentTranscript.addQuestionAnswered(
-      'correct',
-      reward,
-    );
-    debugPrint('✅ Question answered correctly: +$reward stars');
-
-    // Phase Transition: Advance to next phase
-    // PhaseTransitionMap will decide whether to go to copyrightPurchased or turnEnded
-    playTurn();
   }
 
   // Answer question - wrong
@@ -1379,52 +1117,25 @@ class GameNotifier extends StateNotifier<GameState> {
           players: updatedPlayers,
           questionState: QuestionState.wrong,
           wrongAnswers: state.wrongAnswers + 1,
+          turnPhase: TurnPhase.questionResolved,
         )
         .withLogMessage(
           '${currentPlayer.name} yanlış cevap verdi! -$penalty yıldız kaybetti.',
         );
-
-    // TRANSCRIPT: Record wrong answer
-    _currentTranscript = _currentTranscript.addQuestionAnswered(
-      'wrong',
-      -penalty,
-    );
-    debugPrint('❌ Question answered incorrectly: -$penalty stars');
-
-    // Phase Transition: Advance to next phase
-    // PhaseTransitionMap will decide whether to go to copyrightPurchased or turnEnded
-    playTurn();
   }
 
   // Skip question
   void skipQuestion() {
     // GAMEPLAY LOG: Question skipped
     state = state
-        .copyWith(questionState: QuestionState.skipped)
+        .copyWith(
+          questionState: QuestionState.skipped,
+          turnPhase: TurnPhase.questionResolved,
+        )
         .withLogMessage(
           '${state.currentPlayer?.name ?? 'Oyuncu'} soruyu atladı.',
         );
   }
-
-  // Helper method to skip to next player (used for penalties)
-  void _skipToNextPlayer() {
-    int attempts = 0;
-    final totalPlayers = state.players.length;
-
-    do {
-      final nextIndex = (state.currentPlayerIndex + 1) % totalPlayers;
-
-      state = state.copyWith(currentPlayerIndex: nextIndex);
-      attempts++;
-
-      if (attempts > totalPlayers * 2) {
-        state = state.withLogMessage('Hata: Aktif oyuncu bulunamadı!');
-        _announceWinner();
-        return;
-      }
-    } while ((state.currentPlayer?.isBankrupt ?? false) ||
-             (state.currentPlayer?.isInLibraryWatch ?? false) ||
-             (state.currentPlayer?.skippedTurn ?? false));
 
   // Handle corner tile effects
   void _handleCornerTile(Tile tile) {
@@ -1539,13 +1250,6 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.withLogMessage(
       '${currentPlayer.name}: -$taxAmount yıldız vergi ödedi',
     );
-
-    // TRANSCRIPT: Record tax payment
-    _currentTranscript = _currentTranscript.addTaxPaid(
-      tile.taxType.toString(),
-      taxAmount,
-    );
-    debugPrint('💰 Tax paid: ${tile.taxType} - $taxAmount stars');
   }
 
   // Calculate tax amount (percentage or fixed minimum)
@@ -1557,12 +1261,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // End turn - Step 4 of turn
   void endTurn() {
+    // Allow ending turn from multiple phases (some tiles might resolve without further action)
     if (state.turnPhase != TurnPhase.taxResolved &&
         state.turnPhase != TurnPhase.cardApplied &&
         state.turnPhase != TurnPhase.questionResolved &&
-        state.turnPhase != TurnPhase.copyrightPurchased) {
+        state.turnPhase != TurnPhase.tileResolved) {
       debugPrint(
-        '⛔ Phase Guard: endTurn called in ${state.turnPhase}, expected one of [taxResolved, cardApplied, questionResolved, copyrightPurchased]',
+        '⛔ Phase Guard: endTurn called in ${state.turnPhase}, expected one of [taxResolved, cardApplied, questionResolved, tileResolved]',
       );
       assert(false, 'Invalid turn phase for endTurn');
       return;
@@ -1572,243 +1277,8 @@ class GameNotifier extends StateNotifier<GameState> {
     final currentPlayer = state.currentPlayer!;
     Player? updatedPlayer;
 
-    // Update phase to turnEnded (THIS IS THE COMMIT BOUNDARY)
+    // Update phase to turnEnded
     state = state.copyWith(turnPhase: TurnPhase.turnEnded);
-
-    // ============================================================================
-    // TURN COMMIT POINT
-    // ============================================================================
-    /// Finalize's current turn's transcript and commit it to state.
-    /// This happens exactly once per turn when phase reaches turnEnded.
-    /// The transcript becomes immutable after this point.
-    ///
-    /// Guarantees:
-    /// - Commit happens exactly once (only endTurn() can commit)
-    /// - No partial transcripts leak (only exposed via lastTurnResult)
-    /// - No duplicate commits (phase guard prevents re-entry)
-    /// - Immutable after commit (TurnTranscript uses copyWith pattern)
-    /// - Single source of truth (state.lastTurnResult)
-
-    /// Private: Current turn's transcript (never exposed directly)
-    /// Only accessible via committed TurnResult after turn ends
-    TurnTranscript _currentTranscript = TurnTranscript.empty;
-
-    /// Private: Snapshot of player state at turn START
-    ///
-    /// Used to calculate accurate starsDelta and positionDelta by comparing
-    /// start values with final values at turn COMMIT. This is the single
-    /// source of truth for delta calculation, avoiding double counting that
-    /// would occur if we inferred deltas from transcript events.
-    ///
-    /// Why snapshot-based delta?
-    /// - Avoids double counting (e.g., card effect + passing START)
-    /// - Single source of truth (compare start vs end, not sum of events)
-    /// - Simpler and more accurate than parsing transcript events
-    /// - Snapshot created exactly once at turn start, used exactly once at commit
-
-    // CALCULATE DELTAS using snapshot comparison
-    ///
-    // Compare snapshot values (captured at turn START) with final values
-    // This is single source of truth for delta calculation.
-    final endStars = currentPlayer.stars;
-    final endPosition = currentPlayer.position;
-
-    // Calculate deltas from snapshot
-    final starsDelta = _turnStartSnapshot != null
-        ? endStars - _turnStartSnapshot!.startStars
-        : 0;
-
-    final positionDelta = _turnStartSnapshot != null
-        ? endPosition - _turnStartSnapshot!.startPosition
-        : 0;
-
-    // COMMIT: Create TurnResult with finalized transcript and accurate deltas
-
-    // Get tile type directly to avoid type errors
-    String tileTypeStr = 'unknown';
-    final tileNumber = state.newPosition ?? currentPlayer.position;
-    try {
-      final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-      tileTypeStr = tile.type.toString();
-    } catch (e) {
-      tileTypeStr = 'unknown';
-    }
-
-    final turnResult = TurnResult(
-      playerIndex: state.currentPlayerIndex,
-      startPosition: _turnStartSnapshot?.startPosition ?? endPosition,
-      endPosition: endPosition,
-      diceTotal: state.lastDiceRoll?.total ?? 0,
-      isDouble: state.lastDiceRoll?.isDouble ?? false,
-      starsDelta: starsDelta, // Calculated from snapshot comparison
-      tileType: tileTypeStr,
-      questionAnsweredCorrectly: state.questionState == QuestionState.correct,
-      taxPaid: state.turnPhase == TurnPhase.taxResolved,
-      transcript: _currentTranscript, // FINALIZED transcript - immutable now
-    );
-
-    // Store committed result in state (this is single source of truth for completed turns)
-    state = state.copyWith(lastTurnResult: turnResult);
-
-    // Append to turn history
-    state = state.copyWith(turnHistory: state.turnHistory.add(turnResult));
-
-    debugPrint(
-      '📋 Turn committed: Player ${turnResult.playerIndex}, '
-      '${turnResult.transcript.events.length} events',
-    );
-    debugPrint(
-      '📚 Turn history updated: ${state.turnHistory.totalTurns} total turns',
-    );
-
-    // ============================================================================
-    // DEBUG-ONLY: Validate snapshot coverage for committed turn
-    // ============================================================================
-    ///
-    /// Ensures that a TurnSnapshot was available when the turn was committed.
-    /// This guarantees accurate delta calculation (stars and position)
-    /// for all committed turns.
-    ///
-    /// IMPORTANT:
-    /// - Only runs in debug mode (kDebugMode)
-    /// - Does NOT affect gameplay logic or state
-    /// - If validation fails, logs detailed error message
-    /// - Uses assert() to halt execution in debug builds
-    ///
-    /// Validation logic:
-    /// - TurnResult.starsDelta was calculated from snapshot comparison
-    /// - TurnResult.startPosition came from snapshot
-    /// - Therefore, snapshot must have existed when turn was committed
-    if (kDebugMode) {
-      // Verify snapshot existed when turn was committed
-      final bool hadSnapshot = _turnStartSnapshot != null;
-
-      if (!hadSnapshot) {
-        // Log validation failure with clear details
-        final lastTurnIndex = state.turnHistory.totalTurns - 1;
-        debugPrint(
-          '╔══════════════════════════════════════════════╗',
-        );
-        debugPrint(
-          '║  🔴 SNAPSHOT COVERAGE VALIDATION FAILED                 ║',
-        );
-        debugPrint(
-          '╠════════════════════════════════════════════╣',
-        );
-        debugPrint('║  Turn index: ${lastTurnIndex.toString().padRight(46)} ║');
-        debugPrint(
-          '║  Total turn count: ${state.turnHistory.totalTurns.toString().padRight(42)} ║',
-        );
-        debugPrint(
-          '║  Snapshot status: MISSING                                    ║',
-        );
-        debugPrint(
-          '║  This turn was committed WITHOUT a TurnSnapshot!           ║',
-        );
-        debugPrint(
-          '║  Deltas may be incorrect.                                   ║',
-        );
-        debugPrint(
-          '╚══════════════════════════════════════════════╝',
-        );
-
-        // Assert to halt execution in debug builds
-        assert(
-          false,
-          'Missing TurnSnapshot for committed TurnResult at turn index $lastTurnIndex',
-        );
-      } else {
-        // Log successful validation (optional, can be removed if too verbose)
-        debugPrint(
-          '✅ Snapshot coverage verified: Turn ${state.turnHistory.totalTurns} has snapshot',
-        );
-      }
-    }
-
-    // ============================================================================
-    // DEBUG-ONLY: Validate turn history after each turn commit
-    // ============================================================================
-    ///
-    /// This is a development safety check that validates the entire turn history
-    /// after each turn is committed. It helps catch corrupted or inconsistent
-    /// turn data early during development.
-    ///
-    /// IMPORTANT:
-    /// - Only runs in debug mode (kDebugMode)
-    /// - Does NOT affect gameplay logic or state
-    /// - If validation fails, logs detailed ValidationReport
-    /// - Uses assert() to halt execution in debug builds
-    ///
-    /// Validation rules:
-    /// - Replays each turn to verify transcript consistency
-    /// - Checks star deltas match calculated values
-    /// - Validates position deltas
-    /// - Ensures no corrupted state leaks into history
-    if (kDebugMode) {
-      final report = TurnHistoryValidator.validateAll(state.turnHistory);
-
-      if (!report.isAllValid) {
-        // Log validation failure with clear details
-        debugPrint(
-          '╔══════════════════════════════════════════════════════════════╗',
-        );
-        debugPrint(
-          '║  🔴 TURN HISTORY VALIDATION FAILED                       ║',
-        );
-        debugPrint(
-          '╠══════════════════════════════════════════════╣',
-        );
-        debugPrint(
-          '║  Total turns validated: ${report.totalValidated.toString().padRight(20)} ║',
-        );
-        debugPrint(
-          '║  Turns passed before failure: ${report.passedCount.toString().padRight(19)} ║',
-        );
-        debugPrint(
-          '║  Failed at turn index: ${report.failedIndex.toString().padRight(22)} ║',
-        );
-        debugPrint(
-          '║  Error: ${report.errorMessage ?? 'Unknown'}                                   ║',
-        );
-        debugPrint(
-          '╚════════════════════════════════════════════════════════╝',
-        );
-
-        // Assert to halt execution in debug builds
-        assert(
-          false,
-          'Turn history validation failed at turn ${report.failedIndex}: ${report.errorMessage}',
-        );
-      } else {
-        // Log successful validation (optional, can be removed if too verbose)
-        debugPrint(
-          '✅ Turn history validated: ${report.totalValidated} turns passed',
-        );
-      }
-    }
-
-    // ============================================================================
-    // DEBUG-ONLY: Bot turn determinism check
-    // ============================================================================
-    ///
-    /// Validates that bot turns are deterministic by checking consistency
-    /// of event sequences. This catches non-deterministic bot behavior
-    /// that would corrupt replay and analysis.
-    ///
-    /// IMPORTANT:
-    /// - Only runs in debug mode (kDebugMode)
-    /// - Only validates bot turns (currentPlayer.isBot == true)
-    /// - Does NOT affect gameplay logic or state
-    /// - If validation fails, logs detailed error message
-    /// - Uses assert() to halt execution in debug builds
-    ///
-    /// Validation logic:
-    /// - Checks that transcript events follow expected patterns
-    /// - Validates event sequences are consistent for bot turns
-    /// - Ensures no non-deterministic choices by bot
-    if (kDebugMode && currentPlayer.type == PlayerType.bot) {
-      _validateBotTurnDeterminism(turnResult);
-    }
 
     // Check for bankruptcy
     if (currentPlayer.stars <= GameConstants.bankruptcyThreshold) {
@@ -1861,67 +1331,14 @@ class GameNotifier extends StateNotifier<GameState> {
       attempts++;
 
       if (attempts > totalPlayers) {
-        // GAMEPLAY LOG: All players bankrupt or in penalties
-        state = state.withLogMessage('Tüm oyuncular iflas oldu veya cezalı!');
+        // GAMEPLAY LOG: All players bankrupt
+        state = state.withLogMessage('Tüm oyuncular iflas oldu!');
         _announceWinner();
         return;
       }
     } while (state.currentPlayer?.isBankrupt ?? false);
 
     if (state.currentPlayer != null) {
-      final currentPlayer = state.currentPlayer!;
-
-      // Handle library watch penalty: decrement turns remaining
-      if (currentPlayer.isInLibraryWatch) {
-        final newTurnsRemaining = currentPlayer.libraryWatchTurnsRemaining - 1;
-        Player? updatedPlayer;
-
-        if (newTurnsRemaining <= 0) {
-          // Penalty complete - release from library watch
-          updatedPlayer = currentPlayer.copyWith(
-            isInLibraryWatch: false,
-            libraryWatchTurnsRemaining: 0,
-          );
-          state = state.withLogMessage(
-            '${currentPlayer.name}: KÜTÜPHANE NÖBETİ cezası tamamlandı.',
-          );
-        } else {
-          // Continue penalty - decrement turns
-          updatedPlayer = currentPlayer.copyWith(
-            libraryWatchTurnsRemaining: newTurnsRemaining,
-          );
-          state = state.withLogMessage(
-            '${currentPlayer.name}: KÜTÜPHANE NÖBETİ - $newTurnsRemaining tur kaldı.',
-          );
-        }
-
-        if (updatedPlayer != null) {
-          final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-          state = state.copyWith(players: updatedPlayers);
-        }
-
-        // Skip this player's turn
-        _skipToNextPlayer();
-        return;
-      }
-
-      // Handle skipped turn penalty: skip once, then reset
-      if (currentPlayer.skippedTurn) {
-        final updatedPlayer = currentPlayer.copyWith(skippedTurn: false);
-        final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-        state = state.copyWith(players: updatedPlayers);
-        state = state.withLogMessage(
-          '${currentPlayer.name}: İMZA GÜNÜ cezası tamamlandı, atlanan tur geçildi.',
-        );
-
-        // Skip this player's turn
-        _skipToNextPlayer();
-        return;
-      }
-
-    if (state.currentPlayer != null) {
-      final currentPlayer = state.currentPlayer!;
-
       // UI FEEDBACK LOG: Turn transition
       state = state
           .copyWith(
@@ -1929,38 +1346,8 @@ class GameNotifier extends StateNotifier<GameState> {
             oldPosition: null,
             newPosition: null,
             passedStart: false,
-            isDiceAnimationComplete: true, // Reset animation flag for new turn
           )
           .withLogMessage('Sıra: ${state.currentPlayer!.name}');
-
-      // START NEW TURN: Create snapshot and transcript
-      ///
-      // This is TURN START boundary. We capture the player's state at
-      // beginning of the turn to calculate accurate deltas later.
-      // Snapshot is single source of truth for delta calculation.
-
-      // START NEW TRANSCRIPT: Initialize transcript for new turn
-      _currentTranscript = TurnTranscript(
-        playerIndex: state.currentPlayerIndex,
-      );
-      debugPrint(
-        '📜 New transcript started for player ${state.currentPlayerIndex}',
-      );
-
-      // CREATE SNAPSHOT: Capture player state at turn START
-      ///
-      // This snapshot is used in endTurn() to calculate accurate deltas
-      // by comparing start values with final values. This avoids double
-      // counting that would occur if we inferred deltas from transcript events.
-      _turnStartSnapshot = TurnSnapshot(
-        playerIndex: state.currentPlayerIndex,
-        startStars: currentPlayer.stars,
-        startPosition: currentPlayer.position,
-      );
-      debugPrint(
-        '📸 Snapshot created: Player ${currentPlayer.id}, '
-        'Stars=${currentPlayer.stars}, Position=${currentPlayer.position}',
-      );
     }
   }
 
@@ -1977,10 +1364,6 @@ class GameNotifier extends StateNotifier<GameState> {
       state = state
           .copyWith(players: updatedPlayers)
           .withLogMessage('${currentPlayer.name} İFLAS OLDU!');
-
-      // TRANSCRIPT: Record bankruptcy event
-      _currentTranscript = _currentTranscript.addBankruptcy(currentPlayer.name);
-      debugPrint('💀 Bankruptcy: ${currentPlayer.name} is bankrupt');
     }
   }
 
@@ -2008,480 +1391,11 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.withLogMessage('OYUN BİTTİ!');
   }
 
-  // Helper method to get tile type string from current state
-  String _getTileType(GameState state) {
-    final tileNumber = state.newPosition ?? state.currentPlayer?.position ?? 0;
-    try {
-      final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-      return tile.type.toString();
-    } catch (e) {
-      return 'unknown';
-    }
-  }
-
   // Helper method to update a player in players list immutably
   List<Player> _updatePlayerInList(List<Player> players, Player updatedPlayer) {
     return players
         .map((p) => p.id == updatedPlayer.id ? updatedPlayer : p)
         .toList();
-  }
-
-  // ============================================================================
-  // PHASE 3: STRATEGIC GAMEPLAY MECHANICS
-  // ============================================================================
-
-  /// Decrement question timer
-  /// Call this from UI every second while question is active
-  void tickQuestionTimer() {
-    if (state.questionState != QuestionState.answering) return;
-    if (state.questionTimer == null || state.questionTimer! <= 0) return;
-
-    final newTimer = state.questionTimer! - 1;
-
-    // Check if timer reached 0
-    if (newTimer <= 0) {
-      // Auto-fail on timeout
-      answerQuestionWrong();
-      state = state.withLogMessage('Süre doldu! Soru yanlış sayıldı.');
-      return;
-    }
-
-    // Visual warning at <10 seconds
-    if (newTimer <= 10 && newTimer > 0) {
-      state = state.withLogMessage('⚠️ Kalan süre: $newTimer saniye');
-    }
-
-    state = state.copyWith(questionTimer: newTimer);
-  }
-
-  /// Purchase copyright for current tile
-  /// Called after correct answer on book/publisher tile
-  void purchaseCopyright() {
-    if (state.currentPlayer == null) return;
-    if (state.currentQuestion == null) return;
-
-    final currentPlayer = state.currentPlayer!;
-    final tileNumber = state.newPosition ?? currentPlayer.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-
-    // Validate tile can be owned
-    if (!tile.canBeOwned) {
-      state = state.withLogMessage('${tile.name} telifi satın alınamaz.');
-      return;
-    }
-
-    // Check if tile already owned
-    if (tile.owner != null) {
-      state = state.withLogMessage(
-        '${tile.name} zaten ${tile.owner} tarafından satın alınmış.',
-      );
-      return;
-    }
-
-    // Check if player already owns this tile
-    if (currentPlayer.ownsTile(tile.id)) {
-      state = state.withLogMessage(
-        '${currentPlayer.name} zaten ${tile.name} telifini sahipleniyor.',
-      );
-      return;
-    }
-
-    // Validate purchase price
-    final purchasePrice = tile.purchasePrice ?? 0;
-    if (purchasePrice <= 0) {
-      state = state.withLogMessage(
-        '${tile.name} için satın alma fiyatı ayarlanmamış.',
-      );
-      return;
-    }
-
-    // Check if player has enough stars
-    if (currentPlayer.stars < purchasePrice) {
-      state = state.withLogMessage(
-        '${currentPlayer.name} telifi satın almak için yeterli yıldıza sahip değil. '
-        'Gerekli: $purchasePrice, Sahip olunan: ${currentPlayer.stars}',
-      );
-      return;
-    }
-
-    // Apply purchase
-    final updatedPlayer = currentPlayer.copyWith(
-      stars: currentPlayer.stars - purchasePrice,
-      ownedTiles: [...currentPlayer.ownedTiles, tile.id],
-    );
-
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-
-    // Update tile owner
-    final updatedTiles = state.tiles.map((t) {
-      if (t.id == tile.id) {
-        return t.copyWith(owner: currentPlayer.id);
-      }
-      return t;
-    }).toList();
-
-    // Update state
-    state = state
-        .copyWith(players: updatedPlayers, tiles: updatedTiles)
-        .withLogMessage(
-          '${currentPlayer.name} ${tile.name} telifini satın aldı! -$purchasePrice yıldız',
-        );
-
-    // TRANSCRIPT: Record copyright purchase
-    _currentTranscript = _currentTranscript.addCopyrightPurchased(
-      tile.id,
-      tile.name,
-      purchasePrice,
-    );
-    debugPrint('📜 Copyright purchased: ${tile.name} - $purchasePrice stars');
-
-    // Phase Transition: Advance to next phase
-    // PhaseTransitionMap will route to turnEnded
-    playTurn();
-  }
-
-  /// Collect rent when player lands on owned tile
-  /// Called during tile resolution
-  void collectRent() {
-    if (state.currentPlayer == null) return;
-
-    final currentPlayer = state.currentPlayer!;
-    final tileNumber = state.newPosition ?? currentPlayer.position;
-    final tile = state.tiles.firstWhere((t) => t.id == tileNumber);
-
-    // Check if tile can be owned
-    if (!tile.canBeOwned) {
-      return; // Not a rent-paying tile
-    }
-
-    // Check if tile has owner
-    if (tile.owner == null) {
-      return; // Unowned tile - no rent
-    }
-
-    // Check if current player owns tile
-    if (currentPlayer.id == tile.owner) {
-      state = state.withLogMessage(
-        '${currentPlayer.name} kendi telifine indi. Kira ödemesi gerekmiyor.',
-      );
-      return;
-    }
-
-    // Find owner player
-    final ownerPlayer = state.players.firstWhere(
-      (p) => p.id == tile.owner,
-      orElse: () => state.players.first,
-    );
-
-    // Check if owner is in Library Watch
-    if (ownerPlayer.isInLibraryWatch) {
-      state = state.withLogMessage(
-        'Telif sahibi (${ownerPlayer.name}) KÜTÜPHANE NÖBETİ\'nde. '
-        'Kira ödemesi gerekmiyor.',
-      );
-      return;
-    }
-
-    // Check if owner is bankrupt
-    if (ownerPlayer.isBankrupt) {
-      state = state.withLogMessage(
-        'Telif sahibi (${ownerPlayer.name}) iflas olmuş. '
-        'Kira ödemesi gerekmiyor.',
-      );
-      return;
-    }
-
-    // Calculate rent amount
-    final rentAmount = tile.copyrightFee ?? 0;
-    if (rentAmount <= 0) {
-      state = state.withLogMessage(
-        '${tile.name} için kira ücreti ayarlanmamış.',
-      );
-      return;
-    }
-
-    // Check if player can pay rent
-    if (currentPlayer.stars < rentAmount) {
-      // Player goes bankrupt from rent
-      final bankruptPlayer = currentPlayer.copyWith(stars: 0, isBankrupt: true);
-      final updatedPlayers = _updatePlayerInList(state.players, bankruptPlayer);
-
-      state = state
-          .copyWith(players: updatedPlayers)
-          .withLogMessage('${currentPlayer.name} kira ödeyemedi! İFLAS OLDU!');
-
-      // TRANSCRIPT: Record bankruptcy
-      _currentTranscript = _currentTranscript.addBankruptcy(currentPlayer.name);
-      _checkBankruptcy();
-      return;
-    }
-
-    // Transfer stars from player to owner
-    final updatedPlayer = currentPlayer.copyWith(
-      stars: currentPlayer.stars - rentAmount,
-    );
-
-    final updatedOwner = ownerPlayer.copyWith(
-      stars: ownerPlayer.stars + rentAmount,
-    );
-
-    // Update both players in list
-    final updatedPlayers = _updatePlayerInList(
-      _updatePlayerInList(state.players, updatedPlayer),
-      updatedOwner,
-    );
-
-    // Update state
-    state = state
-        .copyWith(players: updatedPlayers)
-        .withLogMessage(
-          '${currentPlayer.name} kira ödedi: -$rentAmount yıldız '
-          '→ ${ownerPlayer.name}: +$rentAmount yıldız',
-        );
-
-    // TRANSCRIPT: Record rent paid
-    _currentTranscript = _currentTranscript.addRentPaid(
-      tile.id,
-      tile.name,
-      ownerPlayer.name,
-      rentAmount,
-    );
-    debugPrint(
-      '💰 Rent paid: ${tile.name} - $rentAmount stars to ${ownerPlayer.name}',
-    );
-  }
-
-  /// Handle special tiles (YAZARLIK OKULU, DE EĞİTİM VAKFI)
-  void _handleSpecialTile(Tile tile) {
-    if (state.currentPlayer == null) return;
-
-    final currentPlayer = state.currentPlayer!;
-
-    switch (tile.specialType) {
-      case SpecialType.yazarlikOkulu:
-        // YAZARLIK OKULU: Bonus question
-        _showQuestion(tile);
-        state = state.withLogMessage(
-          'YAZARLIK OKULU! ${currentPlayer.name} bonus soru sorulacak.',
-        );
-        break;
-
-      case SpecialType.deEgitimVakfi:
-        // DE EĞİTİM VAKFI: Bonus stars without question
-        final bonusAmount = 40; // Bonus stars
-        final updatedPlayer = currentPlayer.copyWith(
-          stars: currentPlayer.stars + bonusAmount,
-        );
-        final updatedPlayers = _updatePlayerInList(
-          state.players,
-          updatedPlayer,
-        );
-
-        state = state
-            .copyWith(players: updatedPlayers)
-            .withLogMessage(
-              'DE EĞİTİM VAKFI! ${currentPlayer.name}: +$bonusAmount bonus yıldız',
-            );
-
-        // TRANSCRIPT: Record bonus received
-        _currentTranscript = _currentTranscript.addBonusReceived(
-          tile.id,
-          tile.name,
-          bonusAmount,
-        );
-        debugPrint('⭐ Bonus received: ${tile.name} - $bonusAmount stars');
-        break;
-
-      case null:
-        break;
-    }
-  }
-
-  // ============================================================================
-  // DEBUG-ONLY: Bot turn determinism validation
-  // ============================================================================
-
-  /// Validates that bot turns follow deterministic patterns
-  ///
-  /// This is a simplified validation that checks transcript consistency
-  /// rather than attempting to replay the entire turn (which would
-  /// require major refactoring). It validates that bot turns
-  /// have consistent event sequences and valid patterns.
-  ///
-  /// IMPORTANT:
-  /// - Only runs in debug mode (kDebugMode)
-  /// - Only validates bot turns
-  /// - Does NOT affect gameplay logic or state
-  /// - If validation fails, logs detailed error message
-  /// - Uses assert() to halt execution in debug builds
-  ///
-  /// Validation logic:
-  /// - Checks event sequence consistency
-  /// - Validates event payloads are complete
-  /// - Ensures no non-deterministic choices
-  void _validateBotTurnDeterminism(TurnResult turnResult) {
-    final transcript = turnResult.transcript;
-    final events = transcript.events;
-
-    // Skip validation if no events
-    if (events.isEmpty) {
-      debugPrint('⚠️ Bot turn validation skipped: No events recorded');
-      return;
-    }
-
-    // Validation 1: Check event sequence consistency
-    bool sequenceValid = true;
-    String? sequenceError;
-
-    // Bot turns should always have certain events in expected order
-    final eventTypes = events.map((e) => e.type).toList();
-
-    // Check for duplicate events that shouldn't exist
-    final diceRollCount = eventTypes
-        .where((t) => t == TurnEventType.diceRoll)
-        .length;
-    final moveCount = eventTypes.where((t) => t == TurnEventType.move).length;
-
-    if (diceRollCount > 1 || moveCount > 1) {
-      sequenceValid = false;
-      sequenceError =
-          'Duplicate events: diceRoll=$diceRollCount, move=$moveCount';
-    }
-
-    // Validation 2: Check event payload completeness
-    bool payloadsValid = true;
-    String? payloadError;
-
-    for (int i = 0; i < events.length; i++) {
-      final event = events[i];
-
-      // Dice roll must have complete data
-      if (event.type == TurnEventType.diceRoll) {
-        if (event.data['die1'] == null ||
-            event.data['die2'] == null ||
-            event.data['total'] == null ||
-            event.data['isDouble'] == null) {
-          payloadsValid = false;
-          payloadError = 'Incomplete diceRoll event data at index $i';
-          break;
-        }
-      }
-
-      // Move must have complete data
-      if (event.type == TurnEventType.move) {
-        if (event.data['from'] == null ||
-            event.data['to'] == null ||
-            event.data['passedStart'] == null) {
-          payloadsValid = false;
-          payloadError = 'Incomplete move event data at index $i';
-          break;
-        }
-      }
-
-      // Tile resolved must have complete data
-      if (event.type == TurnEventType.tileResolved) {
-        if (event.data['tileId'] == null ||
-            event.data['tileName'] == null ||
-            event.data['tileType'] == null) {
-          payloadsValid = false;
-          payloadError = 'Incomplete tileResolved event data at index $i';
-          break;
-        }
-      }
-    }
-
-    // Validation 3: Check phase transition consistency
-    bool transitionsValid = true;
-    String? transitionError;
-
-    final transitionEvents = events
-        .where((e) => e.type == TurnEventType.transition)
-        .toList();
-    final transitionNames = transitionEvents
-        .map((e) => e.data['transitionName'] as String?)
-        .whereType<String>()
-        .toList();
-
-    // Check for duplicate or invalid transition names
-    final validTransitions = {
-      'roll_dice',
-      'move_player',
-      'resolve_tile',
-      'draw_and_apply_card',
-      'show_question',
-      'handle_tax',
-      'end_turn_after_card',
-      'end_turn_after_question',
-      'end_turn_after_tax',
-      'resolve_corner_or_special',
-    };
-
-    for (final name in transitionNames) {
-      if (!validTransitions.contains(name)) {
-        transitionsValid = false;
-        transitionError = 'Invalid transition name: $name';
-        break;
-      }
-    }
-
-    // Report validation results
-    final bool allValid = sequenceValid && payloadsValid && transitionsValid;
-
-    if (!allValid) {
-      // Log validation failure with clear details
-      debugPrint(
-        '╔════════════════════════════════════════════════════════════════════════════════════╗',
-      );
-      debugPrint('║  🔴 BOT TURN DETERMINISM CHECK FAILED             ║');
-      debugPrint(
-        '╠════════════════════════════════════════════════════════════════════════════════════════════════════════════╣',
-      );
-      debugPrint('║  Turn index: ${state.turnHistory.totalTurns.toString().padRight(42)} ║');
-      debugPrint('║  Player index: ${turnResult.playerIndex.toString().padRight(44)} ║');
-      debugPrint('║  Total events: ${events.length.toString().padRight(45)} ║');
-      debugPrint(
-        '╠════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════.
-
-    // Report validation results
-    final bool allValid = sequenceValid && payloadsValid && transitionsValid;
-
-    if (!allValid) {
-      // Log validation failure with clear details
-      debugPrint(
-        '╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════.
-
-      if (sequenceError != null) {
-        debugPrint(
-          '║  Sequence error: $sequenceError                              ║',
-        );
-      }
-      if (payloadError != null) {
-        debugPrint(
-          '║  Payload error: $payloadError                              ║',
-        );
-      }
-      if (transitionError != null) {
-        debugPrint(
-          '║  Transition error: $transitionError                              ║',
-        );
-      }
-
-      debugPrint(
-        '╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════.
-
-      // Assert to halt execution in debug builds
-      assert(
-        false,
-        'Bot turn determinism check failed for player ${turnResult.playerIndex}: '
-        '${sequenceError ?? payloadError ?? transitionError}',
-      );
-    } else {
-      // Log successful validation (optional, can be removed if too verbose)
-      debugPrint(
-        '✅ Bot turn determinism verified: '
-        'Player ${turnResult.playerIndex}, ${events.length} events',
-      );
-    }
   }
 }
 
