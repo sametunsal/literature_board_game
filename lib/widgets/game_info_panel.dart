@@ -344,7 +344,7 @@ class GameInfoPanel extends ConsumerWidget {
                 color: Colors.orange.shade700,
               ),
             ),
-            // Card effect details are logged in the game log
+            // Card effect details are logged in game log
             Text(
               'Detaylar için oyun günlüğüne bakın',
               style: GoogleFonts.poppins(
@@ -409,6 +409,29 @@ class GameInfoPanel extends ConsumerWidget {
           ],
         );
 
+      case TurnPhase.copyrightPurchased:
+        return _buildFeedbackSection(
+          icon: '📜',
+          title: 'Telif Satın Alma',
+          color: Colors.orange.shade700,
+          children: [
+            Text(
+              'Telif satın alma aşaması',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            Text(
+              'Detaylar için oyun günlüğüne bakın',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        );
+
       case TurnPhase.taxResolved:
         // Check if tax was skipped by looking at the last log message
         final taxSkipped =
@@ -466,7 +489,7 @@ class GameInfoPanel extends ConsumerWidget {
                 color: Colors.brown.shade800,
               ),
             ),
-            // Star changes are logged in the game log
+            // Star changes are logged in game log
             Text(
               'Yıldız değişiklikleri için oyun günlüğüne bakın',
               style: GoogleFonts.poppins(

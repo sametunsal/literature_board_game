@@ -7,7 +7,9 @@ import '../models/turn_phase.dart';
 import '../widgets/enhanced_tile_widget.dart';
 import '../widgets/enhanced_dice_widget.dart';
 import '../widgets/question_dialog.dart';
-import '../widgets/turn_end_overlay.dart';
+import '../widgets/copyright_purchase_dialog.dart';
+import '../widgets/turn_summary_overlay.dart';
+import '../widgets/turn_result_inspector.dart'; // DEV TOOL: Turn Result Inspector
 
 class GameView extends ConsumerStatefulWidget {
   const GameView({super.key});
@@ -25,24 +27,22 @@ class _GameViewState extends ConsumerState<GameView> {
     final currentQuestion = ref.watch(currentQuestionProvider);
     final turnPhase = ref.watch(turnPhaseProvider);
 
-    // Phase 2 Orchestration Listener
-    // Automatically call playTurn() when phase changes, except for phases that need user interaction
-    // - TurnPhase.start: Wait for user to click roll button
-    // - TurnPhase.diceRolled: Auto-advance to move player
-    // - TurnPhase.moved: Auto-advance to resolve tile
-    // - TurnPhase.tileResolved: Auto-advance (handles card/question/tax)
-    // - TurnPhase.cardApplied: Auto-advance to end turn
-    // - TurnPhase.questionResolved: Wait for question dialog to handle
-    // - TurnPhase.taxResolved: Auto-advance to end turn
-    // - TurnPhase.turnEnded: Wait for turn end overlay to handle
+    // Phase 2 Orchestration Listener - UI-controlled timing
+    //
+    // Separation of concerns:
+    // - GameNotifier: Defines game rules (phase + player type → directive)
+    // - UI: Controls timing execution (uses directive.delay)
+    //
+    // UI must NOT know about bot logic or delay categories.
+    // UI only asks GameNotifier what to do based on current state.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (turnPhase == TurnPhase.diceRolled ||
-          turnPhase == TurnPhase.moved ||
-          turnPhase == TurnPhase.tileResolved ||
-          turnPhase == TurnPhase.taxResolved ||
-          turnPhase == TurnPhase.cardApplied) {
-        // Small delay for visual feedback before auto-advancing
-        Future.delayed(const Duration(milliseconds: 300), () {
+      // Ask GameNotifier for auto-advance directive
+      // GameNotifier decides based on phase + player type (including bot logic)
+      final directive = GameNotifier.getAutoAdvanceDirective(gameState);
+
+      // Execute timing based on directive from GameNotifier
+      if (directive.shouldAutoAdvance) {
+        Future.delayed(directive.delay, () {
           ref.read(gameProvider.notifier).playTurn();
         });
       }
@@ -152,10 +152,27 @@ class _GameViewState extends ConsumerState<GameView> {
               currentQuestion != null)
             QuestionDialog(question: currentQuestion),
 
-          // Phase 4: Turn End Overlay - Manual transition between turns
+          // Copyright purchase dialog overlay
+          // Show when phase is copyrightPurchased
+          if (turnPhase == TurnPhase.copyrightPurchased &&
+              currentPlayer != null &&
+              gameState.newPosition != null)
+            CopyrightPurchaseDialog(
+              tile: gameState.tiles.firstWhere(
+                (t) => t.id == gameState.newPosition,
+              ),
+            ),
+
+          // Phase 4: Turn Summary Overlay - Shows summary of completed turn
           // Visible ONLY during TurnPhase.turnEnded
-          // Provides clear, intentional turn transition
-          const TurnEndOverlay(),
+          // Provides clear, concise summary of what just happened
+          const TurnSummaryOverlay(),
+
+          // DEV TOOL: Turn Result Inspector - Debug overlay for turn validation
+          // ONLY visible in debug mode (kDebugMode == true)
+          // Read-only inspection of lastTurnResult (never writes to game state)
+          // Search for "DEV TOOL" to find all temporary debug widgets
+          const TurnResultInspector(),
         ],
       ),
     );

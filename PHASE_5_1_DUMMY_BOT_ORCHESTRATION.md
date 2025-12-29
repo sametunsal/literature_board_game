@@ -142,7 +142,3 @@ When Phase 5.2 (Smart Bot AI) is implemented:
 ## Notes
 
 - Implementation is intentionally minimal (dummy logic)
-- No AI or strategic thinking (that's Phase 5.2)
-- All existing Phase 2 orchestration preserved
-- All existing Phase 4 dialog gating preserved
-- Safe, deterministic, and predictable

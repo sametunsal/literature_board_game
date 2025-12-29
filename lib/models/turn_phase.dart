@@ -6,27 +6,30 @@
 ///
 /// Phase transitions are deterministic and always progress forward.
 enum TurnPhase {
-  /// Initial phase when a turn begins
+  /// Turn has started, waiting for player to roll dice
   start,
 
-  /// Phase after dice has been rolled
+  /// Dice has been rolled, waiting for player movement
   diceRolled,
 
-  /// Phase after player has moved to a new position
+  /// Player has moved, waiting for tile resolution
   moved,
 
-  /// Phase after tile effects have been resolved
+  /// Tile has been resolved (corner/card/question/tax applied)
   tileResolved,
 
-  /// Phase after a card effect has been applied
+  /// Card has been drawn and effect applied
   cardApplied,
 
-  /// Phase after a question has been answered (correct/wrong/skipped)
+  /// Question has been asked and answered
   questionResolved,
 
-  /// Phase after tax has been paid or skipped
+  /// Copyright purchase option shown
+  copyrightPurchased,
+
+  /// Tax has been paid
   taxResolved,
 
-  /// Phase when the turn has ended and next player is being prepared
+  /// Turn has ended, waiting for next player
   turnEnded,
 }

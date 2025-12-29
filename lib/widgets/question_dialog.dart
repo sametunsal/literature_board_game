@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +10,7 @@ import '../models/player_type.dart';
 import '../models/turn_result.dart';
 import '../providers/game_provider.dart';
 
-/// Question dialog - Phase 3 adaptation
+/// Question dialog - Phase 3 adaptation with timer integration
 ///
 /// Phase 3 Orchestration:
 /// - UI is PASSIVE observer (watches turnPhase, questionState)
@@ -22,31 +23,92 @@ import '../providers/game_provider.dart';
 /// 2. _handleAnswer() sets answer state
 /// 3. _handleAnswer() calls playTurn()
 /// 4. playTurn() advances to next phase (turnEnded)
-class QuestionDialog extends ConsumerWidget {
+///
+/// Phase 3 Timer Integration:
+/// - Timer starts when dialog is created
+/// - Timer decrements every second via Timer.periodic
+/// - Calls tickQuestionTimer() from game provider
+/// - Auto-fails when timer reaches 0
+/// - Visual warning at <10s (orange), <5s (red)
+class QuestionDialog extends ConsumerStatefulWidget {
   final Question question;
-  final int remainingTime;
 
-  const QuestionDialog({
-    super.key,
-    required this.question,
-    this.remainingTime = 30,
-  });
+  const QuestionDialog({super.key, required this.question});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuestionDialog> createState() => _QuestionDialogState();
+}
+
+class _QuestionDialogState extends ConsumerState<QuestionDialog> {
+  Timer? _timer;
+  int _remainingTime = 30;
+  bool _timerRunning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start timer when dialog is created
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    if (_timerRunning) return;
+    _timerRunning = true;
+    _remainingTime = ref.read(questionTimerProvider);
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      // Check if dialog is still active
+      final gameState = ref.read(gameProvider);
+      if (gameState.questionState != QuestionState.answering) {
+        timer.cancel();
+        _timerRunning = false;
+        return;
+      }
+
+      // Decrement timer via game provider
+      ref.read(gameProvider.notifier).tickQuestionTimer();
+
+      // Update local state
+      setState(() {
+        _remainingTime = ref.read(questionTimerProvider);
+      });
+
+      // Auto-fail when timer reaches 0
+      if (_remainingTime <= 0) {
+        timer.cancel();
+        _timerRunning = false;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final turnPhase = ref.watch(turnPhaseProvider);
+    final questionTimer = ref.watch(questionTimerProvider);
     // ignore: unused_local_variable
     final lastTurnResult = ref.watch(lastTurnResultProvider);
 
     final currentPlayer = gameState.currentPlayer;
+    _remainingTime = questionTimer;
 
     // Phase 5.1: Bot auto-resolve - Dialog not rendered for bots
     // Bot always answers wrong (dummy logic)
     if (currentPlayer?.type == PlayerType.bot) {
       // Bot auto-resolves with delay
       Future.delayed(const Duration(milliseconds: 500), () {
-        _handleAnswer(ref, false); // Always wrong
+        _handleAnswer(false); // Always wrong
       });
       return const SizedBox.shrink();
     }
@@ -88,7 +150,7 @@ class QuestionDialog extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      _getCategoryName(question.category),
+                      _getCategoryName(widget.question.category),
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -113,7 +175,7 @@ class QuestionDialog extends ConsumerWidget {
                         Icon(Icons.star, color: Colors.white, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          _getDifficultyName(question.difficulty),
+                          _getDifficultyName(widget.question.difficulty),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -125,35 +187,42 @@ class QuestionDialog extends ConsumerWidget {
                   ),
                   const Spacer(),
 
-                  // Timer
-                  if (remainingTime > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: remainingTime <= 10
-                            ? Colors.red.shade500
-                            : Colors.blue.shade500,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$remainingTime s',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                  // Timer with visual warning
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
                     ),
+                    decoration: BoxDecoration(
+                      color: _getTimerColor(_remainingTime),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _getTimerIcon(_remainingTime),
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$_remainingTime s',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
 
               // Question text
               Text(
-                question.question,
+                widget.question.question,
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -162,7 +231,8 @@ class QuestionDialog extends ConsumerWidget {
               ),
 
               // Hint
-              if (question.hint != null && question.hint!.isNotEmpty) ...[
+              if (widget.question.hint != null &&
+                  widget.question.hint!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -181,7 +251,7 @@ class QuestionDialog extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'İpucu: ${question.hint}',
+                          'İpucu: ${widget.question.hint}',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             color: Colors.amber.shade900,
@@ -197,10 +267,10 @@ class QuestionDialog extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // Answer options
-              ...(question.options ?? []).asMap().entries.map((entry) {
+              ...(widget.question.options ?? []).asMap().entries.map((entry) {
                 final index = entry.key;
                 final option = entry.value;
-                final isCorrectAnswer = option == question.answer;
+                final isCorrectAnswer = option == widget.question.answer;
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -210,7 +280,7 @@ class QuestionDialog extends ConsumerWidget {
                       opacity: canAnswer ? 1.0 : 0.5,
                       child: ElevatedButton(
                         onPressed: canAnswer
-                            ? () => _handleAnswer(ref, isCorrectAnswer)
+                            ? () => _handleAnswer(isCorrectAnswer)
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isCorrectAnswer
@@ -283,7 +353,7 @@ class QuestionDialog extends ConsumerWidget {
           opacity: canAnswer ? 1.0 : 0.5,
           child: TextButton.icon(
             onPressed: canAnswer
-                ? () => _handleAnswer(ref, false)
+                ? () => _handleAnswer(false)
                 : null, // Skip = wrong
             icon: const Icon(Icons.skip_next),
             label: Text(
@@ -301,9 +371,37 @@ class QuestionDialog extends ConsumerWidget {
     );
   }
 
+  // Get timer color based on remaining time
+  Color _getTimerColor(int remainingTime) {
+    if (remainingTime <= 0) {
+      return Colors.grey.shade400;
+    } else if (remainingTime <= 5) {
+      return Colors.red.shade600;
+    } else if (remainingTime <= 10) {
+      return Colors.orange.shade500;
+    } else if (remainingTime <= 20) {
+      return Colors.blue.shade500;
+    } else {
+      return Colors.green.shade500;
+    }
+  }
+
+  // Get timer icon based on remaining time
+  IconData _getTimerIcon(int remainingTime) {
+    if (remainingTime <= 5) {
+      return Icons.error;
+    } else if (remainingTime <= 10) {
+      return Icons.warning;
+    } else if (remainingTime <= 20) {
+      return Icons.timer;
+    } else {
+      return Icons.schedule;
+    }
+  }
+
   // Handles answer selection and triggers Phase 2 orchestration
   // Phase 2: UI only calls playTurn(), no direct game logic
-  static void _handleAnswer(WidgetRef ref, bool isCorrect) {
+  void _handleAnswer(bool isCorrect) {
     // Set answer state (this updates game state)
     if (isCorrect) {
       ref.read(gameProvider.notifier).answerQuestionCorrect();
@@ -317,7 +415,7 @@ class QuestionDialog extends ConsumerWidget {
   }
 
   Color _getCategoryColor() {
-    switch (question.category) {
+    switch (widget.question.category) {
       case QuestionCategory.benKimim:
         return Colors.purple.shade600;
       case QuestionCategory.turkEdebiyatindaIlkler:
@@ -329,10 +427,11 @@ class QuestionDialog extends ConsumerWidget {
       case QuestionCategory.eserKarakter:
         return Colors.teal.shade600;
     }
+    return Colors.grey.shade600; // Default fallback
   }
 
   Color _getDifficultyColor() {
-    switch (question.difficulty) {
+    switch (widget.question.difficulty) {
       case Difficulty.easy:
         return Colors.green.shade500;
       case Difficulty.medium:
@@ -340,6 +439,7 @@ class QuestionDialog extends ConsumerWidget {
       case Difficulty.hard:
         return Colors.red.shade500;
     }
+    return Colors.grey.shade500; // Default fallback
   }
 
   String _getCategoryName(QuestionCategory category) {

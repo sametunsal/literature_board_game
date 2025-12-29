@@ -1,34 +1,16 @@
-enum TileType {
-  corner,
-  book,
-  publisher,
-  chance,
-  fate,
-  tax,
-  special,
-}
+enum TileType { corner, book, publisher, chance, fate, tax, special }
 
-enum CornerEffect {
-  baslangic,
-  kutuphaneNobeti,
-  imzaGunu,
-  iflasRiski,
-}
+enum CornerEffect { baslangic, kutuphaneNobeti, imzaGunu, iflasRiski }
 
-enum TaxType {
-  gelirVergisi,
-  yazarlikVergisi,
-}
+enum TaxType { gelirVergisi, yazarlikVergisi }
 
-enum SpecialType {
-  yazarlikOkulu,
-  deEgitimVakfi,
-}
+enum SpecialType { yazarlikOkulu, deEgitimVakfi }
 
 class Tile {
   final int id;
   final String name;
   final TileType type;
+  final String? owner;
 
   // Corner tile attributes
   final CornerEffect? cornerEffect;
@@ -49,6 +31,7 @@ class Tile {
     required this.id,
     required this.name,
     required this.type,
+    this.owner,
     this.cornerEffect,
     this.group,
     this.copyrightFee,
@@ -71,14 +54,45 @@ class Tile {
   bool get canBeOwned => isBook || isPublisher;
 
   // Check if tile has question
-  bool get hasQuestion => isBook || isPublisher || (isSpecial && specialType == SpecialType.yazarlikOkulu);
+  bool get hasQuestion =>
+      isBook ||
+      isPublisher ||
+      (isSpecial && specialType == SpecialType.yazarlikOkulu);
 
   // Check if tile causes turn skip
-  bool get causesTurnSkip => 
-    (isCorner && cornerEffect == CornerEffect.kutuphaneNobeti);
+  bool get causesTurnSkip =>
+      (isCorner && cornerEffect == CornerEffect.kutuphaneNobeti);
 
   // Check if tile causes star loss
   bool get causesStarLoss =>
-    (isCorner && cornerEffect == CornerEffect.iflasRiski) ||
-    isTax;
+      (isCorner && cornerEffect == CornerEffect.iflasRiski) || isTax;
+
+  // Create a copy with updated values
+  Tile copyWith({
+    int? id,
+    String? name,
+    TileType? type,
+    String? owner,
+    CornerEffect? cornerEffect,
+    int? group,
+    int? copyrightFee,
+    int? purchasePrice,
+    TaxType? taxType,
+    int? taxRate,
+    SpecialType? specialType,
+  }) {
+    return Tile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      owner: owner ?? this.owner,
+      cornerEffect: cornerEffect ?? this.cornerEffect,
+      group: group ?? this.group,
+      copyrightFee: copyrightFee ?? this.copyrightFee,
+      purchasePrice: purchasePrice ?? this.purchasePrice,
+      taxType: taxType ?? this.taxType,
+      taxRate: taxRate ?? this.taxRate,
+      specialType: specialType ?? this.specialType,
+    );
+  }
 }

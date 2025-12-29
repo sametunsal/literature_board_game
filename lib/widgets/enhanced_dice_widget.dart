@@ -59,15 +59,23 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
 
     setState(() => _isRolling = true);
 
+    // Trigger rollDice() which will:
+    // 1. Set phase to diceRolled
+    // 2. Set isDiceAnimationComplete to false
+    // 3. Generate and record the dice roll
+    ref.read(gameProvider.notifier).playTurn();
+
     // Start rolling animation
     await _rollController.forward();
 
     // Stop rolling and show result
     await _rollController.reverse();
 
-    // Trigger playTurn() instead of rollDice() directly
-    // This is the Phase 2 orchestration method
-    ref.read(gameProvider.notifier).playTurn();
+    // Mark animation as complete - allows phase listener to auto-advance
+    // The phase listener will automatically call playTurn() when this flag is true
+    ref.read(gameProvider.notifier).state = ref
+        .read(gameProvider)
+        .copyWith(isDiceAnimationComplete: true);
 
     setState(() {
       _isRolling = false;
