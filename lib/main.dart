@@ -35,8 +35,19 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
+    _initializeGame();
+  }
 
+  /// Initialize game safely - called from initState
+  void _initializeGame() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Check if game is already initialized to prevent hot reload issues
+      final gameState = ref.read(gameProvider);
+      if (gameState.tiles.isNotEmpty) {
+        debugPrint('🔄 Game already initialized, skipping');
+        return;
+      }
+
       if (_initialized) return;
 
       ref
@@ -49,6 +60,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           );
 
       _initialized = true;
+      debugPrint('✅ Game initialized');
     });
   }
 
