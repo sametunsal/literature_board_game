@@ -35,21 +35,11 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
-    _initializeGame();
-  }
 
-  /// Initialize game safely - called from initState
-  void _initializeGame() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check if game is already initialized to prevent hot reload issues
-      final gameState = ref.read(gameProvider);
-      if (gameState.tiles.isNotEmpty) {
-        debugPrint('🔄 Game already initialized, skipping');
-        return;
-      }
-
       if (_initialized) return;
 
+      // Oyunu başlat
       ref
           .read(gameProvider.notifier)
           .initializeGame(
@@ -60,42 +50,12 @@ class _MyAppState extends ConsumerState<MyApp> {
           );
 
       _initialized = true;
-      debugPrint('✅ Game initialized');
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final questionsAsync = ref.watch(questionLoadingProvider);
-
-    // Show loading screen while questions are being loaded
-    if (questionsAsync.isLoading) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Edebiyat Oyunu',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.brown,
-            brightness: Brightness.light,
-          ),
-          textTheme: GoogleFonts.poppinsTextTheme(),
-        ),
-        home: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Sorular yükleniyor...', style: TextStyle(fontSize: 16)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
+    // ÖNEMLİ: Sadece tek bir MaterialApp döndürüyoruz.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Edebiyat Oyunu',
@@ -107,12 +67,48 @@ class _MyAppState extends ConsumerState<MyApp> {
         ),
         textTheme: GoogleFonts.poppinsTextTheme(),
       ),
-      home: const GameView(),
+      // Home widget'ını bir Consumer ile sarmalıyoruz
+      // Böylece yükleme durumu değiştiğinde MaterialApp yeniden kurulmaz,
+      // sadece içerideki sayfa değişir.
+      home: Consumer(
+        builder: (context, ref, child) {
+          final questionsAsync = ref.watch(questionLoadingProvider);
+
+          // 1. Yükleniyor durumu
+          if (questionsAsync.isLoading) {
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Sorular yükleniyor...',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // 2. Hata durumu
+          if (questionsAsync.hasError) {
+            return Scaffold(
+              body: Center(child: Text('Hata oluştu: ${questionsAsync.error}')),
+            );
+          }
+
+          // 3. Oyun ekranı
+          return const GameView();
+        },
+      ),
     );
   }
 }
 
-/// HELPERS — dosyanın EN ALTINDA
+/// HELPERS
 
 List<Player> _generatePlayers() {
   return [
