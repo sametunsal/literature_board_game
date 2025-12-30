@@ -8,6 +8,8 @@ import '../models/question.dart';
 import '../models/card.dart';
 import '../models/dice_roll.dart';
 import '../models/turn_phase.dart';
+import '../models/turn_event.dart';
+import '../models/turn_result.dart';
 import '../models/turn_history.dart';
 import '../models/player_type.dart';
 import '../constants/game_constants.dart';
@@ -115,7 +117,7 @@ class GameState {
     this.currentCard,
     this.lastTurnResult = TurnResult.empty,
     this.turnHistory = const TurnHistory.empty(),
-    this.currentTranscript = TurnTranscript.empty,
+    this.currentTranscript = const TurnTranscript.empty(),
   });
 
   Player? get currentPlayer {
@@ -221,8 +223,11 @@ class GameNotifier extends StateNotifier<GameState> {
     String? description,
     Map<String, dynamic>? data,
   }) {
-    final event = TurnEvent(type, description: description, data: data);
-    final newTranscript = state.currentTranscript.addEvent(event);
+    final newTranscript = state.currentTranscript.add(
+      type,
+      description: description,
+      data: data,
+    );
     state = state.copyWith(currentTranscript: newTranscript);
 
     // Also add to log messages for backward compatibility
@@ -1445,7 +1450,7 @@ class GameNotifier extends StateNotifier<GameState> {
     debugPrint('▶️ startNextTurn() called');
 
     // Clear transcript for new turn
-    state = state.copyWith(currentTranscript: TurnTranscript.empty);
+    state = state.copyWith(currentTranscript: const TurnTranscript.empty());
 
     // Move to next player
     _nextPlayer();

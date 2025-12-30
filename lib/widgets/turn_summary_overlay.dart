@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/player.dart';
 import '../models/tile.dart';
 import '../models/turn_phase.dart';
+import '../models/turn_event.dart';
 import '../models/turn_result.dart';
 import '../models/player_type.dart';
 import '../models/turn_history.dart';

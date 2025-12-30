@@ -1,3 +1,4 @@
+import '../models/turn_event.dart';
 import '../models/turn_result.dart';
 import '../models/turn_history.dart';
 import '../models/turn_phase.dart';
@@ -33,6 +34,7 @@ class TurnSummaryGenerator {
 
     return TurnResult(
       playerIndex: playerIndex,
+      timestamp: DateTime.now(),
       startPosition: startPosition,
       endPosition: endPosition,
       diceTotal: diceTotal,
