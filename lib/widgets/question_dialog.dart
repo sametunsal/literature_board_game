@@ -426,7 +426,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
         return Colors.purple.shade600;
       case QuestionCategory.turkEdebiyatindaIlkler:
         return Colors.blue.shade600;
-      case QuestionCategory.edebiyatAkillari:
+      case QuestionCategory.edebiyatAkimlari:
         return Colors.green.shade600;
       case QuestionCategory.edebiyatSanatlari:
         return Colors.orange.shade600;
@@ -454,8 +454,8 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
         return 'Ben Kimim?';
       case QuestionCategory.turkEdebiyatindaIlkler:
         return 'Türk Edebiyatında İlkler';
-      case QuestionCategory.edebiyatAkillari:
-        return 'Edebiyat Akilları';
+      case QuestionCategory.edebiyatAkimlari:
+        return 'Edebiyat Akımları';
       case QuestionCategory.edebiyatSanatlari:
         return 'Edebiyat Sanatları';
       case QuestionCategory.eserKarakter:

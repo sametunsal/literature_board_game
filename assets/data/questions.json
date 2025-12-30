@@ -1,0 +1,242 @@
+[
+  {
+    "id": "bk_001",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "'Çalıkuşu' romanındaki Feride karakterinin teyzesinin oğlunun adı nedir?",
+    "answer": "Kamran",
+    "options": ["Kamran", "Selim", "İhsan", "Necdet"]
+  },
+  {
+    "id": "bk_002",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "'İnce Memed' romanının yazarı kimdir?",
+    "answer": "Yaşar Kemal",
+    "options": ["Yaşar Kemal", "Orhan Kemal", "Kemal Tahir", "Sabahattin Ali"]
+  },
+  {
+    "id": "bk_003",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "'Kürk Mantolu Madonna' romanının yazarı kimdir?",
+    "answer": "Sabahattin Ali",
+    "options": ["Sabahattin Ali", "Ahmet Hamdi Tanpınar", "Oğuz Atay", "Sait Faik Abasıyanık"]
+  },
+  {
+    "id": "bk_004",
+    "category": "benKimim",
+    "difficulty": "medium",
+    "question": "'Saatleri Ayarlama Enstitüsü' romanının yazarı kimdir?",
+    "answer": "Ahmet Hamdi Tanpınar",
+    "options": ["Ahmet Hamdi Tanpınar", "Yaşar Kemal", "Orhan Pamuk", "Elif Şafak"]
+  },
+  {
+    "id": "bk_005",
+    "category": "benKimim",
+    "difficulty": "medium",
+    "question": "'Kırlangıç Yuvası' eserinin yazarı kimdir?",
+    "answer": "Sait Faik Abasıyanık",
+    "options": ["Sait Faik Abasıyanık", "Yaşar Kemal", "Orhan Kemal", "Sabahattin Ali"]
+  },
+  {
+    "id": "bk_006",
+    "category": "benKimim",
+    "difficulty": "hard",
+    "question": "'Tutunamayanlar' romanının yazarı kimdir?",
+    "answer": "Oğuz Atay",
+    "options": ["Oğuz Atay", "Bilge Karasu", "Orhan Pamuk", "Latife Tekin"]
+  },
+  {
+    "id": "il_001",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "Türk edebiyatında ilk roman hangisidir?",
+    "answer": "İntibah",
+    "options": ["İntibah", "Araba Sevdası", "Taaşşuk-ı Talat ve Fitnat", "İnce Memed"]
+  },
+  {
+    "id": "il_002",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "Türk edebiyatında ilk tiyatro oyunu yazarı kimdir?",
+    "answer": "Şinasi",
+    "options": ["Şinasi", "Namık Kemal", "Ziya Paşa", "Ahmet Mithat Efendi"]
+  },
+  {
+    "id": "il_003",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "medium",
+    "question": "Türk edebiyatında ilk mizah dergisi hangisidir?",
+    "answer": "Diyojen",
+    "options": ["Diyojen", "Karagöz", "Hayal", "Tanzimat"]
+  },
+  {
+    "id": "il_004",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "medium",
+    "question": "İlk Türkçe gazetenin adı nedir?",
+    "answer": "Takvim-i Vekayi",
+    "options": ["Takvim-i Vekayi", "Tercüman-ı Ahval", "Ceride-i Havadis", "Bosphor"]
+  },
+  {
+    "id": "il_005",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "hard",
+    "question": "İlk Türk kadın romancı kimdir?",
+    "answer": "Fatma Aliye",
+    "options": ["Fatma Aliye", "Halide Edip Adıvar", "Afet İnan", "Emine Semiye"]
+  },
+  {
+    "id": "il_006",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "hard",
+    "question": "Türk edebiyatında ilk öykü (hikaye) kitabını kim yazmıştır?",
+    "answer": "Sabahattin Ali",
+    "options": ["Sabahattin Ali", "Sait Faik Abasıyanık", "Ömer Seyfettin", "Refik Halit Karay"]
+  },
+  {
+    "id": "ea_001",
+    "category": "edebiyatAkimlari",
+    "difficulty": "easy",
+    "question": "Servet-i Fünun dergisi hangi edebi akımı temsil eder?",
+    "answer": "Servet-i Fünun Edebiyatı",
+    "options": ["Servet-i Fünun Edebiyatı", "Milli Edebiyat", "Yedi Meşale", "Garip Akımı"]
+  },
+  {
+    "id": "ea_002",
+    "category": "edebiyatAkimlari",
+    "difficulty": "easy",
+    "question": "Garip akımının kurucuları kimlerdir?",
+    "answer": "Orhan Veli ve Melih Cevdet Anday",
+    "options": ["Orhan Veli ve Melih Cevdet Anday", "Orhan Veli ve Oktay Rifat", "Melih Cevdet Anday ve Cahit Sıtkı Tarancı", "Orhan Veli ve Nazım Hikmet"]
+  },
+  {
+    "id": "ea_003",
+    "category": "edebiyatAkimlari",
+    "difficulty": "medium",
+    "question": "Milli Edebiyat akımının öncüsü kimdir?",
+    "answer": "Namık Kemal",
+    "options": ["Namık Kemal", "Şinasi", "Ziya Gökalp", "Tevfik Fikret"]
+  },
+  {
+    "id": "ea_004",
+    "category": "edebiyatAkimlari",
+    "difficulty": "medium",
+    "question": "Yeni Lisan akımının kurucusu kimdir?",
+    "answer": "Ziya Gökalp",
+    "options": ["Ziya Gökalp", "Ömer Seyfettin", "Ali Canip", "Yusuf Akçura"]
+  },
+  {
+    "id": "ea_005",
+    "category": "edebiyatAkimlari",
+    "difficulty": "hard",
+    "question": "Edebiyat-ı Cedide akımı hangi dönemi kapsar?",
+    "answer": "Divan edebiyatına öncülük",
+    "options": ["Divan edebiyatına öncülük", "Tanzimat dönemi", "Milli edebiyat dönemi", "Cumhuriyet dönemi"]
+  },
+  {
+    "id": "ea_006",
+    "category": "edebiyatAkimlari",
+    "difficulty": "hard",
+    "question": "İkinci Yeni akımının özelliklerinden biri nedir?",
+    "answer": "İçten dışa akış",
+    "options": ["İçten dışa akış", "Toplumsal gerçekçilik", "Sanat sanat içindir", "Bireyci yaklaşım"]
+  },
+  {
+    "id": "es_001",
+    "category": "edebiyatSanatlari",
+    "difficulty": "easy",
+    "question": "Divan edebiyatında beyit kaç dizeden oluşur?",
+    "answer": "2",
+    "options": ["2", "3", "4", "5"]
+  },
+  {
+    "id": "es_002",
+    "category": "edebiyatSanatlari",
+    "difficulty": "easy",
+    "question": "Aruz sanatı nedir?",
+    "answer": "Aralıklı vezin",
+    "options": ["Aralıklı vezin", "Kafiye sanatı", "İsim sanatı", "Anlatım tekniği"]
+  },
+  {
+    "id": "es_003",
+    "category": "edebiyatSanatlari",
+    "difficulty": "medium",
+    "question": "İki satırlı dörtlük benzerliklerine verilen ad nedir?",
+    "answer": "Kafiye",
+    "options": ["Kafiye", "Redif", "Cağ", "Aruz"]
+  },
+  {
+    "id": "es_004",
+    "category": "edebiyatSanatlari",
+    "difficulty": "medium",
+    "question": "Redif nedir?",
+    "answer": "Aynı sesin tekrarlanması",
+    "options": ["Aynı sesin tekrarlanması", "Farklı seslerin benzerliği", "Kelimelerin anlamı", "Ses uyumu"]
+  },
+  {
+    "id": "es_005",
+    "category": "edebiyatSanatlari",
+    "difficulty": "hard",
+    "question": "Belagat sanatı neyi inceler?",
+    "answer": "Konuşma sanatını",
+    "options": ["Konuşma sanatını", "Yazı sanatını", "Şiir sanatını", "Anlatım sanatını"]
+  },
+  {
+    "id": "es_006",
+    "category": "edebiyatSanatlari",
+    "difficulty": "hard",
+    "question": "Bedii sanatlar hangi alana girer?",
+    "answer": "Söz sanatları",
+    "options": ["Söz sanatları", "Anlatım sanatları", "Düşünce sanatları", "Heykel sanatları"]
+  },
+  {
+    "id": "ek_001",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "'İnce Memed' romanında ana karakterin sevgilisinin adı nedir?",
+    "answer": "Hatçe",
+    "options": ["Hatçe", "Meleke", "Çakırcı Mehmet", "Işık"]
+  },
+  {
+    "id": "ek_002",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "'Kürk Mantolu Madonna' romanında Raif'in mesleği nedir?",
+    "answer": "Gümrük memuru",
+    "options": ["Gümrük memuru", "Öğretmen", "Mühendis", "Doktor"]
+  },
+  {
+    "id": "ek_003",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "'Yılanların Öcü' romanında köyün adı nedir?",
+    "answer": "Saklıtatlar",
+    "options": ["Saklıtatlar", "Bozcaalan", "Yukarı", "Çukur"]
+  },
+  {
+    "id": "ek_004",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "'Saatleri Ayarlama Enstitüsü' romanında Halitin kızının adı nedir?",
+    "answer": "Nuran",
+    "options": ["Nuran", "Zehra", "Ayşe", "Fatma"]
+  },
+  {
+    "id": "ek_005",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "'Tutunamayanlar' romanında Selimin mesleği nedir?",
+    "answer": "Mühendis",
+    "options": ["Mühendis", "Doktor", "Öğretmen", "Yazar"]
+  },
+  {
+    "id": "ek_006",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "'Yer Demir Gök Bakır' romanında ana karakter kimdir?",
+    "answer": "Memed Ağa",
+    "options": ["Memed Ağa", "Tashan", "Hüsam", "Reşit"]
+  }
+]

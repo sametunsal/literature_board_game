@@ -105,7 +105,7 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
           },
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // Dice result indicator (static, no animation)
         if (turnPhase == TurnPhase.diceRolled &&
@@ -139,7 +139,7 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
           ),
         ],
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 8),
 
         // Roll button - Phase-aware: ONLY enabled during TurnPhase.start
         // Visually and logically disabled in all other phases
@@ -152,7 +152,8 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
                   ? Colors.brown.shade700
                   : Colors.grey.shade400,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              visualDensity: VisualDensity.compact,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -161,7 +162,7 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
             child: Text(
               _isRolling ? 'ZAR ATILIYOR...' : 'ZAR AT',
               style: GoogleFonts.poppins(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -182,8 +183,8 @@ class _DiceFace extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 60,
+      height: 60,
       decoration: BoxDecoration(
         color: isRolling ? Colors.orange.shade100 : Colors.white,
         borderRadius: BorderRadius.circular(12),

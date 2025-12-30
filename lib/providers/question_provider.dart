@@ -1,4 +1,14 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/question.dart';
+import '../repositories/question_repository.dart';
+
+// Question loading provider
+final questionLoadingProvider = FutureProvider<void>((ref) async {
+  await QuestionRepository.loadQuestions();
+  print('✅ Questions loaded from JSON asset');
+});
 
 // Question pool provider
 List<Question> generateQuestions() {
@@ -90,7 +100,7 @@ List<Question> generateQuestions() {
     // Edebiyat Akilları Questions
     Question(
       id: 'q7',
-      category: QuestionCategory.edebiyatAkillari,
+      category: QuestionCategory.edebiyatAkimlari,
       difficulty: Difficulty.easy,
       question: 'Nazım Hikmet Ran hangi sanat akımıyla ilişkilendirilir?',
       answer: 'Gerçekçilik',
@@ -99,7 +109,7 @@ List<Question> generateQuestions() {
     ),
     Question(
       id: 'q8',
-      category: QuestionCategory.edebiyatAkillari,
+      category: QuestionCategory.edebiyatAkimlari,
       difficulty: Difficulty.medium,
       question: 'Yaşar Kemal\'in "İnce Memed" romanında ana tema nedir?',
       answer: 'Ağa sisteminin eleştirisi',
@@ -113,7 +123,7 @@ List<Question> generateQuestions() {
     ),
     Question(
       id: 'q9',
-      category: QuestionCategory.edebiyatAkillari,
+      category: QuestionCategory.edebiyatAkimlari,
       difficulty: Difficulty.hard,
       question: 'Orhan Pamuk hangi ödülü 2006 yılında kazanmıştır?',
       answer: 'Nobel Edebiyat Ödülü',
@@ -215,7 +225,7 @@ List<Question> generateQuestions() {
     ),
     Question(
       id: 'q18',
-      category: QuestionCategory.edebiyatAkillari,
+      category: QuestionCategory.edebiyatAkimlari,
       difficulty: Difficulty.easy,
       question: '"Tutunamayanlar" romanının yazarı kimdir?',
       answer: 'Oğuz Atay',

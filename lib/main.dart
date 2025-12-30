@@ -9,6 +9,7 @@ import 'providers/game_provider.dart';
 import 'providers/tile_provider.dart';
 import 'providers/question_provider.dart';
 import 'providers/card_provider.dart';
+import 'repositories/question_repository.dart';
 import 'models/player.dart';
 import 'models/player_type.dart';
 
@@ -43,7 +44,6 @@ class _MyAppState extends ConsumerState<MyApp> {
           .initializeGame(
             players: _generatePlayers(),
             tiles: generateTiles(),
-            questionPool: generateQuestions(),
             sansCards: generateSansCards(),
             kaderCards: generateKaderCards(),
           );
@@ -54,6 +54,36 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final questionsAsync = ref.watch(questionLoadingProvider);
+
+    // Show loading screen while questions are being loaded
+    if (questionsAsync.isLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Edebiyat Oyunu',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.brown,
+            brightness: Brightness.light,
+          ),
+          textTheme: GoogleFonts.poppinsTextTheme(),
+        ),
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Sorular yükleniyor...', style: TextStyle(fontSize: 16)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Edebiyat Oyunu',

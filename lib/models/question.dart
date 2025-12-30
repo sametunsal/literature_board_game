@@ -1,7 +1,7 @@
 enum QuestionCategory {
   benKimim,
   turkEdebiyatindaIlkler,
-  edebiyatAkillari,
+  edebiyatAkimlari,
   edebiyatSanatlari,
   eserKarakter,
 }

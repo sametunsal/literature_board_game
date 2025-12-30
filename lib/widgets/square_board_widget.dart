@@ -15,12 +15,12 @@ class SquareBoardWidget extends ConsumerWidget {
 
     if (tiles.isEmpty) return const SizedBox();
 
-    // 12x12 Grid System
-    // Corners: 1.5 units. Edges: 9 tiles * 1.0 units. Total = 12.0 units.
+    // 12.6x12.6 Grid System (Thicker Ring for Larger Tiles)
+    // Corners: 1.8 units. Edges: 9 tiles * 1.0 units. Total = 12.6 units.
     return LayoutBuilder(
       builder: (context, constraints) {
         final boardSize = constraints.biggest.shortestSide;
-        final u = boardSize / 12.0; // Unit size
+        final u = boardSize / 12.6; // Unit size
 
         return Container(
           width: boardSize,
@@ -38,8 +38,8 @@ class SquareBoardWidget extends ConsumerWidget {
 
               // --- CENTER LOGO ---
               Positioned(
-                left: 1.5 * u,
-                top: 1.5 * u,
+                left: 1.8 * u,
+                top: 1.8 * u,
                 width: 9 * u,
                 height: 9 * u,
                 child: const CenterArea(),
@@ -56,8 +56,8 @@ class SquareBoardWidget extends ConsumerWidget {
 
   // Visual Rect Calculator (0,0 is Top-Left of Screen)
   Rect _getTileRect(int id, double u) {
-    final c = 1.5 * u; // Corner size
-    final total = 12.0 * u; // Total size
+    final c = 1.8 * u; // Corner size (thicker ring)
+    final total = 12.6 * u; // Total size
 
     // 0: Bottom-Left Corner (START)
     if (id == 0) return Rect.fromLTWH(0, total - c, c, c);
@@ -134,22 +134,28 @@ class SquareBoardWidget extends ConsumerWidget {
           color: _getTileColor(tile.type),
           border: Border.all(color: Colors.black26, width: 0.5),
         ),
-        padding: const EdgeInsets.all(2),
+        padding: EdgeInsets.zero,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isCorner)
               Icon(_getIconForCorner(id), size: u * 0.3, color: Colors.black54),
             Expanded(
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0.5),
+                child: Center(
                   child: Text(
                     tile.name,
                     textAlign: TextAlign.center,
+                    softWrap: true,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                      fontSize: u * 0.2,
-                      fontWeight: FontWeight.bold,
+                      fontSize: u * 0.125,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.5,
+                      height: 1.0,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
@@ -174,8 +180,8 @@ class SquareBoardWidget extends ConsumerWidget {
       double cx = rect.left + (rect.width / 2);
       double cy = rect.top + (rect.height / 2);
 
-      // 2x2 Grid Offsets (Pixel values)
-      double off = tokenSize * 0.3;
+      // 2x2 Grid Offsets (Pixel values) - Tighter for better centering
+      double off = tokenSize * 0.15;
       List<Offset> offsets = [
         Offset(-off, -off),
         Offset(off, -off),

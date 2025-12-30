@@ -1,3 +1,5 @@
+import 'question.dart';
+
 enum TileType { corner, book, publisher, chance, fate, tax, special }
 
 enum CornerEffect { baslangic, kutuphaneNobeti, imzaGunu, iflasRiski }
@@ -27,6 +29,9 @@ class Tile {
   // Special tile attributes
   final SpecialType? specialType;
 
+  // Question category for book/publisher/special tiles
+  final QuestionCategory? questionCategory;
+
   const Tile({
     required this.id,
     required this.name,
@@ -39,6 +44,7 @@ class Tile {
     this.taxType,
     this.taxRate,
     this.specialType,
+    this.questionCategory,
   });
 
   // Helper getters for tile type checking
@@ -80,6 +86,7 @@ class Tile {
     TaxType? taxType,
     int? taxRate,
     SpecialType? specialType,
+    QuestionCategory? questionCategory,
   }) {
     return Tile(
       id: id ?? this.id,
@@ -93,6 +100,7 @@ class Tile {
       taxType: taxType ?? this.taxType,
       taxRate: taxRate ?? this.taxRate,
       specialType: specialType ?? this.specialType,
+      questionCategory: questionCategory ?? this.questionCategory,
     );
   }
 }

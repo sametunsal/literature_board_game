@@ -7,7 +7,6 @@ import '../models/tile.dart';
 import '../models/question.dart';
 import '../models/card.dart';
 import '../models/dice_roll.dart';
-import '../models/turn_result.dart';
 import '../models/turn_phase.dart';
 import '../models/turn_history.dart';
 import '../models/player_type.dart';
@@ -211,6 +210,26 @@ class GameNotifier extends StateNotifier<GameState> {
           currentPlayerIndex: 0,
         ),
       );
+
+  // ========================================================================
+  // TRANSCRIPT LOGGING
+  // ========================================================================
+
+  /// Log an event to the current turn transcript
+  void _logEvent(
+    TurnEventType type, {
+    String? description,
+    Map<String, dynamic>? data,
+  }) {
+    final event = TurnEvent(type, description: description, data: data);
+    final newTranscript = state.currentTranscript.addEvent(event);
+    state = state.copyWith(currentTranscript: newTranscript);
+
+    // Also add to log messages for backward compatibility
+    if (description != null) {
+      state = state.withLogMessage(description);
+    }
+  }
 
   // Initialize game with data
   void initializeGame({
@@ -451,6 +470,18 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Update players list with updated player
     final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    // Log dice roll event to transcript
+    _logEvent(
+      TurnEventType.diceRoll,
+      description: '${currentPlayer.name} zar attı: ${diceRoll.total}',
+      data: {
+        'die1': diceRoll.die1,
+        'die2': diceRoll.die2,
+        'total': diceRoll.total,
+        'isDouble': diceRoll.isDouble,
+      },
+    );
 
     // GAMEPLAY LOG: Dice roll result
     String logMessage =
@@ -796,9 +827,31 @@ class GameNotifier extends StateNotifier<GameState> {
     // Update phase to cardApplied
     state = state.copyWith(turnPhase: TurnPhase.cardApplied);
 
+    // Log card drawn event to transcript
+    _logEvent(
+      TurnEventType.cardDrawn,
+      description: '$cardTypeName kartı çekildi: ${card.description}',
+      data: {
+        'cardType': cardTypeName,
+        'cardId': card.id,
+        'description': card.description,
+      },
+    );
     // UI FEEDBACK LOG: Card description being shown
     state = state.withLogMessage(
       '$cardTypeName kartı uygulanıyor: ${card.description}',
+    );
+
+    // Log card applied event to transcript
+    _logEvent(
+      TurnEventType.cardApplied,
+      description: '$cardTypeName kartı uygulandı: ${card.description}',
+      data: {
+        'cardType': cardTypeName,
+        'cardId': card.id,
+        'effect': card.effect.toString(),
+        'starAmount': card.starAmount,
+      },
     );
 
     // Track effect type for centralized logging and bankruptcy checks
@@ -1390,6 +1443,9 @@ class GameNotifier extends StateNotifier<GameState> {
   // Called by game_view.dart orchestration for bots
   void startNextTurn() {
     debugPrint('▶️ startNextTurn() called');
+
+    // Clear transcript for new turn
+    state = state.copyWith(currentTranscript: TurnTranscript.empty);
 
     // Move to next player
     _nextPlayer();

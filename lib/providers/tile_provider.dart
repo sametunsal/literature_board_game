@@ -1,4 +1,5 @@
 import '../models/tile.dart';
+import '../models/question.dart';
 
 // 40-tile board data provider - EXACT MATCH TO SPECIFICATIONS
 // Tiles are indexed 0-39, Clockwise starting from Bottom-Left (START)
@@ -23,6 +24,7 @@ List<Tile> generateTiles() {
       group: 1,
       copyrightFee: 4,
       purchasePrice: 60,
+      questionCategory: QuestionCategory.benKimim,
     ),
 
     // Tile 2: FATE Card (Community Chest equivalent)
@@ -36,6 +38,7 @@ List<Tile> generateTiles() {
       group: 1,
       copyrightFee: 8,
       purchasePrice: 60,
+      questionCategory: QuestionCategory.benKimim,
     ),
 
     // Tile 4: INCOME TAX
@@ -55,6 +58,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 25,
       purchasePrice: 200,
+      questionCategory: QuestionCategory.eserKarakter,
     ),
 
     // Tile 6: Book Group 2
@@ -65,6 +69,7 @@ List<Tile> generateTiles() {
       group: 2,
       copyrightFee: 10,
       purchasePrice: 100,
+      questionCategory: QuestionCategory.benKimim,
     ),
 
     // Tile 7: CHANCE Card
@@ -78,6 +83,7 @@ List<Tile> generateTiles() {
       group: 2,
       copyrightFee: 12,
       purchasePrice: 100,
+      questionCategory: QuestionCategory.benKimim,
     ),
 
     // Tile 9: Book Group 2
@@ -88,6 +94,7 @@ List<Tile> generateTiles() {
       group: 2,
       copyrightFee: 14,
       purchasePrice: 120,
+      questionCategory: QuestionCategory.benKimim,
     ),
 
     // === LEFT COLUMN (Bottom to Top: 10-19) ===
@@ -108,6 +115,7 @@ List<Tile> generateTiles() {
       group: 3,
       copyrightFee: 16,
       purchasePrice: 140,
+      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
     // Tile 12: WRITING SCHOOL
@@ -116,6 +124,7 @@ List<Tile> generateTiles() {
       name: 'YAZARLIK OKULU',
       type: TileType.special,
       specialType: SpecialType.yazarlikOkulu,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 13: Book Group 3
@@ -126,6 +135,7 @@ List<Tile> generateTiles() {
       group: 3,
       copyrightFee: 16,
       purchasePrice: 160,
+      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
     // Tile 14: Book Group 3
@@ -136,6 +146,7 @@ List<Tile> generateTiles() {
       group: 3,
       copyrightFee: 18,
       purchasePrice: 180,
+      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
     // Tile 15: PUBLISHER 2
@@ -146,6 +157,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 25,
       purchasePrice: 200,
+      questionCategory: QuestionCategory.eserKarakter,
     ),
 
     // Tile 16: Book Group 4
@@ -156,6 +168,7 @@ List<Tile> generateTiles() {
       group: 4,
       copyrightFee: 20,
       purchasePrice: 200,
+      questionCategory: QuestionCategory.edebiyatAkimlari,
     ),
 
     // Tile 17: FATE Card
@@ -169,6 +182,7 @@ List<Tile> generateTiles() {
       group: 4,
       copyrightFee: 22,
       purchasePrice: 220,
+      questionCategory: QuestionCategory.edebiyatAkimlari,
     ),
 
     // Tile 19: Book Group 4
@@ -179,6 +193,7 @@ List<Tile> generateTiles() {
       group: 4,
       copyrightFee: 24,
       purchasePrice: 240,
+      questionCategory: QuestionCategory.edebiyatAkimlari,
     ),
 
     // === TOP ROW (Left to Right: 20-29) ===
@@ -199,6 +214,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 28,
       purchasePrice: 260,
+      questionCategory: QuestionCategory.edebiyatAkimlari,
     ),
 
     // Tile 22: CHANCE Card
@@ -212,6 +228,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 28,
       purchasePrice: 280,
+      questionCategory: QuestionCategory.edebiyatAkimlari,
     ),
 
     // Tile 24: Book Group 5
@@ -222,6 +239,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 30,
       purchasePrice: 300,
+      questionCategory: QuestionCategory.edebiyatAkimlari,
     ),
 
     // Tile 25: PUBLISHER 3
@@ -232,6 +250,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 25,
       purchasePrice: 200,
+      questionCategory: QuestionCategory.eserKarakter,
     ),
 
     // Tile 26: Book Group 6
@@ -242,6 +261,7 @@ List<Tile> generateTiles() {
       group: 6,
       copyrightFee: 32,
       purchasePrice: 320,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 27: Book Group 6
@@ -252,6 +272,7 @@ List<Tile> generateTiles() {
       group: 6,
       copyrightFee: 35,
       purchasePrice: 350,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 28: EDUCATION FOUNDATION
@@ -270,6 +291,7 @@ List<Tile> generateTiles() {
       group: 6,
       copyrightFee: 35,
       purchasePrice: 350,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // === RIGHT COLUMN (Top to Bottom: 30-39) ===
@@ -290,6 +312,7 @@ List<Tile> generateTiles() {
       group: 7,
       copyrightFee: 40,
       purchasePrice: 400,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 32: Book Group 7
@@ -300,6 +323,7 @@ List<Tile> generateTiles() {
       group: 7,
       copyrightFee: 42,
       purchasePrice: 420,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 33: FATE Card
@@ -313,6 +337,7 @@ List<Tile> generateTiles() {
       group: 7,
       copyrightFee: 45,
       purchasePrice: 450,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 35: PUBLISHER 4
@@ -323,6 +348,7 @@ List<Tile> generateTiles() {
       group: 5,
       copyrightFee: 25,
       purchasePrice: 200,
+      questionCategory: QuestionCategory.eserKarakter,
     ),
 
     // Tile 36: CHANCE Card
@@ -336,6 +362,7 @@ List<Tile> generateTiles() {
       group: 8,
       copyrightFee: 50,
       purchasePrice: 500,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
 
     // Tile 38: AUTHOR TAX
@@ -355,6 +382,7 @@ List<Tile> generateTiles() {
       group: 8,
       copyrightFee: 55,
       purchasePrice: 550,
+      questionCategory: QuestionCategory.edebiyatSanatlari,
     ),
   ];
 }
