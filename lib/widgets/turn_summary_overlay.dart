@@ -95,7 +95,6 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay> {
   }
 
   @override
-  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
