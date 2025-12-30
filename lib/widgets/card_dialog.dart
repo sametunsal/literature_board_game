@@ -52,9 +52,16 @@ class _CardDialogState extends ConsumerState<CardDialog>
     ref.read(gameProvider.notifier).applyCardEffect(widget.card);
     Navigator.of(context).pop();
 
-    // CRITICAL: Continue game flow by calling playTurn()
-    // applyCardEffect sets phase to cardApplied, playTurn will call endTurn()
-    ref.read(gameProvider.notifier).playTurn();
+    // CRITICAL: Continue game flow by calling playTurn() with a small delay
+    // This allows the dialog to fully close and the widget tree to update
+    // before the next turn logic runs, preventing black screen issue
+    Future.delayed(const Duration(milliseconds: 100), () {
+      // Check if widget is still mounted before calling playTurn
+      if (!mounted) return;
+
+      // applyCardEffect sets phase to cardApplied, playTurn will call endTurn()
+      ref.read(gameProvider.notifier).playTurn();
+    });
   }
 
   @override

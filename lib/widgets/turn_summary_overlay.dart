@@ -46,169 +46,184 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
   }
 
   void _handleContinue() {
-    // 1. Animasyonu tersine çevir (Kapanış efekti)
+    if (!mounted) return;
     _controller.reverse().then((_) {
-      // 2. Animasyon bittikten sonra oyunu ilerlet
-      ref.read(gameProvider.notifier).startNextTurn();
+      if (mounted) {
+        ref.read(gameProvider.notifier).startNextTurn();
+      }
     });
+  }
+
+  // Güvenli Renk Dönüştürücü (ÇÖKMEYİ ENGELLER)
+  Color _safeParseColor(String? hexString) {
+    if (hexString == null || hexString.isEmpty) return Colors.blue;
+    try {
+      final cleanHex = hexString.replaceFirst('#', '');
+      if (cleanHex.length == 6) {
+        return Color(int.parse('0xFF$cleanHex'));
+      } else if (cleanHex.length == 8) {
+        return Color(int.parse('0x$cleanHex'));
+      }
+      return Colors.blue;
+    } catch (e) {
+      debugPrint("Renk hatası: $e");
+      return Colors.red; // Hata durumunda kırmızı dön
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- KRİTİK KONTROL (THE GATEKEEPER) ---
-    // Sadece oyun fazı 'turnEnded' ise görün. Başka her durumda gizlen.
-    final turnPhase = ref.watch(turnPhaseProvider);
-    final turnResult = ref.watch(lastTurnResultProvider);
-    final gameState = ref.watch(gameProvider);
+    // Tüm build işlemini try-catch içine alıyoruz (SİYAH EKRAN KORUMASI)
+    try {
+      final turnPhase = ref.watch(turnPhaseProvider);
+      final turnResult = ref.watch(lastTurnResultProvider);
+      final gameState = ref.watch(gameProvider);
 
-    if (turnPhase != TurnPhase.turnEnded) {
-      if (_controller.value > 0)
-        _controller.reset(); // Gizlenirken animasyonu sıfırla
-      return const SizedBox.shrink();
-    }
+      // Sadece tur bittiyse göster
+      if (turnPhase != TurnPhase.turnEnded) {
+        if (_controller.value > 0) _controller.reset();
+        return const SizedBox.shrink();
+      }
 
-    // Görünür olduğunda animasyonu başlat
-    if (_controller.value == 0) {
-      _controller.forward();
-
-      // Botlar için otomatik geçiş
-      if (turnResult.playerIndex >= 0 &&
-          turnResult.playerIndex < gameState.players.length) {
-        final player = gameState.players[turnResult.playerIndex];
-        if (player.type == PlayerType.bot) {
-          Future.delayed(const Duration(milliseconds: 2500), () {
-            if (mounted && ref.read(turnPhaseProvider) == TurnPhase.turnEnded) {
-              _handleContinue();
-            }
-          });
+      // Animasyonu başlat
+      if (_controller.value == 0) {
+        _controller.forward();
+        // Bot kontrolü
+        if (turnResult.playerIndex >= 0 &&
+            turnResult.playerIndex < gameState.players.length) {
+          if (gameState.players[turnResult.playerIndex].type ==
+              PlayerType.bot) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted &&
+                  ref.read(turnPhaseProvider) == TurnPhase.turnEnded) {
+                _handleContinue();
+              }
+            });
+          }
         }
       }
-    }
 
-    // Veri güvenliği (Data Safety)
-    if (turnResult.playerIndex < 0 ||
-        turnResult.playerIndex >= gameState.players.length) {
-      return const SizedBox.shrink();
-    }
+      // Veri kontrolü
+      if (turnResult.playerIndex < 0 ||
+          turnResult.playerIndex >= gameState.players.length) {
+        return const SizedBox.shrink();
+      }
 
-    final player = gameState.players[turnResult.playerIndex];
+      final player = gameState.players[turnResult.playerIndex];
+      final summaryText = TurnSummaryGenerator.generateTurnSummary(
+        turnResult,
+        playerName: player.name,
+      );
 
-    // Özet metni oluştur
-    final summaryText = TurnSummaryGenerator.generateTurnSummary(
-      turnResult,
-      playerName: player.name,
-    );
+      final playerColor = _safeParseColor(player.color);
 
-    return Stack(
-      children: [
-        // Yarı saydam arka plan
-        Positioned.fill(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Container(color: Colors.black54),
+      return Stack(
+        children: [
+          // Arka Plan
+          Positioned.fill(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Container(color: Colors.black54),
+            ),
           ),
-        ),
-
-        // Özet Kartı
-        Center(
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Container(
-              width: 320,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 20,
-                    spreadRadius: 5,
+          // Kart
+          Center(
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Card(
+                elevation: 10,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Container(
+                  width: 300,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Oyuncu Avatarı
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Color(
-                      int.parse(player.color.replaceFirst('#', '0xFF')),
-                    ),
-                    child: Text(
-                      player.name[0].toUpperCase(),
-                      style: GoogleFonts.titanOne(
-                        fontSize: 28,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  Text(
-                    "TUR TAMAMLANDI",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    player.name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  const Divider(height: 32),
-
-                  // Olay Özeti
-                  Text(
-                    summaryText,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Devam Butonu
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _handleContinue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: playerColor,
+                        child: Text(
+                          player.name.isNotEmpty
+                              ? player.name[0].toUpperCase()
+                              : "?",
+                          style: const TextStyle(
+                            fontSize: 24,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        "DEVAM ET",
-                        style: TextStyle(
-                          fontSize: 16,
+                      const SizedBox(height: 16),
+                      Text(
+                        "TUR BİTTİ",
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        player.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(height: 30),
+                      Text(
+                        summaryText,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _handleContinue,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: playerColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text("DEVAM ET"),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
+        ],
+      );
+    } catch (e, stack) {
+      // OLAĞANÜSTÜ DURUM: Eğer widget çizerken hata olursa Siyah Ekran yerine bunu göster
+      debugPrint("Overlay Hatası: $e \n $stack");
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          color: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Görüntüleme Hatası",
+                style: TextStyle(color: Colors.red),
+              ),
+              ElevatedButton(
+                onPressed: _handleContinue,
+                child: const Text("Yine de Devam Et"),
+              ),
+            ],
+          ),
         ),
-      ],
-    );
+      );
+    }
   }
 }
