@@ -289,148 +289,95 @@ class GameNotifier extends StateNotifier<GameState> {
   /// 5. UI reads updated state and calls playTurn() again
   /// 6. Repeat until turnEnded, then playTurn() resets to start for next player
 
-  /// Main orchestration method - the ONLY method UI should call
+  // --- FIXED playTurn METHOD ---
   void playTurn() {
-    debugPrint(
-      '🎮 playTurn() called - Current phase: ${state.turnPhase}, Player type: ${state.currentPlayer?.type}',
-    );
+    debugPrint('🎮 playTurn() called - Current phase: ${state.turnPhase}');
 
-    // Guard clause: Prevent re-entry during turn processing
-    if (_isProcessingTurn) {
-      debugPrint('🛑 Turn already processing, ignoring duplicate call');
-      return;
-    }
-
-    // Set processing flag to prevent recursion
+    if (_isProcessingTurn) return;
     _isProcessingTurn = true;
 
     try {
-      // Switch on current phase to determine next action
       switch (state.turnPhase) {
-        // Phase 1: Start of turn - roll's dice
         case TurnPhase.start:
-          debugPrint('🎲 Phase: start → rolling dice');
           rollDice();
           break;
-
-        // Phase 2: Dice rolled - move player
         case TurnPhase.diceRolled:
-          debugPrint('🚶 Phase: diceRolled → moving player');
           moveCurrentPlayer(state.lastDiceRoll?.total ?? 0);
           break;
-
-        // Phase 3: Player moved - resolve tile effects
         case TurnPhase.moved:
-          debugPrint('🏠 Phase: moved → resolving tile');
           resolveCurrentTile();
           break;
-
-        // Phase 4: Tile resolved - determine next action based on tile type
         case TurnPhase.tileResolved:
-          debugPrint('🎯 Phase: tileResolved → handling tile effect');
+          // FIX: Handle Bot Card Application Logic Here
+          // If it's a bot and a card is waiting, apply it immediately.
+          if (state.currentCard != null &&
+              state.currentPlayer?.type == PlayerType.bot) {
+            debugPrint('🤖 Bot applying card...');
+            applyCardEffect(state.currentCard!);
+            return; // Exit, applyCardEffect will advance phase
+          }
+          // Otherwise, handle normal tile resolution
           _handleTileResolved();
           break;
 
-        // Phase 5: Card applied - end turn
+        // REMOVED INVALID "case 'applyCard':"
+
         case TurnPhase.cardApplied:
-          debugPrint('🃏 Phase: cardApplied → ending turn');
-          endTurn();
+          endTurn(); // Card applied -> End Turn
           break;
 
-        // CRITICAL FIX: Handle applyCard directive from dialog
-        // When dialog applies card effect, we need to continue the turn
-        case 'applyCard':
-          debugPrint('🃏 Applying card effect → calling applyCardEffect()');
-          if (state.currentCard != null) {
-            applyCardEffect(state.currentCard!);
-          }
-          break;
-
-        // Phase 5: Question waiting - bot answers, human waits
         case TurnPhase.questionWaiting:
-          debugPrint('❓ Phase: questionWaiting → waiting for answer');
-          // Bot auto-answers, human waits for user input
           if (state.currentPlayer?.type == PlayerType.bot) {
             _botAnswerQuestion();
-          } else {
-            debugPrint('👤 Human player waiting for question answer');
           }
           break;
 
-        // Phase 5: Question resolved - end turn
         case TurnPhase.questionResolved:
-          debugPrint('✅ Phase: questionResolved → ending turn');
-          endTurn();
-          break;
-
-        // Phase 5: Copyright purchased - end turn
         case TurnPhase.copyrightPurchased:
-          debugPrint('📋 Phase: copyrightPurchased → ending turn');
-          endTurn();
-          break;
-
-        // Phase 5: Tax resolved - end turn
         case TurnPhase.taxResolved:
-          debugPrint('💰 Phase: taxResolved → ending turn');
           endTurn();
           break;
 
-        // Phase 6: Turn ended - this phase is transient, next call will start new turn
         case TurnPhase.turnEnded:
-          // This shouldn't happen - turnEnded is reset to start by endTurn()
-          debugPrint(
-            '⚠️ playTurn called in turnEnded phase - should be reset to start',
-          );
+          // Should be handled by startNextTurn via UI
           break;
       }
     } finally {
-      // Always reset guard flag after processing completes
       _isProcessingTurn = false;
     }
   }
 
-  /// Handle tile resolved phase - route to appropriate action based on tile type
+  // --- FIXED _handleTileResolved METHOD ---
   void _handleTileResolved() {
     final tileNumber = state.newPosition ?? state.currentPlayer!.position;
     final tile = state.tiles.firstWhere(
       (t) => t.id == tileNumber,
-      orElse: () {
-        debugPrint('CRITICAL ERROR: Tile ID $tileNumber not found!');
-        return state.tiles[0]; // Fallback to Start
-      },
+      orElse: () => state.tiles[0],
     );
 
-    // Route based on tile type
     switch (tile.type) {
       case TileType.chance:
       case TileType.fate:
-        // CRITICAL FIX: Don't draw card if already drawn (prevents infinite loop)
-        if (state.currentCard != null) {
-          debugPrint('🃏 Card already drawn, skipping re-draw');
-          return;
-        }
-        // Card tile - draw card and wait for UI dialog
+        // If card is already drawn, DO NOT draw again (prevents loop)
+        if (state.currentCard != null) return;
+
         drawCard(tile.type == TileType.chance ? CardType.sans : CardType.kader);
-        // Card is stored in state.currentCard
-        // UI will show CardDialog
-        // Dialog's "Apply" button will call applyCardEffect()
-        // Don't advance phase yet - wait for dialog to close
+        // Flow stops here.
+        // Human: Waits for Dialog "Uygula" button.
+        // Bot: playTurn() loop will catch it in next tick and call applyCardEffect.
         break;
 
       case TileType.book:
       case TileType.publisher:
-        // Question tile - show question
         _showQuestion(tile);
         break;
 
       case TileType.tax:
-        // Tax tile - handle tax
         _handleTaxTile(tile);
         break;
 
       case TileType.corner:
       case TileType.special:
-        // Corner or special tile - no additional action needed, end turn
         endTurn();
         break;
     }
@@ -818,12 +765,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Apply card effect (called from CardDialog)
   void applyCardEffect(Card card) {
-    // Allow card effect to be applied even if phase has moved forward
-    // This ensures the dialog can apply effects properly
-    if (state.currentCard?.id != card.id) {
-      debugPrint('⚠️ Card ID mismatch - skipping');
-      return;
-    }
     if (state.currentPlayer == null) return;
 
     final currentPlayer = state.currentPlayer!;
@@ -832,31 +773,11 @@ class GameNotifier extends StateNotifier<GameState> {
     // Update phase to cardApplied
     state = state.copyWith(turnPhase: TurnPhase.cardApplied);
 
-    // Log card drawn event to transcript
-    _logEvent(
-      TurnEventType.cardDrawn,
-      description: '$cardTypeName kartı çekildi: ${card.description}',
-      data: {
-        'cardType': cardTypeName,
-        'cardId': card.id,
-        'description': card.description,
-      },
-    );
-    // UI FEEDBACK LOG: Card description being shown
-    state = state.withLogMessage(
-      '$cardTypeName kartı uygulanıyor: ${card.description}',
-    );
-
-    // Log card applied event to transcript
+    // 1. Log the event (Critical for Summary)
     _logEvent(
       TurnEventType.cardApplied,
-      description: '$cardTypeName kartı uygulandı: ${card.description}',
-      data: {
-        'cardType': cardTypeName,
-        'cardId': card.id,
-        'effect': card.effect.toString(),
-        'starAmount': card.starAmount,
-      },
+      description: 'Kart Çekildi: ${card.description}',
+      data: {'cardId': card.id, 'type': card.type.toString()},
     );
 
     // Track effect type for centralized logging and bankruptcy checks
