@@ -5,6 +5,7 @@ import '../providers/game_provider.dart';
 import '../models/turn_result.dart';
 import '../models/player.dart';
 import '../models/player_type.dart';
+import '../models/turn_phase.dart'; // Import Phase enum
 import '../utils/turn_summary_generator.dart';
 
 class TurnSummaryOverlay extends ConsumerStatefulWidget {
@@ -36,18 +37,6 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
       parent: _controller,
       curve: Curves.easeOut,
     );
-
-    _controller.forward();
-
-    // Botlar için otomatik geçiş
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final currentPlayer = ref.read(currentPlayerProvider);
-      if (currentPlayer?.type == PlayerType.bot) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) _handleContinue();
-        });
-      }
-    });
   }
 
   @override
@@ -57,25 +46,59 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
   }
 
   void _handleContinue() {
-    ref.read(gameProvider.notifier).startNextTurn();
+    // 1. Close animation explicitly
+    _controller.reverse().then((_) {
+      // 2. Advance game state ONLY after animation starts closing
+      ref.read(gameProvider.notifier).startNextTurn();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. GÜVENLİ VERİ ERİŞİMİ
+    // --- CRITICAL LOGIC FIX ---
+    // 1. Listen to the Phase
+    final turnPhase = ref.watch(turnPhaseProvider);
     final turnResult = ref.watch(lastTurnResultProvider);
     final gameState = ref.watch(gameProvider);
 
-    // Veri yoksa veya geçersizse sessizce hiçbir şey çizme (ÇÖKMEZ)
-    if (turnResult == null ||
-        turnResult.playerIndex < 0 ||
+    // 2. The Gatekeeper: Show ONLY if phase is turnEnded
+    if (turnPhase != TurnPhase.turnEnded) {
+      // Reset animation if we are hidden
+      if (_controller.value > 0) _controller.reset();
+      return const SizedBox.shrink();
+    }
+
+    // 3. Play animation if appearing
+    if (_controller.value == 0) {
+      _controller.forward();
+
+      // Auto-advance for Bots
+      final currentPlayer = ref.read(
+        currentPlayerProvider,
+      ); // Check current, or last turn player
+      // Ideally check based on turnResult player index
+      if (turnResult.playerIndex >= 0 &&
+          turnResult.playerIndex < gameState.players.length) {
+        final player = gameState.players[turnResult.playerIndex];
+        if (player.type == PlayerType.bot) {
+          Future.delayed(const Duration(milliseconds: 2500), () {
+            if (mounted && ref.read(turnPhaseProvider) == TurnPhase.turnEnded) {
+              _handleContinue();
+            }
+          });
+        }
+      }
+    }
+
+    // 4. Data Safety Checks
+    if (turnResult.playerIndex < 0 ||
         turnResult.playerIndex >= gameState.players.length) {
       return const SizedBox.shrink();
     }
 
     final player = gameState.players[turnResult.playerIndex];
 
-    // Özet metni oluştur
+    // 5. Generate Summary
     final summaryText = TurnSummaryGenerator.generateTurnSummary(
       turnResult,
       playerName: player.name,
@@ -83,7 +106,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
     return Stack(
       children: [
-        // Arka Plan (Yarı Saydam Siyah)
+        // Backdrop
         Positioned.fill(
           child: FadeTransition(
             opacity: _fadeAnimation,
@@ -91,7 +114,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
           ),
         ),
 
-        // Kartın Kendisi
+        // Card
         Center(
           child: ScaleTransition(
             scale: _scaleAnimation,
@@ -128,7 +151,6 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
                   ),
                   const SizedBox(height: 16),
 
-                  // Başlık
                   Text(
                     "TUR TAMAMLANDI",
                     style: GoogleFonts.poppins(
@@ -140,7 +162,6 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
                   ),
                   const SizedBox(height: 8),
 
-                  // Oyuncu İsmi
                   Text(
                     player.name,
                     style: GoogleFonts.poppins(
@@ -152,7 +173,6 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
                   const Divider(height: 32),
 
-                  // Detaylar (Metin Olarak)
                   Text(
                     summaryText,
                     textAlign: TextAlign.center,
@@ -165,7 +185,6 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
                   const SizedBox(height: 24),
 
-                  // Devam Butonu
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
