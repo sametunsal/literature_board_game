@@ -89,10 +89,9 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay> {
       _isVisible = false;
     });
 
-    // Note: We do NOT call playTurn() here.
-    // The turn progression is handled by game_view.dart's
-    // existing auto-advance orchestration mechanism when
-    // the phase changes from turnEnded.
+    // CRITICAL FIX: Call startNextTurn() to advance to the next player
+    // This allows the turn summary to be shown before the game continues
+    ref.read(gameProvider.notifier).startNextTurn();
   }
 
   @override
@@ -205,7 +204,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay> {
       }
 
       // Generate summary text
-      final summaryText = generateTurnSummary(
+      final summaryText = TurnSummaryGenerator.generateTurnSummary(
         turnResult,
         playerName: player?.name,
         tileName: tileName,

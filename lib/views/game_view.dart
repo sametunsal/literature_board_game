@@ -12,6 +12,7 @@ import '../widgets/question_dialog.dart';
 import '../widgets/copyright_purchase_dialog.dart';
 import '../widgets/turn_summary_overlay.dart';
 import '../widgets/turn_result_inspector.dart'; // DEV TOOL: Turn Result Inspector
+import '../widgets/card_dialog.dart';
 
 class GameView extends ConsumerStatefulWidget {
   const GameView({super.key});
@@ -28,6 +29,7 @@ class _GameViewState extends ConsumerState<GameView> {
     final questionState = ref.watch(questionStateProvider);
     final currentQuestion = ref.watch(currentQuestionProvider);
     final turnPhase = ref.watch(turnPhaseProvider);
+    final currentCard = ref.watch(currentCardProvider);
 
     // Phase 2 Orchestration Listener - UI-controlled timing
     //
@@ -61,6 +63,9 @@ class _GameViewState extends ConsumerState<GameView> {
 
         // Slower delay to allow UI animations to complete
         Future.delayed(const Duration(milliseconds: 1500), () {
+          // CRITICAL FIX: Check if widget is still mounted before using ref
+          if (!mounted) return;
+
           // SAFETY CHECK: Ensure we still have a directive after the delay!
           // This prevents stale timers from auto-playing for humans.
           final freshDirective = ref
@@ -118,7 +123,7 @@ class _GameViewState extends ConsumerState<GameView> {
               Expanded(
                 flex: 7,
                 child: Container(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.zero,
                   child: const Center(
                     child: AspectRatio(
                       aspectRatio: 1.0,
@@ -338,13 +343,13 @@ class _GameViewState extends ConsumerState<GameView> {
                       const Divider(height: 1),
 
                       // SECTION 3: FOOTER - Dice Area
-                      // CRITICAL FIX: Give it a safe fixed height (160px) to fit EnhancedDiceWidget
+                      // CRITICAL FIX: Give it a safe fixed height (180px) to fit EnhancedDiceWidget
                       // NO SizedBox wrapping, NO Expanded constraint
                       // width: double.infinity ensures it fills available width
                       Container(
                         width: double.infinity,
                         height:
-                            160, // Safe fixed height for dice widget (~150px needed)
+                            180, // Safe fixed height for dice widget (~140px needed)
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
@@ -356,9 +361,14 @@ class _GameViewState extends ConsumerState<GameView> {
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Pure dice widget - no scaling, no height constraints
+                            // FittedBox safety wrapper - shrinks instead of crashing on overflow
                             const Expanded(
-                              child: Center(child: EnhancedDiceWidget()),
+                              child: Center(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: EnhancedDiceWidget(),
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             // Instruction text
@@ -400,6 +410,10 @@ class _GameViewState extends ConsumerState<GameView> {
               ),
             ),
 
+          // Card dialog overlay
+          // Show when a card is drawn (currentCard is not null)
+          if (currentCard != null) CardDialog(card: currentCard!),
+
           // Phase 4: Turn Summary Overlay - Shows summary of completed turn
           // Visible ONLY during TurnPhase.turnEnded
           // Provides clear, concise summary of what just happened
@@ -409,7 +423,7 @@ class _GameViewState extends ConsumerState<GameView> {
           // ONLY visible in debug mode (kDebugMode == true)
           // Read-only inspection of lastTurnResult (never writes to game state)
           // Search for "DEV TOOL" to find all temporary debug widgets
-          const TurnResultInspector(),
+          // const TurnResultInspector(), // <--- DISABLED: Was blocking UI interactions
         ],
       ),
     );

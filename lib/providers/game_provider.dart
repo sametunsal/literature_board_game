@@ -12,6 +12,8 @@ import '../models/turn_phase.dart';
 import '../models/turn_history.dart';
 import '../models/player_type.dart';
 import '../constants/game_constants.dart';
+import '../repositories/question_repository.dart';
+import '../utils/turn_summary_generator.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -85,6 +87,9 @@ class GameState {
   // Turn history - storage of completed turns
   final TurnHistory turnHistory;
 
+  // Current turn transcript for tracking turn events
+  final TurnTranscript currentTranscript;
+
   // Flags
   final bool isGameOver;
 
@@ -111,6 +116,7 @@ class GameState {
     this.currentCard,
     this.lastTurnResult = TurnResult.empty,
     this.turnHistory = const TurnHistory.empty(),
+    this.currentTranscript = TurnTranscript.empty,
   });
 
   Player? get currentPlayer {
@@ -148,6 +154,7 @@ class GameState {
     Card? currentCard,
     TurnResult? lastTurnResult,
     TurnHistory? turnHistory,
+    TurnTranscript? currentTranscript,
   }) {
     return GameState(
       players: players ?? this.players,
@@ -172,6 +179,7 @@ class GameState {
       currentCard: currentCard ?? this.currentCard,
       lastTurnResult: lastTurnResult ?? this.lastTurnResult,
       turnHistory: turnHistory ?? this.turnHistory,
+      currentTranscript: currentTranscript ?? this.currentTranscript,
     );
   }
 
@@ -208,7 +216,7 @@ class GameNotifier extends StateNotifier<GameState> {
   void initializeGame({
     required List<Player> players,
     required List<Tile> tiles,
-    required List<Question> questionPool,
+    List<Question>? questionPool,
     required List<Card> sansCards,
     required List<Card> kaderCards,
   }) {
@@ -275,7 +283,7 @@ class GameNotifier extends StateNotifier<GameState> {
     try {
       // Switch on current phase to determine next action
       switch (state.turnPhase) {
-        // Phase 1: Start of turn - roll the dice
+        // Phase 1: Start of turn - roll's dice
         case TurnPhase.start:
           debugPrint('🎲 Phase: start → rolling dice');
           rollDice();
@@ -303,6 +311,15 @@ class GameNotifier extends StateNotifier<GameState> {
         case TurnPhase.cardApplied:
           debugPrint('🃏 Phase: cardApplied → ending turn');
           endTurn();
+          break;
+
+        // CRITICAL FIX: Handle applyCard directive from dialog
+        // When dialog applies card effect, we need to continue the turn
+        case 'applyCard':
+          debugPrint('🃏 Applying card effect → calling applyCardEffect()');
+          if (state.currentCard != null) {
+            applyCardEffect(state.currentCard!);
+          }
           break;
 
         // Phase 5: Question waiting - bot answers, human waits
@@ -363,13 +380,17 @@ class GameNotifier extends StateNotifier<GameState> {
     switch (tile.type) {
       case TileType.chance:
       case TileType.fate:
-        // Card tile - draw and apply card
-        drawCard(tile.type == TileType.chance ? CardType.sans : CardType.kader);
-        // Note: drawCard stores the card, then we need to apply it
-        // But drawCard doesn't auto-apply, so we need to call applyCardEffect
+        // CRITICAL FIX: Don't draw card if already drawn (prevents infinite loop)
         if (state.currentCard != null) {
-          applyCardEffect(state.currentCard!);
+          debugPrint('🃏 Card already drawn, skipping re-draw');
+          return;
         }
+        // Card tile - draw card and wait for UI dialog
+        drawCard(tile.type == TileType.chance ? CardType.sans : CardType.kader);
+        // Card is stored in state.currentCard
+        // UI will show CardDialog
+        // Dialog's "Apply" button will call applyCardEffect()
+        // Don't advance phase yet - wait for dialog to close
         break;
 
       case TileType.book:
@@ -646,8 +667,10 @@ class GameNotifier extends StateNotifier<GameState> {
     // Update phase to questionWaiting (dialog stays open until answered)
     state = state.copyWith(turnPhase: TurnPhase.questionWaiting);
 
-    // Get a random question from the pool
-    Question question = _getRandomQuestion();
+    // Get a random question from repository
+    // Default to benKimim if no category is assigned
+    final category = tile.questionCategory ?? QuestionCategory.benKimim;
+    Question question = QuestionRepository.getRandomQuestion(category);
 
     // If player has easyQuestionNext flag, consume it and get an easy question
     if (currentPlayer.easyQuestionNext) {
@@ -757,9 +780,14 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  // Apply card effect
+  // Apply card effect (called from CardDialog)
   void applyCardEffect(Card card) {
-    if (!_requirePhase(TurnPhase.tileResolved, 'applyCardEffect')) return;
+    // Allow card effect to be applied even if phase has moved forward
+    // This ensures the dialog can apply effects properly
+    if (state.currentCard?.id != card.id) {
+      debugPrint('⚠️ Card ID mismatch - skipping');
+      return;
+    }
     if (state.currentPlayer == null) return;
 
     final currentPlayer = state.currentPlayer!;
@@ -1024,6 +1052,11 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.moved:
         return 'resolveTile';
       case TurnPhase.tileResolved:
+        // CRITICAL FIX: If a card is waiting to be applied, STOP auto-advance for humans!
+        // Only Bot auto-applies. Humans return null to wait for UI interaction.
+        if (state.currentCard != null) {
+          return isBot ? 'applyCard' : null;
+        }
         return 'handleTileEffect';
       case TurnPhase.questionWaiting:
         // Bots auto-answer questions, humans wait for input
@@ -1034,7 +1067,8 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.copyrightPurchased:
         return 'endTurn';
       case TurnPhase.turnEnded:
-        return 'nextTurn';
+        // CRITICAL FIX: Bots auto-advance to next turn, humans wait for summary button
+        return isBot ? 'nextTurn' : null;
       default:
         return null;
     }
@@ -1270,6 +1304,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   // End turn - Step 4 of turn
+  // CRITICAL FIX: This method now PAUSES at turnEnded instead of immediately moving to next player
   void endTurn() {
     // Allow ending turn from multiple phases (some tiles might resolve without further action)
     if (state.turnPhase != TurnPhase.taxResolved &&
@@ -1286,9 +1321,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     final currentPlayer = state.currentPlayer!;
     Player? updatedPlayer;
-
-    // Update phase to turnEnded
-    state = state.copyWith(turnPhase: TurnPhase.turnEnded);
 
     // Check for bankruptcy
     if (currentPlayer.stars <= GameConstants.bankruptcyThreshold) {
@@ -1308,6 +1340,27 @@ class GameNotifier extends StateNotifier<GameState> {
       state = state.copyWith(players: updatedPlayers);
     }
 
+    // Generate TurnResult using TurnSummaryGenerator
+    // Calculate stars delta
+    int starsDelta = 0;
+
+    // Create a safe transcript
+    final transcript = state.currentTranscript;
+
+    final turnResult = TurnSummaryGenerator.generateTurnResult(
+      playerIndex: state.currentPlayerIndex,
+      transcript: transcript,
+      startPosition: state.oldPosition ?? 0,
+      endPosition: currentPlayer.position,
+      starsDelta: starsDelta,
+    );
+
+    // Update lastTurnResult and turnHistory
+    state = state.copyWith(
+      lastTurnResult: turnResult,
+      turnHistory: state.turnHistory.add(turnResult),
+    );
+
     // Check if player rolled double (gets another turn)
     final wasDouble = state.lastDiceRoll?.isDouble ?? false;
 
@@ -1324,6 +1377,19 @@ class GameNotifier extends StateNotifier<GameState> {
       );
       return;
     }
+
+    // CRITICAL FIX: Set phase to turnEnded and PAUSE here
+    // DO NOT call _nextPlayer() here - that's done in startNextTurn()
+    state = state.copyWith(turnPhase: TurnPhase.turnEnded);
+
+    debugPrint('🎬 Turn ended - waiting for startNextTurn()');
+  }
+
+  // CRITICAL FIX: New public method to start next turn
+  // Called by turn_summary_overlay.dart "Devam" button for humans
+  // Called by game_view.dart orchestration for bots
+  void startNextTurn() {
+    debugPrint('▶️ startNextTurn() called');
 
     // Move to next player
     _nextPlayer();
