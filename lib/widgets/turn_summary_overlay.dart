@@ -5,7 +5,7 @@ import '../providers/game_provider.dart';
 import '../models/turn_result.dart';
 import '../models/player.dart';
 import '../models/player_type.dart';
-import '../models/turn_phase.dart'; // Import Phase enum
+import '../models/turn_phase.dart';
 import '../utils/turn_summary_generator.dart';
 
 class TurnSummaryOverlay extends ConsumerStatefulWidget {
@@ -46,37 +46,32 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
   }
 
   void _handleContinue() {
-    // 1. Close animation explicitly
+    // 1. Animasyonu tersine çevir (Kapanış efekti)
     _controller.reverse().then((_) {
-      // 2. Advance game state ONLY after animation starts closing
+      // 2. Animasyon bittikten sonra oyunu ilerlet
       ref.read(gameProvider.notifier).startNextTurn();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- CRITICAL LOGIC FIX ---
-    // 1. Listen to the Phase
+    // --- KRİTİK KONTROL (THE GATEKEEPER) ---
+    // Sadece oyun fazı 'turnEnded' ise görün. Başka her durumda gizlen.
     final turnPhase = ref.watch(turnPhaseProvider);
     final turnResult = ref.watch(lastTurnResultProvider);
     final gameState = ref.watch(gameProvider);
 
-    // 2. The Gatekeeper: Show ONLY if phase is turnEnded
     if (turnPhase != TurnPhase.turnEnded) {
-      // Reset animation if we are hidden
-      if (_controller.value > 0) _controller.reset();
+      if (_controller.value > 0)
+        _controller.reset(); // Gizlenirken animasyonu sıfırla
       return const SizedBox.shrink();
     }
 
-    // 3. Play animation if appearing
+    // Görünür olduğunda animasyonu başlat
     if (_controller.value == 0) {
       _controller.forward();
 
-      // Auto-advance for Bots
-      final currentPlayer = ref.read(
-        currentPlayerProvider,
-      ); // Check current, or last turn player
-      // Ideally check based on turnResult player index
+      // Botlar için otomatik geçiş
       if (turnResult.playerIndex >= 0 &&
           turnResult.playerIndex < gameState.players.length) {
         final player = gameState.players[turnResult.playerIndex];
@@ -90,7 +85,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
       }
     }
 
-    // 4. Data Safety Checks
+    // Veri güvenliği (Data Safety)
     if (turnResult.playerIndex < 0 ||
         turnResult.playerIndex >= gameState.players.length) {
       return const SizedBox.shrink();
@@ -98,7 +93,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
     final player = gameState.players[turnResult.playerIndex];
 
-    // 5. Generate Summary
+    // Özet metni oluştur
     final summaryText = TurnSummaryGenerator.generateTurnSummary(
       turnResult,
       playerName: player.name,
@@ -106,7 +101,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
     return Stack(
       children: [
-        // Backdrop
+        // Yarı saydam arka plan
         Positioned.fill(
           child: FadeTransition(
             opacity: _fadeAnimation,
@@ -114,7 +109,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
           ),
         ),
 
-        // Card
+        // Özet Kartı
         Center(
           child: ScaleTransition(
             scale: _scaleAnimation,
@@ -135,7 +130,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Avatar
+                  // Oyuncu Avatarı
                   CircleAvatar(
                     radius: 32,
                     backgroundColor: Color(
@@ -173,6 +168,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
                   const Divider(height: 32),
 
+                  // Olay Özeti
                   Text(
                     summaryText,
                     textAlign: TextAlign.center,
@@ -185,6 +181,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
 
                   const SizedBox(height: 24),
 
+                  // Devam Butonu
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
