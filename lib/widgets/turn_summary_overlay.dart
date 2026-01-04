@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/game_provider.dart';
-import '../models/turn_result.dart';
-import '../models/player.dart';
 import '../models/player_type.dart';
 import '../models/turn_phase.dart';
 import '../utils/turn_summary_generator.dart';

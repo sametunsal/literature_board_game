@@ -34,7 +34,8 @@ class SquareBoardWidget extends ConsumerWidget {
           child: Stack(
             children: [
               // --- DRAW TILES ---
-              for (int i = 0; i < 40; i++) _buildPositionedTile(tiles, i, u),
+              for (int i = 0; i < 40; i++)
+                _buildPositionedTile(tiles, gameState.players, i, u),
 
               // --- CENTER LOGO ---
               Positioned(
@@ -110,7 +111,12 @@ class SquareBoardWidget extends ConsumerWidget {
     return Rect.zero;
   }
 
-  Widget _buildPositionedTile(List<Tile> allTiles, int id, double u) {
+  Widget _buildPositionedTile(
+    List<Tile> allTiles,
+    List<Player> players,
+    int id,
+    double u,
+  ) {
     final tile = allTiles.firstWhere(
       (t) => t.id == id,
       orElse: () => Tile(
@@ -123,6 +129,7 @@ class SquareBoardWidget extends ConsumerWidget {
     );
     final rect = _getTileRect(id, u);
     final isCorner = id % 10 == 0;
+    final hasOwner = tile.owner != null;
 
     return Positioned(
       left: rect.left,
@@ -132,39 +139,83 @@ class SquareBoardWidget extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: _getTileColor(tile.type),
-          border: Border.all(color: Colors.black26, width: 0.5),
+          border: Border.all(
+            color: hasOwner ? Colors.black87 : Colors.black26,
+            width: hasOwner ? 2.0 : 0.5,
+          ),
         ),
         padding: EdgeInsets.zero,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            if (isCorner)
-              Icon(_getIconForCorner(id), size: u * 0.3, color: Colors.black54),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0.5),
-                child: Center(
-                  child: Text(
-                    tile.name,
-                    textAlign: TextAlign.center,
-                    softWrap: true,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: u * 0.125,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.5,
-                      height: 1.0,
-                      color: Colors.black87,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isCorner)
+                  Icon(
+                    _getIconForCorner(id),
+                    size: u * 0.3,
+                    color: Colors.black54,
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0.5),
+                    child: Center(
+                      child: Text(
+                        tile.name,
+                        textAlign: TextAlign.center,
+                        softWrap: true,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: u * 0.125,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -0.5,
+                          height: 1.0,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
+            // Owner indicator (small colored dot in corner)
+            if (hasOwner)
+              Positioned(
+                right: 2,
+                top: 2,
+                child: Container(
+                  width: u * 0.2,
+                  height: u * 0.2,
+                  decoration: BoxDecoration(
+                    color: _getOwnerColor(tile.owner, allTiles, players),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  // Get owner color based on player ID
+  Color _getOwnerColor(
+    String? ownerId,
+    List<Tile> allTiles,
+    List<Player> players,
+  ) {
+    if (ownerId == null) return Colors.transparent;
+
+    // Find player by ID
+    final player = players.firstWhere(
+      (p) => p.id == ownerId,
+      orElse: () => Player(id: '', name: '', color: '#000000', stars: 0),
+    );
+
+    // Parse player color
+    return Color(int.parse(player.color.replaceFirst('#', '0xFF')));
   }
 
   List<Widget> _buildPlayerTokens(List<Player> players, double u) {

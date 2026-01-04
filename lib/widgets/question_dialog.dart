@@ -433,7 +433,6 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       case QuestionCategory.eserKarakter:
         return Colors.teal.shade600;
     }
-    return Colors.grey.shade600; // Default fallback
   }
 
   Color _getDifficultyColor() {
@@ -445,7 +444,6 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       case Difficulty.hard:
         return Colors.red.shade500;
     }
-    return Colors.grey.shade500; // Default fallback
   }
 
   String _getCategoryName(QuestionCategory category) {

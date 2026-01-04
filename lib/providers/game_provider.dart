@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,6 +70,7 @@ class GameState {
   final int? oldPosition;
   final int? newPosition;
   final bool passedStart;
+  final int? turnStartStars;
 
   // Question answering state
   final QuestionState questionState;
@@ -108,6 +108,7 @@ class GameState {
     this.oldPosition,
     this.newPosition,
     this.passedStart = false,
+    this.turnStartStars,
     this.isGameOver = false,
     this.questionState = QuestionState.waiting,
     this.currentQuestion,
@@ -146,6 +147,7 @@ class GameState {
     int? oldPosition,
     int? newPosition,
     bool? passedStart,
+    int? turnStartStars,
     bool? isGameOver,
     QuestionState? questionState,
     Question? currentQuestion,
@@ -171,6 +173,7 @@ class GameState {
       oldPosition: oldPosition ?? this.oldPosition,
       newPosition: newPosition ?? this.newPosition,
       passedStart: passedStart ?? this.passedStart,
+      turnStartStars: turnStartStars ?? this.turnStartStars,
       isGameOver: isGameOver ?? this.isGameOver,
       questionState: questionState ?? this.questionState,
       currentQuestion: currentQuestion ?? this.currentQuestion,
@@ -254,6 +257,7 @@ class GameNotifier extends StateNotifier<GameState> {
           kaderCards: kaderCards,
           currentPlayerIndex: 0,
           turnPhase: TurnPhase.start,
+          turnStartStars: players.isNotEmpty ? players[0].stars : null,
         )
         .withLogMessage('Oyun başlatılıyor...');
 
@@ -482,7 +486,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final newPosition = _calculateNewPosition(oldPosition, diceTotal);
 
     // Check if passed START (tile 1)
-    final passedStart = _passedStart(oldPosition, newPosition);
+    final passedStart = _passedStart(oldPosition, diceTotal);
 
     debugPrint(
       '🚶 Player moving: $oldPosition → $newPosition (passed start: $passedStart)',
@@ -535,13 +539,9 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   // Check if player passed START (tile 1)
-  bool _passedStart(int oldPosition, int newPosition) {
-    // Passing from 40 to lower number means passed START (tile 1)
-    if (oldPosition >= GameConstants.startPassThresholdOld &&
-        newPosition <= GameConstants.startPassThresholdNew) {
-      return true;
-    }
-    return false;
+  bool _passedStart(int oldPosition, int diceTotal) {
+    // Crossing the board size boundary means we wrapped past START
+    return (oldPosition + diceTotal) >= GameConstants.boardSize;
   }
 
   // Handle 3x double dice - Library Watch
@@ -608,6 +608,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
       case TileType.book:
       case TileType.publisher:
+        // Check if tile is owned by another player
+        if (tile.owner != null && tile.owner != state.currentPlayer?.id) {
+          // Pay rent to owner
+          payRent();
+          endTurn();
+          return;
+        }
         // Show question for book/publisher tiles
         _showQuestion(tile);
         break;
@@ -680,16 +687,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (state.currentQuestion == null) return;
 
-    // Bot has 70% chance to answer correctly
-    final willAnswerCorrectly = _random.nextDouble() < 0.7;
-
-    if (willAnswerCorrectly) {
-      answerQuestionCorrect();
-      debugPrint('🤖 Bot answered correctly');
-    } else {
-      answerQuestionWrong();
-      debugPrint('🤖 Bot answered incorrectly');
-    }
+    // Dummy bot spec: always answers wrong
+    answerQuestionWrong();
+    debugPrint('🤖 Bot answered incorrectly (dummy logic)');
 
     // Advance phase to questionResolved
     state = state.copyWith(turnPhase: TurnPhase.questionResolved);
@@ -768,7 +768,6 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.currentPlayer == null) return;
 
     final currentPlayer = state.currentPlayer!;
-    final cardTypeName = card.type == CardType.sans ? 'ŞANS' : 'KADER';
 
     // Update phase to cardApplied
     state = state.copyWith(turnPhase: TurnPhase.cardApplied);
@@ -1048,22 +1047,149 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.turnEnded:
         // CRITICAL FIX: Bots auto-advance to next turn, humans wait for summary button
         return isBot ? 'nextTurn' : null;
-      default:
-        return null;
     }
   }
 
   // Copyright purchase method
   void purchaseCopyright() {
     if (state.currentPlayer == null) return;
+    if (state.newPosition == null) return;
+
+    final currentPlayer = state.currentPlayer!;
+    final tileId = state.newPosition!;
+    final tile = state.tiles.firstWhere(
+      (t) => t.id == tileId,
+      orElse: () => state.tiles[0],
+    );
+
+    // Check if tile can be owned
+    if (!tile.canBeOwned) {
+      debugPrint('⛔ Tile cannot be owned: ${tile.name}');
+      return;
+    }
+
+    // Check if tile is already owned
+    if (tile.owner != null) {
+      debugPrint('⛔ Tile already owned by: ${tile.owner}');
+      return;
+    }
+
+    // Check if player can afford
+    final price = tile.purchasePrice ?? 0;
+    if (currentPlayer.stars < price) {
+      debugPrint('⛔ Player cannot afford: ${currentPlayer.stars} < $price');
+      return;
+    }
+
+    // Deduct stars from player
+    final updatedPlayer = currentPlayer.copyWith(
+      stars: currentPlayer.stars - price,
+      ownedTiles: [...currentPlayer.ownedTiles, tileId],
+    );
+    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    // Update tile owner
+    final updatedTile = tile.copyWith(owner: currentPlayer.id);
+    final updatedTiles = _updateTileInList(state.tiles, updatedTile);
 
     // Update phase to copyrightPurchased
-    state = state.copyWith(turnPhase: TurnPhase.copyrightPurchased);
+    state = state.copyWith(
+      turnPhase: TurnPhase.copyrightPurchased,
+      players: updatedPlayers,
+      tiles: updatedTiles,
+    );
 
     // GAMEPLAY LOG: Copyright purchase
     state = state.withLogMessage(
-      '${state.currentPlayer!.name} telif satın aldı!',
+      '${currentPlayer.name} ${tile.name} telifini satın aldı! -$price yıldız',
     );
+
+    // Log event to transcript
+    _logEvent(
+      TurnEventType.copyrightPurchased,
+      description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
+      data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
+    );
+  }
+
+  // Helper method to update a tile in tiles list immutably
+  List<Tile> _updateTileInList(List<Tile> tiles, Tile updatedTile) {
+    return tiles.map((t) => t.id == updatedTile.id ? updatedTile : t).toList();
+  }
+
+  // Pay rent to tile owner
+  void payRent() {
+    if (state.currentPlayer == null) return;
+    if (state.newPosition == null) return;
+
+    final currentPlayer = state.currentPlayer!;
+    final tileId = state.newPosition!;
+    final tile = state.tiles.firstWhere(
+      (t) => t.id == tileId,
+      orElse: () => state.tiles[0],
+    );
+
+    // Check if tile can be owned and has an owner
+    if (!tile.canBeOwned || tile.owner == null) {
+      return;
+    }
+
+    // Check if current player owns this tile (no rent to self)
+    if (tile.owner == currentPlayer.id) {
+      state = state.withLogMessage(
+        '${currentPlayer.name} kendi mülkü ${tile.name} üzerinde',
+      );
+      return;
+    }
+
+    // Find the owner
+    final owner = state.players.firstWhere(
+      (p) => p.id == tile.owner,
+      orElse: () => state.players.first,
+    );
+
+    // Calculate rent amount
+    final rentAmount = tile.copyrightFee ?? 0;
+
+    // Deduct rent from current player
+    final updatedCurrentPlayer = currentPlayer.copyWith(
+      stars: (currentPlayer.stars - rentAmount).clamp(
+        GameConstants.bankruptcyThreshold,
+        currentPlayer.stars,
+      ),
+    );
+
+    // Add rent to owner
+    final updatedOwner = owner.copyWith(stars: owner.stars + rentAmount);
+
+    // Update both players
+    final updatedPlayers = _updatePlayerInList(
+      _updatePlayerInList(state.players, updatedCurrentPlayer),
+      updatedOwner,
+    );
+
+    state = state.copyWith(players: updatedPlayers);
+
+    // GAMEPLAY LOG: Rent payment
+    state = state.withLogMessage(
+      '${currentPlayer.name} ${owner.name}\'a $rentAmount yıldız kira ödedi (${tile.name})',
+    );
+
+    // Log event to transcript
+    _logEvent(
+      TurnEventType.rentPaid,
+      description: '${currentPlayer.name} ${owner.name}\'a kira ödedi',
+      data: {
+        'tileId': tileId,
+        'tileName': tile.name,
+        'rentAmount': rentAmount,
+        'ownerId': owner.id,
+        'ownerName': owner.name,
+      },
+    );
+
+    // Check for bankruptcy
+    _checkBankruptcy();
   }
 
   // Tick question timer
@@ -1089,6 +1215,11 @@ class GameNotifier extends StateNotifier<GameState> {
       }
     }
     state = state.copyWith(players: updatedPlayers);
+
+    // End game if only one or zero active players remain
+    if (_isGameOver()) {
+      _announceWinner();
+    }
   }
 
   // Answer question - correct
@@ -1111,7 +1242,7 @@ class GameNotifier extends StateNotifier<GameState> {
           players: updatedPlayers,
           questionState: QuestionState.correct,
           correctAnswers: state.correctAnswers + 1,
-          turnPhase: TurnPhase.questionResolved,
+          turnPhase: TurnPhase.copyrightPurchased,
         )
         .withLogMessage(
           '${currentPlayer.name} doğru cevap verdi! +$reward yıldız kazandı.',
@@ -1187,11 +1318,8 @@ class GameNotifier extends StateNotifier<GameState> {
         break;
 
       case CornerEffect.imzaGunu:
-        // GAMEPLAY LOG: Skip next turn
-        updatedPlayer = currentPlayer.copyWith(skippedTurn: true);
-        state = state.withLogMessage(
-          'İMZA GÜNÜ! ${currentPlayer.name}: Bir sonraki tur atlanacak',
-        );
+        // Design spec: Free parking / no action
+        state = state.withLogMessage('İMZA GÜNÜ! Güvenli alan, işlem yok.');
         break;
 
       case CornerEffect.iflasRiski:
@@ -1320,8 +1448,10 @@ class GameNotifier extends StateNotifier<GameState> {
     }
 
     // Generate TurnResult using TurnSummaryGenerator
-    // Calculate stars delta
-    int starsDelta = 0;
+    // Calculate stars delta based on turn start snapshot
+    final startStars = state.turnStartStars ?? currentPlayer.stars;
+    final effectivePlayer = updatedPlayer ?? currentPlayer;
+    final starsDelta = effectivePlayer.stars - startStars;
 
     // Create a safe transcript
     final transcript = state.currentTranscript;
@@ -1353,6 +1483,14 @@ class GameNotifier extends StateNotifier<GameState> {
         oldPosition: null,
         newPosition: null,
         passedStart: false,
+        turnStartStars: currentPlayer.stars,
+        // Clear per-turn artifacts before the bonus turn begins
+        currentQuestion: null,
+        questionState: QuestionState.waiting,
+        questionTimer: 0,
+        currentCard: null,
+        lastDiceRoll: null,
+        currentTranscript: const TurnTranscript.empty(),
       );
       return;
     }
@@ -1370,8 +1508,15 @@ class GameNotifier extends StateNotifier<GameState> {
   void startNextTurn() {
     debugPrint('▶️ startNextTurn() called');
 
-    // Clear transcript for new turn
-    state = state.copyWith(currentTranscript: const TurnTranscript.empty());
+    // Clear per-turn artifacts before handing off
+    state = state.copyWith(
+      currentTranscript: const TurnTranscript.empty(),
+      currentQuestion: null,
+      questionState: QuestionState.waiting,
+      questionTimer: 0,
+      currentCard: null,
+      lastDiceRoll: null,
+    );
 
     // Move to next player
     _nextPlayer();
@@ -1404,6 +1549,7 @@ class GameNotifier extends StateNotifier<GameState> {
             oldPosition: null,
             newPosition: null,
             passedStart: false,
+            turnStartStars: state.currentPlayer!.stars,
           )
           .withLogMessage('Sıra: ${state.currentPlayer!.name}');
     }
