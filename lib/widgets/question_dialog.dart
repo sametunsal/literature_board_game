@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/question.dart';
-// ignore: unused_import
 import '../models/turn_phase.dart';
 import '../models/player_type.dart';
 // ignore: unused_import
@@ -424,16 +423,33 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
     // Guard: Check if widget is still mounted before using ref
     if (!mounted) return;
 
-    // Set answer state (this updates game state)
+    // CRITICAL FIX: Capture the notifier reference before any state changes
+    final gameNotifier = ref.read(gameProvider.notifier);
+
+    // Set answer state (this updates game state and phase)
     if (isCorrect) {
-      ref.read(gameProvider.notifier).answerQuestionCorrect();
+      gameNotifier.answerQuestionCorrect();
     } else {
-      ref.read(gameProvider.notifier).answerQuestionWrong();
+      gameNotifier.answerQuestionWrong();
     }
 
-    // Trigger Phase 2 orchestration
-    // playTurn() will handle next phase progression
-    ref.read(gameProvider.notifier).playTurn();
+    // CRITICAL FIX: Check the resulting phase to determine next action
+    // If phase is copyrightPurchased, we need to wait for the UI to show
+    // the CopyrightPurchaseDialog before calling playTurn()
+    final currentPhase = ref.read(turnPhaseProvider);
+
+    if (currentPhase == TurnPhase.copyrightPurchased) {
+      // Don't call playTurn() - let UI show CopyrightPurchaseDialog first
+      // The dialog will call playTurn() after user makes a decision
+      // This follows the same pattern as CardDialog._applyCard()
+      return;
+    }
+
+    // For questionResolved phase (wrong answer), advance immediately
+    // Use WidgetsBinding to ensure state has settled before calling playTurn()
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      gameNotifier.playTurn();
+    });
   }
 
   Color _getCategoryColor() {
