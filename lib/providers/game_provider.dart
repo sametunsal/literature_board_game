@@ -345,10 +345,11 @@ class GameNotifier extends StateNotifier<GameState> {
           // Bot makes intelligent purchase decision
           if (state.currentPlayer?.type == PlayerType.bot) {
             _handleBotCopyrightDecision();
-          } else {
-            // Human player decision handled by UI dialog
-            endTurn();
           }
+          // CRITICAL FIX: Do NOT call endTurn() for human players here!
+          // Human player decision is handled by UI dialog, which will call
+          // completeCopyrightPurchase() or declineCopyrightPurchase() first,
+          // then playTurn() to continue. This matches the CardDialog pattern.
           break;
 
         case TurnPhase.turnEnded:
@@ -1068,8 +1069,15 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // Copyright purchase method
-  void purchaseCopyright() {
+  /// Complete copyright purchase for human players
+  /// 
+  /// This method is called by the UI (CopyrightPurchaseDialog) when the player
+  /// confirms the purchase. It performs the actual purchase transaction and
+  /// transitions the phase to questionResolved, which is accepted by endTurn().
+  /// 
+  /// Flow: UI confirms → completeCopyrightPurchase() → playTurn() → endTurn()
+  /// This matches the pattern used in CardDialog._applyCard()
+  void completeCopyrightPurchase() {
     if (state.currentPlayer == null) return;
     if (state.newPosition == null) return;
 
@@ -1080,26 +1088,24 @@ class GameNotifier extends StateNotifier<GameState> {
       orElse: () => state.tiles[0],
     );
 
-    // Check if tile can be owned
+    // Validate purchase is possible
     if (!tile.canBeOwned) {
       debugPrint('⛔ Tile cannot be owned: ${tile.name}');
       return;
     }
 
-    // Check if tile is already owned
     if (tile.owner != null) {
       debugPrint('⛔ Tile already owned by: ${tile.owner}');
       return;
     }
 
-    // Check if player can afford
     final price = tile.purchasePrice ?? 0;
     if (currentPlayer.stars < price) {
       debugPrint('⛔ Player cannot afford: ${currentPlayer.stars} < $price');
       return;
     }
 
-    // Deduct stars from player
+    // Perform the purchase transaction
     final updatedPlayer = currentPlayer.copyWith(
       stars: currentPlayer.stars - price,
       ownedTiles: [...currentPlayer.ownedTiles, tileId],
@@ -1110,9 +1116,10 @@ class GameNotifier extends StateNotifier<GameState> {
     final updatedTile = tile.copyWith(owner: currentPlayer.id);
     final updatedTiles = _updateTileInList(state.tiles, updatedTile);
 
-    // Update phase to copyrightPurchased
+    // CRITICAL: Set phase to questionResolved (valid for endTurn)
+    // This allows playTurn() to call endTurn() without assertion error
     state = state.copyWith(
-      turnPhase: TurnPhase.copyrightPurchased,
+      turnPhase: TurnPhase.questionResolved,
       players: updatedPlayers,
       tiles: updatedTiles,
     );
@@ -1127,6 +1134,26 @@ class GameNotifier extends StateNotifier<GameState> {
       TurnEventType.copyrightPurchased,
       description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
       data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
+    );
+  }
+
+  /// Decline copyright purchase for human players
+  /// 
+  /// This method is called by the UI (CopyrightPurchaseDialog) when the player
+  /// chooses to skip the purchase. It transitions the phase to questionResolved,
+  /// which is accepted by endTurn().
+  /// 
+  /// Flow: UI skips → declineCopyrightPurchase() → playTurn() → endTurn()
+  void declineCopyrightPurchase() {
+    if (state.currentPlayer == null) return;
+
+    // CRITICAL: Set phase to questionResolved (valid for endTurn)
+    // This allows playTurn() to call endTurn() without assertion error
+    state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+
+    // GAMEPLAY LOG: Purchase declined
+    state = state.withLogMessage(
+      '${state.currentPlayer!.name} telif satın almayı reddetti.',
     );
   }
 
@@ -1147,6 +1174,8 @@ class GameNotifier extends StateNotifier<GameState> {
     // Check if tile can be owned
     if (!tile.canBeOwned) {
       debugPrint('🤖 Bot skipping - tile cannot be owned');
+      // Set phase to questionResolved before calling endTurn
+      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       endTurn();
       return;
     }
@@ -1154,6 +1183,8 @@ class GameNotifier extends StateNotifier<GameState> {
     // Check if tile is already owned
     if (tile.owner != null) {
       debugPrint('🤖 Bot skipping - tile already owned');
+      // Set phase to questionResolved before calling endTurn
+      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       endTurn();
       return;
     }
@@ -1163,11 +1194,43 @@ class GameNotifier extends StateNotifier<GameState> {
     // Bot intelligence: Purchase if affordable
     if (currentPlayer.stars >= price) {
       debugPrint('🤖 Bot purchasing ${tile.name} for $price stars');
-      purchaseCopyright();
+      
+      // Perform the purchase transaction
+      final updatedPlayer = currentPlayer.copyWith(
+        stars: currentPlayer.stars - price,
+        ownedTiles: [...currentPlayer.ownedTiles, tileId],
+      );
+      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+      // Update tile owner
+      final updatedTile = tile.copyWith(owner: currentPlayer.id);
+      final updatedTiles = _updateTileInList(state.tiles, updatedTile);
+
+      // CRITICAL: Set phase to questionResolved (valid for endTurn)
+      state = state.copyWith(
+        turnPhase: TurnPhase.questionResolved,
+        players: updatedPlayers,
+        tiles: updatedTiles,
+      );
+
+      // GAMEPLAY LOG: Copyright purchase
+      state = state.withLogMessage(
+        '${currentPlayer.name} ${tile.name} telifini satın aldı! -$price yıldız',
+      );
+
+      // Log event to transcript
+      _logEvent(
+        TurnEventType.copyrightPurchased,
+        description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
+        data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
+      );
+      
       // After purchase, end turn
       endTurn();
     } else {
       debugPrint('🤖 Bot cannot afford - skipping purchase');
+      // Set phase to questionResolved before calling endTurn
+      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       endTurn();
     }
   }
