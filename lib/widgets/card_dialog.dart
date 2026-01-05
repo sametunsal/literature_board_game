@@ -48,19 +48,22 @@ class _CardDialogState extends ConsumerState<CardDialog>
   }
 
   void _applyCard() {
+    // CRITICAL FIX: Capture the WidgetRef before popping the dialog
+    // Because after pop(), 'mounted' becomes false and ref becomes invalid
+    final gameNotifier = ref.read(gameProvider.notifier);
+    
     // Apply card effect via GameNotifier
-    ref.read(gameProvider.notifier).applyCardEffect(widget.card);
+    gameNotifier.applyCardEffect(widget.card);
+    
+    // Close the dialog
     Navigator.of(context).pop();
 
-    // CRITICAL: Continue game flow by calling playTurn() with a small delay
-    // This allows the dialog to fully close and the widget tree to update
-    // before the next turn logic runs, preventing black screen issue
-    Future.delayed(const Duration(milliseconds: 100), () {
-      // Check if widget is still mounted before calling playTurn
-      if (!mounted) return;
-
+    // CRITICAL FIX: Use WidgetsBinding to schedule playTurn() after dialog closes
+    // This ensures the call happens after the widget tree is rebuilt
+    // We use the captured notifier reference since 'ref' is no longer valid after pop()
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       // applyCardEffect sets phase to cardApplied, playTurn will call endTurn()
-      ref.read(gameProvider.notifier).playTurn();
+      gameNotifier.playTurn();
     });
   }
 
