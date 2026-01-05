@@ -46,8 +46,8 @@ return Center(
             child: Row(...), // Title content
           ),
           
-          // Scrollable content
-          Flexible(
+          // Scrollable content with Expanded for predictable layout
+          Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(...), // Question content
@@ -79,6 +79,7 @@ return Center(
 - Custom styling with more control
 - Better visual separation between sections
 - Maintains all original functionality
+- Uses `Expanded` for predictable scrollable layout
 
 ### Visual Structure
 
@@ -288,7 +289,7 @@ return Center(
           Container(...),
           
           // Content area (scrollable if needed)
-          Flexible/Padding(
+          Expanded/Padding(
             child: YOUR_CONTENT,
           ),
           
