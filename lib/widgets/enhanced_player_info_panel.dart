@@ -18,11 +18,14 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
     }
 
     final currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    final isBankrupt = currentPlayer.isBankrupt;
 
-    return Container(
+    // Main panel content
+    final panelContent = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Gray background for bankrupt players, white for active players
+        color: isBankrupt ? Colors.grey.shade300 : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -92,6 +95,68 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
         ],
       ),
     );
+
+    // Wrap in Stack with bankruptcy banner if player is bankrupt
+    if (isBankrupt) {
+      return Opacity(
+        opacity: 0.5, // Fade out bankrupt players
+        child: Stack(
+          children: [
+            panelContent,
+            // Diagonal "İFLAS" banner
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Banner(
+                  message: 'İFLAS',
+                  location: BannerLocation.topEnd,
+                  color: Colors.red.shade700,
+                  textStyle: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.5,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+            // Center "ELENDİ" stamp
+            Center(
+              child: Transform.rotate(
+                angle: -0.2, // Slight rotation for stamp effect
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.red.shade900,
+                      width: 4,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.red.shade700.withValues(alpha: 0.9),
+                  ),
+                  child: Text(
+                    'ELENDİ',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Return normal panel for active players
+    return panelContent;
   }
 }
 
