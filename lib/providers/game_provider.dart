@@ -337,9 +337,18 @@ class GameNotifier extends StateNotifier<GameState> {
           break;
 
         case TurnPhase.questionResolved:
-        case TurnPhase.copyrightPurchased:
         case TurnPhase.taxResolved:
           endTurn();
+          break;
+
+        case TurnPhase.copyrightPurchased:
+          // Bot makes intelligent purchase decision
+          if (currentPlayer?.type == PlayerType.bot) {
+            _handleBotCopyrightDecision();
+          } else {
+            // Human player decision handled by UI dialog
+            endTurn();
+          }
           break;
 
         case TurnPhase.turnEnded:
@@ -687,9 +696,16 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (state.currentQuestion == null) return;
 
-    // Dummy bot spec: always answers wrong
-    answerQuestionWrong();
-    debugPrint('🤖 Bot answered incorrectly (dummy logic)');
+    // Bot intelligence: 50% chance to answer correctly
+    final shouldAnswerCorrectly = _random.nextBool();
+    
+    if (shouldAnswerCorrectly) {
+      answerQuestionCorrect();
+      debugPrint('🤖 Bot answered correctly (50% chance)');
+    } else {
+      answerQuestionWrong();
+      debugPrint('🤖 Bot answered incorrectly (50% chance)');
+    }
 
     // Advance phase to questionResolved
     state = state.copyWith(turnPhase: TurnPhase.questionResolved);
@@ -1042,8 +1058,10 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.cardApplied:
       case TurnPhase.questionResolved:
       case TurnPhase.taxResolved:
-      case TurnPhase.copyrightPurchased:
         return 'endTurn';
+      case TurnPhase.copyrightPurchased:
+        // Bots auto-decide on copyright purchase, humans wait for dialog
+        return isBot ? 'handleCopyrightDecision' : null;
       case TurnPhase.turnEnded:
         // CRITICAL FIX: Bots auto-advance to next turn, humans wait for summary button
         return isBot ? 'nextTurn' : null;
@@ -1110,6 +1128,48 @@ class GameNotifier extends StateNotifier<GameState> {
       description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
       data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
     );
+  }
+
+  // Bot copyright purchase decision
+  void _handleBotCopyrightDecision() {
+    debugPrint('🤖 Bot making copyright purchase decision...');
+
+    if (state.currentPlayer == null) return;
+    if (state.newPosition == null) return;
+
+    final currentPlayer = state.currentPlayer!;
+    final tileId = state.newPosition!;
+    final tile = state.tiles.firstWhere(
+      (t) => t.id == tileId,
+      orElse: () => state.tiles[0],
+    );
+
+    // Check if tile can be owned
+    if (!tile.canBeOwned) {
+      debugPrint('🤖 Bot skipping - tile cannot be owned');
+      endTurn();
+      return;
+    }
+
+    // Check if tile is already owned
+    if (tile.owner != null) {
+      debugPrint('🤖 Bot skipping - tile already owned');
+      endTurn();
+      return;
+    }
+
+    final price = tile.purchasePrice ?? 0;
+
+    // Bot intelligence: Purchase if affordable
+    if (currentPlayer.stars >= price) {
+      debugPrint('🤖 Bot purchasing ${tile.name} for $price stars');
+      purchaseCopyright();
+      // After purchase, end turn
+      endTurn();
+    } else {
+      debugPrint('🤖 Bot cannot afford - skipping purchase');
+      endTurn();
+    }
   }
 
   // Helper method to update a tile in tiles list immutably
