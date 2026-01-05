@@ -20,6 +20,17 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
     final currentPlayer = gameState.players[gameState.currentPlayerIndex];
     final isBankrupt = currentPlayer.isBankrupt;
 
+    // Safe color parsing with replaceFirst
+    Color parsePlayerColor(String hexColor) {
+      try {
+        final colorString = hexColor.replaceFirst('#', '0xFF');
+        return Color(int.parse(colorString));
+      } catch (e) {
+        debugPrint('Error parsing color: $hexColor');
+        return Colors.blue; // Fallback color
+      }
+    }
+
     // Main panel content
     final panelContent = Container(
       padding: const EdgeInsets.all(16),
@@ -46,7 +57,7 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Color(int.parse(currentPlayer.color.substring(1))),
+                  color: parsePlayerColor(currentPlayer.color),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -56,7 +67,14 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.brown.shade900,
+                  color: isBankrupt
+                      ? Colors.grey.shade600 // Faded color for bankrupt
+                      : Colors.brown.shade900,
+                  decoration: isBankrupt
+                      ? TextDecoration.lineThrough // Strikethrough for bankrupt
+                      : null,
+                  decorationColor: Colors.red.shade700,
+                  decorationThickness: 2,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -65,7 +83,10 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Stars display with animated increment
-          _AnimatedStarsDisplay(stars: currentPlayer.stars),
+          _AnimatedStarsDisplay(
+            stars: currentPlayer.stars,
+            isBankrupt: isBankrupt,
+          ),
 
           const SizedBox(height: 20),
 
@@ -96,55 +117,37 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
       ),
     );
 
-    // Wrap in Stack with bankruptcy banner if player is bankrupt
+    // Wrap in Stack with bankruptcy stamp if player is bankrupt
     if (isBankrupt) {
       return Opacity(
-        opacity: 0.5, // Fade out bankrupt players
+        opacity: 0.6, // Fade out bankrupt players
         child: Stack(
           children: [
             panelContent,
-            // Diagonal "İFLAS" banner
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Banner(
-                  message: 'İFLAS',
-                  location: BannerLocation.topEnd,
-                  color: Colors.red.shade700,
-                  textStyle: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.5,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
-            // Center "ELENDİ" stamp
+            // Center "İFLAS" stamp with rotation
             Center(
               child: Transform.rotate(
-                angle: -0.2, // Slight rotation for stamp effect
+                angle: -0.15, // Slight diagonal rotation
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
+                    horizontal: 24,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: Colors.red.shade900,
-                      width: 4,
+                      width: 5,
                     ),
                     borderRadius: BorderRadius.circular(8),
-                    color: Colors.red.shade700.withValues(alpha: 0.9),
+                    color: Colors.red.shade700.withValues(alpha: 0.85),
                   ),
                   child: Text(
-                    'ELENDİ',
+                    'İFLAS',
                     style: GoogleFonts.poppins(
-                      fontSize: 24,
+                      fontSize: 32,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
-                      letterSpacing: 3,
+                      letterSpacing: 4,
                     ),
                   ),
                 ),
@@ -164,20 +167,30 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
 /// Uses AnimatedBuilder to animate star count changes
 class _AnimatedStarsDisplay extends StatelessWidget {
   final int stars;
+  final bool isBankrupt;
 
-  const _AnimatedStarsDisplay({required this.stars});
+  const _AnimatedStarsDisplay({
+    required this.stars,
+    this.isBankrupt = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.amber.shade100,
+        // Gray tones for bankrupt players, amber for active players
+        color: isBankrupt ? Colors.grey.shade200 : Colors.amber.shade100,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber, width: 2),
+        border: Border.all(
+          color: isBankrupt ? Colors.grey.shade600 : Colors.amber,
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withValues(alpha: 0.3),
+            color: isBankrupt
+                ? Colors.black.withValues(alpha: 0.1)
+                : Colors.amber.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -193,7 +206,12 @@ class _AnimatedStarsDisplay extends StatelessWidget {
             builder: (context, scale, child) {
               return Transform.scale(scale: scale, child: child);
             },
-            child: const Icon(Icons.star, color: Colors.amber, size: 28),
+            child: Icon(
+              Icons.star,
+              // Gray for bankrupt, amber for active
+              color: isBankrupt ? Colors.grey.shade700 : Colors.amber,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 8),
           // Animated star count
@@ -202,7 +220,8 @@ class _AnimatedStarsDisplay extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.brown.shade900,
+              // Black/gray tones for bankrupt, brown for active
+              color: isBankrupt ? Colors.black87 : Colors.brown.shade900,
             ),
           ),
         ],
