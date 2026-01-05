@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/card.dart' as game_models;
+import '../models/player_type.dart';
 import '../providers/game_provider.dart';
 
 /// Dialog for displaying Chance (Sans) and Fate (Kader) cards
@@ -69,6 +70,23 @@ class _CardDialogState extends ConsumerState<CardDialog>
 
   @override
   Widget build(BuildContext context) {
+    final gameState = ref.watch(gameProvider);
+    final currentPlayer = gameState.currentPlayer;
+
+    // Bot auto-apply - Dialog not rendered for bots
+    // Bots always auto-apply card effect without showing dialog
+    if (currentPlayer?.type == PlayerType.bot) {
+      // Bot auto-applies with delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        // Guard: Check if widget is still mounted before using ref
+        if (!mounted) return;
+        
+        // Trigger playTurn which will apply card effect via bot logic
+        ref.read(gameProvider.notifier).playTurn();
+      });
+      return const SizedBox.shrink();
+    }
+
     final isSans = widget.card.type == game_models.CardType.sans;
     final isPositive = widget.card.isPositiveForPlayer;
 
