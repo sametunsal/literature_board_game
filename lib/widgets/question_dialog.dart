@@ -9,6 +9,7 @@ import '../models/player_type.dart';
 // ignore: unused_import
 import '../models/turn_result.dart';
 import '../providers/game_provider.dart';
+import '../constants/game_constants.dart';
 
 /// Question dialog - Phase 3 adaptation with timer integration
 ///
@@ -220,6 +221,21 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+
+              // Progress bar for timer
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: _remainingTime /
+                      GameConstants.questionTimerDuration.toDouble(),
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _getTimerColor(_remainingTime),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
 
