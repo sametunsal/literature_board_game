@@ -15,15 +15,18 @@ import '../providers/game_provider.dart';
 /// - Show player's current stars
 /// - Validate if player can afford purchase
 /// - "Purchase" and "Skip" buttons
-/// - Integration with game_provider.purchaseCopyright()
+/// - Integration with game_provider.completeCopyrightPurchase() and declineCopyrightPurchase()
 /// - Bot players auto-decline (dialog not rendered)
 ///
 /// Flow:
 /// 1. Dialog shown after correct answer on book/publisher tile
 /// 2. User chooses "Purchase" or "Skip"
-/// 3. If "Purchase" clicked, calls game_provider.purchaseCopyright()
-/// 4. If "Skip" clicked, calls playTurn() to advance to next phase
-/// 5. Turn continues normally after dialog closes
+/// 3. If "Purchase" clicked, calls game_provider.completeCopyrightPurchase()
+/// 4. If "Skip" clicked, calls game_provider.declineCopyrightPurchase()
+/// 5. Then calls playTurn() to advance to next phase (endTurn)
+/// 6. Turn continues normally after dialog closes
+/// 
+/// This follows the same pattern as CardDialog._applyCard()
 class CopyrightPurchaseDialog extends ConsumerStatefulWidget {
   final Tile tile;
 
@@ -262,7 +265,9 @@ class _CopyrightPurchaseDialogState
         TextButton.icon(
           onPressed: () {
             Navigator.of(context).pop();
-            // Call playTurn to advance to next phase (endTurn)
+            // CRITICAL: Call declineCopyrightPurchase() to set proper phase,
+            // then playTurn() to continue game flow (matches CardDialog pattern)
+            ref.read(gameProvider.notifier).declineCopyrightPurchase();
             Future.delayed(const Duration(milliseconds: 100), () {
               if (!mounted) return;
               ref.read(gameProvider.notifier).playTurn();
@@ -282,9 +287,11 @@ class _CopyrightPurchaseDialogState
         ElevatedButton.icon(
           onPressed: canAfford
               ? () {
-                  ref.read(gameProvider.notifier).purchaseCopyright();
                   Navigator.of(context).pop();
-                  // Call playTurn to advance to next phase (endTurn)
+                  // CRITICAL: Call completeCopyrightPurchase() to perform purchase
+                  // and set proper phase, then playTurn() to continue game flow.
+                  // This matches the pattern in CardDialog._applyCard()
+                  ref.read(gameProvider.notifier).completeCopyrightPurchase();
                   Future.delayed(const Duration(milliseconds: 100), () {
                     if (!mounted) return;
                     ref.read(gameProvider.notifier).playTurn();
