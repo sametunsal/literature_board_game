@@ -264,13 +264,17 @@ class _CopyrightPurchaseDialogState
         // Skip button
         TextButton.icon(
           onPressed: () {
+            // CRITICAL FIX: Capture the notifier reference before popping
+            final gameNotifier = ref.read(gameProvider.notifier);
+            
             Navigator.of(context).pop();
-            // CRITICAL: Call declineCopyrightPurchase() to set proper phase,
-            // then playTurn() to continue game flow (matches CardDialog pattern)
-            ref.read(gameProvider.notifier).declineCopyrightPurchase();
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (!mounted) return;
-              ref.read(gameProvider.notifier).playTurn();
+            
+            // Call declineCopyrightPurchase() to set proper phase
+            gameNotifier.declineCopyrightPurchase();
+            
+            // CRITICAL FIX: Use WidgetsBinding to schedule playTurn() after dialog closes
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              gameNotifier.playTurn();
             });
           },
           icon: const Icon(Icons.close),
@@ -287,14 +291,17 @@ class _CopyrightPurchaseDialogState
         ElevatedButton.icon(
           onPressed: canAfford
               ? () {
+                  // CRITICAL FIX: Capture the notifier reference before popping
+                  final gameNotifier = ref.read(gameProvider.notifier);
+                  
                   Navigator.of(context).pop();
-                  // CRITICAL: Call completeCopyrightPurchase() to perform purchase
-                  // and set proper phase, then playTurn() to continue game flow.
-                  // This matches the pattern in CardDialog._applyCard()
-                  ref.read(gameProvider.notifier).completeCopyrightPurchase();
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (!mounted) return;
-                    ref.read(gameProvider.notifier).playTurn();
+                  
+                  // Call completeCopyrightPurchase() to perform purchase and set proper phase
+                  gameNotifier.completeCopyrightPurchase();
+                  
+                  // CRITICAL FIX: Use WidgetsBinding to schedule playTurn() after dialog closes
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    gameNotifier.playTurn();
                   });
                 }
               : null,
