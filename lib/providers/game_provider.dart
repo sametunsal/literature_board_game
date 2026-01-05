@@ -1582,8 +1582,8 @@ class GameNotifier extends StateNotifier<GameState> {
     final turnResult = TurnSummaryGenerator.generateTurnResult(
       playerIndex: state.currentPlayerIndex,
       transcript: transcript,
-      startPosition: state.oldPosition ?? 0,
-      endPosition: currentPlayer.position,
+      startPosition: state.oldPosition ?? currentPlayer.position,
+      endPosition: state.newPosition ?? currentPlayer.position,
       starsDelta: starsDelta,
     );
 
