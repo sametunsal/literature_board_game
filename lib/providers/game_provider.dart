@@ -1587,16 +1587,20 @@ class GameNotifier extends StateNotifier<GameState> {
       starsDelta: starsDelta,
     );
 
-    // Update lastTurnResult and turnHistory
-    state = state.copyWith(
-      lastTurnResult: turnResult,
-      turnHistory: state.turnHistory.add(turnResult),
-    );
+    // Debug logging to verify playerIndex is correct
+    debugPrint('📊 TurnResult playerIndex: ${turnResult.playerIndex}');
+    debugPrint('📊 Current playerIndex: ${state.currentPlayerIndex}');
 
     // Check if player rolled double (gets another turn)
     final wasDouble = state.lastDiceRoll?.isDouble ?? false;
 
     if (wasDouble) {
+      // Update lastTurnResult and turnHistory first
+      state = state.copyWith(
+        lastTurnResult: turnResult,
+        turnHistory: state.turnHistory.add(turnResult),
+      );
+
       // GAMEPLAY LOG: Double dice bonus turn
       state = state.withLogMessage(
         'Çift zar attı! ${currentPlayer.name} tekrar zar atacak.',
@@ -1618,9 +1622,13 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    // CRITICAL FIX: Set phase to turnEnded and PAUSE here
-    // DO NOT call _nextPlayer() here - that's done in startNextTurn()
-    state = state.copyWith(turnPhase: TurnPhase.turnEnded);
+    // CRITICAL FIX: Update lastTurnResult AND turnPhase in single atomic operation
+    // This prevents race condition where UI sees turnEnded before lastTurnResult is set
+    state = state.copyWith(
+      lastTurnResult: turnResult,
+      turnHistory: state.turnHistory.add(turnResult),
+      turnPhase: TurnPhase.turnEnded,
+    );
 
     debugPrint('🎬 Turn ended - waiting for startNextTurn()');
   }
