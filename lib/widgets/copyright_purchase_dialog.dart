@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/tile.dart';
+import '../models/player_type.dart';
 import '../providers/game_provider.dart';
 
-/// Copyright Purchase Dialog - Phase 3 Feature
+/// Copyright Purchase Dialog - Phase 4 Feature
 ///
 /// Allows players to purchase copyrights on book/publisher tiles
 /// after answering a question correctly.
@@ -15,20 +16,28 @@ import '../providers/game_provider.dart';
 /// - Validate if player can afford purchase
 /// - "Purchase" and "Skip" buttons
 /// - Integration with game_provider.purchaseCopyright()
+/// - Bot players auto-decline (dialog not rendered)
 ///
 /// Flow:
 /// 1. Dialog shown after correct answer on book/publisher tile
 /// 2. User chooses "Purchase" or "Skip"
 /// 3. If "Purchase" clicked, calls game_provider.purchaseCopyright()
-/// 4. If "Skip" clicked, dialog closes without action
+/// 4. If "Skip" clicked, calls playTurn() to advance to next phase
 /// 5. Turn continues normally after dialog closes
-class CopyrightPurchaseDialog extends ConsumerWidget {
+class CopyrightPurchaseDialog extends ConsumerStatefulWidget {
   final Tile tile;
 
   const CopyrightPurchaseDialog({super.key, required this.tile});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CopyrightPurchaseDialog> createState() =>
+      _CopyrightPurchaseDialogState();
+}
+
+class _CopyrightPurchaseDialogState
+    extends ConsumerState<CopyrightPurchaseDialog> {
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
 
@@ -36,8 +45,21 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final canAfford = currentPlayer.stars >= (tile.purchasePrice ?? 0);
-    final price = tile.purchasePrice ?? 0;
+    // Phase 4: Bot auto-decline - Dialog not rendered for bots
+    // Bots always decline copyright purchase (dummy logic)
+    if (currentPlayer.type == PlayerType.bot) {
+      // Bot auto-declines with delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        // Guard: Check if widget is still mounted before using ref
+        if (!mounted) return;
+        // Call playTurn to advance to next phase (endTurn)
+        ref.read(gameProvider.notifier).playTurn();
+      });
+      return const SizedBox.shrink();
+    }
+
+    final canAfford = currentPlayer.stars >= (widget.tile.purchasePrice ?? 0);
+    final price = widget.tile.purchasePrice ?? 0;
 
     return AlertDialog(
       title: Row(
@@ -81,7 +103,7 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          tile.name,
+                          widget.tile.name,
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -103,7 +125,7 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _getTileTypeName(tile.type),
+                        _getTileTypeName(widget.tile.type),
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           color: Colors.deepPurple.shade800,
@@ -238,7 +260,14 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
       actions: [
         // Skip button
         TextButton.icon(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            Navigator.of(context).pop();
+            // Call playTurn to advance to next phase (endTurn)
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (!mounted) return;
+              ref.read(gameProvider.notifier).playTurn();
+            });
+          },
           icon: const Icon(Icons.close),
           label: Text(
             'Atla',
@@ -255,6 +284,11 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
               ? () {
                   ref.read(gameProvider.notifier).purchaseCopyright();
                   Navigator.of(context).pop();
+                  // Call playTurn to advance to next phase (endTurn)
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (!mounted) return;
+                    ref.read(gameProvider.notifier).playTurn();
+                  });
                 }
               : null,
           icon: const Icon(Icons.shopping_cart),
