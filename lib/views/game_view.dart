@@ -10,6 +10,8 @@ import '../widgets/question_dialog.dart';
 import '../widgets/copyright_purchase_dialog.dart';
 import '../widgets/turn_summary_overlay.dart';
 import '../widgets/card_dialog.dart';
+import '../widgets/game_log.dart';
+import '../widgets/game_over_dialog.dart';
 
 class GameView extends ConsumerStatefulWidget {
   const GameView({super.key});
@@ -27,6 +29,7 @@ class _GameViewState extends ConsumerState<GameView> {
     final currentQuestion = ref.watch(currentQuestionProvider);
     final turnPhase = ref.watch(turnPhaseProvider);
     final currentCard = ref.watch(currentCardProvider);
+    final isGameOver = ref.watch(isGameOverProvider);
 
     // Phase 2 Orchestration Listener - UI-controlled timing
     //
@@ -336,6 +339,18 @@ class _GameViewState extends ConsumerState<GameView> {
 
                       const Divider(height: 1),
 
+                      // SECTION 2.5: GAME LOG - Activity History
+                      // Fixed height compact log viewer
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        child: const GameLogWidget(),
+                      ),
+
+                      const Divider(height: 1),
+
                       // SECTION 3: FOOTER - Dice Area
                       // CRITICAL FIX: Give it a safe fixed height (180px) to fit EnhancedDiceWidget
                       // NO SizedBox wrapping, NO Expanded constraint
@@ -412,6 +427,12 @@ class _GameViewState extends ConsumerState<GameView> {
           // Visible ONLY during TurnPhase.turnEnded
           // Provides clear, concise summary of what just happened
           if (turnPhase == TurnPhase.turnEnded) const TurnSummaryOverlay(),
+
+          // Phase 6.1: Game Over Dialog - Final overlay showing winner and leaderboard
+          // Visible ONLY when game is over (isGameOver == true)
+          // Appears on top of all other dialogs to ensure visibility
+          // Shows winner, final scores, and restart option
+          if (isGameOver) const GameOverDialog(),
 
           // DEV TOOL: Turn Result Inspector - Debug overlay for turn validation
           // ONLY visible in debug mode (kDebugMode == true)

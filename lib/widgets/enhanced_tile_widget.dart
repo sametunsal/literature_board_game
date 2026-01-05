@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/tile.dart';
+import '../providers/game_provider.dart';
 import 'dart:math' as math;
 
 /// Enhanced tile widget with special visual effects
 /// Adds mini animations for ŞANS, KADER, Kitap, Yayınevi tiles
-class EnhancedTileWidget extends StatefulWidget {
+/// Shows ownership with colored borders and indicators
+class EnhancedTileWidget extends ConsumerStatefulWidget {
   final Tile tile;
   final bool isHighlighted;
   final VoidCallback? onTap;
@@ -18,10 +21,11 @@ class EnhancedTileWidget extends StatefulWidget {
   });
 
   @override
-  State<EnhancedTileWidget> createState() => _EnhancedTileWidgetState();
+  ConsumerState<EnhancedTileWidget> createState() =>
+      _EnhancedTileWidgetState();
 }
 
-class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
+class _EnhancedTileWidgetState extends ConsumerState<EnhancedTileWidget>
     with TickerProviderStateMixin {
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmerAnimation;
@@ -59,45 +63,127 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget>
         widget.tile.type == TileType.publisher; // Yayınevi
   }
 
+  /// Helper method to safely convert hex color string to Color
+  Color? _parseHexColor(String? hexColor) {
+    if (hexColor == null || hexColor.isEmpty) return null;
+    try {
+      // Remove # if present and add FF for full opacity
+      final colorString = hexColor.replaceFirst('#', '0xFF');
+      return Color(int.parse(colorString));
+    } catch (e) {
+      debugPrint('Error parsing color: $hexColor');
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Watch game state to get player information for ownership display
+    final gameState = ref.watch(gameProvider);
+
+    // Find owner player if tile has an owner
+    final ownerPlayer = widget.tile.owner != null
+        ? gameState.players.cast<dynamic>().firstWhere(
+              (p) => p.id == widget.tile.owner,
+              orElse: () => null,
+            )
+        : null;
+
+    // Get owner color if owner exists
+    final ownerColor = ownerPlayer != null
+        ? _parseHexColor(ownerPlayer.color)
+        : null;
+
     // Corner tiles are 1.5x larger than regular tiles
     final isCorner = widget.tile.type == TileType.corner;
     final tileWidth = isCorner ? 150.0 : 100.0;
     final tileHeight = isCorner ? 180.0 : 120.0;
+
+    // Determine border color and width based on ownership
+    final borderColor = ownerColor ??
+        (widget.isHighlighted
+            ? Colors.orange
+            : Colors.brown.shade300);
+    final borderWidth = ownerColor != null
+        ? 4.0 // Prominent border for owned tiles
+        : (widget.isHighlighted ? 3.0 : 1.0);
 
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedBuilder(
         animation: _shimmerAnimation,
         builder: (context, child) {
-          return Container(
-            width: tileWidth,
-            height: tileHeight,
-            decoration: BoxDecoration(
-              color: _getTileColor(),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: widget.isHighlighted
-                    ? Colors.orange
-                    : Colors.brown.shade300,
-                width: widget.isHighlighted ? 3 : 1,
-              ),
-              boxShadow: [
-                if (widget.isHighlighted)
-                  BoxShadow(
-                    color: Colors.orange.withValues(alpha: 0.5),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+          return Stack(
+            children: [
+              // Main tile container
+              Container(
+                width: tileWidth,
+                height: tileHeight,
+                decoration: BoxDecoration(
+                  color: _getTileColor(),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: borderColor,
+                    width: borderWidth,
                   ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
+                  boxShadow: [
+                    if (widget.isHighlighted)
+                      BoxShadow(
+                        color: Colors.orange.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    if (ownerColor != null)
+                      BoxShadow(
+                        color: ownerColor.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: _isSpecialTile() ? _buildSpecialTile() : child,
+                child: _isSpecialTile() ? _buildSpecialTile() : child,
+              ),
+              // Ownership indicator in top-right corner
+              if (ownerColor != null && ownerPlayer != null)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: ownerColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        ownerPlayer.name[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           );
         },
         child: _buildNormalTile(),

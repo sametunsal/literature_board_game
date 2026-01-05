@@ -1,96 +1,106 @@
-// TEMPORARILY DISABLED FOR COMPILATION RESET
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:google_fonts/google_fonts.dart';
-// import '../providers/game_provider.dart';
-// 
-// class GameLogWidget extends ConsumerWidget {
-//   const GameLogWidget({super.key});
-// 
-//   @override
-//   Widget build(BuildContext context, WidgetRef ref) {
-//     final logMessages = ref.watch(logMessagesProvider);
-// 
-//     return Container(
-//       padding: const EdgeInsets.all(16),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(12),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.2),
-//             blurRadius: 4,
-//             offset: const Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           // Header
-//           Container(
-//             padding: const EdgeInsets.only(bottom: 12),
-//             decoration: const BoxDecoration(
-//               border: Border(
-//                 bottom: BorderSide(color: Colors.brown, width: 2),
-//               ),
-//             ),
-//             child: Row(
-//               children: [
-//                 Icon(Icons.history, color: Colors.brown.shade800, size: 20),
-//                 const SizedBox(width: 8),
-//                 Text(
-//                   'Oyun Geçmişi',
-//                   style: GoogleFonts.poppins(
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.brown.shade900,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           const SizedBox(height: 12),
-//           
-//           // Log messages
-//           Expanded(
-//             child: logMessages.isEmpty
-//                 ? Center(
-//                     child: Text(
-//                       'Henüz işlem yok',
-//                       style: GoogleFonts.poppins(
-//                         fontSize: 14,
-//                         color: Colors.grey.shade600,
-//                       ),
-//                     ),
-//                   )
-//                 : ListView.builder(
-//                     reverse: true,
-//                     itemCount: logMessages.length,
-//                     itemBuilder: (context, index) {
-//                       final message = logMessages[index];
-//                       return Padding(
-//                         padding: const EdgeInsets.only(bottom: 8),
-//                         child: Container(
-//                           padding: const EdgeInsets.all(8),
-//                           decoration: BoxDecoration(
-//                             color: Colors.brown.shade50,
-//                             borderRadius: BorderRadius.circular(6),
-//                           ),
-//                           child: Text(
-//                             message,
-//                             style: GoogleFonts.poppins(
-//                               fontSize: 12,
-//                               color: Colors.brown.shade900,
-//                             ),
-//                           ),
-//                         ),
-//                       );
-//                     },
-//                   ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../providers/game_provider.dart';
+
+class GameLogWidget extends ConsumerStatefulWidget {
+  const GameLogWidget({super.key});
+
+  @override
+  ConsumerState<GameLogWidget> createState() => _GameLogWidgetState();
+}
+
+class _GameLogWidgetState extends ConsumerState<GameLogWidget> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final logMessages = ref.watch(logMessagesProvider);
+
+    // Auto-scroll to bottom when new messages arrive
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+
+    return Container(
+      height: 140, // Fixed height as requested
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50, // Light gray background
+        borderRadius: BorderRadius.circular(12), // Rounded corners
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Compact Header
+          Row(
+            children: [
+              Icon(Icons.history, color: Colors.brown.shade700, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                'Oyun Geçmişi',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.brown.shade800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // Log messages with auto-scroll
+          Expanded(
+            child: logMessages.isEmpty
+                ? Center(
+                    child: Text(
+                      'Henüz işlem yok',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: EdgeInsets.zero,
+                    itemCount: logMessages.length,
+                    itemBuilder: (context, index) {
+                      final message = logMessages[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '• $message',
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.brown.shade900,
+                            height: 1.3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
