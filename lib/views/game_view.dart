@@ -10,6 +10,7 @@ import '../widgets/question_dialog.dart';
 import '../widgets/copyright_purchase_dialog.dart';
 import '../widgets/turn_summary_overlay.dart';
 import '../widgets/card_dialog.dart';
+import '../widgets/game_log.dart';
 
 class GameView extends ConsumerStatefulWidget {
   const GameView({super.key});
@@ -332,6 +333,18 @@ class _GameViewState extends ConsumerState<GameView> {
                             );
                           },
                         ),
+                      ),
+
+                      const Divider(height: 1),
+
+                      // SECTION 2.5: GAME LOG - Activity History
+                      // Fixed height compact log viewer
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        child: const GameLogWidget(),
                       ),
 
                       const Divider(height: 1),
