@@ -343,7 +343,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
         case TurnPhase.copyrightPurchased:
           // Bot makes intelligent purchase decision
-          if (currentPlayer?.type == PlayerType.bot) {
+          if (state.currentPlayer?.type == PlayerType.bot) {
             _handleBotCopyrightDecision();
           } else {
             // Human player decision handled by UI dialog
@@ -698,7 +698,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Bot intelligence: 50% chance to answer correctly
     final shouldAnswerCorrectly = _random.nextBool();
-    
+
     if (shouldAnswerCorrectly) {
       answerQuestionCorrect();
       debugPrint('🤖 Bot answered correctly (50% chance)');
