@@ -118,27 +118,51 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
 
     // Question dialog buttons are only enabled during TurnPhase.questionWaiting
     final canAnswer = turnPhase == TurnPhase.questionWaiting;
-    return AlertDialog(
-      title: Row(
-        children: [
-          const Text('❓', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
-          Text(
-            'Soru',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
+    return Center(
+      child: Card(
+        margin: const EdgeInsets.all(32),
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.brown.shade100,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Text('❓', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Soru',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Content area - scrollable when content exceeds viewport
+              // Using Expanded instead of Flexible for predictable layout in Column
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
               // Category and Difficulty row
               Row(
                 children: [
@@ -362,30 +386,48 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
                   ),
                 );
               }),
+                    ],
+                  ),
+                ),
+              ),
+              // Actions area
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Opacity(
+                      opacity: canAnswer ? 1.0 : 0.5,
+                      child: TextButton.icon(
+                        onPressed: canAnswer
+                            ? () => _handleAnswer(false)
+                            : null, // Skip = wrong
+                        icon: const Icon(Icons.skip_next),
+                        label: Text(
+                          'Atla',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: canAnswer
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade400,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        Opacity(
-          opacity: canAnswer ? 1.0 : 0.5,
-          child: TextButton.icon(
-            onPressed: canAnswer
-                ? () => _handleAnswer(false)
-                : null, // Skip = wrong
-            icon: const Icon(Icons.skip_next),
-            label: Text(
-              'Atla',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: canAnswer
-                  ? Colors.grey.shade700
-                  : Colors.grey.shade400,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

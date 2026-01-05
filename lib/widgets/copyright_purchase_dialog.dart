@@ -64,26 +64,49 @@ class _CopyrightPurchaseDialogState
     final canAfford = currentPlayer.stars >= (widget.tile.purchasePrice ?? 0);
     final price = widget.tile.purchasePrice ?? 0;
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.copyright, color: Colors.deepPurple.shade600, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Telif Satın Al',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Center(
+      child: Card(
+        margin: const EdgeInsets.all(32),
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade100,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.copyright, color: Colors.deepPurple.shade600, size: 28),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Telif Satın Al',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Content area
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
             // Tile information
             Container(
               padding: const EdgeInsets.all(16),
@@ -257,72 +280,90 @@ class _CopyrightPurchaseDialogState
                   ],
                 ),
               ),
-          ],
+                  ],
+                ),
+              ),
+              // Actions area
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Skip button
+                    TextButton.icon(
+                      onPressed: () {
+                        // Capture notifier reference before state changes
+                        // to ensure it remains valid after phase transition
+                        final gameNotifier = ref.read(gameProvider.notifier);
+                        
+                        // Call declineCopyrightPurchase() to set proper phase
+                        gameNotifier.declineCopyrightPurchase();
+                        
+                        // Schedule playTurn() after current frame completes
+                        // to ensure state has settled before advancing to next phase
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          gameNotifier.playTurn();
+                        });
+                      },
+                      icon: const Icon(Icons.close),
+                      label: Text(
+                        'Atla',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                      ),
+                      style: TextButton.styleFrom(foregroundColor: Colors.grey.shade700),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Purchase button
+                    ElevatedButton.icon(
+                      onPressed: canAfford
+                          ? () {
+                              // Capture notifier reference before state changes
+                              // to ensure it remains valid after phase transition
+                              final gameNotifier = ref.read(gameProvider.notifier);
+                              
+                              // Call completeCopyrightPurchase() to perform purchase and set proper phase
+                              gameNotifier.completeCopyrightPurchase();
+                              
+                              // Schedule playTurn() after current frame completes
+                              // to ensure state has settled before advancing to next phase
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                gameNotifier.playTurn();
+                              });
+                            }
+                          : null,
+                      icon: const Icon(Icons.shopping_cart),
+                      label: Text(
+                        'Satın Al',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: canAfford
+                            ? Colors.deepPurple.shade600
+                            : Colors.grey.shade400,
+                        foregroundColor: Colors.white,
+                        elevation: canAfford ? 2 : 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        // Skip button
-        TextButton.icon(
-          onPressed: () {
-            // CRITICAL FIX: Capture the notifier reference before popping
-            final gameNotifier = ref.read(gameProvider.notifier);
-            
-            Navigator.of(context).pop();
-            
-            // Call declineCopyrightPurchase() to set proper phase
-            gameNotifier.declineCopyrightPurchase();
-            
-            // CRITICAL FIX: Use WidgetsBinding to schedule playTurn() after dialog closes
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              gameNotifier.playTurn();
-            });
-          },
-          icon: const Icon(Icons.close),
-          label: Text(
-            'Atla',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-          ),
-          style: TextButton.styleFrom(foregroundColor: Colors.grey.shade700),
-        ),
-
-        const SizedBox(width: 8),
-
-        // Purchase button
-        ElevatedButton.icon(
-          onPressed: canAfford
-              ? () {
-                  // CRITICAL FIX: Capture the notifier reference before popping
-                  final gameNotifier = ref.read(gameProvider.notifier);
-                  
-                  Navigator.of(context).pop();
-                  
-                  // Call completeCopyrightPurchase() to perform purchase and set proper phase
-                  gameNotifier.completeCopyrightPurchase();
-                  
-                  // CRITICAL FIX: Use WidgetsBinding to schedule playTurn() after dialog closes
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    gameNotifier.playTurn();
-                  });
-                }
-              : null,
-          icon: const Icon(Icons.shopping_cart),
-          label: Text(
-            'Satın Al',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: canAfford
-                ? Colors.deepPurple.shade600
-                : Colors.grey.shade400,
-            foregroundColor: Colors.white,
-            elevation: canAfford ? 2 : 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
