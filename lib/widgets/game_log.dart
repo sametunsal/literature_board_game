@@ -39,10 +39,10 @@ class _GameLogWidgetState extends ConsumerState<GameLogWidget> {
     });
 
     return Container(
-      height: 120, // Fixed height as requested (100-150px range)
+      height: 140, // Fixed height as requested
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100, // Light gray background
+        color: Colors.grey.shade50, // Light gray background
         borderRadius: BorderRadius.circular(12), // Rounded corners
         border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
@@ -90,7 +90,7 @@ class _GameLogWidgetState extends ConsumerState<GameLogWidget> {
                         child: Text(
                           '• $message',
                           style: GoogleFonts.poppins(
-                            fontSize: 9,
+                            fontSize: 10,
                             color: Colors.brown.shade900,
                             height: 1.3,
                           ),
