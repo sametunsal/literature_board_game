@@ -299,13 +299,15 @@ class _CopyrightPurchaseDialogState
                     // Skip button
                     TextButton.icon(
                       onPressed: () {
-                        // CRITICAL FIX: Capture the notifier reference
+                        // Capture notifier reference before state changes
+                        // to ensure it remains valid after phase transition
                         final gameNotifier = ref.read(gameProvider.notifier);
                         
                         // Call declineCopyrightPurchase() to set proper phase
                         gameNotifier.declineCopyrightPurchase();
                         
-                        // CRITICAL FIX: Use WidgetsBinding to schedule playTurn()
+                        // Schedule playTurn() after current frame completes
+                        // to ensure state has settled before advancing to next phase
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           gameNotifier.playTurn();
                         });
@@ -324,13 +326,15 @@ class _CopyrightPurchaseDialogState
                     ElevatedButton.icon(
                       onPressed: canAfford
                           ? () {
-                              // CRITICAL FIX: Capture the notifier reference
+                              // Capture notifier reference before state changes
+                              // to ensure it remains valid after phase transition
                               final gameNotifier = ref.read(gameProvider.notifier);
                               
                               // Call completeCopyrightPurchase() to perform purchase and set proper phase
                               gameNotifier.completeCopyrightPurchase();
                               
-                              // CRITICAL FIX: Use WidgetsBinding to schedule playTurn()
+                              // Schedule playTurn() after current frame completes
+                              // to ensure state has settled before advancing to next phase
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 gameNotifier.playTurn();
                               });

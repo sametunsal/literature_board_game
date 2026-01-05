@@ -154,8 +154,9 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
                   ],
                 ),
               ),
-              // Content area
-              Flexible(
+              // Content area - scrollable when content exceeds viewport
+              // Using Expanded instead of Flexible for predictable layout in Column
+              Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
