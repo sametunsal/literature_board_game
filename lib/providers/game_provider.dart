@@ -1174,6 +1174,8 @@ class GameNotifier extends StateNotifier<GameState> {
     // Check if tile can be owned
     if (!tile.canBeOwned) {
       debugPrint('🤖 Bot skipping - tile cannot be owned');
+      // Set phase to questionResolved before calling endTurn
+      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       endTurn();
       return;
     }
@@ -1181,6 +1183,8 @@ class GameNotifier extends StateNotifier<GameState> {
     // Check if tile is already owned
     if (tile.owner != null) {
       debugPrint('🤖 Bot skipping - tile already owned');
+      // Set phase to questionResolved before calling endTurn
+      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       endTurn();
       return;
     }
