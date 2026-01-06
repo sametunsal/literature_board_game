@@ -21,6 +21,7 @@ class _CardDialogState extends ConsumerState<CardDialog>
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
   bool _isProcessing = false;
+  bool _botActionProcessed = false;
 
   @override
   void initState() {
@@ -64,14 +65,17 @@ class _CardDialogState extends ConsumerState<CardDialog>
     // Bot auto-apply - Dialog not rendered for bots
     // Bots always auto-apply card effect without showing dialog
     if (currentPlayer?.type == PlayerType.bot) {
-      // Bot auto-applies with delay
-      Future.delayed(const Duration(milliseconds: 500), () {
-        // Guard: Check if widget is still mounted before using ref
-        if (!mounted) return;
+      if (!_botActionProcessed) {
+        _botActionProcessed = true;
+        // Bot auto-applies with delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          // Guard: Check if widget is still mounted before using ref
+          if (!mounted) return;
 
-        // Apply card effect directly to clear currentCard from memory
-        ref.read(gameProvider.notifier).applyCardEffect(widget.card);
-      });
+          // Apply card effect directly to clear currentCard from memory
+          ref.read(gameProvider.notifier).applyCardEffect(widget.card);
+        });
+      }
       return const SizedBox.shrink();
     }
 
