@@ -49,19 +49,8 @@ class _CardDialogState extends ConsumerState<CardDialog>
   }
 
   void _applyCard() {
-    // 1. GameNotifier referansını al
     final gameNotifier = ref.read(gameProvider.notifier);
-
-    // 2. Kart etkisini uygula
-    // NOT: Bu işlem gameProvider içinde 'currentCard'ı null yapar.
-    // GameView bu değişikliği dinlediği için Stack içindeki CardDialog widget'ını
-    // otomatik olarak ekrandan kaldıracaktır. Manuel kapatmaya gerek yoktur.
     gameNotifier.applyCardEffect(widget.card);
-
-    // 3. Bir sonraki oyun adımını tetikle
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      gameNotifier.playTurn();
-    });
   }
 
   @override
