@@ -1,17 +1,3 @@
-/// ============================================================================
-/// TURN EVENT SYSTEM
-/// ============================================================================
-///
-/// This file contains the base structures for recording game events.
-/// It has NO dependencies on other model files to prevent circular references.
-///
-/// ARCHITECTURE:
-/// - TurnEventType: Enum of all possible event types
-/// - TurnEvent: Single event record with timestamp
-/// - TurnTranscript: Chronological log of all events in a turn
-///
-/// DEPENDENCY LEVEL: 0 (No dependencies - foundational layer)
-
 /// Types of events that can happen in a turn
 enum TurnEventType {
   diceRoll,

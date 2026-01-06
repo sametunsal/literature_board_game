@@ -131,7 +131,7 @@ class _GameViewState extends ConsumerState<GameView> {
               ),
 
               // RIGHT PANEL: Control Center
-              // Strict 3-section Column layout
+              // Strict proportional layout: Header (fixed) + PlayerList (flex) + GameLog (fixed) + Dice (fixed)
               Expanded(
                 flex: 3,
                 child: Container(
@@ -144,12 +144,13 @@ class _GameViewState extends ConsumerState<GameView> {
                     ],
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.max,
                     children: [
                       // SECTION 1: HEADER - Current Player Info
                       // Fixed height, no expansion
                       Container(
                         height: 60, // Fixed height for header
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
                           borderRadius: const BorderRadius.vertical(
@@ -178,7 +179,7 @@ class _GameViewState extends ConsumerState<GameView> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -188,7 +189,7 @@ class _GameViewState extends ConsumerState<GameView> {
                                     currentPlayer?.name ?? "...",
                                     style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -196,7 +197,7 @@ class _GameViewState extends ConsumerState<GameView> {
                                     const Text(
                                       "Senin Sıran",
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 9,
                                         color: Colors.green,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -205,21 +206,23 @@ class _GameViewState extends ConsumerState<GameView> {
                               ),
                             ),
                             if (currentPlayer?.type == PlayerType.human)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade700,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'AKTİF',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade700,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    'AKTİF',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -230,8 +233,9 @@ class _GameViewState extends ConsumerState<GameView> {
                       const Divider(height: 1),
 
                       // SECTION 2: BODY - Player List
-                      // Wrapped in Expanded to take ALL remaining space
-                      Expanded(
+                      // Fixed height to prevent overlap with GameLog
+                      SizedBox(
+                        height: 140,
                         child: ListView.separated(
                           padding: EdgeInsets.zero,
                           itemCount: gameState.players.length,
@@ -244,8 +248,8 @@ class _GameViewState extends ConsumerState<GameView> {
                               visualDensity: VisualDensity.compact,
                               dense: true,
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
+                                horizontal: 8,
+                                vertical: 2,
                               ),
                               leading: Container(
                                 width: 32,
@@ -281,7 +285,7 @@ class _GameViewState extends ConsumerState<GameView> {
                                     child: Text(
                                       p.name,
                                       style: GoogleFonts.poppins(
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: isCurrent
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -289,17 +293,17 @@ class _GameViewState extends ConsumerState<GameView> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.star,
-                                    size: 14,
-                                    color: Colors.amber,
-                                  ),
                                   const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.star,
+                                    size: 12,
+                                    color: Colors.amber.shade600,
+                                  ),
+                                  const SizedBox(width: 2),
                                   Text(
                                     "${p.stars}",
                                     style: GoogleFonts.poppins(
-                                      fontSize: 12,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                       color: isCurrent
                                           ? Colors.brown.shade900
@@ -341,25 +345,26 @@ class _GameViewState extends ConsumerState<GameView> {
 
                       // SECTION 2.5: GAME LOG - Activity History
                       // Fixed height compact log viewer
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
+                      SizedBox(
+                        height: 70,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: const GameLogWidget(),
                         ),
-                        child: const GameLogWidget(),
                       ),
 
                       const Divider(height: 1),
 
                       // SECTION 3: FOOTER - Dice Area
-                      // CRITICAL FIX: Give it a safe fixed height (180px) to fit EnhancedDiceWidget
-                      // NO SizedBox wrapping, NO Expanded constraint
-                      // width: double.infinity ensures it fills available width
+                      // Fixed height to complete proportional layout
+                      // Total: 60 (header) + 140 (list) + 70 (log) + 120 (dice) = 390px for vertical fill
                       Container(
                         width: double.infinity,
-                        height:
-                            180, // Safe fixed height for dice widget (~140px needed)
-                        padding: const EdgeInsets.all(12),
+                        height: 120, // Fixed height for dice widget
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
                           borderRadius: const BorderRadius.vertical(

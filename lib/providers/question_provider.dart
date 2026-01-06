@@ -1,14 +1,30 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/question.dart';
 import '../repositories/question_repository.dart';
 
 // Question loading provider
 final questionLoadingProvider = FutureProvider<void>((ref) async {
-  await QuestionRepository.loadQuestions();
-  print('✅ Questions loaded from JSON asset');
+  try {
+    final success = await QuestionRepository.loadQuestions();
+    if (success) {
+      debugPrint('✅ Questions loaded from JSON asset');
+    } else {
+      debugPrint('⚠️ Questions loaded from fallback due to error');
+      if (QuestionRepository.hasError()) {
+        debugPrint('⚠️ Error: ${QuestionRepository.getLastError()}');
+      }
+    }
+  } catch (e, stack) {
+    debugPrint('❌ Unexpected error loading questions: $e\n$stack');
+    // Re-throw to let the provider handle the error state
+    rethrow;
+  }
 });
 
-// Question pool provider
+// DEPRECATED: Questions are now loaded from assets/data/questions.json
+// This hardcoded list is kept for reference only
+// To use: Uncomment and integrate with game_provider if needed
+/*
 List<Question> generateQuestions() {
   return [
     // Ben Kimim? Questions
@@ -250,3 +266,4 @@ List<Question> generateQuestions() {
     ),
   ];
 }
+*/

@@ -28,10 +28,7 @@ class AnimatedTileRow extends StatelessWidget {
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(tile.name),
-                Text('ID: ${tile.id}'),
-              ],
+              children: [Text(tile.name), Text('ID: ${tile.id}')],
             ),
           );
         }).toList(),

@@ -115,7 +115,8 @@ List<Card> generateKaderCards() {
     Card(
       id: 'kader6',
       type: CardType.kader,
-      description: 'En zengin yazar, diğerlerini desteklemeye karar verdi! Herkese 25 yıldız dağıtır.',
+      description:
+          'En zengin yazar, diğerlerini desteklemeye karar verdi! Herkese 25 yıldız dağıtır.',
       effect: CardEffect.richPlayerPays,
       starAmount: 25,
     ),
@@ -128,7 +129,8 @@ List<Card> generateKaderCards() {
     Card(
       id: 'kader8',
       type: CardType.kader,
-      description: 'Edebiyat eğitimi kampanyası! Bir sonraki soru kolay olacak.',
+      description:
+          'Edebiyat eğitimi kampanyası! Bir sonraki soru kolay olacak.',
       effect: CardEffect.allPlayersEasyQuestion,
     ),
     Card(

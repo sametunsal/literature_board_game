@@ -10,7 +10,7 @@ enum CardEffect {
   skipNextTax,
   freeTurn,
   easyQuestionNext,
-  
+
   // Kader card effects (global)
   allPlayersGainStars,
   allPlayersLoseStars,
@@ -40,18 +40,18 @@ class Card {
   // Check if card affects all players
   bool get affectsAllPlayers {
     return effect == CardEffect.allPlayersGainStars ||
-           effect == CardEffect.allPlayersLoseStars ||
-           effect == CardEffect.taxWaiver ||
-           effect == CardEffect.allPlayersEasyQuestion;
+        effect == CardEffect.allPlayersLoseStars ||
+        effect == CardEffect.taxWaiver ||
+        effect == CardEffect.allPlayersEasyQuestion;
   }
 
   // Check if card affects only current player
   bool get affectsCurrentPlayerOnly {
     return effect == CardEffect.gainStars ||
-           effect == CardEffect.loseStars ||
-           effect == CardEffect.skipNextTax ||
-           effect == CardEffect.freeTurn ||
-           effect == CardEffect.easyQuestionNext;
+        effect == CardEffect.loseStars ||
+        effect == CardEffect.skipNextTax ||
+        effect == CardEffect.freeTurn ||
+        effect == CardEffect.easyQuestionNext;
   }
 
   // Check if card affects specific tile owners
@@ -67,18 +67,18 @@ class Card {
   // Check if effect is positive for player
   bool get isPositiveForPlayer {
     return effect == CardEffect.gainStars ||
-           effect == CardEffect.skipNextTax ||
-           effect == CardEffect.freeTurn ||
-           effect == CardEffect.easyQuestionNext ||
-           effect == CardEffect.allPlayersGainStars ||
-           effect == CardEffect.taxWaiver;
+        effect == CardEffect.skipNextTax ||
+        effect == CardEffect.freeTurn ||
+        effect == CardEffect.easyQuestionNext ||
+        effect == CardEffect.allPlayersGainStars ||
+        effect == CardEffect.taxWaiver;
   }
 
   // Check if effect is negative for player
   bool get isNegativeForPlayer {
     return effect == CardEffect.loseStars ||
-           effect == CardEffect.allPlayersLoseStars ||
-           effect == CardEffect.publisherOwnersLose ||
-           effect == CardEffect.richPlayerPays;
+        effect == CardEffect.allPlayersLoseStars ||
+        effect == CardEffect.publisherOwnersLose ||
+        effect == CardEffect.richPlayerPays;
   }
 }

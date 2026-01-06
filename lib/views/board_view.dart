@@ -10,10 +10,10 @@
 // import '../widgets/question_dialog.dart';
 // import '../widgets/card_dialog.dart';
 // import '../widgets/copyright_purchase_dialog.dart';
-// 
+//
 // class BoardView extends ConsumerWidget {
 //   const BoardView({super.key});
-// 
+//
 //   @override
 //   Widget build(BuildContext context, WidgetRef ref) {
 //     final gameState = ref.watch(gameProvider);
@@ -21,28 +21,28 @@
 //     final isGameOver = ref.watch(isGameOverProvider);
 //     final currentQuestion = ref.watch(currentQuestionProvider);
 //     final currentCard = ref.watch(currentCardProvider);
-// 
+//
 //     // Show question dialog if active
 //     if (currentQuestion != null && gameState.isQuestionActive) {
 //       WidgetsBinding.instance.addPostFrameCallback((_) {
 //         _showQuestionDialog(context, ref, currentQuestion!);
 //       });
 //     }
-// 
+//
 //     // Show card dialog if active
 //     if (currentCard != null && gameState.isCardActive) {
 //       WidgetsBinding.instance.addPostFrameCallback((_) {
 //         _showCardDialog(context, currentCard!);
 //       });
 //     }
-// 
+//
 //     // Show copyright purchase dialog
 //     if (gameState.awaitingCopyrightPurchaseTileId != null) {
 //       WidgetsBinding.instance.addPostFrameCallback((_) {
 //         _showCopyrightPurchaseDialog(context, ref);
 //       });
 //     }
-// 
+//
 //     return Scaffold(
 //       backgroundColor: Colors.brown.shade200,
 //       appBar: _buildAppBar(context, currentPlayer, isGameOver),
@@ -51,7 +51,7 @@
 //           : _buildGameBody(context, ref, gameState, currentPlayer),
 //     );
 //   }
-// 
+//
 //   PreferredSizeWidget _buildAppBar(BuildContext context, Player currentPlayer, bool isGameOver) {
 //     return AppBar(
 //       title: Text(
@@ -95,7 +95,7 @@
 //       ],
 //     );
 //   }
-// 
+//
 //   Widget _buildGameBody(
 //     BuildContext context,
 //     WidgetRef ref,
@@ -110,7 +110,7 @@
 //             // Top section: Players info
 //             _buildPlayersInfoBar(context, gameState.players, currentPlayer),
 //             const SizedBox(height: 8),
-//             
+//
 //             // Middle section: Board and controls
 //             Expanded(
 //               child: Row(
@@ -121,14 +121,14 @@
 //                     child: GameLogWidget(),
 //                   ),
 //                   const SizedBox(width: 8),
-//                   
+//
 //                   // Center: Board
 //                   Expanded(
 //                     flex: 5,
 //                     child: BoardWidget(),
 //                   ),
 //                   const SizedBox(width: 8),
-//                   
+//
 //                   // Right: Player info and controls
 //                   Expanded(
 //                     flex: 2,
@@ -137,7 +137,7 @@
 //                         // Current player info
 //                         PlayerInfoPanel(player: currentPlayer),
 //                         const SizedBox(height: 16),
-//                         
+//
 //                         // Dice and controls
 //                         DiceWidget(
 //                           diceRoll: gameState.lastDiceRoll,
@@ -146,7 +146,7 @@
 //                             ref.read(gameProvider.notifier).executeTurn();
 //                           },
 //                         ),
-//                         
+//
 //                         // Game message
 //                         if (gameState.lastMessage != null)
 //                           Padding(
@@ -185,7 +185,7 @@
 //       ),
 //     );
 //   }
-// 
+//
 //   Widget _buildPlayersInfoBar(BuildContext context, List<Player> players, Player currentPlayer) {
 //     return Container(
 //       height: 80,
@@ -253,14 +253,14 @@
 //       ),
 //     );
 //   }
-// 
+//
 //   Widget _buildGameOverScreen(BuildContext context, WidgetRef ref) {
 //     final gameState = ref.watch(gameProvider);
 //     final winner = gameState.players.firstWhere(
 //       (p) => !p.isBankrupt,
 //       orElse: () => gameState.players.first,
 //     );
-// 
+//
 //     return Center(
 //       child: Container(
 //         padding: const EdgeInsets.all(32),
@@ -324,7 +324,7 @@
 //       ),
 //     );
 //   }
-// 
+//
 //   void _showQuestionDialog(BuildContext context, WidgetRef ref, Question question) {
 //     showDialog(
 //       context: context,
@@ -338,7 +338,7 @@
 //       ),
 //     );
 //   }
-// 
+//
 //   void _showCardDialog(BuildContext context, Card card) {
 //     showDialog(
 //       context: context,
@@ -351,13 +351,13 @@
 //       ),
 //     );
 //   }
-// 
+//
 //   void _showCopyrightPurchaseDialog(BuildContext context, WidgetRef ref) {
 //     final gameState = ref.read(gameProvider);
 //     final tileId = gameState.awaitingCopyrightPurchaseTileId!;
 //     final tile = gameState.tiles.firstWhere((t) => t.id == tileId);
 //     final player = gameState.currentPlayer;
-// 
+//
 //     showDialog(
 //       context: context,
 //       barrierDismissible: false,

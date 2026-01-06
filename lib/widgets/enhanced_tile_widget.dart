@@ -21,8 +21,7 @@ class EnhancedTileWidget extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<EnhancedTileWidget> createState() =>
-      _EnhancedTileWidgetState();
+  ConsumerState<EnhancedTileWidget> createState() => _EnhancedTileWidgetState();
 }
 
 class _EnhancedTileWidgetState extends ConsumerState<EnhancedTileWidget>
@@ -84,9 +83,9 @@ class _EnhancedTileWidgetState extends ConsumerState<EnhancedTileWidget>
     // Find owner player if tile has an owner
     final ownerPlayer = widget.tile.owner != null
         ? gameState.players.cast<dynamic>().firstWhere(
-              (p) => p.id == widget.tile.owner,
-              orElse: () => null,
-            )
+            (p) => p.id == widget.tile.owner,
+            orElse: () => null,
+          )
         : null;
 
     // Get owner color if owner exists
@@ -100,10 +99,9 @@ class _EnhancedTileWidgetState extends ConsumerState<EnhancedTileWidget>
     final tileHeight = isCorner ? 180.0 : 120.0;
 
     // Determine border color and width based on ownership
-    final borderColor = ownerColor ??
-        (widget.isHighlighted
-            ? Colors.orange
-            : Colors.brown.shade300);
+    final borderColor =
+        ownerColor ??
+        (widget.isHighlighted ? Colors.orange : Colors.brown.shade300);
     final borderWidth = ownerColor != null
         ? 4.0 // Prominent border for owned tiles
         : (widget.isHighlighted ? 3.0 : 1.0);
@@ -122,10 +120,7 @@ class _EnhancedTileWidgetState extends ConsumerState<EnhancedTileWidget>
                 decoration: BoxDecoration(
                   color: _getTileColor(),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: borderColor,
-                    width: borderWidth,
-                  ),
+                  border: Border.all(color: borderColor, width: borderWidth),
                   boxShadow: [
                     if (widget.isHighlighted)
                       BoxShadow(
@@ -159,10 +154,7 @@ class _EnhancedTileWidgetState extends ConsumerState<EnhancedTileWidget>
                     decoration: BoxDecoration(
                       color: ownerColor,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
+                      border: Border.all(color: Colors.white, width: 2),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.2),

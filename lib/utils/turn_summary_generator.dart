@@ -61,10 +61,11 @@ class TurnSummaryGenerator {
 
     parts.add('${result.startPosition} -> ${result.endPosition}');
 
-    if (result.starsDelta > 0)
+    if (result.starsDelta > 0) {
       parts.add('+${result.starsDelta} Yıldız');
-    else if (result.starsDelta < 0)
+    } else if (result.starsDelta < 0) {
       parts.add('${result.starsDelta} Yıldız');
+    }
 
     return parts.join(', ');
   }

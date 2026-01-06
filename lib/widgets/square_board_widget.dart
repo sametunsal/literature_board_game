@@ -57,6 +57,14 @@ class SquareBoardWidget extends ConsumerWidget {
 
   // Visual Rect Calculator (0,0 is Top-Left of Screen)
   Rect _getTileRect(int id, double u) {
+    // Bounds checking: valid tile IDs are 0-39
+    if (id < 0 || id > 39) {
+      debugPrint(
+        '⚠️ Invalid tile ID: $id (valid range: 0-39), returning zero rect',
+      );
+      return Rect.zero;
+    }
+
     final c = 1.8 * u; // Corner size (thicker ring)
     final total = 12.6 * u; // Total size
 
@@ -108,6 +116,9 @@ class SquareBoardWidget extends ConsumerWidget {
       double myX = rightX - (idx * u);
       return Rect.fromLTWH(myX, total - c, u, c);
     }
+
+    // This should never be reached due to bounds check above
+    debugPrint('⚠️ Unhandled tile ID: $id, returning zero rect');
     return Rect.zero;
   }
 
@@ -214,13 +225,22 @@ class SquareBoardWidget extends ConsumerWidget {
       orElse: () => Player(id: '', name: '', color: '#000000', stars: 0),
     );
 
-    // Parse player color
-    return Color(int.parse(player.color.replaceFirst('#', '0xFF')));
+    // Parse player color with error handling
+    try {
+      return Color(int.parse(player.color.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      debugPrint(
+        '⚠️ Error parsing player color "${player.color}": $e, using default gray',
+      );
+      return Colors.grey;
+    }
   }
 
   List<Widget> _buildPlayerTokens(List<Player> players, double u) {
     final Map<int, List<Player>> groups = {};
-    for (var p in players) groups.putIfAbsent(p.position, () => []).add(p);
+    for (var p in players) {
+      groups.putIfAbsent(p.position, () => []).add(p);
+    }
 
     List<Widget> tokens = [];
     double tokenSize = u * 0.45; // Token is 45% of a unit size
@@ -248,6 +268,23 @@ class SquareBoardWidget extends ConsumerWidget {
         final double left = cx + o.dx - (tokenSize / 2);
         final double top = cy + o.dy - (tokenSize / 2);
 
+        // Parse player color with error handling
+        Color playerColor;
+        try {
+          playerColor = Color(int.parse(p.color.replaceFirst('#', '0xFF')));
+        } catch (e) {
+          debugPrint(
+            '⚠️ Error parsing player color "${p.color}": $e, using default blue',
+          );
+          playerColor = Colors.blue;
+        }
+
+        // Get first letter safely
+        String initialLetter = '?';
+        if (p.name.isNotEmpty) {
+          initialLetter = p.name[0];
+        }
+
         tokens.add(
           AnimatedPositioned(
             duration: const Duration(milliseconds: 500),
@@ -257,7 +294,7 @@ class SquareBoardWidget extends ConsumerWidget {
               width: tokenSize,
               height: tokenSize,
               decoration: BoxDecoration(
-                color: Color(int.parse(p.color.replaceFirst('#', '0xFF'))),
+                color: playerColor,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
@@ -266,7 +303,7 @@ class SquareBoardWidget extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  p.name[0],
+                  initialLetter,
                   style: TextStyle(
                     fontSize: tokenSize * 0.6,
                     fontWeight: FontWeight.bold,

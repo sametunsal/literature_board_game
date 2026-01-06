@@ -697,15 +697,24 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (state.currentQuestion == null) return;
 
-    // Bot intelligence: 50% chance to answer correctly
-    final shouldAnswerCorrectly = _random.nextBool();
+    // Bot always answers with low probability
+    // Always wrong (70% incorrect = 30% correct)
+    const correctProbability =
+        0.30; // Always ~30% correct across all difficulties
+
+    final randomValue = _random.nextDouble();
+    final shouldAnswerCorrectly = randomValue < correctProbability;
 
     if (shouldAnswerCorrectly) {
       answerQuestionCorrect();
-      debugPrint('🤖 Bot answered correctly (50% chance)');
+      debugPrint(
+        '🤖 Bot answered correctly (${(correctProbability * 100).toInt()}% chance)',
+      );
     } else {
       answerQuestionWrong();
-      debugPrint('🤖 Bot answered incorrectly (50% chance)');
+      debugPrint(
+        '🤖 Bot answered incorrectly (${(100 - correctProbability * 100).toInt()}% chance)',
+      );
     }
 
     // Advance phase to questionResolved
@@ -1070,11 +1079,11 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Complete copyright purchase for human players
-  /// 
+  ///
   /// This method is called by the UI (CopyrightPurchaseDialog) when the player
   /// confirms the purchase. It performs the actual purchase transaction and
   /// transitions the phase to questionResolved, which is accepted by endTurn().
-  /// 
+  ///
   /// Flow: UI confirms → completeCopyrightPurchase() → playTurn() → endTurn()
   /// This matches the pattern used in CardDialog._applyCard()
   void completeCopyrightPurchase() {
@@ -1138,11 +1147,11 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Decline copyright purchase for human players
-  /// 
+  ///
   /// This method is called by the UI (CopyrightPurchaseDialog) when the player
   /// chooses to skip the purchase. It transitions the phase to questionResolved,
   /// which is accepted by endTurn().
-  /// 
+  ///
   /// Flow: UI skips → declineCopyrightPurchase() → playTurn() → endTurn()
   void declineCopyrightPurchase() {
     if (state.currentPlayer == null) return;
@@ -1190,11 +1199,23 @@ class GameNotifier extends StateNotifier<GameState> {
     }
 
     final price = tile.purchasePrice ?? 0;
+    final rentIncome = tile.copyrightFee ?? 0;
 
-    // Bot intelligence: Purchase if affordable
-    if (currentPlayer.stars >= price) {
-      debugPrint('🤖 Bot purchasing ${tile.name} for $price stars');
-      
+    // Bot intelligence: Smart purchase decision
+    // 1. Can afford (has at least 1.5x the price to stay safe)
+    // 2. Good ROI (rent income is at least 10% of purchase price)
+    // 3. Keep reserve (don't spend if it leaves less than 50 stars)
+    final canAfford = currentPlayer.stars >= (price * 1.5).toInt();
+    final goodROI = rentIncome >= (price * 0.1).toInt();
+    final keepsReserve = (currentPlayer.stars - price) >= 50;
+
+    final shouldPurchase = canAfford && goodROI && keepsReserve;
+
+    if (shouldPurchase) {
+      debugPrint(
+        '🤖 Bot purchasing ${tile.name} for $price stars (ROI: ${((rentIncome / price) * 100).toStringAsFixed(1)}%)',
+      );
+
       // Perform the purchase transaction
       final updatedPlayer = currentPlayer.copyWith(
         stars: currentPlayer.stars - price,
@@ -1224,11 +1245,13 @@ class GameNotifier extends StateNotifier<GameState> {
         description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
         data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
       );
-      
+
       // After purchase, end turn
       endTurn();
     } else {
-      debugPrint('🤖 Bot cannot afford - skipping purchase');
+      debugPrint(
+        '🤖 Bot declining purchase (affordable: $canAfford, ROI: $goodROI, reserve: $keepsReserve)',
+      );
       // Set phase to questionResolved before calling endTurn
       state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       endTurn();
@@ -1731,6 +1754,38 @@ class GameNotifier extends StateNotifier<GameState> {
     return players
         .map((p) => p.id == updatedPlayer.id ? updatedPlayer : p)
         .toList();
+  }
+
+  /// Reset game to initial state while keeping player names and types
+  /// This allows restarting the game without recreating all player data
+  void resetGame() {
+    // Preserve player names, colors, and types
+    final preservedPlayers = state.players.map((p) {
+      return Player(
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        type: p.type,
+        stars: GameConstants.initialStars,
+        position: 0, // Start position
+      );
+    }).toList();
+
+    // Reset to initial game state
+    state = GameState(
+      players: preservedPlayers,
+      tiles: state.tiles
+          .map((t) => t.copyWith(owner: null))
+          .toList(), // Clear ownership
+      questionPool: state.questionPool,
+      sansCards: state.sansCards,
+      kaderCards: state.kaderCards,
+      currentPlayerIndex: 0,
+      turnPhase: TurnPhase.start,
+      turnStartStars: GameConstants.initialStars,
+    ).withLogMessage('Oyun sıfırlandı! Yeni oyun başlıyor...');
+
+    debugPrint('🔄 Game reset successfully');
   }
 }
 

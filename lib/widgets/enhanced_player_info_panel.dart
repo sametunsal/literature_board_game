@@ -68,10 +68,13 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: isBankrupt
-                      ? Colors.grey.shade600 // Faded color for bankrupt
+                      ? Colors
+                            .grey
+                            .shade600 // Faded color for bankrupt
                       : Colors.brown.shade900,
                   decoration: isBankrupt
-                      ? TextDecoration.lineThrough // Strikethrough for bankrupt
+                      ? TextDecoration
+                            .lineThrough // Strikethrough for bankrupt
                       : null,
                   decorationColor: Colors.red.shade700,
                   decorationThickness: 2,
@@ -134,10 +137,7 @@ class EnhancedPlayerInfoPanel extends ConsumerWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.red.shade900,
-                      width: 5,
-                    ),
+                    border: Border.all(color: Colors.red.shade900, width: 5),
                     borderRadius: BorderRadius.circular(8),
                     color: Colors.red.shade700.withValues(alpha: 0.85),
                   ),
@@ -169,10 +169,7 @@ class _AnimatedStarsDisplay extends StatelessWidget {
   final int stars;
   final bool isBankrupt;
 
-  const _AnimatedStarsDisplay({
-    required this.stars,
-    this.isBankrupt = false,
-  });
+  const _AnimatedStarsDisplay({required this.stars, this.isBankrupt = false});
 
   @override
   Widget build(BuildContext context) {

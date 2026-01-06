@@ -4,16 +4,16 @@
 // import 'package:google_fonts/google_fonts.dart';
 // import '../providers/game_provider.dart';
 // import 'tile_widget.dart';
-// 
+//
 // class BoardWidget extends ConsumerWidget {
 //   const BoardWidget({super.key});
-// 
+//
 //   @override
 //   Widget build(BuildContext context, WidgetRef ref) {
 //     final gameState = ref.watch(gameProvider);
 //     final players = gameState.players;
 //     final currentPlayerIndex = gameState.currentPlayerIndex;
-// 
+//
 //     return Container(
 //       decoration: BoxDecoration(
 //         color: Colors.brown.shade100,
@@ -24,30 +24,30 @@
 //         children: [
 //           // Board tiles (counter-clockwise)
 //           ..._buildBoardTiles(gameState.tiles),
-//           
+//
 //           // Center area
 //           _buildCenterArea(),
-//           
+//
 //           // Player pawns
 //           ..._buildPlayerPawns(players, currentPlayerIndex),
 //         ],
 //       ),
 //     );
 //   }
-// 
+//
 //   List<Widget> _buildBoardTiles(List<Tile> tiles) {
 //     final tilesWidgets = <Widget>[];
 //     final boardSize = 300.0;
 //     final tileSize = 40.0;
 //     final cornerTileSize = tileSize * 1.5;
-// 
+//
 //     // Build counter-clockwise board (40 tiles)
 //     // Top row (left to right): tiles 11-1
 //     for (int i = 11; i >= 1; i--) {
 //       final tile = tiles.firstWhere((t) => t.id == i);
 //       final isCorner = i % 10 == 1;
 //       final currentTileSize = isCorner ? cornerTileSize : tileSize;
-//       
+//
 //       tilesWidgets.add(
 //         Positioned(
 //           left: (11 - i) * tileSize + (isCorner ? (tileSize - cornerTileSize) / 2 : 0),
@@ -59,13 +59,13 @@
 //         ),
 //       );
 //     }
-// 
+//
 //     // Right column (top to bottom): tiles 1-10
 //     for (int i = 1; i <= 10; i++) {
 //       final tile = tiles.firstWhere((t) => t.id == i);
 //       final isCorner = i % 10 == 1;
 //       final currentTileSize = isCorner ? cornerTileSize : tileSize;
-//       
+//
 //       tilesWidgets.add(
 //         Positioned(
 //           top: (i - 1) * tileSize + (isCorner ? (tileSize - cornerTileSize) / 2 : 0),
@@ -77,13 +77,13 @@
 //         ),
 //       );
 //     }
-// 
+//
 //     // Bottom row (right to left): tiles 11-20
 //     for (int i = 11; i <= 20; i++) {
 //       final tile = tiles.firstWhere((t) => t.id == i);
 //       final isCorner = i % 10 == 1;
 //       final currentTileSize = isCorner ? cornerTileSize : tileSize;
-//       
+//
 //       tilesWidgets.add(
 //         Positioned(
 //           right: (20 - i) * tileSize + (isCorner ? (tileSize - cornerTileSize) / 2 : 0),
@@ -95,13 +95,13 @@
 //         ),
 //       );
 //     }
-// 
+//
 //     // Left column (bottom to top): tiles 21-40
 //     for (int i = 21; i <= 40; i++) {
 //       final tile = tiles.firstWhere((t) => t.id == i);
 //       final isCorner = i % 10 == 1;
 //       final currentTileSize = isCorner ? cornerTileSize : tileSize;
-//       
+//
 //       tilesWidgets.add(
 //         Positioned(
 //           bottom: (40 - i) * tileSize + (isCorner ? (tileSize - cornerTileSize) / 2 : 0),
@@ -113,10 +113,10 @@
 //         ),
 //       );
 //     }
-// 
+//
 //     return tilesWidgets;
 //   }
-// 
+//
 //   Widget _buildCenterArea() {
 //     return Center(
 //       child: Container(
@@ -156,23 +156,23 @@
 //       ),
 //     );
 //   }
-// 
+//
 //   List<Widget> _buildPlayerPawns(List<Player> players, int currentPlayerIndex) {
 //     final pawns = <Widget>[];
 //     final boardSize = 300.0;
 //     final tileSize = 40.0;
 //     final cornerTileSize = tileSize * 1.5;
-// 
+//
 //     for (int i = 0; i < players.length; i++) {
 //       final player = players[i];
 //       final position = player.position;
 //       final isCorner = position % 10 == 1;
 //       final currentTileSize = isCorner ? cornerTileSize : tileSize;
-//       
+//
 //       // Calculate position based on tile number (counter-clockwise)
 //       double x, y;
 //       Offset offset;
-//       
+//
 //       if (position >= 1 && position <= 10) {
 //         // Right column
 //         x = boardSize - tileSize;
@@ -190,10 +190,10 @@
 //         x = (position - 30) * tileSize + (isCorner ? (tileSize - cornerTileSize) / 2 : 0);
 //         y = 0;
 //       }
-//       
+//
 //       // Add offset for multiple players on same tile
 //       offset = Offset((i % 2) * 10.0, (i ~/ 2) * 10.0);
-//       
+//
 //       pawns.add(
 //         Positioned(
 //           left: x + offset.dx,
@@ -226,7 +226,7 @@
 //         ),
 //       );
 //     }
-// 
+//
 //     return pawns;
 //   }
 // }

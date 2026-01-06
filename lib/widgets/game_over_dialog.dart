@@ -34,14 +34,12 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
       curve: Curves.elasticOut,
     );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
-    _confettiAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _confettiAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -68,16 +66,16 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
   Player _findWinner(List<Player> players) {
     // First, try to find non-bankrupt players
     final activePlayers = players.where((p) => !p.isBankrupt).toList();
-    
+
     if (activePlayers.isEmpty) {
       // All bankrupt, return the one with most stars
       return players.reduce((a, b) => a.stars > b.stars ? a : b);
     }
-    
+
     if (activePlayers.length == 1) {
       return activePlayers.first;
     }
-    
+
     // Multiple active players, return the one with most stars
     return activePlayers.reduce((a, b) => a.stars > b.stars ? a : b);
   }
@@ -97,20 +95,20 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
   }
 
   void _handleRestart() {
-    // For now, we'll use Navigator to go back or restart
-    // In a real app, you might want to reset the game state
+    // Close the dialog first
     Navigator.of(context).pop();
-    
-    // TODO: Implement proper game restart logic
-    // This could be ref.read(gameProvider.notifier).resetGame();
-    // For now, we'll just close the dialog
+
+    // Reset the game state to start a new game
+    ref.read(gameProvider.notifier).resetGame();
+
+    debugPrint('🎮 Game restarted - new game beginning');
   }
 
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final players = gameState.players;
-    
+
     if (players.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -137,7 +135,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                     final startX = random.nextDouble() * 400;
                     final endY = random.nextDouble() * 600 + 200;
                     final rotation = progress * math.pi * 4;
-                    
+
                     return Positioned(
                       left: startX,
                       top: -50 + (endY * progress),
@@ -162,7 +160,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                   },
                 );
               }),
-              
+
               // Main dialog content
               Container(
                 width: 400,
@@ -178,10 +176,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.amber.shade400,
-                    width: 3,
-                  ),
+                  border: Border.all(color: Colors.amber.shade400, width: 3),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
@@ -256,10 +251,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                             decoration: BoxDecoration(
                               color: winnerColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: winnerColor,
-                                width: 3,
-                              ),
+                              border: Border.all(color: winnerColor, width: 3),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -277,7 +269,9 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: winnerColor.withValues(alpha: 0.5),
+                                        color: winnerColor.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),
@@ -360,9 +354,11 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                               itemCount: leaderboard.length,
                               itemBuilder: (context, index) {
                                 final player = leaderboard[index];
-                                final playerColor = _parseHexColor(player.color);
+                                final playerColor = _parseHexColor(
+                                  player.color,
+                                );
                                 final isWinner = player.id == winner.id;
-                                
+
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.all(12),
@@ -388,10 +384,10 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                                           color: index == 0
                                               ? Colors.amber
                                               : index == 1
-                                                  ? Colors.grey.shade400
-                                                  : index == 2
-                                                      ? Colors.brown.shade300
-                                                      : Colors.grey.shade300,
+                                              ? Colors.grey.shade400
+                                              : index == 2
+                                              ? Colors.brown.shade300
+                                              : Colors.grey.shade300,
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(

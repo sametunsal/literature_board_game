@@ -52,10 +52,10 @@ class _CardDialogState extends ConsumerState<CardDialog>
     // CRITICAL FIX: Capture the WidgetRef before popping the dialog
     // Because after pop(), 'mounted' becomes false and ref becomes invalid
     final gameNotifier = ref.read(gameProvider.notifier);
-    
+
     // Apply card effect via GameNotifier
     gameNotifier.applyCardEffect(widget.card);
-    
+
     // Close the dialog
     Navigator.of(context).pop();
 
@@ -80,7 +80,7 @@ class _CardDialogState extends ConsumerState<CardDialog>
       Future.delayed(const Duration(milliseconds: 500), () {
         // Guard: Check if widget is still mounted before using ref
         if (!mounted) return;
-        
+
         // Trigger playTurn which will apply card effect via bot logic
         ref.read(gameProvider.notifier).playTurn();
       });

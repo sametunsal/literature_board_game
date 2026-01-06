@@ -122,9 +122,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       child: Card(
         margin: const EdgeInsets.all(32),
         elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
@@ -163,229 +161,237 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-              // Category and Difficulty row
-              Row(
-                children: [
-                  // Category badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _getCategoryName(widget.question.category),
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Difficulty badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getDifficultyColor(),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.white, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getDifficultyName(widget.question.difficulty),
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-
-                  // Timer with visual warning
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getTimerColor(_remainingTime),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _getTimerIcon(_remainingTime),
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$_remainingTime s',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Progress bar for timer
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: _remainingTime /
-                      GameConstants.questionTimerDuration.toDouble(),
-                  minHeight: 8,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    _getTimerColor(_remainingTime),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Question text
-              Text(
-                widget.question.question,
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  height: 1.5,
-                ),
-              ),
-
-              // Hint
-              if (widget.question.hint != null &&
-                  widget.question.hint!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: Colors.amber.shade700,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'İpucu: ${widget.question.hint}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.amber.shade900,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              // Answer options
-              ...(widget.question.options ?? []).asMap().entries.map((entry) {
-                final index = entry.key;
-                final option = entry.value;
-                final isCorrectAnswer = option == widget.question.answer;
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    child: Opacity(
-                      opacity: canAnswer ? 1.0 : 0.5,
-                      child: ElevatedButton(
-                        onPressed: canAnswer
-                            ? () => _handleAnswer(isCorrectAnswer)
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isCorrectAnswer
-                              ? Colors.green.shade600
-                              : Colors.white,
-                          foregroundColor: isCorrectAnswer
-                              ? Colors.white
-                              : Colors.brown.shade900,
-                          elevation: canAnswer ? 2 : 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: canAnswer
-                                  ? Colors.brown.shade300
-                                  : Colors.grey.shade300,
-                              width: 1,
+                      // Category and Difficulty row
+                      Row(
+                        children: [
+                          // Category badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getCategoryColor(),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _getCategoryName(widget.question.category),
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: isCorrectAnswer
-                                    ? Colors.white
-                                    : Colors.brown.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  String.fromCharCode(65 + index), // A, B, C, D
+                          const SizedBox(width: 8),
+
+                          // Difficulty badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getDifficultyColor(),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.star, color: Colors.white, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _getDifficultyName(
+                                    widget.question.difficulty,
+                                  ),
                                   style: GoogleFonts.poppins(
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: isCorrectAnswer
-                                        ? Colors.green.shade600
-                                        : Colors.brown.shade700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+
+                          // Timer with visual warning
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getTimerColor(_remainingTime),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _getTimerIcon(_remainingTime),
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$_remainingTime s',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Progress bar for timer
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value:
+                              _remainingTime /
+                              GameConstants.questionTimerDuration.toDouble(),
+                          minHeight: 8,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _getTimerColor(_remainingTime),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Question text
+                      Text(
+                        widget.question.question,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          height: 1.5,
+                        ),
+                      ),
+
+                      // Hint
+                      if (widget.question.hint != null &&
+                          widget.question.hint!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.amber.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lightbulb,
+                                color: Colors.amber.shade700,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'İpucu: ${widget.question.hint}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.amber.shade900,
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                option,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      // Answer options
+                      ...(widget.question.options ?? []).asMap().entries.map((
+                        entry,
+                      ) {
+                        final index = entry.key;
+                        final option = entry.value;
+                        final isCorrectAnswer =
+                            option == widget.question.answer;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            child: Opacity(
+                              opacity: canAnswer ? 1.0 : 0.5,
+                              child: ElevatedButton(
+                                onPressed: canAnswer
+                                    ? () => _handleAnswer(isCorrectAnswer)
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isCorrectAnswer
+                                      ? Colors.green.shade600
+                                      : Colors.white,
+                                  foregroundColor: isCorrectAnswer
+                                      ? Colors.white
+                                      : Colors.brown.shade900,
+                                  elevation: canAnswer ? 2 : 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: canAnswer
+                                          ? Colors.brown.shade300
+                                          : Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: isCorrectAnswer
+                                            ? Colors.white
+                                            : Colors.brown.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          String.fromCharCode(
+                                            65 + index,
+                                          ), // A, B, C, D
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.bold,
+                                            color: isCorrectAnswer
+                                                ? Colors.green.shade600
+                                                : Colors.brown.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        option,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -412,7 +418,9 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
                         icon: const Icon(Icons.skip_next),
                         label: Text(
                           'Atla',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: canAnswer

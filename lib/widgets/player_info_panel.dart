@@ -2,15 +2,15 @@
 // import 'package:flutter/material.dart';
 // import 'package:google_fonts/google_fonts.dart';
 // import '../models/player.dart';
-// 
+//
 // class PlayerInfoPanel extends StatelessWidget {
 //   final Player player;
-// 
+//
 //   const PlayerInfoPanel({
 //     super.key,
 //     required this.player,
 //   });
-// 
+//
 //   @override
 //   Widget build(BuildContext context) {
 //     return Container(
@@ -39,7 +39,7 @@
 //             textAlign: TextAlign.center,
 //           ),
 //           const SizedBox(height: 16),
-//           
+//
 //           // Stars display
 //           Container(
 //             padding: const EdgeInsets.all(12),
@@ -65,7 +65,7 @@
 //             ),
 //           ),
 //           const SizedBox(height: 16),
-//           
+//
 //           // Position
 //           Container(
 //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

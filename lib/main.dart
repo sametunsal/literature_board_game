@@ -95,7 +95,37 @@ class _MyAppState extends ConsumerState<MyApp> {
           // 2. Hata durumu
           if (questionsAsync.hasError) {
             return Scaffold(
-              body: Center(child: Text('Hata oluştu: ${questionsAsync.error}')),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Sorular yüklenirken hata oluştu',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Hata: ${questionsAsync.error}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Retry loading questions
+                        ref.invalidate(questionLoadingProvider);
+                      },
+                      child: const Text('Tekrar Dene'),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 
