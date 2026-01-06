@@ -49,21 +49,17 @@ class _CardDialogState extends ConsumerState<CardDialog>
   }
 
   void _applyCard() {
-    // CRITICAL FIX: Capture the WidgetRef before popping the dialog
-    // Because after pop(), 'mounted' becomes false and ref becomes invalid
+    // 1. GameNotifier referansını al
     final gameNotifier = ref.read(gameProvider.notifier);
 
-    // Apply card effect via GameNotifier
+    // 2. Kart etkisini uygula
+    // NOT: Bu işlem gameProvider içinde 'currentCard'ı null yapar.
+    // GameView bu değişikliği dinlediği için Stack içindeki CardDialog widget'ını
+    // otomatik olarak ekrandan kaldıracaktır. Manuel kapatmaya gerek yoktur.
     gameNotifier.applyCardEffect(widget.card);
 
-    // Close the dialog
-    Navigator.of(context).pop();
-
-    // CRITICAL FIX: Use WidgetsBinding to schedule playTurn() after dialog closes
-    // This ensures the call happens after the widget tree is rebuilt
-    // We use the captured notifier reference since 'ref' is no longer valid after pop()
+    // 3. Bir sonraki oyun adımını tetikle
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // applyCardEffect sets phase to cardApplied, playTurn will call endTurn()
       gameNotifier.playTurn();
     });
   }
