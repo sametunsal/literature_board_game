@@ -1670,13 +1670,15 @@ class GameNotifier extends StateNotifier<GameState> {
   void startNextTurn() {
     debugPrint('▶️ startNextTurn() called');
 
+    // Clear currentCard to prevent old card from reappearing when turn passes to next player
+    state = state.copyWith(currentCard: null);
+
     // Clear per-turn artifacts before handing off
     state = state.copyWith(
       currentTranscript: const TurnTranscript.empty(),
       currentQuestion: null,
       questionState: QuestionState.waiting,
       questionTimer: 0,
-      currentCard: null,
       lastDiceRoll: null,
     );
 

@@ -427,7 +427,7 @@ class _GameViewState extends ConsumerState<GameView> {
           // Card dialog overlay
           // Show when a card is drawn (currentCard is not null)
           if (currentCard != null)
-            CardDialog(key: ValueKey(currentCard.id), card: currentCard),
+            CardDialog(key: UniqueKey(), card: currentCard!),
 
           // Phase 4: Turn Summary Overlay - Shows summary of completed turn
           // Visible ONLY during TurnPhase.turnEnded
