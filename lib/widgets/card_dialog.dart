@@ -69,8 +69,8 @@ class _CardDialogState extends ConsumerState<CardDialog>
         // Guard: Check if widget is still mounted before using ref
         if (!mounted) return;
 
-        // Trigger playTurn which will apply card effect via bot logic
-        ref.read(gameProvider.notifier).playTurn();
+        // Apply card effect directly to clear currentCard from memory
+        ref.read(gameProvider.notifier).applyCardEffect(widget.card);
       });
       return const SizedBox.shrink();
     }
