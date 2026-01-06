@@ -83,6 +83,16 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
     final turnResult = ref.watch(lastTurnResultProvider);
     final gameState = ref.watch(gameProvider);
 
+    // Data validation - CRITICAL: Check BEFORE showing background
+    if (turnResult.playerIndex < 0 ||
+        turnResult.playerIndex >= gameState.players.length) {
+      debugPrint(
+        '⚠️ TurnSummaryOverlay: Invalid playerIndex ${turnResult.playerIndex}, skipping overlay',
+      );
+      if (_controller.value > 0) _controller.reset();
+      return const SizedBox.shrink();
+    }
+
     // Only show when turn has ended
     if (turnPhase != TurnPhase.turnEnded) {
       if (_controller.value > 0) _controller.reset();
@@ -92,23 +102,16 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
     // Start animation
     if (_controller.value == 0) {
       _controller.forward();
-      // Bot control
-      if (turnResult.playerIndex >= 0 &&
-          turnResult.playerIndex < gameState.players.length) {
-        if (gameState.players[turnResult.playerIndex].type == PlayerType.bot) {
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted && ref.read(turnPhaseProvider) == TurnPhase.turnEnded) {
-              _handleContinue();
-            }
-          });
-        }
+      // Bot control - Auto-advance after 2 seconds for bots
+      if (gameState.players[turnResult.playerIndex].type == PlayerType.bot) {
+        debugPrint('🤖 Bot turn summary - will auto-advance in 2 seconds');
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && ref.read(turnPhaseProvider) == TurnPhase.turnEnded) {
+            debugPrint('🤖 Bot auto-advancing to next turn');
+            _handleContinue();
+          }
+        });
       }
-    }
-
-    // Data validation
-    if (turnResult.playerIndex < 0 ||
-        turnResult.playerIndex >= gameState.players.length) {
-      return const SizedBox.shrink();
     }
 
     final player = gameState.players[turnResult.playerIndex];

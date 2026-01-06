@@ -354,6 +354,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
         case TurnPhase.turnEnded:
           // Should be handled by startNextTurn via UI
+          // CRITICAL FIX: Do NOT call playTurn() here! TurnSummaryOverlay
+          // will call startNextTurn() which advances to next player.
+          // This prevents infinite loop where playTurn() keeps calling itself.
           break;
       }
     } finally {
