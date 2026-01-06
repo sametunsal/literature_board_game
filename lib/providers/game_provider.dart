@@ -813,99 +813,104 @@ class GameNotifier extends StateNotifier<GameState> {
     bool isGlobalOrTargetedEffect = false;
     String logMessage = '';
 
-    switch (card.effect) {
-      // Personal effects (affect only current player)
-      case CardEffect.gainStars:
-        _applyGainStars(currentPlayer, card.starAmount ?? 0);
-        isPersonalEffect = true;
-        logMessage =
-            '${currentPlayer.name}: +${card.starAmount ?? 0} yıldız kazandı';
-        break;
+    try {
+      switch (card.effect) {
+        // Personal effects (affect only current player)
+        case CardEffect.gainStars:
+          _applyGainStars(currentPlayer, card.starAmount ?? 0);
+          isPersonalEffect = true;
+          logMessage =
+              '${currentPlayer.name}: +${card.starAmount ?? 0} yıldız kazandı';
+          break;
 
-      case CardEffect.loseStars:
-        _applyLoseStars(currentPlayer, card.starAmount ?? 0);
-        isPersonalEffect = true;
-        logMessage =
-            '${currentPlayer.name}: -${card.starAmount ?? 0} yıldız kaybetti';
-        break;
+        case CardEffect.loseStars:
+          _applyLoseStars(currentPlayer, card.starAmount ?? 0);
+          isPersonalEffect = true;
+          logMessage =
+              '${currentPlayer.name}: -${card.starAmount ?? 0} yıldız kaybetti';
+          break;
 
-      case CardEffect.skipNextTax:
-        _applySkipNextTax(currentPlayer);
-        isPersonalEffect = true;
-        logMessage =
-            '${currentPlayer.name}: Bir sonraki vergi ödemesi atlanacak';
-        break;
+        case CardEffect.skipNextTax:
+          _applySkipNextTax(currentPlayer);
+          isPersonalEffect = true;
+          logMessage =
+              '${currentPlayer.name}: Bir sonraki vergi ödemesi atlanacak';
+          break;
 
-      case CardEffect.freeTurn:
-        _applyFreeTurn(currentPlayer);
-        isPersonalEffect = true;
-        logMessage = '${currentPlayer.name}: Ücretsiz tur hakkı kazandı';
-        break;
+        case CardEffect.freeTurn:
+          _applyFreeTurn(currentPlayer);
+          isPersonalEffect = true;
+          logMessage = '${currentPlayer.name}: Ücretsiz tur hakkı kazandı';
+          break;
 
-      case CardEffect.easyQuestionNext:
-        _applyEasyQuestionNext(currentPlayer);
-        isPersonalEffect = true;
-        logMessage = '${currentPlayer.name}: Bir sonraki soru kolay olacak';
-        break;
+        case CardEffect.easyQuestionNext:
+          _applyEasyQuestionNext(currentPlayer);
+          isPersonalEffect = true;
+          logMessage = '${currentPlayer.name}: Bir sonraki soru kolay olacak';
+          break;
 
-      // Global effects (affect all players)
-      case CardEffect.allPlayersGainStars:
-        _applyAllPlayersGainStars(card.starAmount ?? 0);
-        isGlobalOrTargetedEffect = true;
-        logMessage = 'Tüm oyuncular: +${card.starAmount ?? 0} yıldız kazandı';
-        break;
+        // Global effects (affect all players)
+        case CardEffect.allPlayersGainStars:
+          _applyAllPlayersGainStars(card.starAmount ?? 0);
+          isGlobalOrTargetedEffect = true;
+          logMessage = 'Tüm oyuncular: +${card.starAmount ?? 0} yıldız kazandı';
+          break;
 
-      case CardEffect.allPlayersLoseStars:
-        _applyAllPlayersLoseStars(card.starAmount ?? 0);
-        isGlobalOrTargetedEffect = true;
-        logMessage = 'Tüm oyuncular: -${card.starAmount ?? 0} yıldız kaybetti';
-        break;
+        case CardEffect.allPlayersLoseStars:
+          _applyAllPlayersLoseStars(card.starAmount ?? 0);
+          isGlobalOrTargetedEffect = true;
+          logMessage =
+              'Tüm oyuncular: -${card.starAmount ?? 0} yıldız kaybetti';
+          break;
 
-      case CardEffect.taxWaiver:
-        _applyTaxWaiver();
-        isGlobalOrTargetedEffect = true;
-        logMessage = 'Tüm oyuncular: Bir sonraki vergi ödemesi atlanacak';
-        break;
+        case CardEffect.taxWaiver:
+          _applyTaxWaiver();
+          isGlobalOrTargetedEffect = true;
+          logMessage = 'Tüm oyuncular: Bir sonraki vergi ödemesi atlanacak';
+          break;
 
-      case CardEffect.allPlayersEasyQuestion:
-        _applyAllPlayersEasyQuestion();
-        isGlobalOrTargetedEffect = true;
-        logMessage = 'Tüm oyuncular: Bir sonraki soru kolay olacak';
-        break;
+        case CardEffect.allPlayersEasyQuestion:
+          _applyAllPlayersEasyQuestion();
+          isGlobalOrTargetedEffect = true;
+          logMessage = 'Tüm oyuncular: Bir sonraki soru kolay olacak';
+          break;
 
-      // Targeted effects (affect specific players)
-      case CardEffect.publisherOwnersLose:
-        final affectedCount = _applyPublisherOwnersLose(card.starAmount ?? 0);
-        isGlobalOrTargetedEffect = true;
-        logMessage =
-            'Yayınevi sahipleri ($affectedCount oyuncu): -${card.starAmount ?? 0} yıldız kaybetti';
-        break;
+        // Targeted effects (affect specific players)
+        case CardEffect.publisherOwnersLose:
+          final affectedCount = _applyPublisherOwnersLose(card.starAmount ?? 0);
+          isGlobalOrTargetedEffect = true;
+          logMessage =
+              'Yayınevi sahipleri ($affectedCount oyuncu): -${card.starAmount ?? 0} yıldız kaybetti';
+          break;
 
-      case CardEffect.richPlayerPays:
-        final richestId = _applyRichPlayerPays(card.starAmount ?? 0);
-        isGlobalOrTargetedEffect = true;
-        // Get richest player name for logging (before mutation)
-        final richestPlayer = state.players.firstWhere(
-          (p) => p.id == richestId,
-          orElse: () => state.players.first,
-        );
-        logMessage =
-            '${richestPlayer.name} (en zengin oyuncu): -${card.starAmount ?? 0} yıldız ödedi';
-        break;
+        case CardEffect.richPlayerPays:
+          final richestId = _applyRichPlayerPays(card.starAmount ?? 0);
+          isGlobalOrTargetedEffect = true;
+          // Get richest player name for logging (before mutation)
+          final richestPlayer = state.players.firstWhere(
+            (p) => p.id == richestId,
+            orElse: () => state.players.first,
+          );
+          logMessage =
+              '${richestPlayer.name} (en zengin oyuncu): -${card.starAmount ?? 0} yıldız ödedi';
+          break;
+      }
+
+      // GAMEPLAY LOG: Card effect result
+      state = state.withLogMessage(logMessage);
+
+      // Centralized bankruptcy checks
+      if (isPersonalEffect) {
+        _checkBankruptcy();
+      } else if (isGlobalOrTargetedEffect) {
+        _checkAllPlayersBankruptcy();
+      }
+    } catch (e) {
+      debugPrint("Card error: $e");
+    } finally {
+      // Clear the current card after applying effect (always runs, even on error)
+      state = state.copyWith(currentCard: null);
     }
-
-    // GAMEPLAY LOG: Card effect result
-    state = state.withLogMessage(logMessage);
-
-    // Centralized bankruptcy checks
-    if (isPersonalEffect) {
-      _checkBankruptcy();
-    } else if (isGlobalOrTargetedEffect) {
-      _checkAllPlayersBankruptcy();
-    }
-
-    // Clear the current card after applying effect
-    state = state.copyWith(currentCard: null);
   }
 
   // Personal effects - ONLY modify state, no logging or bankruptcy checks
