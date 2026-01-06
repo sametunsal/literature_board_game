@@ -20,6 +20,7 @@ class _CardDialogState extends ConsumerState<CardDialog>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -49,6 +50,8 @@ class _CardDialogState extends ConsumerState<CardDialog>
   }
 
   void _applyCard() {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
     final gameNotifier = ref.read(gameProvider.notifier);
     gameNotifier.applyCardEffect(widget.card);
   }
@@ -217,7 +220,7 @@ class _CardDialogState extends ConsumerState<CardDialog>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _applyCard,
+                          onPressed: _isProcessing ? null : _applyCard,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isSans
                                 ? Colors.amber.shade700
@@ -229,14 +232,25 @@ class _CardDialogState extends ConsumerState<CardDialog>
                             ),
                             elevation: 5,
                           ),
-                          child: Text(
-                            'ETKİYİ UYGULA',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
+                          child: _isProcessing
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  'ETKİYİ UYGULA',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
                         ),
                       ),
                     ],
