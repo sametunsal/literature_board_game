@@ -41,6 +41,9 @@ import '../utils/turn_summary_generator.dart';
 // Shared Random instance for consistent randomness across the game
 final _random = Random();
 
+// Sentinel object to distinguish between "not passed" and "passed null"
+const _undefined = Object();
+
 // Question answering state
 enum QuestionState {
   waiting, // Waiting for player to answer
@@ -133,9 +136,11 @@ class GameState {
   }
 
   bool get isCurrentPlayerBankrupt => currentPlayer?.isBankrupt ?? false;
-  bool get canRoll =>
-      turnPhase == TurnPhase.start && currentPlayer?.type == PlayerType.human;
 
+  // Botların da zar atabilmesi için canRoll kontrolü sadece faza bakmalı
+  bool get canRoll => turnPhase == TurnPhase.start;
+
+  // Updated copyWith to properly handle nullable fields using _undefined sentinel
   GameState copyWith({
     List<Player>? players,
     List<Tile>? tiles,
@@ -143,22 +148,22 @@ class GameState {
     List<Card>? sansCards,
     List<Card>? kaderCards,
     int? currentPlayerIndex,
-    DiceRoll? lastDiceRoll,
-    String? lastMessage,
+    Object? lastDiceRoll = _undefined, // Nullable field
+    Object? lastMessage = _undefined, // Nullable field
     List<String>? logMessages,
     TurnPhase? turnPhase,
-    int? oldPosition,
-    int? newPosition,
+    Object? oldPosition = _undefined, // Nullable field
+    Object? newPosition = _undefined, // Nullable field
     bool? passedStart,
-    int? turnStartStars,
+    Object? turnStartStars = _undefined, // Nullable field
     bool? isGameOver,
     QuestionState? questionState,
-    Question? currentQuestion,
-    int? questionTimer,
+    Object? currentQuestion = _undefined, // Nullable field
+    Object? questionTimer = _undefined, // Nullable field
     int? correctAnswers,
     int? wrongAnswers,
-    Card? currentCard,
-    String? currentCardOwnerId,
+    Object? currentCard = _undefined, // Nullable field
+    Object? currentCardOwnerId = _undefined, // Nullable field
     TurnResult? lastTurnResult,
     TurnHistory? turnHistory,
     TurnTranscript? currentTranscript,
@@ -170,22 +175,41 @@ class GameState {
       sansCards: sansCards ?? this.sansCards,
       kaderCards: kaderCards ?? this.kaderCards,
       currentPlayerIndex: currentPlayerIndex ?? this.currentPlayerIndex,
-      lastDiceRoll: lastDiceRoll ?? this.lastDiceRoll,
-      lastMessage: lastMessage ?? this.lastMessage,
+      // Handle nullable fields: if _undefined, keep old value; otherwise cast to type (allows null)
+      lastDiceRoll: lastDiceRoll == _undefined
+          ? this.lastDiceRoll
+          : (lastDiceRoll as DiceRoll?),
+      lastMessage: lastMessage == _undefined
+          ? this.lastMessage
+          : (lastMessage as String?),
       logMessages: logMessages ?? this.logMessages,
       turnPhase: turnPhase ?? this.turnPhase,
-      oldPosition: oldPosition ?? this.oldPosition,
-      newPosition: newPosition ?? this.newPosition,
+      oldPosition: oldPosition == _undefined
+          ? this.oldPosition
+          : (oldPosition as int?),
+      newPosition: newPosition == _undefined
+          ? this.newPosition
+          : (newPosition as int?),
       passedStart: passedStart ?? this.passedStart,
-      turnStartStars: turnStartStars ?? this.turnStartStars,
+      turnStartStars: turnStartStars == _undefined
+          ? this.turnStartStars
+          : (turnStartStars as int?),
       isGameOver: isGameOver ?? this.isGameOver,
       questionState: questionState ?? this.questionState,
-      currentQuestion: currentQuestion ?? this.currentQuestion,
-      questionTimer: questionTimer ?? this.questionTimer,
+      currentQuestion: currentQuestion == _undefined
+          ? this.currentQuestion
+          : (currentQuestion as Question?),
+      questionTimer: questionTimer == _undefined
+          ? this.questionTimer
+          : (questionTimer as int?),
       correctAnswers: correctAnswers ?? this.correctAnswers,
       wrongAnswers: wrongAnswers ?? this.wrongAnswers,
-      currentCard: currentCard ?? this.currentCard,
-      currentCardOwnerId: currentCardOwnerId ?? this.currentCardOwnerId,
+      currentCard: currentCard == _undefined
+          ? this.currentCard
+          : (currentCard as Card?),
+      currentCardOwnerId: currentCardOwnerId == _undefined
+          ? this.currentCardOwnerId
+          : (currentCardOwnerId as String?),
       lastTurnResult: lastTurnResult ?? this.lastTurnResult,
       turnHistory: turnHistory ?? this.turnHistory,
       currentTranscript: currentTranscript ?? this.currentTranscript,
@@ -423,7 +447,13 @@ class GameNotifier extends StateNotifier<GameState> {
   void rollDice() {
     debugPrint('🎲 rollDice() called');
     if (!_requirePhase(TurnPhase.start, 'rollDice')) return;
-    if (!state.canRoll) return;
+
+    // canRoll şimdi botlar için de true dönecek
+    if (!state.canRoll) {
+      debugPrint('⛔ rollDice engellendi: canRoll false');
+      return;
+    }
+
     if (state.currentPlayer == null) return;
 
     // Generate random dice roll
@@ -491,10 +521,6 @@ class GameNotifier extends StateNotifier<GameState> {
         '${currentPlayer.name}: Çift zar sayacı sıfırlandı',
       );
     }
-
-    // NOTE: Phase advance stops here. UI will call playTurn() again to continue.
-    // Previously: moveCurrentPlayer(diceRoll.total); was called automatically
-    // Now: Orchestration layer (playTurn) handles calling the next method
   }
 
   // Move player - Step 2 of turn
@@ -551,10 +577,6 @@ class GameNotifier extends StateNotifier<GameState> {
         '${currentPlayer.name} BAŞLANGIÇ\'ten geçti! +${GameConstants.passStartReward} yıldız',
       );
     }
-
-    // NOTE: Phase advance stops here. UI will call playTurn() again to continue.
-    // Previously: resolveCurrentTile(); was called automatically
-    // Now: Orchestration layer (playTurn) handles calling the next method
   }
 
   // Calculate new position (counter-clockwise, 0-39)
@@ -667,10 +689,6 @@ class GameNotifier extends StateNotifier<GameState> {
         state = state.withLogMessage(tileLog);
         break;
     }
-
-    // NOTE: Phase advance stops here for tiles handled by playTurn().
-    // Tiles that need special handling (card, question, tax) are routed by _handleTileResolved()
-    // Corner and special tiles will be handled by playTurn() calling endTurn() when phase is tileResolved
   }
 
   // Show question for book/publisher tiles
@@ -954,6 +972,8 @@ class GameNotifier extends StateNotifier<GameState> {
       debugPrint("Hata: $e");
     } finally {
       // ATOMIC STATE UPDATE: Clear card and set phase in single operation
+      // NOTE: We pass null to currentCard and currentCardOwnerId.
+      // With the updated copyWith, this successfully clears them.
       state = state.copyWith(
         currentCard: null,
         currentCardOwnerId: null,
@@ -1748,6 +1768,8 @@ class GameNotifier extends StateNotifier<GameState> {
     _isApplyingEffect = false;
 
     // HARD RESET: Clear ALL card/question/effect-related state in single operation
+    // Note: We pass null to nullable fields, and the copyWith method
+    // handles it correctly using the _undefined sentinel to clear them.
     state = state.copyWith(
       turnPhase: TurnPhase.start,
       currentCard: null,
