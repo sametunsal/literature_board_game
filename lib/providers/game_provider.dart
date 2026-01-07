@@ -979,15 +979,17 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void _applyAllPlayersLoseStars(int amount) {
-    List<Player> updatedPlayers = [];
-    for (final player in state.players) {
+    List<Player> updatedPlayers = List.from(state.players);
+
+    for (int i = 0; i < updatedPlayers.length; i++) {
+      final player = updatedPlayers[i];
       final newStars = (player.stars - amount).clamp(0, player.stars);
-      final updatedPlayer = player.copyWith(
+      updatedPlayers[i] = player.copyWith(
         stars: newStars,
         isBankrupt: newStars <= 0,
       );
-      updatedPlayers.add(updatedPlayer);
     }
+
     state = state.copyWith(players: updatedPlayers);
   }
 
@@ -1011,10 +1013,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Targeted effects - ONLY modify state, return data for logging
   int _applyPublisherOwnersLose(int amount) {
-    List<Player> updatedPlayers = [];
+    List<Player> updatedPlayers = List.from(state.players);
     int affectedCount = 0;
 
-    for (final player in state.players) {
+    for (int i = 0; i < updatedPlayers.length; i++) {
+      final player = updatedPlayers[i];
+
       // Check if player owns any publisher tiles
       final ownsPublisher = player.ownedTiles.any((tileId) {
         final tileIndex = state.tiles.indexWhere((t) => t.id == tileId);
@@ -1024,14 +1028,11 @@ class GameNotifier extends StateNotifier<GameState> {
 
       if (ownsPublisher) {
         final newStars = (player.stars - amount).clamp(0, player.stars);
-        final updatedPlayer = player.copyWith(
+        updatedPlayers[i] = player.copyWith(
           stars: newStars,
           isBankrupt: newStars <= 0,
         );
-        updatedPlayers.add(updatedPlayer);
         affectedCount++;
-      } else {
-        updatedPlayers.add(player);
       }
     }
 
@@ -1062,7 +1063,15 @@ class GameNotifier extends StateNotifier<GameState> {
       stars: newStars,
       isBankrupt: newStars <= 0,
     );
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+
+    // Update players list in batch
+    List<Player> updatedPlayers = List.from(state.players);
+    for (int i = 0; i < updatedPlayers.length; i++) {
+      if (updatedPlayers[i].id == richestId) {
+        updatedPlayers[i] = updatedPlayer;
+        break;
+      }
+    }
 
     state = state.copyWith(players: updatedPlayers);
     return richestId;
