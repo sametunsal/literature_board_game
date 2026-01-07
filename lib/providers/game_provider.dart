@@ -970,26 +970,36 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Global effects - ONLY modify state, no logging or bankruptcy checks
   void _applyAllPlayersGainStars(int amount) {
-    List<Player> updatedPlayers = [];
-    for (final player in state.players) {
-      final updatedPlayer = player.copyWith(stars: player.stars + amount);
-      updatedPlayers.add(updatedPlayer);
+    // 1. Mevcut listenin kopyasını al
+    List<Player> updatedPlayers = List.from(state.players);
+
+    // 2. Döngüyü kopyalanmış liste üzerinde kur
+    for (int i = 0; i < updatedPlayers.length; i++) {
+      final player = updatedPlayers[i];
+      // 3. State'i değil, geçici listeyi güncelle
+      int currentStars = player.stars;
+      int newStars = currentStars + amount;
+      updatedPlayers[i] = player.copyWith(stars: newStars);
     }
+
+    // 4. Döngü bitince TEK SEFERDE state güncelle
     state = state.copyWith(players: updatedPlayers);
   }
 
   void _applyAllPlayersLoseStars(int amount) {
+    // 1. Mevcut listenin kopyasını al
     List<Player> updatedPlayers = List.from(state.players);
 
+    // 2. Döngüyü kopyalanmış liste üzerinde kur
     for (int i = 0; i < updatedPlayers.length; i++) {
       final player = updatedPlayers[i];
-      final newStars = (player.stars - amount).clamp(0, player.stars);
-      updatedPlayers[i] = player.copyWith(
-        stars: newStars,
-        isBankrupt: newStars <= 0,
-      );
+      // 3. State'i değil, geçici listeyi güncelle
+      int currentStars = player.stars;
+      int newStars = (currentStars - amount).clamp(0, 9999);
+      updatedPlayers[i] = player.copyWith(stars: newStars);
     }
 
+    // 4. Döngü bitince TEK SEFERDE state güncelle
     state = state.copyWith(players: updatedPlayers);
   }
 
@@ -1013,31 +1023,32 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Targeted effects - ONLY modify state, return data for logging
   int _applyPublisherOwnersLose(int amount) {
+    int count = 0;
+    // 1. Mevcut listenin kopyasını al
     List<Player> updatedPlayers = List.from(state.players);
-    int affectedCount = 0;
 
+    // 2. Döngüyü kopyalanmış liste üzerinde kur
     for (int i = 0; i < updatedPlayers.length; i++) {
       final player = updatedPlayers[i];
+      // Yayınevi kontrolü
+      bool hasPublisher = state.tiles.any(
+        (tile) => tile.owner == player.id && tile.type == TileType.publisher,
+      );
 
-      // Check if player owns any publisher tiles
-      final ownsPublisher = player.ownedTiles.any((tileId) {
-        final tileIndex = state.tiles.indexWhere((t) => t.id == tileId);
-        if (tileIndex < 0) return false;
-        return state.tiles[tileIndex].type == TileType.publisher;
-      });
-
-      if (ownsPublisher) {
-        final newStars = (player.stars - amount).clamp(0, player.stars);
-        updatedPlayers[i] = player.copyWith(
-          stars: newStars,
-          isBankrupt: newStars <= 0,
-        );
-        affectedCount++;
+      if (hasPublisher) {
+        // 3. State'i değil, geçici listeyi güncelle
+        int currentStars = player.stars;
+        int newStars = (currentStars - amount).clamp(0, 9999);
+        updatedPlayers[i] = player.copyWith(stars: newStars);
+        count++;
       }
     }
 
-    state = state.copyWith(players: updatedPlayers);
-    return affectedCount;
+    // 4. Döngü bitince TEK SEFERDE state güncelle
+    if (count > 0) {
+      state = state.copyWith(players: updatedPlayers);
+    }
+    return count;
   }
 
   String _applyRichPlayerPays(int amount) {
