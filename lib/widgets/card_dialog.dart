@@ -63,21 +63,17 @@ class _CardDialogState extends ConsumerState<CardDialog>
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
 
-    // Bot auto-apply - Dialog not rendered for bots
-    // Bots always auto-apply card effect without showing dialog
     if (currentPlayer?.type == PlayerType.bot) {
-      // Eğer bot bu dialog için daha önce işlem başlattıysa TEKRAR BAŞLATMA.
+      // Tekrarlı tetiklemeyi önlemek için basit kontrol
       if (!_botActionTriggered) {
-        _botActionTriggered = true; // Kilidi kapat
-
+        _botActionTriggered = true;
         Future.delayed(const Duration(milliseconds: 1000), () {
-          // Mounted kontrolü önemli, pencere kapandıysa işlem yapma
           if (mounted) {
             ref.read(gameProvider.notifier).applyCardEffect(widget.card);
           }
         });
       }
-      return const SizedBox.shrink(); // Bot düşünürken boş kutu göster
+      return const SizedBox.shrink();
     }
 
     final isSans = widget.card.type == game_models.CardType.sans;

@@ -331,6 +331,22 @@ class GameInfoPanel extends ConsumerWidget {
           ],
         );
 
+      case TurnPhase.cardWaiting:
+        return _buildFeedbackSection(
+          icon: '🎴',
+          title: 'Kart Bekleniyor',
+          color: Colors.orange.shade700,
+          children: [
+            Text(
+              'Kart etkisi için "Uygula" butonuna tıklayın',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.orange.shade700,
+              ),
+            ),
+          ],
+        );
+
       case TurnPhase.cardApplied:
         return _buildFeedbackSection(
           icon: '🃏',

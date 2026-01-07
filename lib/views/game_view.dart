@@ -34,7 +34,7 @@ class _GameViewState extends ConsumerState<GameView> {
     // Phase 2 Orchestration Listener - UI-controlled timing
     //
     // Separation of concerns:
-    // - GameNotifier: Defines game rules (phase + player type → directive)
+    // - GameNotifier: Defines game rules (phase + player type -> directive)
     // - UI: Controls timing execution (uses directive.delay)
     //
     // UI must NOT know about bot logic or delay categories.
@@ -66,21 +66,15 @@ class _GameViewState extends ConsumerState<GameView> {
           // CRITICAL FIX: Check if widget is still mounted before using ref
           if (!mounted) return;
 
-          // SAFETY CHECK: Ensure we still have a directive after the delay!
+          final notifier = ref.read(gameProvider.notifier);
+          final state = ref.read(gameProvider);
+
+          // SAFETY CHECK: Ensure we still have a directive after delay!
           // This prevents stale timers from auto-playing for humans.
-          final freshDirective = ref
-              .read(gameProvider.notifier)
-              .getAutoAdvanceDirective();
-          if (freshDirective != null) {
-            debugPrint(
-              '🎮 Auto-advancing playTurn() for directive: $directive',
-            );
-            ref.read(gameProvider.notifier).playTurn();
-          } else {
-            debugPrint(
-              '🛑 Auto-advance cancelled: Directive became null (Human turn?)',
-            );
-          }
+          final freshDirective = notifier.getAutoAdvanceDirective();
+          if (freshDirective == null) return;
+
+          notifier.playTurn();
         });
       }
     });
@@ -425,9 +419,16 @@ class _GameViewState extends ConsumerState<GameView> {
             ),
 
           // Card dialog overlay
-          // Show when a card is drawn (currentCard is not null)
-          if (currentCard != null)
-            CardDialog(key: ValueKey(currentCard?.id), card: currentCard!),
+          // Show when a card is drawn with strict validation
+          // Must be in cardWaiting phase, card must belong to current player, and player must be human
+          if (gameState.currentCard != null &&
+              gameState.turnPhase == TurnPhase.cardWaiting &&
+              gameState.currentCardOwnerId == gameState.currentPlayer?.id &&
+              gameState.currentPlayer?.type == PlayerType.human)
+            CardDialog(
+              key: ValueKey(gameState.currentCard?.id),
+              card: gameState.currentCard!,
+            ),
 
           // Phase 4: Turn Summary Overlay - Shows summary of completed turn
           // Visible ONLY during TurnPhase.turnEnded
@@ -441,7 +442,6 @@ class _GameViewState extends ConsumerState<GameView> {
           if (isGameOver) const GameOverDialog(),
 
           // DEV TOOL: Turn Result Inspector - Debug overlay for turn validation
-          // ONLY visible in debug mode (kDebugMode == true)
           // Read-only inspection of lastTurnResult (never writes to game state)
           // Search for "DEV TOOL" to find all temporary debug widgets
           // const TurnResultInspector(), // <--- DISABLED: Was blocking UI interactions

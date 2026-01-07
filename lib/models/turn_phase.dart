@@ -18,6 +18,9 @@ enum TurnPhase {
   /// Tile has been resolved (corner/card/question/tax applied)
   tileResolved,
 
+  /// Card has been drawn, waiting for "Apply" button
+  cardWaiting,
+
   /// Card has been drawn and effect applied
   cardApplied,
 

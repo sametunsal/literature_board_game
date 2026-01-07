@@ -81,6 +81,7 @@ class GameState {
 
   // Card state
   final Card? currentCard;
+  final String? currentCardOwnerId;
 
   // Turn result for UI feedback
   final TurnResult lastTurnResult;
@@ -116,6 +117,7 @@ class GameState {
     this.correctAnswers = 0,
     this.wrongAnswers = 0,
     this.currentCard,
+    this.currentCardOwnerId,
     this.lastTurnResult = TurnResult.empty,
     this.turnHistory = const TurnHistory.empty(),
     this.currentTranscript = const TurnTranscript.empty(),
@@ -131,7 +133,8 @@ class GameState {
   }
 
   bool get isCurrentPlayerBankrupt => currentPlayer?.isBankrupt ?? false;
-  bool get canRoll => turnPhase == TurnPhase.start && !isCurrentPlayerBankrupt;
+  bool get canRoll =>
+      turnPhase == TurnPhase.start && currentPlayer?.type == PlayerType.human;
 
   GameState copyWith({
     List<Player>? players,
@@ -155,6 +158,7 @@ class GameState {
     int? correctAnswers,
     int? wrongAnswers,
     Card? currentCard,
+    String? currentCardOwnerId,
     TurnResult? lastTurnResult,
     TurnHistory? turnHistory,
     TurnTranscript? currentTranscript,
@@ -181,6 +185,7 @@ class GameState {
       correctAnswers: correctAnswers ?? this.correctAnswers,
       wrongAnswers: wrongAnswers ?? this.wrongAnswers,
       currentCard: currentCard ?? this.currentCard,
+      currentCardOwnerId: currentCardOwnerId ?? this.currentCardOwnerId,
       lastTurnResult: lastTurnResult ?? this.lastTurnResult,
       turnHistory: turnHistory ?? this.turnHistory,
       currentTranscript: currentTranscript ?? this.currentTranscript,
@@ -315,19 +320,18 @@ class GameNotifier extends StateNotifier<GameState> {
           resolveCurrentTile();
           break;
         case TurnPhase.tileResolved:
-          // FIX: Handle Bot Card Application Logic Here
-          // If it's a bot and a card is waiting, apply it immediately.
-          if (state.currentCard != null &&
-              state.currentPlayer?.type == PlayerType.bot) {
-            debugPrint('🤖 Bot applying card...');
-            applyCardEffect(state.currentCard!);
-            return; // Exit, applyCardEffect will advance phase
-          }
-          // Otherwise, handle normal tile resolution
           _handleTileResolved();
           break;
 
-        // REMOVED INVALID "case 'applyCard':"
+        case TurnPhase.cardWaiting:
+          // Card is waiting for human player to click "Uygula"
+          if (state.currentCard != null &&
+              state.currentPlayer?.type == PlayerType.bot) {
+            debugPrint('🤖 Bot applying card from cardWaiting phase...');
+            applyCardEffect(state.currentCard!);
+            return;
+          }
+          break;
 
         case TurnPhase.cardApplied:
           endTurn(); // Card applied -> End Turn
@@ -422,15 +426,20 @@ class GameNotifier extends StateNotifier<GameState> {
     if (!state.canRoll) return;
     if (state.currentPlayer == null) return;
 
-    // Update phase to diceRolled
-    state = state.copyWith(turnPhase: TurnPhase.diceRolled);
-    debugPrint('🎲 Phase updated to: diceRolled');
-
     // Generate random dice roll
     final diceRoll = DiceRoll.random();
 
     // Get current player
     final currentPlayer = state.currentPlayer!;
+
+    // Update phase to diceRolled
+    state = state.copyWith(turnPhase: TurnPhase.diceRolled);
+    debugPrint('🎲 Phase updated to: diceRolled');
+
+    // Human turns manually continue to move phase
+    if (currentPlayer.type == PlayerType.human) {
+      moveCurrentPlayer(diceRoll.total);
+    }
 
     // Update player immutably
     final updatedPlayer = currentPlayer.copyWith(
@@ -785,8 +794,12 @@ class GameNotifier extends StateNotifier<GameState> {
     final randomIndex = _random.nextInt(cardDeck.length);
     final drawnCard = cardDeck[randomIndex];
 
-    // Store the drawn card in the game state
-    state = state.copyWith(currentCard: drawnCard);
+    // Store the drawn card in the game state with owner ID
+    state = state.copyWith(
+      currentCard: drawnCard,
+      currentCardOwnerId: state.currentPlayer?.id,
+      turnPhase: TurnPhase.cardWaiting,
+    );
 
     // UI FEEDBACK LOG: Card description
     final cardTypeName = cardType == CardType.sans ? 'ŞANS' : 'KADER';
@@ -797,29 +810,44 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Apply card effect (called from CardDialog)
   void applyCardEffect(Card card) {
-    // 1. GÜVENLİK KİLİDİ: Eğer zaten bir kart işleniyorsa VEYA o kartın ID'si son işlenenle aynıysa dur.
+    // ALL GUARD CHECKS MUST HAPPEN BEFORE SETTING THE LOCK
+
+    // Guard: If already applying a card effect, do not proceed
     if (_isApplyingEffect) {
       debugPrint("🛑 Çakışma önlendi: applyCardEffect zaten çalışıyor.");
       return;
     }
 
+    // Guard: If current player is null, do not proceed
     if (state.currentPlayer == null) return;
 
-    // GÜVENLİK KİLİDİ: Eğer kart zaten uygulanmışsa (faz değişmişse) işlemi durdur.
+    // Guard: Must be in cardWaiting phase to apply card
+    if (state.turnPhase != TurnPhase.cardWaiting) {
+      debugPrint("🚫 Kart etkisi yanlış fazda tetiklendi: ${state.turnPhase}");
+      return;
+    }
+
+    // Guard: Card must belong to current player
+    if (state.currentCardOwnerId != state.currentPlayer?.id) {
+      debugPrint(
+        "🚫 kart sahibi eşleşmiyor: ${state.currentCardOwnerId} vs ${state.currentPlayer?.id}",
+      );
+      return;
+    }
+
+    // Guard: If card effect already applied (phase changed), do not proceed
     if (state.turnPhase == TurnPhase.cardApplied) {
       debugPrint("🚫 Kart etkisi zaten uygulandı, işlem iptal ediliyor.");
       return;
     }
 
-    _isApplyingEffect = true; // Kilidi kapat
+    // NOW SET THE LOCK - all guards have passed
+    _isApplyingEffect = true;
 
     try {
       final currentPlayer = state.currentPlayer!;
 
-      // Update phase to cardApplied (moved to beginning to ensure game state progresses)
-      state = state.copyWith(turnPhase: TurnPhase.cardApplied);
-
-      // 1. Log the event (Critical for Summary)
+      // Log the event (Critical for Summary)
       _logEvent(
         TurnEventType.cardApplied,
         description: 'Kart Çekildi: ${card.description}',
@@ -925,10 +953,13 @@ class GameNotifier extends StateNotifier<GameState> {
     } catch (e, stackTrace) {
       debugPrint("Hata: $e");
     } finally {
-      // 2. KİLİDİ AÇ VE KARTI SİL
-      state = state.copyWith(currentCard: null);
-      _isApplyingEffect = false; // Kilidi aç
-
+      // ATOMIC STATE UPDATE: Clear card and set phase in single operation
+      state = state.copyWith(
+        currentCard: null,
+        currentCardOwnerId: null,
+        turnPhase: TurnPhase.cardApplied,
+      );
+      _isApplyingEffect = false;
       debugPrint("✅ Kart işlemi tamamlandı ve kilit açıldı.");
     }
   }
@@ -1024,10 +1055,9 @@ class GameNotifier extends StateNotifier<GameState> {
   // Targeted effects - ONLY modify state, return data for logging
   int _applyPublisherOwnersLose(int amount) {
     int count = 0;
-    // 1. Mevcut listenin kopyasını al
+    // 1. İşlemi geçici liste üzerinde yap (State'e dokunma)
     List<Player> updatedPlayers = List.from(state.players);
 
-    // 2. Döngüyü kopyalanmış liste üzerinde kur
     for (int i = 0; i < updatedPlayers.length; i++) {
       final player = updatedPlayers[i];
       // Yayınevi kontrolü
@@ -1036,15 +1066,15 @@ class GameNotifier extends StateNotifier<GameState> {
       );
 
       if (hasPublisher) {
-        // 3. State'i değil, geçici listeyi güncelle
         int currentStars = player.stars;
         int newStars = (currentStars - amount).clamp(0, 9999);
+        // Listeyi güncelle
         updatedPlayers[i] = player.copyWith(stars: newStars);
         count++;
       }
     }
 
-    // 4. Döngü bitince TEK SEFERDE state güncelle
+    // 2. Döngü bitince TEK SEFERDE State güncelle
     if (count > 0) {
       state = state.copyWith(players: updatedPlayers);
     }
@@ -1104,12 +1134,16 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.moved:
         return 'resolveTile';
       case TurnPhase.tileResolved:
-        // CRITICAL FIX: If a card is waiting to be applied, STOP auto-advance for humans!
-        // Only Bot auto-applies. Humans return null to wait for UI interaction.
-        if (state.currentCard != null) {
-          return isBot ? 'applyCard' : null;
-        }
         return 'handleTileEffect';
+      case TurnPhase.cardWaiting:
+        // HARD BLOCK: applyCard ONLY when ALL conditions are met
+        if (state.turnPhase == TurnPhase.cardWaiting &&
+            state.currentCard != null &&
+            state.currentCardOwnerId == state.currentPlayer?.id &&
+            state.currentPlayer?.type == PlayerType.bot) {
+          return 'applyCard';
+        }
+        return null;
       case TurnPhase.questionWaiting:
         // Bots auto-answer questions, humans wait for input
         return isBot ? 'answerQuestion' : null;
@@ -1710,53 +1744,40 @@ class GameNotifier extends StateNotifier<GameState> {
   void startNextTurn() {
     debugPrint('▶️ startNextTurn() called');
 
-    // Clear any possible "ghost card" data remaining from the previous turn
-    state = state.copyWith(currentCard: null);
+    // CRITICAL: Reset private guard flag before clearing state
+    _isApplyingEffect = false;
 
-    // Clear per-turn artifacts before handing off
+    // HARD RESET: Clear ALL card/question/effect-related state in single operation
     state = state.copyWith(
-      currentTranscript: const TurnTranscript.empty(),
+      turnPhase: TurnPhase.start,
+      currentCard: null,
+      currentCardOwnerId: null,
       currentQuestion: null,
       questionState: QuestionState.waiting,
       questionTimer: 0,
       lastDiceRoll: null,
+      currentTranscript: const TurnTranscript.empty(),
     );
 
-    // Move to next player
-    _nextPlayer();
-  }
+    // Move to next player index
+    var nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
 
-  // Move to next player
-  void _nextPlayer() {
+    // Skip bankrupt players
     int attempts = 0;
     final totalPlayers = state.players.length;
-
-    do {
-      final nextIndex = (state.currentPlayerIndex + 1) % totalPlayers;
-
+    while (state.players[nextIndex].isBankrupt && attempts < totalPlayers) {
       state = state.copyWith(currentPlayerIndex: nextIndex);
+      nextIndex = (nextIndex + 1) % totalPlayers;
       attempts++;
-
-      if (attempts > totalPlayers) {
-        // GAMEPLAY LOG: All players bankrupt
-        state = state.withLogMessage('Tüm oyuncular iflas oldu!');
-        _announceWinner();
-        return;
-      }
-    } while (state.currentPlayer?.isBankrupt ?? false);
-
-    if (state.currentPlayer != null) {
-      // UI FEEDBACK LOG: Turn transition
-      state = state
-          .copyWith(
-            turnPhase: TurnPhase.start,
-            oldPosition: null,
-            newPosition: null,
-            passedStart: false,
-            turnStartStars: state.currentPlayer!.stars,
-          )
-          .withLogMessage('Sıra: ${state.currentPlayer!.name}');
     }
+
+    state = state.copyWith(
+      currentPlayerIndex: nextIndex,
+      turnStartStars: state.players[nextIndex].stars,
+    );
+
+    // UI FEEDBACK LOG: Turn transition
+    state = state.withLogMessage('Sıra: ${state.players[nextIndex].name}');
   }
 
   // Check bankruptcy
