@@ -22,6 +22,7 @@ class _CardDialogState extends ConsumerState<CardDialog>
   late Animation<double> _fadeAnimation;
   bool _isProcessing = false;
   bool _botActionProcessed = false;
+  bool _botActionTriggered = false;
 
   @override
   void initState() {
@@ -65,18 +66,18 @@ class _CardDialogState extends ConsumerState<CardDialog>
     // Bot auto-apply - Dialog not rendered for bots
     // Bots always auto-apply card effect without showing dialog
     if (currentPlayer?.type == PlayerType.bot) {
-      if (!_botActionProcessed) {
-        _botActionProcessed = true;
-        // Bot auto-applies with delay
-        Future.delayed(const Duration(milliseconds: 500), () {
-          // Guard: Check if widget is still mounted before using ref
-          if (!mounted) return;
+      // Eğer bot bu dialog için daha önce işlem başlattıysa TEKRAR BAŞLATMA.
+      if (!_botActionTriggered) {
+        _botActionTriggered = true; // Kilidi kapat
 
-          // Apply card effect directly to clear currentCard from memory
-          ref.read(gameProvider.notifier).applyCardEffect(widget.card);
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          // Mounted kontrolü önemli, pencere kapandıysa işlem yapma
+          if (mounted) {
+            ref.read(gameProvider.notifier).applyCardEffect(widget.card);
+          }
         });
       }
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(); // Bot düşünürken boş kutu göster
     }
 
     final isSans = widget.card.type == game_models.CardType.sans;

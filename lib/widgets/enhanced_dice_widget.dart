@@ -77,10 +77,11 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final turnPhase = ref.watch(turnPhaseProvider);
+    final currentCard = ref.watch(currentCardProvider);
 
-    // Phase-aware logic: Dice is ONLY enabled during TurnPhase.start
+    // Phase-aware logic: Dice is ONLY enabled during TurnPhase.start AND when no card dialog is open
     // In all other phases, dice is visually disabled (greyed out) and logically disabled (unclickable)
-    final canRollDice = turnPhase == TurnPhase.start;
+    final canRollDice = turnPhase == TurnPhase.start && currentCard == null;
 
     // No top-level Container with fixed dimensions - let parent determine constraints
     return Column(

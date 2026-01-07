@@ -204,6 +204,9 @@ class GameNotifier extends StateNotifier<GameState> {
   // Guard flag to prevent re-entry during turn processing
   bool _isProcessingTurn = false;
 
+  // Guard flag to prevent recursive calls to applyCardEffect
+  bool _isApplyingEffect = false;
+
   GameNotifier()
     : super(
         const GameState(
@@ -794,26 +797,40 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // Apply card effect (called from CardDialog)
   void applyCardEffect(Card card) {
+    // 1. GÜVENLİK KİLİDİ: Eğer zaten bir kart işleniyorsa VEYA o kartın ID'si son işlenenle aynıysa dur.
+    if (_isApplyingEffect) {
+      debugPrint("🛑 Çakışma önlendi: applyCardEffect zaten çalışıyor.");
+      return;
+    }
+
     if (state.currentPlayer == null) return;
 
-    final currentPlayer = state.currentPlayer!;
+    // GÜVENLİK KİLİDİ: Eğer kart zaten uygulanmışsa (faz değişmişse) işlemi durdur.
+    if (state.turnPhase == TurnPhase.cardApplied) {
+      debugPrint("🚫 Kart etkisi zaten uygulandı, işlem iptal ediliyor.");
+      return;
+    }
 
-    // Update phase to cardApplied
-    state = state.copyWith(turnPhase: TurnPhase.cardApplied);
-
-    // 1. Log the event (Critical for Summary)
-    _logEvent(
-      TurnEventType.cardApplied,
-      description: 'Kart Çekildi: ${card.description}',
-      data: {'cardId': card.id, 'type': card.type.toString()},
-    );
-
-    // Track effect type for centralized logging and bankruptcy checks
-    bool isPersonalEffect = false;
-    bool isGlobalOrTargetedEffect = false;
-    String logMessage = '';
+    _isApplyingEffect = true; // Kilidi kapat
 
     try {
+      final currentPlayer = state.currentPlayer!;
+
+      // Update phase to cardApplied (moved to beginning to ensure game state progresses)
+      state = state.copyWith(turnPhase: TurnPhase.cardApplied);
+
+      // 1. Log the event (Critical for Summary)
+      _logEvent(
+        TurnEventType.cardApplied,
+        description: 'Kart Çekildi: ${card.description}',
+        data: {'cardId': card.id, 'type': card.type.toString()},
+      );
+
+      // Track effect type for centralized logging and bankruptcy checks
+      bool isPersonalEffect = false;
+      bool isGlobalOrTargetedEffect = false;
+      String logMessage = '';
+
       switch (card.effect) {
         // Personal effects (affect only current player)
         case CardEffect.gainStars:
@@ -905,11 +922,14 @@ class GameNotifier extends StateNotifier<GameState> {
       } else if (isGlobalOrTargetedEffect) {
         _checkAllPlayersBankruptcy();
       }
-    } catch (e) {
-      debugPrint("Card error: $e");
+    } catch (e, stackTrace) {
+      debugPrint("Hata: $e");
     } finally {
-      // Clear the current card after applying effect (always runs, even on error)
+      // 2. KİLİDİ AÇ VE KARTI SİL
       state = state.copyWith(currentCard: null);
+      _isApplyingEffect = false; // Kilidi aç
+
+      debugPrint("✅ Kart işlemi tamamlandı ve kilit açıldı.");
     }
   }
 
@@ -1670,7 +1690,7 @@ class GameNotifier extends StateNotifier<GameState> {
   void startNextTurn() {
     debugPrint('▶️ startNextTurn() called');
 
-    // Clear currentCard to prevent old card from reappearing when turn passes to next player
+    // Clear any possible "ghost card" data remaining from the previous turn
     state = state.copyWith(currentCard: null);
 
     // Clear per-turn artifacts before handing off
