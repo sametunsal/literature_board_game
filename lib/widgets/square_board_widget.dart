@@ -32,6 +32,7 @@ class SquareBoardWidget extends ConsumerWidget {
             boxShadow: [const BoxShadow(blurRadius: 12, color: Colors.black54)],
           ),
           child: Stack(
+            clipBehavior: Clip.none, // Allow tokens to peek slightly if needed
             children: [
               // --- DRAW TILES ---
               for (int i = 0; i < 40; i++)
@@ -47,6 +48,7 @@ class SquareBoardWidget extends ConsumerWidget {
               ),
 
               // --- PLAYER TOKENS ---
+              // Burada listeyi doğrudan oluşturuyoruz, spread (...) operatörü ile Stack'e yayıyoruz
               ..._buildPlayerTokens(gameState.players, u),
             ],
           ),
@@ -59,9 +61,6 @@ class SquareBoardWidget extends ConsumerWidget {
   Rect _getTileRect(int id, double u) {
     // Bounds checking: valid tile IDs are 0-39
     if (id < 0 || id > 39) {
-      debugPrint(
-        '⚠️ Invalid tile ID: $id (valid range: 0-39), returning zero rect',
-      );
       return Rect.zero;
     }
 
@@ -73,16 +72,9 @@ class SquareBoardWidget extends ConsumerWidget {
 
     // 1-9: Left Side (Bottom -> Top)
     if (id >= 1 && id <= 9) {
-      // id 1 is directly above corner (0).
-      // index 1..9
       double bottomY = total - c; // Top of BL corner
       double myY = bottomY - (id * u);
-      return Rect.fromLTWH(
-        0,
-        myY,
-        c,
-        u,
-      ); // Use 'c' width for left column visual consistency
+      return Rect.fromLTWH(0, myY, c, u);
     }
 
     // 10: Top-Left Corner
@@ -111,14 +103,11 @@ class SquareBoardWidget extends ConsumerWidget {
     // 31-39: Bottom Side (Right -> Left)
     if (id >= 31 && id <= 39) {
       int idx = id - 30; // 1..9
-      // Moving left from BR corner
       double rightX = total - c;
       double myX = rightX - (idx * u);
       return Rect.fromLTWH(myX, total - c, u, c);
     }
 
-    // This should never be reached due to bounds check above
-    debugPrint('⚠️ Unhandled tile ID: $id, returning zero rect');
     return Rect.zero;
   }
 
@@ -190,7 +179,6 @@ class SquareBoardWidget extends ConsumerWidget {
                 ),
               ],
             ),
-            // Owner indicator (small colored dot in corner)
             if (hasOwner)
               Positioned(
                 right: 2,
@@ -219,39 +207,48 @@ class SquareBoardWidget extends ConsumerWidget {
   ) {
     if (ownerId == null) return Colors.transparent;
 
-    // Find player by ID
     final player = players.firstWhere(
       (p) => p.id == ownerId,
       orElse: () => Player(id: '', name: '', color: '#000000', stars: 0),
     );
 
-    // Parse player color with error handling
     try {
       return Color(int.parse(player.color.replaceFirst('#', '0xFF')));
     } catch (e) {
-      debugPrint(
-        '⚠️ Error parsing player color "${player.color}": $e, using default gray',
-      );
       return Colors.grey;
     }
   }
 
+  /// Oyuncu tokenlarını oluşturur.
+  /// ÖNEMLİ DÜZELTME: Bu metod artık doğrudan Stack'e eklenecek widget listesini
+  /// döndürür ve her oyuncu için kararlı (stable) bir Key kullanır.
   List<Widget> _buildPlayerTokens(List<Player> players, double u) {
+    List<Widget> tokenWidgets = [];
+    double tokenSize = u * 0.45; // Token is 45% of a unit size
+
+    // 1. Önce oyuncuları bulundukları kareye göre grupla
     final Map<int, List<Player>> groups = {};
     for (var p in players) {
       groups.putIfAbsent(p.position, () => []).add(p);
     }
 
-    List<Widget> tokens = [];
-    double tokenSize = u * 0.45; // Token is 45% of a unit size
+    // 2. Her oyuncu için tek tek widget oluştur
+    // ÖNEMLİ: Döngüyü `players` listesi üzerinden kuruyoruz, `groups` üzerinden değil.
+    // Bu sayede Stack içindeki widget sıralaması her zaman oyuncu listesiyle aynı kalır (P1, P2, P3, P4).
+    // Bu, animasyonun kararlı çalışması için KRİTİKTİR.
+    for (var player in players) {
+      // Bu oyuncunun kendi grubundaki sırasını bul
+      final group = groups[player.position]!;
+      // Oyuncuları ID'ye göre sırala ki grup içindeki yerleri sabit kalsın
+      group.sort((a, b) => a.id.compareTo(b.id));
+      final indexInGroup = group.indexWhere((p) => p.id == player.id);
 
-    groups.forEach((tileId, group) {
-      final rect = _getTileRect(tileId, u);
-      // Center of the tile
+      // Konum hesaplama
+      final rect = _getTileRect(player.position, u);
       double cx = rect.left + (rect.width / 2);
       double cy = rect.top + (rect.height / 2);
 
-      // 2x2 Grid Offsets (Pixel values) - Tighter for better centering
+      // Grup ofsetleri (aynı karedeki oyuncular üst üste binmesin diye)
       double off = tokenSize * 0.15;
       List<Offset> offsets = [
         Offset(-off, -off),
@@ -260,66 +257,66 @@ class SquareBoardWidget extends ConsumerWidget {
         Offset(off, off),
       ];
 
-      for (int i = 0; i < group.length; i++) {
-        final p = group[i];
-        final o = i < 4 ? offsets[i] : Offset.zero;
+      // Eğer 4'ten fazla kişi aynı karedeyse (nadirdir), hepsi son ofsette toplanır
+      final safeIndex = indexInGroup < 4 ? indexInGroup : 0;
+      final o = offsets[safeIndex];
 
-        // Final position: Center + Offset - (Half Token Size to center the widget itself)
-        final double left = cx + o.dx - (tokenSize / 2);
-        final double top = cy + o.dy - (tokenSize / 2);
+      final double left = cx + o.dx - (tokenSize / 2);
+      final double top = cy + o.dy - (tokenSize / 2);
 
-        // Parse player color with error handling
-        Color playerColor;
-        try {
-          playerColor = Color(int.parse(p.color.replaceFirst('#', '0xFF')));
-        } catch (e) {
-          debugPrint(
-            '⚠️ Error parsing player color "${p.color}": $e, using default blue',
-          );
-          playerColor = Colors.blue;
-        }
+      // Debug: Konum değişiyor mu?
+      // debugPrint('🎨 Token: ${player.name} (Pos: ${player.position}) -> L:$left, T:$top');
 
-        // Get first letter safely
-        String initialLetter = '?';
-        if (p.name.isNotEmpty) {
-          initialLetter = p.name[0];
-        }
+      Color playerColor;
+      try {
+        playerColor = Color(int.parse(player.color.replaceFirst('#', '0xFF')));
+      } catch (e) {
+        playerColor = Colors.blue;
+      }
 
-        tokens.add(
-          AnimatedPositioned(
-            // KEY EKLENDİ: Artık her token benzersiz bir kimliğe sahip.
-            // Bu, sıralama değişse bile Flutter'ın doğru token'ı hareket ettirmesini sağlar.
-            key: ValueKey('player_token_${p.id}'),
-            duration: const Duration(milliseconds: 500),
-            left: left,
-            top: top,
-            child: Container(
-              width: tokenSize,
-              height: tokenSize,
-              decoration: BoxDecoration(
-                color: playerColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  const BoxShadow(color: Colors.black45, blurRadius: 3),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  initialLetter,
-                  style: TextStyle(
-                    fontSize: tokenSize * 0.6,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+      String initialLetter = player.name.isNotEmpty ? player.name[0] : '?';
+
+      tokenWidgets.add(
+        AnimatedPositioned(
+          // KESİN ÇÖZÜM: ID'yi Key olarak kullan
+          key: ValueKey("TOKEN_${player.id}"),
+          duration: const Duration(
+            milliseconds: 600,
+          ), // Biraz daha yavaş, net görülsün
+          curve: Curves.easeInOutCubic, // Yumuşak hareket
+          left: left,
+          top: top,
+          child: Container(
+            width: tokenSize,
+            height: tokenSize,
+            decoration: BoxDecoration(
+              color: playerColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                const BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                initialLetter,
+                style: TextStyle(
+                  fontSize: tokenSize * 0.6,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
           ),
-        );
-      }
-    });
-    return tokens;
+        ),
+      );
+    }
+
+    return tokenWidgets;
   }
 
   Color _getTileColor(TileType type) {
