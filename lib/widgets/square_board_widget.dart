@@ -287,6 +287,9 @@ class SquareBoardWidget extends ConsumerWidget {
 
         tokens.add(
           AnimatedPositioned(
+            // KEY EKLENDİ: Artık her token benzersiz bir kimliğe sahip.
+            // Bu, sıralama değişse bile Flutter'ın doğru token'ı hareket ettirmesini sağlar.
+            key: ValueKey('player_token_${p.id}'),
             duration: const Duration(milliseconds: 500),
             left: left,
             top: top,
