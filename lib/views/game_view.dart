@@ -21,6 +21,52 @@ class GameView extends ConsumerStatefulWidget {
 }
 
 class _GameViewState extends ConsumerState<GameView> {
+  bool _isDialogOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen to game state changes to show dialogs at appropriate phases
+    ref.listen<GameState>(gameProvider, (previous, next) {
+      // Faz değişikliklerini izle
+      if (previous?.turnPhase != next.turnPhase) {
+        debugPrint(
+          '🖥️ UI Faz Değişikliği Algıladı: ${previous?.turnPhase} -> ${next.turnPhase}',
+        );
+
+        // Soru Sorma Fazı
+        if (next.turnPhase == TurnPhase.questionWaiting) {
+          debugPrint('🖥️ Soru dialogu açılıyor...');
+          _isDialogOpen = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false, // Kullanıcı dışarı tıklayıp kapatamasın
+            builder: (_) => QuestionDialog(question: next.currentQuestion!),
+          ).then((_) {
+            _isDialogOpen = false;
+          });
+        }
+
+        // Kart Çekme Fazı
+        if (next.turnPhase == TurnPhase.cardWaiting) {
+          debugPrint('🖥️ Kart dialogu açılıyor...');
+          _isDialogOpen = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => CardDialog(
+              key: ValueKey(next.currentCard?.id),
+              card: next.currentCard!,
+            ),
+          ).then((_) {
+            _isDialogOpen = false;
+          });
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
@@ -401,13 +447,6 @@ class _GameViewState extends ConsumerState<GameView> {
             ],
           ),
 
-          // Question dialog overlay
-          // Phase 3: UI is passive observer, QuestionDialog handles orchestration internally
-          // CRITICAL FIX: Use turnPhase as the primary source of truth for dialog visibility
-          if (turnPhase == TurnPhase.questionWaiting &&
-              currentQuestion != null)
-            QuestionDialog(question: currentQuestion),
-
           // Copyright purchase dialog overlay
           // Show when phase is copyrightPurchased
           if (turnPhase == TurnPhase.copyrightPurchased &&
@@ -417,18 +456,6 @@ class _GameViewState extends ConsumerState<GameView> {
               tile: gameState.tiles.firstWhere(
                 (t) => t.id == gameState.newPosition,
               ),
-            ),
-
-          // Card dialog overlay
-          // Show when a card is drawn with strict validation
-          // Must be in cardWaiting phase, card must belong to current player, and player must be human
-          if (gameState.currentCard != null &&
-              gameState.turnPhase == TurnPhase.cardWaiting &&
-              gameState.currentCardOwnerId == gameState.currentPlayer?.id &&
-              gameState.currentPlayer?.type == PlayerType.human)
-            CardDialog(
-              key: ValueKey(gameState.currentCard?.id),
-              card: gameState.currentCard!,
             ),
 
           // Phase 4: Turn Summary Overlay - Shows summary of completed turn

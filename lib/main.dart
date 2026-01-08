@@ -35,8 +35,11 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_initialized) return;
+
+      // CRITICAL: Load questions from repository into game state before initializing
+      await ref.read(gameProvider.notifier).loadQuestions();
 
       // Oyunu başlat
       ref

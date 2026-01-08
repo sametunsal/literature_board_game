@@ -248,20 +248,18 @@ class GameNotifier extends StateNotifier<GameState> {
   GameStateManager get _stateManager => GameStateManager(state);
 
   // Kart efekt yöneticisi
-  CardEffectHandler get _cardHandler => CardEffectHandler(
-        stateManager: _stateManager,
-        rulesEngine: _rulesEngine,
-      );
+  CardEffectHandler get _cardHandler =>
+      CardEffectHandler(stateManager: _stateManager, rulesEngine: _rulesEngine);
 
   // Bot zeka yöneticisi
   BotAIController get _botAI => BotAIController(rulesEngine: _rulesEngine);
 
   // Oyun akış yönetmeni
   TurnOrchestrator get _orchestrator => TurnOrchestrator(
-        stateManager: _stateManager,
-        rulesEngine: _rulesEngine,
-        botAI: _botAI,
-      );
+    stateManager: _stateManager,
+    rulesEngine: _rulesEngine,
+    botAI: _botAI,
+  );
   // ---------------------------
 
   GameNotifier()
@@ -296,6 +294,21 @@ class GameNotifier extends StateNotifier<GameState> {
     // Also add to log messages for backward compatibility
     if (description != null) {
       state = state.withLogMessage(description);
+    }
+  }
+
+  // Load questions from repository into game state
+  Future<void> loadQuestions() async {
+    try {
+      final questions = QuestionRepository.getAllQuestions();
+      debugPrint('✅ Loaded ${questions.length} questions from repository');
+
+      // CRITICAL: Assign questions to state so RulesEngine can access them
+      state = state.copyWith(questionPool: questions);
+
+      debugPrint('✅ Question pool updated in game state');
+    } catch (e) {
+      debugPrint('❌ Error loading questions into game state: $e');
     }
   }
 
@@ -367,7 +380,9 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.moved:
         // Hareket bitti, Tile çözümle
         debugPrint('🎮 Auto-advance directive: resolveTile');
-        await Future.delayed(const Duration(milliseconds: 500)); // Animasyon payı
+        await Future.delayed(
+          const Duration(milliseconds: 500),
+        ); // Animasyon payı
         resolveTile();
         break;
 
@@ -680,7 +695,8 @@ class GameNotifier extends StateNotifier<GameState> {
           // Başkasının -> Kira Öde
           payRent();
           // Kira ödendikten sonra tur biter
-          if (!state.currentPlayer!.isBankrupt) { // İflas etmediyse
+          if (!state.currentPlayer!.isBankrupt) {
+            // İflas etmediyse
             manager.setTurnPhase(TurnPhase.turnEnded);
             state = manager.state;
             endTurn();
@@ -751,7 +767,10 @@ class GameNotifier extends StateNotifier<GameState> {
     bool isEasyMode = currentPlayer.easyQuestionNext;
 
     // 1. KURAL MOTORU: Soruyu seç
-    final question = _rulesEngine.selectQuestion(categoryPool, easyMode: isEasyMode);
+    final question = _rulesEngine.selectQuestion(
+      categoryPool,
+      easyMode: isEasyMode,
+    );
 
     // Easy flag'ini tüket
     if (isEasyMode) {
@@ -795,7 +814,6 @@ class GameNotifier extends StateNotifier<GameState> {
     manager.setTurnPhase(TurnPhase.questionResolved);
     state = manager.state;
   }
-
 
   // Draw a card from the appropriate deck
   void drawCard(CardType cardType) {
@@ -865,7 +883,6 @@ class GameNotifier extends StateNotifier<GameState> {
       state = handler.stateManager.state;
 
       debugPrint("✅ Kart işlemi tamamlandı (Handler).");
-
     } catch (e) {
       debugPrint("Hata: $e");
     } finally {
@@ -1059,7 +1076,6 @@ class GameNotifier extends StateNotifier<GameState> {
       manager.setTurnPhase(TurnPhase.questionResolved);
       state = manager.state;
       endTurn();
-
     } else {
       debugPrint('🤖 Bot declining purchase');
       manager.setTurnPhase(TurnPhase.questionResolved);
