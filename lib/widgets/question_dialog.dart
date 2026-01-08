@@ -483,9 +483,12 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       gameNotifier.answerQuestionWrong();
     }
 
+    // CRITICAL FIX: Close the dialog immediately after setting answer
+    Navigator.of(context).pop();
+
     // CRITICAL FIX: Check the resulting phase to determine next action
     // If phase is copyrightPurchased, we need to wait for the UI to show
-    // the CopyrightPurchaseDialog before calling playTurn()
+    // CopyrightPurchaseDialog before calling playTurn()
     final currentPhase = ref.read(turnPhaseProvider);
 
     if (currentPhase == TurnPhase.copyrightPurchased) {
