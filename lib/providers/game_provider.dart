@@ -16,6 +16,7 @@ import '../repositories/question_repository.dart';
 import '../utils/turn_summary_generator.dart';
 import '../core/game_rules_engine.dart';
 import '../core/game_state_manager.dart';
+import '../core/card_effect_handler.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -243,6 +244,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // StateManager her çağrıldığında mevcut durumu (state) sarmalayacak
   GameStateManager get _stateManager => GameStateManager(state);
+
+  // Kart efekt yöneticisi
+  CardEffectHandler get _cardHandler => CardEffectHandler(
+        stateManager: _stateManager,
+        rulesEngine: _rulesEngine,
+      );
   // ---------------------------
 
   GameNotifier()
@@ -811,316 +818,51 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  // Apply card effect (called from CardDialog)
+  // Apply card effect (REFACTORED)
   void applyCardEffect(Card card) {
-    // ALL GUARD CHECKS MUST HAPPEN BEFORE SETTING THE LOCK
-
-    // Guard: If already applying a card effect, do not proceed
+    // GUARD CHECKS
     if (_isApplyingEffect) {
       debugPrint("🛑 Çakışma önlendi: applyCardEffect zaten çalışıyor.");
       return;
     }
-
-    // Guard: If current player is null, do not proceed
     if (state.currentPlayer == null) return;
 
-    // Guard: Must be in cardWaiting phase to apply card
     if (state.turnPhase != TurnPhase.cardWaiting) {
       debugPrint("🚫 Kart etkisi yanlış fazda tetiklendi: ${state.turnPhase}");
       return;
     }
 
-    // Guard: Card must belong to current player
     if (state.currentCardOwnerId != state.currentPlayer?.id) {
-      debugPrint(
-        "🚫 kart sahibi eşleşmiyor: ${state.currentCardOwnerId} vs ${state.currentPlayer?.id}",
-      );
+      debugPrint("🚫 kart sahibi eşleşmiyor.");
       return;
     }
 
-    // Guard: If card effect already applied (phase changed), do not proceed
-    if (state.turnPhase == TurnPhase.cardApplied) {
-      debugPrint("🚫 Kart etkisi zaten uygulandı, işlem iptal ediliyor.");
-      return;
-    }
-
-    // NOW SET THE LOCK - all guards have passed
+    // LOCK & EXECUTE
     _isApplyingEffect = true;
 
     try {
-      final currentPlayer = state.currentPlayer!;
-
-      // Log the event (Critical for Summary)
+      // Transkript Logu (Hala burada tutuyoruz çünkü UI event'i)
       _logEvent(
         TurnEventType.cardApplied,
         description: 'Kart Çekildi: ${card.description}',
         data: {'cardId': card.id, 'type': card.type.toString()},
       );
 
-      // Track effect type for centralized logging and bankruptcy checks
-      bool isPersonalEffect = false;
-      bool isGlobalOrTargetedEffect = false;
-      String logMessage = '';
+      // YENİ YAPI: İşi uzmana devret
+      final handler = _cardHandler;
+      handler.applyCardEffect(card, state.currentPlayer!);
 
-      switch (card.effect) {
-        // Personal effects (affect only current player)
-        case CardEffect.gainStars:
-          _applyGainStars(currentPlayer, card.starAmount ?? 0);
-          isPersonalEffect = true;
-          logMessage =
-              '${currentPlayer.name}: +${card.starAmount ?? 0} yıldız kazandı';
-          break;
+      // StateManager güncellemeleri yaptı, state'i senkronize et
+      state = handler.stateManager.state;
 
-        case CardEffect.loseStars:
-          _applyLoseStars(currentPlayer, card.starAmount ?? 0);
-          isPersonalEffect = true;
-          logMessage =
-              '${currentPlayer.name}: -${card.starAmount ?? 0} yıldız kaybetti';
-          break;
+      debugPrint("✅ Kart işlemi tamamlandı (Handler).");
 
-        case CardEffect.skipNextTax:
-          _applySkipNextTax(currentPlayer);
-          isPersonalEffect = true;
-          logMessage =
-              '${currentPlayer.name}: Bir sonraki vergi ödemesi atlanacak';
-          break;
-
-        case CardEffect.freeTurn:
-          _applyFreeTurn(currentPlayer);
-          isPersonalEffect = true;
-          logMessage = '${currentPlayer.name}: Ücretsiz tur hakkı kazandı';
-          break;
-
-        case CardEffect.easyQuestionNext:
-          _applyEasyQuestionNext(currentPlayer);
-          isPersonalEffect = true;
-          logMessage = '${currentPlayer.name}: Bir sonraki soru kolay olacak';
-          break;
-
-        // Global effects (affect all players)
-        case CardEffect.allPlayersGainStars:
-          _applyAllPlayersGainStars(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          logMessage = 'Tüm oyuncular: +${card.starAmount ?? 0} yıldız kazandı';
-          break;
-
-        case CardEffect.allPlayersLoseStars:
-          _applyAllPlayersLoseStars(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          logMessage =
-              'Tüm oyuncular: -${card.starAmount ?? 0} yıldız kaybetti';
-          break;
-
-        case CardEffect.taxWaiver:
-          _applyTaxWaiver();
-          isGlobalOrTargetedEffect = true;
-          logMessage = 'Tüm oyuncular: Bir sonraki vergi ödemesi atlanacak';
-          break;
-
-        case CardEffect.allPlayersEasyQuestion:
-          _applyAllPlayersEasyQuestion();
-          isGlobalOrTargetedEffect = true;
-          logMessage = 'Tüm oyuncular: Bir sonraki soru kolay olacak';
-          break;
-
-        // Targeted effects (affect specific players)
-        case CardEffect.publisherOwnersLose:
-          final affectedCount = _applyPublisherOwnersLose(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          logMessage =
-              'Yayınevi sahipleri ($affectedCount oyuncu): -${card.starAmount ?? 0} yıldız kaybetti';
-          break;
-
-        case CardEffect.richPlayerPays:
-          final richestId = _applyRichPlayerPays(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          // Get richest player name for logging (before mutation)
-          final richestPlayer = state.players.firstWhere(
-            (p) => p.id == richestId,
-            orElse: () => state.players.first,
-          );
-          logMessage =
-              '${richestPlayer.name} (en zengin oyuncu): -${card.starAmount ?? 0} yıldız ödedi';
-          break;
-      }
-
-      // GAMEPLAY LOG: Card effect result
-      state = state.withLogMessage(logMessage);
-
-      // Centralized bankruptcy checks
-      if (isPersonalEffect) {
-        _checkBankruptcy();
-      } else if (isGlobalOrTargetedEffect) {
-        _checkAllPlayersBankruptcy();
-      }
     } catch (e) {
       debugPrint("Hata: $e");
     } finally {
-      // ATOMIC STATE UPDATE: Clear card and set phase in single operation
-      // NOTE: We pass null to currentCard and currentCardOwnerId.
-      // With the updated copyWith, this successfully clears them.
-      state = state.copyWith(
-        currentCard: null,
-        currentCardOwnerId: null,
-        turnPhase: TurnPhase.cardApplied,
-      );
+      // Handler zaten state'i temizledi ama flag'i burada kaldırıyoruz
       _isApplyingEffect = false;
-      debugPrint("✅ Kart işlemi tamamlandı ve kilit açıldı.");
     }
-  }
-
-  // Personal effects - ONLY modify state, no logging or bankruptcy checks
-  void _applyGainStars(Player player, int amount) {
-    final updatedPlayer = player.copyWith(stars: player.stars + amount);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyLoseStars(Player player, int amount) {
-    final newStars = (player.stars - amount).clamp(0, player.stars);
-    final updatedPlayer = player.copyWith(
-      stars: newStars,
-      isBankrupt: newStars <= 0,
-    );
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applySkipNextTax(Player player) {
-    final updatedPlayer = player.copyWith(skipNextTax: true);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyFreeTurn(Player player) {
-    final updatedPlayer = player.copyWith(skippedTurn: false);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyEasyQuestionNext(Player player) {
-    final updatedPlayer = player.copyWith(easyQuestionNext: true);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  // Global effects - ONLY modify state, no logging or bankruptcy checks
-  void _applyAllPlayersGainStars(int amount) {
-    // 1. Mevcut listenin kopyasını al
-    List<Player> updatedPlayers = List.from(state.players);
-
-    // 2. Döngüyü kopyalanmış liste üzerinde kur
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      final player = updatedPlayers[i];
-      // 3. State'i değil, geçici listeyi güncelle
-      int currentStars = player.stars;
-      int newStars = currentStars + amount;
-      updatedPlayers[i] = player.copyWith(stars: newStars);
-    }
-
-    // 4. Döngü bitince TEK SEFERDE state güncelle
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyAllPlayersLoseStars(int amount) {
-    // 1. Mevcut listenin kopyasını al
-    List<Player> updatedPlayers = List.from(state.players);
-
-    // 2. Döngüyü kopyalanmış liste üzerinde kur
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      final player = updatedPlayers[i];
-      // 3. State'i değil, geçici listeyi güncelle
-      int currentStars = player.stars;
-      int newStars = (currentStars - amount).clamp(0, 9999);
-      updatedPlayers[i] = player.copyWith(stars: newStars);
-    }
-
-    // 4. Döngü bitince TEK SEFERDE state güncelle
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyTaxWaiver() {
-    List<Player> updatedPlayers = [];
-    for (final player in state.players) {
-      final updatedPlayer = player.copyWith(skipNextTax: true);
-      updatedPlayers.add(updatedPlayer);
-    }
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyAllPlayersEasyQuestion() {
-    List<Player> updatedPlayers = [];
-    for (final player in state.players) {
-      final updatedPlayer = player.copyWith(easyQuestionNext: true);
-      updatedPlayers.add(updatedPlayer);
-    }
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  // Targeted effects - ONLY modify state, return data for logging
-  int _applyPublisherOwnersLose(int amount) {
-    int count = 0;
-    // 1. İşlemi geçici liste üzerinde yap (State'e dokunma)
-    List<Player> updatedPlayers = List.from(state.players);
-
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      final player = updatedPlayers[i];
-      // Yayınevi kontrolü
-      bool hasPublisher = state.tiles.any(
-        (tile) => tile.owner == player.id && tile.type == TileType.publisher,
-      );
-
-      if (hasPublisher) {
-        int currentStars = player.stars;
-        int newStars = (currentStars - amount).clamp(0, 9999);
-        // Listeyi güncelle
-        updatedPlayers[i] = player.copyWith(stars: newStars);
-        count++;
-      }
-    }
-
-    // 2. Döngü bitince TEK SEFERDE State güncelle
-    if (count > 0) {
-      state = state.copyWith(players: updatedPlayers);
-    }
-    return count;
-  }
-
-  String _applyRichPlayerPays(int amount) {
-    if (state.players.isEmpty) return '';
-
-    // Find the richest player (highest star count) BEFORE any mutation
-    Player richestPlayer = state.players.first;
-    for (final player in state.players) {
-      if (player.stars > richestPlayer.stars) {
-        richestPlayer = player;
-      }
-    }
-
-    // Store the ID before mutation
-    final richestId = richestPlayer.id;
-
-    // Apply the star loss
-    final newStars = (richestPlayer.stars - amount).clamp(
-      0,
-      richestPlayer.stars,
-    );
-    final updatedPlayer = richestPlayer.copyWith(
-      stars: newStars,
-      isBankrupt: newStars <= 0,
-    );
-
-    // Update players list in batch
-    List<Player> updatedPlayers = List.from(state.players);
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      if (updatedPlayers[i].id == richestId) {
-        updatedPlayers[i] = updatedPlayer;
-        break;
-      }
-    }
-
-    state = state.copyWith(players: updatedPlayers);
-    return richestId;
   }
 
   // Auto-advance directive for bot and human turns
