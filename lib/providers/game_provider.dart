@@ -1329,13 +1329,17 @@ class GameNotifier extends StateNotifier<GameState> {
   // End turn - Step 4 of turn
   // CRITICAL FIX: This method now PAUSES at turnEnded instead of immediately moving to next player
   void endTurn() {
+    // CRITICAL FIX: Immediately update state to break loop
+    state = state.copyWith(turnPhase: TurnPhase.turnEnded).withLogMessage('Turn Ended');
+
     // Allow ending turn from multiple phases (some tiles might resolve without further action)
     if (state.turnPhase != TurnPhase.taxResolved &&
         state.turnPhase != TurnPhase.cardApplied &&
         state.turnPhase != TurnPhase.questionResolved &&
-        state.turnPhase != TurnPhase.tileResolved) {
+        state.turnPhase != TurnPhase.tileResolved &&
+        state.turnPhase != TurnPhase.turnEnded) {
       debugPrint(
-        '⛔ Phase Guard: endTurn called in ${state.turnPhase}, expected one of [taxResolved, cardApplied, questionResolved, tileResolved]',
+        '⛔ Phase Guard: endTurn called in ${state.turnPhase}, expected one of [taxResolved, cardApplied, questionResolved, tileResolved, turnEnded]',
       );
       assert(false, 'Invalid turn phase for endTurn');
       return;
@@ -1423,7 +1427,8 @@ class GameNotifier extends StateNotifier<GameState> {
       turnPhase: TurnPhase.turnEnded,
     );
 
-    debugPrint('🎬 Turn ended - waiting for startNextTurn()');
+    // Call startNextTurn with a small delay to allow UI to process the end state
+    Future.delayed(const Duration(milliseconds: 100), () => startNextTurn());
   }
 
   // CRITICAL FIX: New public method to start next turn
@@ -1471,7 +1476,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // If the new current player is a bot, trigger playTurn after a small delay
     if (state.players[nextIndex].type == PlayerType.bot) {
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(seconds: 1), () {
         playTurn();
       });
     }
