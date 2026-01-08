@@ -363,6 +363,9 @@ class GameNotifier extends StateNotifier<GameState> {
   Future<void> playTurn() async {
     debugPrint('🎮 playTurn() called - Current phase: ${state.turnPhase}');
 
+    // Guard clause to prevent re-running logic if turn has ended
+    if (state.turnPhase == TurnPhase.turnEnded) return;
+
     // Eğer oyun bittiyse dur
     if (state.isGameOver) return;
 
@@ -1330,7 +1333,9 @@ class GameNotifier extends StateNotifier<GameState> {
   // CRITICAL FIX: This method now PAUSES at turnEnded instead of immediately moving to next player
   void endTurn() {
     // CRITICAL FIX: Immediately update state to break loop
-    state = state.copyWith(turnPhase: TurnPhase.turnEnded).withLogMessage('Turn Ended');
+    state = state
+        .copyWith(turnPhase: TurnPhase.turnEnded)
+        .withLogMessage('Turn Ending...');
 
     // Allow ending turn from multiple phases (some tiles might resolve without further action)
     if (state.turnPhase != TurnPhase.taxResolved &&
@@ -1428,7 +1433,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     // Call startNextTurn with a small delay to allow UI to process the end state
-    Future.delayed(const Duration(milliseconds: 100), () => startNextTurn());
+    Future.delayed(const Duration(milliseconds: 500), () => startNextTurn());
   }
 
   // CRITICAL FIX: New public method to start next turn
@@ -1475,7 +1480,9 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.withLogMessage('Sıra: ${state.players[nextIndex].name}');
 
     // If the new current player is a bot, trigger playTurn after a small delay
-    if (state.players[nextIndex].type == PlayerType.bot) {
+    final nextPlayer = state.players[nextIndex];
+    if (nextPlayer.type == PlayerType.bot) {
+      debugPrint('🤖 Bot Turn Detected: Triggering Auto-Play...');
       Future.delayed(const Duration(seconds: 1), () {
         playTurn();
       });
