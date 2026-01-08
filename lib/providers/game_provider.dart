@@ -16,6 +16,9 @@ import '../repositories/question_repository.dart';
 import '../utils/turn_summary_generator.dart';
 import '../core/game_rules_engine.dart';
 import '../core/game_state_manager.dart';
+import '../core/card_effect_handler.dart';
+import '../core/bot_ai_controller.dart';
+import '../core/turn_orchestrator.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -243,6 +246,22 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // StateManager her çağrıldığında mevcut durumu (state) sarmalayacak
   GameStateManager get _stateManager => GameStateManager(state);
+
+  // Kart efekt yöneticisi
+  CardEffectHandler get _cardHandler => CardEffectHandler(
+        stateManager: _stateManager,
+        rulesEngine: _rulesEngine,
+      );
+
+  // Bot zeka yöneticisi
+  BotAIController get _botAI => BotAIController(rulesEngine: _rulesEngine);
+
+  // Oyun akış yönetmeni
+  TurnOrchestrator get _orchestrator => TurnOrchestrator(
+        stateManager: _stateManager,
+        rulesEngine: _rulesEngine,
+        botAI: _botAI,
+      );
   // ---------------------------
 
   GameNotifier()
@@ -316,97 +335,81 @@ class GameNotifier extends StateNotifier<GameState> {
   /// ============================================================================
   /// TURN ORCHESTRATION - Phase 2: Single Entry Point
   /// ============================================================================
-  void playTurn() {
+  Future<void> playTurn() async {
     debugPrint('🎮 playTurn() called - Current phase: ${state.turnPhase}');
 
-    if (_isProcessingTurn) return;
-    _isProcessingTurn = true;
+    // Eğer oyun bittiyse dur
+    if (state.isGameOver) return;
 
-    try {
-      switch (state.turnPhase) {
-        case TurnPhase.start:
+    // YENİ YAPI: Orkestratörden talimat al
+    // (Şu anlık manuel switch-case ile yapıyoruz, sonra tamamen orchestrator'a geçecek)
+
+    switch (state.turnPhase) {
+      case TurnPhase.start:
+        // Bot ise otomatik zar at
+        if (state.currentPlayer?.type == PlayerType.bot) {
+          debugPrint('🤖 Bot turn starting...');
+          await Future.delayed(const Duration(seconds: 1));
           rollDice();
-          break;
-        case TurnPhase.diceRolled:
-          moveCurrentPlayer(state.lastDiceRoll?.total ?? 0);
-          break;
-        case TurnPhase.moved:
-          resolveCurrentTile();
-          break;
-        case TurnPhase.tileResolved:
-          _handleTileResolved();
-          break;
+        } else {
+          // İnsan oyuncu: UI üzerinden rollDice() çağrılmasını bekle.
+          debugPrint('👤 İnsan oyuncu sırası. Butona basılması bekleniyor.');
+        }
+        break;
 
-        case TurnPhase.cardWaiting:
-          // Card is waiting for human player to click "Uygula"
-          if (state.currentCard != null &&
-              state.currentPlayer?.type == PlayerType.bot) {
-            debugPrint('🤖 Bot applying card from cardWaiting phase...');
+      case TurnPhase.diceRolled:
+        // Zar atıldı, hareket bekleniyor (Otomatik)
+        // moveCurrentPlayer içinde otomatik çağrılmıyorsa burada çağır
+        // Ama biz moveCurrentPlayer'ı rollDice içinde çağırdık.
+        // Sadece animasyon bekleme süresi gerekebilir.
+        break;
+
+      case TurnPhase.moved:
+        // Hareket bitti, Tile çözümle
+        debugPrint('🎮 Auto-advance directive: resolveTile');
+        await Future.delayed(const Duration(milliseconds: 500)); // Animasyon payı
+        resolveTile();
+        break;
+
+      case TurnPhase.questionWaiting:
+        // Bot ise cevap ver
+        if (state.currentPlayer?.type == PlayerType.bot) {
+          await Future.delayed(const Duration(seconds: 2));
+          _botAnswerQuestion();
+        }
+        break;
+
+      case TurnPhase.cardWaiting:
+        // Bot ise kart çek (UI açılmadan)
+        if (state.currentPlayer?.type == PlayerType.bot) {
+          await Future.delayed(const Duration(seconds: 1));
+          if (state.currentCard != null) {
             applyCardEffect(state.currentCard!);
-            return;
+          } else {
+            // Should not happen if drawCard works, but fallback
+            endTurn();
           }
-          break;
-
-        case TurnPhase.cardApplied:
-          endTurn(); // Card applied -> End Turn
-          break;
-
-        case TurnPhase.questionWaiting:
-          if (state.currentPlayer?.type == PlayerType.bot) {
-            _botAnswerQuestion();
-          }
-          break;
-
-        case TurnPhase.questionResolved:
-        case TurnPhase.taxResolved:
-          endTurn();
-          break;
-
-        case TurnPhase.copyrightPurchased:
-          // Bot makes intelligent purchase decision
-          if (state.currentPlayer?.type == PlayerType.bot) {
-            _handleBotCopyrightDecision();
-          }
-          break;
-
-        case TurnPhase.turnEnded:
-          // Should be handled by startNextTurn via UI
-          break;
-      }
-    } finally {
-      _isProcessingTurn = false;
-    }
-  }
-
-  // --- FIXED _handleTileResolved METHOD ---
-  void _handleTileResolved() {
-    final tileNumber = state.newPosition ?? state.currentPlayer!.position;
-    final tile = state.tiles.firstWhere(
-      (t) => t.id == tileNumber,
-      orElse: () => state.tiles[0],
-    );
-
-    switch (tile.type) {
-      case TileType.chance:
-      case TileType.fate:
-        // If card is already drawn, DO NOT draw again (prevents loop)
-        if (state.currentCard != null) return;
-
-        drawCard(tile.type == TileType.chance ? CardType.sans : CardType.kader);
+        }
         break;
 
-      case TileType.book:
-      case TileType.publisher:
-        _showQuestion(tile);
+      case TurnPhase.questionResolved:
+        // Soru çözüldü, satın alma kararı veya tur sonu
+        if (state.currentPlayer?.type == PlayerType.bot) {
+          await Future.delayed(const Duration(seconds: 1));
+          _handleBotCopyrightDecision();
+        }
         break;
 
-      case TileType.tax:
-        _handleTaxTile(tile);
+      case TurnPhase.turnEnded:
+        // Tur bitti, sonraki tura geç
+        debugPrint('🎮 Auto-advance directive: nextTurn');
+        if (state.currentPlayer?.type == PlayerType.bot) {
+          await Future.delayed(const Duration(seconds: 1));
+          startNextTurn();
+        }
         break;
 
-      case TileType.corner:
-      case TileType.special:
-        endTurn();
+      default:
         break;
     }
   }
@@ -426,7 +429,15 @@ class GameNotifier extends StateNotifier<GameState> {
   // Roll dice - Step 1 of turn (REFACTORED)
   void rollDice() {
     debugPrint('🎲 rollDice() called');
-    if (!_requirePhase(TurnPhase.start, 'rollDice')) return;
+
+    if (state.isGameOver) return;
+
+    // Faz kontrolü: Start veya TurnEnded (yeni tur başı) fazlarına izin ver
+    if (state.turnPhase != TurnPhase.start &&
+        state.turnPhase != TurnPhase.turnEnded) {
+      debugPrint('⛔ rollDice engellendi: Yanlış faz (${state.turnPhase})');
+      return;
+    }
 
     // canRoll kontrolü
     if (!state.canRoll) {
@@ -563,6 +574,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
     state = newState;
     debugPrint('🚶 Phase updated to: moved');
+
+    // Döngüyü tetikle
+    playTurn();
   }
 
   // Calculate new position (counter-clockwise, 0-39)
@@ -613,173 +627,168 @@ class GameNotifier extends StateNotifier<GameState> {
     endTurn();
   }
 
-  // Resolve current tile - Step 3 of turn
-  void resolveCurrentTile() {
-    if (!_requirePhase(TurnPhase.moved, 'resolveCurrentTile')) return;
-    if (state.currentPlayer == null) return;
+  // Resolve tile effect (REFACTORED)
+  void resolveTile() {
+    debugPrint('🏁 resolveTile() called');
+    if (!_requirePhase(TurnPhase.moved, 'resolveTile')) return;
+    if (state.currentPlayer == null || state.newPosition == null) return;
 
-    final tileNumber = state.newPosition ?? state.currentPlayer!.position;
+    final currentPlayer = state.currentPlayer!;
+    final tileId = state.newPosition!;
+
+    // Tile bul
     final tile = state.tiles.firstWhere(
-      (t) => t.id == tileNumber,
-      orElse: () {
-        debugPrint('CRITICAL ERROR: Tile ID $tileNumber not found!');
-        return state.tiles[0]; // Fallback to Start
-      },
+      (t) => t.id == tileId,
+      orElse: () => state.tiles[0],
     );
 
-    // Update phase to tileResolved
-    state = state.copyWith(turnPhase: TurnPhase.tileResolved);
+    debugPrint('📍 Player landed on: ${tile.name} (${tile.type})');
 
-    // UI FEEDBACK LOG: Tile type information
-    String tileLog = 'Kutucuk: ${tile.name} (${tile.type})';
+    // --- DÜZELTME BURAYA GELECEK ---
+    // Fazı tileResolved olarak güncelle ki sonraki metodlar çalışabilsin
+    final manager = _stateManager;
+    manager.setTurnPhase(TurnPhase.tileResolved);
+    state = manager.state;
+    // -----------------------------
 
-    // Handle different tile types
+    // 2. Tile Tipine Göre İşlem
     switch (tile.type) {
       case TileType.corner:
+        // Köşe taşı etkileri
         _handleCornerTile(tile);
+        // Faz güncelle: Tur bitti veya devam ediyor
+        if (state.turnPhase != TurnPhase.turnEnded) {
+          manager.setTurnPhase(TurnPhase.turnEnded);
+          state = manager.state;
+          endTurn(); // Otomatik tur bitir
+        }
         break;
 
       case TileType.book:
-      case TileType.publisher:
-        // Check if tile is owned by another player
-        if (tile.owner != null && tile.owner != state.currentPlayer?.id) {
-          // Pay rent to owner
+      case TileType.publisher: // Yayınevleri de soru sorar (Eğer sahibi yoksa)
+        if (tile.owner == null || tile.owner == currentPlayer.id) {
+          // Sahibi yoksa veya kendisiyse -> Soru Sor
+          _showQuestion(tile);
+        } else {
+          // Başkasının -> Kira Öde
           payRent();
-          endTurn();
-          return;
+          // Kira ödendikten sonra tur biter
+          if (!state.currentPlayer!.isBankrupt) { // İflas etmediyse
+            manager.setTurnPhase(TurnPhase.turnEnded);
+            state = manager.state;
+            endTurn();
+          }
         }
-        // Show question for book/publisher tiles
-        _showQuestion(tile);
         break;
 
       case TileType.chance:
-        tileLog += ' - ŞANS kartı çekiliyor...';
-        state = state.withLogMessage(tileLog);
-        drawCard(CardType.sans);
-        break;
-
       case TileType.fate:
-        tileLog += ' - KADER kartı çekiliyor...';
-        state = state.withLogMessage(tileLog);
-        drawCard(CardType.kader);
+        // Kart çekme
+        // Draw card here, as UI might rely on state.currentCard
+        if (state.currentCard == null) {
+          drawCard(
+            tile.type == TileType.chance ? CardType.sans : CardType.kader,
+          );
+        }
         break;
 
       case TileType.tax:
-        tileLog += ' - Vergi: %${tile.taxRate}';
-        state = state.withLogMessage(tileLog);
         _handleTaxTile(tile);
+        // Vergi sonrası tur biter
+        if (!state.currentPlayer!.isBankrupt) {
+          manager.setTurnPhase(TurnPhase.turnEnded);
+          state = manager.state;
+          endTurn();
+        }
         break;
 
-      case TileType.special:
-        tileLog += ' - Özel kutucuk';
-        state = state.withLogMessage(tileLog);
-        break;
+      default:
+        // Bilinmeyen tip -> Turu bitir
+        debugPrint("⚠️ Bilinmeyen tile tipi: ${tile.type}");
+        manager.setTurnPhase(TurnPhase.turnEnded);
+        state = manager.state;
+        endTurn();
     }
   }
 
-  // Show question for book/publisher tiles
+  // Show question (REFACTORED)
   void _showQuestion(Tile tile) {
     if (!_requirePhase(TurnPhase.tileResolved, '_showQuestion')) return;
     if (state.currentPlayer == null) return;
+
     final currentPlayer = state.currentPlayer!;
+    final manager = _stateManager;
 
-    // Update phase to questionWaiting (dialog stays open until answered)
-    state = state.copyWith(turnPhase: TurnPhase.questionWaiting);
+    // Faz güncelle
+    manager.setTurnPhase(TurnPhase.questionWaiting);
 
-    // Get a random question from repository
+    // Kategori belirle
+    // Not: Repository kullanımı ilerde RulesEngine içine de taşınabilir ama şimdilik burada kalabilir
+    // Ancak soru SEÇİMİ (Random vs Easy) RulesEngine'e geçiyor.
     final category = tile.questionCategory ?? QuestionCategory.benKimim;
-    Question question = QuestionRepository.getRandomQuestion(category);
 
-    // If player has easyQuestionNext flag, consume it and get an easy question
-    if (currentPlayer.easyQuestionNext) {
-      question = _getEasyQuestion();
-      // Consume the flag immediately
-      final updatedPlayer = currentPlayer.copyWith(easyQuestionNext: false);
-      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-      state = state.copyWith(players: updatedPlayers);
+    // Soru havuzunu filtrele (Kategoriye göre)
+    // Not: Normalde repository'den çekeriz ama burada state'deki pool'u kullanıyoruz.
+    // Basitlik için tüm havuzu gönderiyoruz, RulesEngine içindeki selectQuestion metodunu güncelleyebiliriz
+    // veya şimdilik repository mantığını koruyup sadece easy/random seçimini devredebiliriz.
+
+    // Mevcut yapıyı koruyarak daha temiz hale getirelim:
+    List<Question> categoryPool = state.questionPool
+        .where((q) => q.category == category)
+        .toList();
+
+    // Eğer kategori boşsa genel havuzdan seç
+    if (categoryPool.isEmpty) categoryPool = state.questionPool;
+
+    // Easy mode kontrolü
+    bool isEasyMode = currentPlayer.easyQuestionNext;
+
+    // 1. KURAL MOTORU: Soruyu seç
+    final question = _rulesEngine.selectQuestion(categoryPool, easyMode: isEasyMode);
+
+    // Easy flag'ini tüket
+    if (isEasyMode) {
+      manager.updatePlayer(currentPlayer.copyWith(easyQuestionNext: false));
     }
 
-    // UI FEEDBACK LOG: Question being asked
-    state = state
-        .copyWith(
-          questionState: QuestionState.answering,
-          currentQuestion: question,
-          questionTimer: GameConstants.questionTimerDuration,
-        )
-        .withLogMessage('${tile.name} için soru soruluyor...');
+    // 2. LOGLAMA VE STATE
+    manager.setCurrentQuestion(question);
+
+    // Timer ve durum ayarla
+    // Not: Bu kısımlar GameStateManager'a eklenebilir ama şimdilik manuel copyWith yapıyoruz
+    state = manager.state.copyWith(
+      questionState: QuestionState.answering,
+      questionTimer: GameConstants.questionTimerDuration,
+    );
+
+    manager.addLogMessage('${tile.name} için soru soruluyor...');
+    state = manager.state;
   }
 
-  // Bot auto-answer question
+  // Bot auto-answer question (REFACTORED)
   void _botAnswerQuestion() {
     debugPrint('🤖 Bot answering question...');
-
     if (state.currentQuestion == null) return;
 
-    // Bot always answers with low probability
-    // Always wrong (70% incorrect = 30% correct)
-    const correctProbability =
-        0.30; // Always ~30% correct across all difficulties
-
-    final randomValue = _random.nextDouble();
-    final shouldAnswerCorrectly = randomValue < correctProbability;
+    // YENİ YAPI: Kararı BotAI versin
+    final shouldAnswerCorrectly = _botAI.shouldAnswerCorrectly(
+      state.currentQuestion!,
+    );
 
     if (shouldAnswerCorrectly) {
       answerQuestionCorrect();
-      debugPrint(
-        '🤖 Bot answered correctly (${(correctProbability * 100).toInt()}% chance)',
-      );
+      debugPrint('🤖 Bot answered correctly');
     } else {
       answerQuestionWrong();
-      debugPrint(
-        '🤖 Bot answered incorrectly (${(100 - correctProbability * 100).toInt()}% chance)',
-      );
+      debugPrint('🤖 Bot answered incorrectly');
     }
 
-    // Advance phase to questionResolved
-    state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+    // Advance phase
+    final manager = _stateManager;
+    manager.setTurnPhase(TurnPhase.questionResolved);
+    state = manager.state;
   }
 
-  // Get a random question from the pool
-  Question _getRandomQuestion() {
-    if (state.questionPool.isEmpty) {
-      return Question(
-        id: 'default',
-        category: QuestionCategory.benKimim,
-        difficulty: Difficulty.easy,
-        question: 'Soru havuzu boş!',
-        answer: 'Boş',
-      );
-    }
-
-    final randomIndex = _random.nextInt(state.questionPool.length);
-    return state.questionPool[randomIndex];
-  }
-
-  // Get an easy question from the pool
-  Question _getEasyQuestion() {
-    if (state.questionPool.isEmpty) {
-      return Question(
-        id: 'default',
-        category: QuestionCategory.benKimim,
-        difficulty: Difficulty.easy,
-        question: 'Soru havuzu boş!',
-        answer: 'Boş',
-      );
-    }
-
-    // Filter for easy questions
-    final easyQuestions = state.questionPool
-        .where((q) => q.difficulty == Difficulty.easy)
-        .toList();
-
-    if (easyQuestions.isEmpty) {
-      // If no easy questions, return any question
-      return _getRandomQuestion();
-    }
-
-    final randomIndex = _random.nextInt(easyQuestions.length);
-    return easyQuestions[randomIndex];
-  }
 
   // Draw a card from the appropriate deck
   void drawCard(CardType cardType) {
@@ -811,316 +820,51 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  // Apply card effect (called from CardDialog)
+  // Apply card effect (REFACTORED)
   void applyCardEffect(Card card) {
-    // ALL GUARD CHECKS MUST HAPPEN BEFORE SETTING THE LOCK
-
-    // Guard: If already applying a card effect, do not proceed
+    // GUARD CHECKS
     if (_isApplyingEffect) {
       debugPrint("🛑 Çakışma önlendi: applyCardEffect zaten çalışıyor.");
       return;
     }
-
-    // Guard: If current player is null, do not proceed
     if (state.currentPlayer == null) return;
 
-    // Guard: Must be in cardWaiting phase to apply card
     if (state.turnPhase != TurnPhase.cardWaiting) {
       debugPrint("🚫 Kart etkisi yanlış fazda tetiklendi: ${state.turnPhase}");
       return;
     }
 
-    // Guard: Card must belong to current player
     if (state.currentCardOwnerId != state.currentPlayer?.id) {
-      debugPrint(
-        "🚫 kart sahibi eşleşmiyor: ${state.currentCardOwnerId} vs ${state.currentPlayer?.id}",
-      );
+      debugPrint("🚫 kart sahibi eşleşmiyor.");
       return;
     }
 
-    // Guard: If card effect already applied (phase changed), do not proceed
-    if (state.turnPhase == TurnPhase.cardApplied) {
-      debugPrint("🚫 Kart etkisi zaten uygulandı, işlem iptal ediliyor.");
-      return;
-    }
-
-    // NOW SET THE LOCK - all guards have passed
+    // LOCK & EXECUTE
     _isApplyingEffect = true;
 
     try {
-      final currentPlayer = state.currentPlayer!;
-
-      // Log the event (Critical for Summary)
+      // Transkript Logu (Hala burada tutuyoruz çünkü UI event'i)
       _logEvent(
         TurnEventType.cardApplied,
         description: 'Kart Çekildi: ${card.description}',
         data: {'cardId': card.id, 'type': card.type.toString()},
       );
 
-      // Track effect type for centralized logging and bankruptcy checks
-      bool isPersonalEffect = false;
-      bool isGlobalOrTargetedEffect = false;
-      String logMessage = '';
+      // YENİ YAPI: İşi uzmana devret
+      final handler = _cardHandler;
+      handler.applyCardEffect(card, state.currentPlayer!);
 
-      switch (card.effect) {
-        // Personal effects (affect only current player)
-        case CardEffect.gainStars:
-          _applyGainStars(currentPlayer, card.starAmount ?? 0);
-          isPersonalEffect = true;
-          logMessage =
-              '${currentPlayer.name}: +${card.starAmount ?? 0} yıldız kazandı';
-          break;
+      // StateManager güncellemeleri yaptı, state'i senkronize et
+      state = handler.stateManager.state;
 
-        case CardEffect.loseStars:
-          _applyLoseStars(currentPlayer, card.starAmount ?? 0);
-          isPersonalEffect = true;
-          logMessage =
-              '${currentPlayer.name}: -${card.starAmount ?? 0} yıldız kaybetti';
-          break;
+      debugPrint("✅ Kart işlemi tamamlandı (Handler).");
 
-        case CardEffect.skipNextTax:
-          _applySkipNextTax(currentPlayer);
-          isPersonalEffect = true;
-          logMessage =
-              '${currentPlayer.name}: Bir sonraki vergi ödemesi atlanacak';
-          break;
-
-        case CardEffect.freeTurn:
-          _applyFreeTurn(currentPlayer);
-          isPersonalEffect = true;
-          logMessage = '${currentPlayer.name}: Ücretsiz tur hakkı kazandı';
-          break;
-
-        case CardEffect.easyQuestionNext:
-          _applyEasyQuestionNext(currentPlayer);
-          isPersonalEffect = true;
-          logMessage = '${currentPlayer.name}: Bir sonraki soru kolay olacak';
-          break;
-
-        // Global effects (affect all players)
-        case CardEffect.allPlayersGainStars:
-          _applyAllPlayersGainStars(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          logMessage = 'Tüm oyuncular: +${card.starAmount ?? 0} yıldız kazandı';
-          break;
-
-        case CardEffect.allPlayersLoseStars:
-          _applyAllPlayersLoseStars(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          logMessage =
-              'Tüm oyuncular: -${card.starAmount ?? 0} yıldız kaybetti';
-          break;
-
-        case CardEffect.taxWaiver:
-          _applyTaxWaiver();
-          isGlobalOrTargetedEffect = true;
-          logMessage = 'Tüm oyuncular: Bir sonraki vergi ödemesi atlanacak';
-          break;
-
-        case CardEffect.allPlayersEasyQuestion:
-          _applyAllPlayersEasyQuestion();
-          isGlobalOrTargetedEffect = true;
-          logMessage = 'Tüm oyuncular: Bir sonraki soru kolay olacak';
-          break;
-
-        // Targeted effects (affect specific players)
-        case CardEffect.publisherOwnersLose:
-          final affectedCount = _applyPublisherOwnersLose(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          logMessage =
-              'Yayınevi sahipleri ($affectedCount oyuncu): -${card.starAmount ?? 0} yıldız kaybetti';
-          break;
-
-        case CardEffect.richPlayerPays:
-          final richestId = _applyRichPlayerPays(card.starAmount ?? 0);
-          isGlobalOrTargetedEffect = true;
-          // Get richest player name for logging (before mutation)
-          final richestPlayer = state.players.firstWhere(
-            (p) => p.id == richestId,
-            orElse: () => state.players.first,
-          );
-          logMessage =
-              '${richestPlayer.name} (en zengin oyuncu): -${card.starAmount ?? 0} yıldız ödedi';
-          break;
-      }
-
-      // GAMEPLAY LOG: Card effect result
-      state = state.withLogMessage(logMessage);
-
-      // Centralized bankruptcy checks
-      if (isPersonalEffect) {
-        _checkBankruptcy();
-      } else if (isGlobalOrTargetedEffect) {
-        _checkAllPlayersBankruptcy();
-      }
     } catch (e) {
       debugPrint("Hata: $e");
     } finally {
-      // ATOMIC STATE UPDATE: Clear card and set phase in single operation
-      // NOTE: We pass null to currentCard and currentCardOwnerId.
-      // With the updated copyWith, this successfully clears them.
-      state = state.copyWith(
-        currentCard: null,
-        currentCardOwnerId: null,
-        turnPhase: TurnPhase.cardApplied,
-      );
+      // Handler zaten state'i temizledi ama flag'i burada kaldırıyoruz
       _isApplyingEffect = false;
-      debugPrint("✅ Kart işlemi tamamlandı ve kilit açıldı.");
     }
-  }
-
-  // Personal effects - ONLY modify state, no logging or bankruptcy checks
-  void _applyGainStars(Player player, int amount) {
-    final updatedPlayer = player.copyWith(stars: player.stars + amount);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyLoseStars(Player player, int amount) {
-    final newStars = (player.stars - amount).clamp(0, player.stars);
-    final updatedPlayer = player.copyWith(
-      stars: newStars,
-      isBankrupt: newStars <= 0,
-    );
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applySkipNextTax(Player player) {
-    final updatedPlayer = player.copyWith(skipNextTax: true);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyFreeTurn(Player player) {
-    final updatedPlayer = player.copyWith(skippedTurn: false);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyEasyQuestionNext(Player player) {
-    final updatedPlayer = player.copyWith(easyQuestionNext: true);
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  // Global effects - ONLY modify state, no logging or bankruptcy checks
-  void _applyAllPlayersGainStars(int amount) {
-    // 1. Mevcut listenin kopyasını al
-    List<Player> updatedPlayers = List.from(state.players);
-
-    // 2. Döngüyü kopyalanmış liste üzerinde kur
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      final player = updatedPlayers[i];
-      // 3. State'i değil, geçici listeyi güncelle
-      int currentStars = player.stars;
-      int newStars = currentStars + amount;
-      updatedPlayers[i] = player.copyWith(stars: newStars);
-    }
-
-    // 4. Döngü bitince TEK SEFERDE state güncelle
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyAllPlayersLoseStars(int amount) {
-    // 1. Mevcut listenin kopyasını al
-    List<Player> updatedPlayers = List.from(state.players);
-
-    // 2. Döngüyü kopyalanmış liste üzerinde kur
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      final player = updatedPlayers[i];
-      // 3. State'i değil, geçici listeyi güncelle
-      int currentStars = player.stars;
-      int newStars = (currentStars - amount).clamp(0, 9999);
-      updatedPlayers[i] = player.copyWith(stars: newStars);
-    }
-
-    // 4. Döngü bitince TEK SEFERDE state güncelle
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyTaxWaiver() {
-    List<Player> updatedPlayers = [];
-    for (final player in state.players) {
-      final updatedPlayer = player.copyWith(skipNextTax: true);
-      updatedPlayers.add(updatedPlayer);
-    }
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  void _applyAllPlayersEasyQuestion() {
-    List<Player> updatedPlayers = [];
-    for (final player in state.players) {
-      final updatedPlayer = player.copyWith(easyQuestionNext: true);
-      updatedPlayers.add(updatedPlayer);
-    }
-    state = state.copyWith(players: updatedPlayers);
-  }
-
-  // Targeted effects - ONLY modify state, return data for logging
-  int _applyPublisherOwnersLose(int amount) {
-    int count = 0;
-    // 1. İşlemi geçici liste üzerinde yap (State'e dokunma)
-    List<Player> updatedPlayers = List.from(state.players);
-
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      final player = updatedPlayers[i];
-      // Yayınevi kontrolü
-      bool hasPublisher = state.tiles.any(
-        (tile) => tile.owner == player.id && tile.type == TileType.publisher,
-      );
-
-      if (hasPublisher) {
-        int currentStars = player.stars;
-        int newStars = (currentStars - amount).clamp(0, 9999);
-        // Listeyi güncelle
-        updatedPlayers[i] = player.copyWith(stars: newStars);
-        count++;
-      }
-    }
-
-    // 2. Döngü bitince TEK SEFERDE State güncelle
-    if (count > 0) {
-      state = state.copyWith(players: updatedPlayers);
-    }
-    return count;
-  }
-
-  String _applyRichPlayerPays(int amount) {
-    if (state.players.isEmpty) return '';
-
-    // Find the richest player (highest star count) BEFORE any mutation
-    Player richestPlayer = state.players.first;
-    for (final player in state.players) {
-      if (player.stars > richestPlayer.stars) {
-        richestPlayer = player;
-      }
-    }
-
-    // Store the ID before mutation
-    final richestId = richestPlayer.id;
-
-    // Apply the star loss
-    final newStars = (richestPlayer.stars - amount).clamp(
-      0,
-      richestPlayer.stars,
-    );
-    final updatedPlayer = richestPlayer.copyWith(
-      stars: newStars,
-      isBankrupt: newStars <= 0,
-    );
-
-    // Update players list in batch
-    List<Player> updatedPlayers = List.from(state.players);
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      if (updatedPlayers[i].id == richestId) {
-        updatedPlayers[i] = updatedPlayer;
-        break;
-      }
-    }
-
-    state = state.copyWith(players: updatedPlayers);
-    return richestId;
   }
 
   // Auto-advance directive for bot and human turns
@@ -1240,94 +984,79 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  // Bot copyright purchase decision
+  // Bot copyright purchase decision (REFACTORED)
   void _handleBotCopyrightDecision() {
     debugPrint('🤖 Bot making copyright purchase decision...');
 
-    if (state.currentPlayer == null) return;
-    if (state.newPosition == null) return;
+    if (state.currentPlayer == null || state.newPosition == null) return;
 
     final currentPlayer = state.currentPlayer!;
     final tileId = state.newPosition!;
+
+    // Tile bul
     final tile = state.tiles.firstWhere(
       (t) => t.id == tileId,
       orElse: () => state.tiles[0],
     );
 
-    // Check if tile can be owned
-    if (!tile.canBeOwned) {
-      debugPrint('🤖 Bot skipping - tile cannot be owned');
-      // Set phase to questionResolved before calling endTurn
-      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+    final manager = _stateManager;
+
+    // Temel kontroller
+    if (!tile.canBeOwned || tile.owner != null) {
+      debugPrint('🤖 Bot skipping - not purchasable');
+      manager.setTurnPhase(TurnPhase.questionResolved);
+      state = manager.state;
       endTurn();
       return;
     }
 
-    // Check if tile is already owned
-    if (tile.owner != null) {
-      debugPrint('🤖 Bot skipping - tile already owned');
-      // Set phase to questionResolved before calling endTurn
-      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
-      endTurn();
-      return;
-    }
-
-    final price = tile.purchasePrice ?? 0;
-    final rentIncome = tile.copyrightFee ?? 0;
-
-    // Bot intelligence: Smart purchase decision
-    // 1. Can afford (has at least 1.5x the price to stay safe)
-    // 2. Good ROI (rent income is at least 10% of purchase price)
-    // 3. Keep reserve (don't spend if it leaves less than 50 stars)
-    final canAfford = currentPlayer.stars >= (price * 1.5).toInt();
-    final goodROI = rentIncome >= (price * 0.1).toInt();
-    final keepsReserve = (currentPlayer.stars - price) >= 50;
-
-    final shouldPurchase = canAfford && goodROI && keepsReserve;
+    // YENİ YAPI: Kararı BotAI versin
+    final shouldPurchase = _botAI.shouldPurchaseCopyright(tile, currentPlayer);
 
     if (shouldPurchase) {
-      debugPrint(
-        '🤖 Bot purchasing ${tile.name} for $price stars (ROI: ${((rentIncome / price) * 100).toStringAsFixed(1)}%)',
-      );
+      final price = tile.purchasePrice ?? 0;
 
-      // Perform the purchase transaction
+      // Satın alma işlemini yap
       final updatedPlayer = currentPlayer.copyWith(
         stars: currentPlayer.stars - price,
         ownedTiles: [...currentPlayer.ownedTiles, tileId],
       );
-      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+      manager.updatePlayer(updatedPlayer);
 
-      // Update tile owner
+      // Tile sahibini güncelle
       final updatedTile = tile.copyWith(owner: currentPlayer.id);
-      final updatedTiles = _updateTileInList(state.tiles, updatedTile);
+      // Not: updateTile metodunu StateManager'a eklemediysek,
+      // tiles listesini manuel güncelleyip state'e verelim.
+      // GameStateManager içinde updateTile yoksa şu anlık manuel yapalım:
+      final updatedTiles = state.tiles
+          .map((t) => t.id == tile.id ? updatedTile : t)
+          .toList();
 
-      // CRITICAL: Set phase to questionResolved (valid for endTurn)
-      state = state.copyWith(
-        turnPhase: TurnPhase.questionResolved,
-        players: updatedPlayers,
-        tiles: updatedTiles,
-      );
+      // State güncelle (Tiles değişikliğini StateManager'a bildir)
+      // GameStateManager şimdilik sadece oyuncu odaklı, bu yüzden manuel senkronizasyon yapıyoruz.
+      // Önce manager'ın kendi state'ini güncelleyelim ki sonraki işlemler eski state'i kullanmasın.
+      manager.updateState(manager.state.copyWith(tiles: updatedTiles));
 
-      // GAMEPLAY LOG: Copyright purchase
-      state = state.withLogMessage(
+      // Loglama
+      manager.addLogMessage(
         '${currentPlayer.name} ${tile.name} telifini satın aldı! -$price yıldız',
       );
 
-      // Log event to transcript
       _logEvent(
         TurnEventType.copyrightPurchased,
         description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
         data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
       );
 
-      // After purchase, end turn
+      // Faz güncelle ve turu bitir
+      manager.setTurnPhase(TurnPhase.questionResolved);
+      state = manager.state;
       endTurn();
+
     } else {
-      debugPrint(
-        '🤖 Bot declining purchase (affordable: $canAfford, ROI: $goodROI, reserve: $keepsReserve)',
-      );
-      // Set phase to questionResolved before calling endTurn
-      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+      debugPrint('🤖 Bot declining purchase');
+      manager.setTurnPhase(TurnPhase.questionResolved);
+      state = manager.state;
       endTurn();
     }
   }
