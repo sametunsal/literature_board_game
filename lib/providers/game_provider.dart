@@ -307,25 +307,6 @@ class GameNotifier extends StateNotifier<GameState> {
   /// ============================================================================
   /// TURN ORCHESTRATION - Phase 2: Single Entry Point
   /// ============================================================================
-  ///
-  /// playTurn() is the ONLY method UI should call to advance the game.
-  /// It deterministically runs the next step based on currentTurnPhase.
-  ///
-  /// Phase progression:
-  /// - start → diceRolled → moved → tileResolved → (cardApplied | questionResolved | taxResolved) → turnEnded
-  ///
-  /// Each call to playTurn() advances exactly one phase.
-  /// No gameplay rules are changed - this is pure orchestration.
-  ///
-  /// UI flow:
-  /// 1. UI calls playTurn()
-  /// 2. playTurn() switches on currentTurnPhase
-  /// 3. Calls the appropriate method (rollDice, moveCurrentPlayer, etc.)
-  /// 4. That method advances the phase
-  /// 5. UI reads updated state and calls playTurn() again
-  /// 6. Repeat until turnEnded, then playTurn() resets to start for next player
-
-  // --- FIXED playTurn METHOD ---
   void playTurn() {
     debugPrint('🎮 playTurn() called - Current phase: ${state.turnPhase}');
 
@@ -377,17 +358,10 @@ class GameNotifier extends StateNotifier<GameState> {
           if (state.currentPlayer?.type == PlayerType.bot) {
             _handleBotCopyrightDecision();
           }
-          // CRITICAL FIX: Do NOT call endTurn() for human players here!
-          // Human player decision is handled by UI dialog, which will call
-          // completeCopyrightPurchase() or declineCopyrightPurchase() first,
-          // then playTurn() to continue. This matches the CardDialog pattern.
           break;
 
         case TurnPhase.turnEnded:
           // Should be handled by startNextTurn via UI
-          // CRITICAL FIX: Do NOT call playTurn() here! TurnSummaryOverlay
-          // will call startNextTurn() which advances to next player.
-          // This prevents infinite loop where playTurn() keeps calling itself.
           break;
       }
     } finally {
@@ -410,9 +384,6 @@ class GameNotifier extends StateNotifier<GameState> {
         if (state.currentCard != null) return;
 
         drawCard(tile.type == TileType.chance ? CardType.sans : CardType.kader);
-        // Flow stops here.
-        // Human: Waits for Dialog "Uygula" button.
-        // Bot: playTurn() loop will catch it in next tick and call applyCardEffect.
         break;
 
       case TileType.book:
@@ -479,8 +450,13 @@ class GameNotifier extends StateNotifier<GameState> {
           : 0,
     );
 
-    // Update players list with updated player
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+    // FIX: Update active player by Index to be safe
+    // This ensures state update even if IDs are mismatched
+    final updatedPlayers = List<Player>.from(state.players);
+    if (state.currentPlayerIndex >= 0 &&
+        state.currentPlayerIndex < updatedPlayers.length) {
+      updatedPlayers[state.currentPlayerIndex] = updatedPlayer;
+    }
 
     // Log dice roll event to transcript
     _logEvent(
@@ -533,7 +509,6 @@ class GameNotifier extends StateNotifier<GameState> {
     final oldPosition = currentPlayer.position;
 
     // Counter-clockwise movement: position increases
-    // Board is 1-40, moving counter-clockwise means increasing position
     final newPosition = _calculateNewPosition(oldPosition, diceTotal);
 
     // Check if passed START (tile 1)
@@ -553,8 +528,13 @@ class GameNotifier extends StateNotifier<GameState> {
       );
     }
 
-    // Update players list
-    final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+    // FIX: Update active player by Index to be safe
+    // This ensures state update even if IDs are mismatched
+    final updatedPlayers = List<Player>.from(state.players);
+    if (state.currentPlayerIndex >= 0 &&
+        state.currentPlayerIndex < updatedPlayers.length) {
+      updatedPlayers[state.currentPlayerIndex] = updatedPlayer;
+    }
 
     // GAMEPLAY LOG: Player movement
     state = state
@@ -701,7 +681,6 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(turnPhase: TurnPhase.questionWaiting);
 
     // Get a random question from repository
-    // Default to benKimim if no category is assigned
     final category = tile.questionCategory ?? QuestionCategory.benKimim;
     Question question = QuestionRepository.getRandomQuestion(category);
 
@@ -968,7 +947,7 @@ class GameNotifier extends StateNotifier<GameState> {
       } else if (isGlobalOrTargetedEffect) {
         _checkAllPlayersBankruptcy();
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint("Hata: $e");
     } finally {
       // ATOMIC STATE UPDATE: Clear card and set phase in single operation
@@ -1181,13 +1160,6 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Complete copyright purchase for human players
-  ///
-  /// This method is called by the UI (CopyrightPurchaseDialog) when the player
-  /// confirms the purchase. It performs the actual purchase transaction and
-  /// transitions the phase to questionResolved, which is accepted by endTurn().
-  ///
-  /// Flow: UI confirms → completeCopyrightPurchase() → playTurn() → endTurn()
-  /// This matches the pattern used in CardDialog._applyCard()
   void completeCopyrightPurchase() {
     if (state.currentPlayer == null) return;
     if (state.newPosition == null) return;
@@ -1249,12 +1221,6 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Decline copyright purchase for human players
-  ///
-  /// This method is called by the UI (CopyrightPurchaseDialog) when the player
-  /// chooses to skip the purchase. It transitions the phase to questionResolved,
-  /// which is accepted by endTurn().
-  ///
-  /// Flow: UI skips → declineCopyrightPurchase() → playTurn() → endTurn()
   void declineCopyrightPurchase() {
     if (state.currentPlayer == null) return;
 

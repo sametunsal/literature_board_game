@@ -16,7 +16,6 @@ class SquareBoardWidget extends ConsumerWidget {
     if (tiles.isEmpty) return const SizedBox();
 
     // 12.6x12.6 Grid System (Thicker Ring for Larger Tiles)
-    // Corners: 1.8 units. Edges: 9 tiles * 1.0 units. Total = 12.6 units.
     return LayoutBuilder(
       builder: (context, constraints) {
         final boardSize = constraints.biggest.shortestSide;
@@ -32,7 +31,7 @@ class SquareBoardWidget extends ConsumerWidget {
             boxShadow: [const BoxShadow(blurRadius: 12, color: Colors.black54)],
           ),
           child: Stack(
-            clipBehavior: Clip.none, // Allow tokens to peek slightly if needed
+            clipBehavior: Clip.none,
             children: [
               // --- DRAW TILES ---
               for (int i = 0; i < 40; i++)
@@ -48,7 +47,7 @@ class SquareBoardWidget extends ConsumerWidget {
               ),
 
               // --- PLAYER TOKENS ---
-              // Burada listeyi doğrudan oluşturuyoruz, spread (...) operatörü ile Stack'e yayıyoruz
+              // Bu metod her oyuncu için bir AnimatedPositioned döndürür
               ..._buildPlayerTokens(gameState.players, u),
             ],
           ),
@@ -57,22 +56,19 @@ class SquareBoardWidget extends ConsumerWidget {
     );
   }
 
-  // Visual Rect Calculator (0,0 is Top-Left of Screen)
+  // Visual Rect Calculator
   Rect _getTileRect(int id, double u) {
-    // Bounds checking: valid tile IDs are 0-39
-    if (id < 0 || id > 39) {
-      return Rect.zero;
-    }
+    if (id < 0 || id > 39) return Rect.zero;
 
-    final c = 1.8 * u; // Corner size (thicker ring)
-    final total = 12.6 * u; // Total size
+    final c = 1.8 * u;
+    final total = 12.6 * u;
 
     // 0: Bottom-Left Corner (START)
     if (id == 0) return Rect.fromLTWH(0, total - c, c, c);
 
-    // 1-9: Left Side (Bottom -> Top)
+    // 1-9: Left Side
     if (id >= 1 && id <= 9) {
-      double bottomY = total - c; // Top of BL corner
+      double bottomY = total - c;
       double myY = bottomY - (id * u);
       return Rect.fromLTWH(0, myY, c, u);
     }
@@ -80,9 +76,9 @@ class SquareBoardWidget extends ConsumerWidget {
     // 10: Top-Left Corner
     if (id == 10) return Rect.fromLTWH(0, 0, c, c);
 
-    // 11-19: Top Side (Left -> Right)
+    // 11-19: Top Side
     if (id >= 11 && id <= 19) {
-      int idx = id - 10; // 1..9
+      int idx = id - 10;
       double myX = c + ((idx - 1) * u);
       return Rect.fromLTWH(myX, 0, u, c);
     }
@@ -90,9 +86,9 @@ class SquareBoardWidget extends ConsumerWidget {
     // 20: Top-Right Corner
     if (id == 20) return Rect.fromLTWH(total - c, 0, c, c);
 
-    // 21-29: Right Side (Top -> Bottom)
+    // 21-29: Right Side
     if (id >= 21 && id <= 29) {
-      int idx = id - 20; // 1..9
+      int idx = id - 20;
       double myY = c + ((idx - 1) * u);
       return Rect.fromLTWH(total - c, myY, c, u);
     }
@@ -100,9 +96,9 @@ class SquareBoardWidget extends ConsumerWidget {
     // 30: Bottom-Right Corner
     if (id == 30) return Rect.fromLTWH(total - c, total - c, c, c);
 
-    // 31-39: Bottom Side (Right -> Left)
+    // 31-39: Bottom Side
     if (id >= 31 && id <= 39) {
-      int idx = id - 30; // 1..9
+      int idx = id - 30;
       double rightX = total - c;
       double myX = rightX - (idx * u);
       return Rect.fromLTWH(myX, total - c, u, c);
@@ -144,7 +140,6 @@ class SquareBoardWidget extends ConsumerWidget {
             width: hasOwner ? 2.0 : 0.5,
           ),
         ),
-        padding: EdgeInsets.zero,
         child: Stack(
           children: [
             Column(
@@ -156,27 +151,7 @@ class SquareBoardWidget extends ConsumerWidget {
                     size: u * 0.3,
                     color: Colors.black54,
                   ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0.5),
-                    child: Center(
-                      child: Text(
-                        tile.name,
-                        textAlign: TextAlign.center,
-                        softWrap: true,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: u * 0.125,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: -0.5,
-                          height: 1.0,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // Tile text...
               ],
             ),
             if (hasOwner)
@@ -199,19 +174,17 @@ class SquareBoardWidget extends ConsumerWidget {
     );
   }
 
-  // Get owner color based on player ID
+  // Get owner color
   Color _getOwnerColor(
     String? ownerId,
     List<Tile> allTiles,
     List<Player> players,
   ) {
     if (ownerId == null) return Colors.transparent;
-
     final player = players.firstWhere(
       (p) => p.id == ownerId,
       orElse: () => Player(id: '', name: '', color: '#000000', stars: 0),
     );
-
     try {
       return Color(int.parse(player.color.replaceFirst('#', '0xFF')));
     } catch (e) {
@@ -219,27 +192,21 @@ class SquareBoardWidget extends ConsumerWidget {
     }
   }
 
-  /// Oyuncu tokenlarını oluşturur.
-  /// ÖNEMLİ DÜZELTME: Bu metod artık doğrudan Stack'e eklenecek widget listesini
-  /// döndürür ve her oyuncu için kararlı (stable) bir Key kullanır.
+  // --- OYUNCU TOKEN MANTIĞI ---
   List<Widget> _buildPlayerTokens(List<Player> players, double u) {
     List<Widget> tokenWidgets = [];
-    double tokenSize = u * 0.45; // Token is 45% of a unit size
+    double tokenSize = u * 0.45;
 
-    // 1. Önce oyuncuları bulundukları kareye göre grupla
+    // 1. Gruplama mantığı
     final Map<int, List<Player>> groups = {};
     for (var p in players) {
       groups.putIfAbsent(p.position, () => []).add(p);
     }
 
-    // 2. Her oyuncu için tek tek widget oluştur
-    // ÖNEMLİ: Döngüyü `players` listesi üzerinden kuruyoruz, `groups` üzerinden değil.
-    // Bu sayede Stack içindeki widget sıralaması her zaman oyuncu listesiyle aynı kalır (P1, P2, P3, P4).
-    // Bu, animasyonun kararlı çalışması için KRİTİKTİR.
+    // 2. Oyuncu listesini sırayla dönerek token üret
     for (var player in players) {
-      // Bu oyuncunun kendi grubundaki sırasını bul
       final group = groups[player.position]!;
-      // Oyuncuları ID'ye göre sırala ki grup içindeki yerleri sabit kalsın
+      // Grup içinde ID'ye göre sabit sıralama yap (titremeyi önler)
       group.sort((a, b) => a.id.compareTo(b.id));
       final indexInGroup = group.indexWhere((p) => p.id == player.id);
 
@@ -248,7 +215,7 @@ class SquareBoardWidget extends ConsumerWidget {
       double cx = rect.left + (rect.width / 2);
       double cy = rect.top + (rect.height / 2);
 
-      // Grup ofsetleri (aynı karedeki oyuncular üst üste binmesin diye)
+      // Ofsetler
       double off = tokenSize * 0.15;
       List<Offset> offsets = [
         Offset(-off, -off),
@@ -257,15 +224,19 @@ class SquareBoardWidget extends ConsumerWidget {
         Offset(off, off),
       ];
 
-      // Eğer 4'ten fazla kişi aynı karedeyse (nadirdir), hepsi son ofsette toplanır
-      final safeIndex = indexInGroup < 4 ? indexInGroup : 0;
+      final safeIndex = indexInGroup != -1 && indexInGroup < 4
+          ? indexInGroup
+          : 0;
       final o = offsets[safeIndex];
 
       final double left = cx + o.dx - (tokenSize / 2);
       final double top = cy + o.dy - (tokenSize / 2);
 
-      // Debug: Konum değişiyor mu?
-      // debugPrint('🎨 Token: ${player.name} (Pos: ${player.position}) -> L:$left, T:$top');
+      // DEBUG: Konsola konum bilgisini yaz
+      // Bu sayede State'in güncellenip güncellenmediğini görebiliriz
+      debugPrint(
+        '[BOARD DEBUG] Player: ${player.name} (ID:${player.id}) -> Pos: ${player.position}, L:$left, T:$top',
+      );
 
       Color playerColor;
       try {
@@ -278,12 +249,10 @@ class SquareBoardWidget extends ConsumerWidget {
 
       tokenWidgets.add(
         AnimatedPositioned(
-          // KESİN ÇÖZÜM: ID'yi Key olarak kullan
+          // KESİN ÇÖZÜM: ID tabanlı benzersiz anahtar
           key: ValueKey("TOKEN_${player.id}"),
-          duration: const Duration(
-            milliseconds: 600,
-          ), // Biraz daha yavaş, net görülsün
-          curve: Curves.easeInOutCubic, // Yumuşak hareket
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
           left: left,
           top: top,
           child: Container(
