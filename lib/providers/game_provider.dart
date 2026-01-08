@@ -646,6 +646,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // 2. Tile Tipine Göre İşlem
     final manager = _stateManager;
+
+    // CRITICAL FIX: Transition to tileResolved phase BEFORE processing
+    // This allows methods like _showQuestion and _handleTaxTile to pass their guards
+    manager.setTurnPhase(TurnPhase.tileResolved);
+    state = manager.state; // Sync state immediately
+    debugPrint('🏁 Phase updated to: tileResolved');
+
     switch (tile.type) {
       case TileType.corner:
         // Köşe taşı etkileri
