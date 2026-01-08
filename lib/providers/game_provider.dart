@@ -649,9 +649,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // CRITICAL FIX: Transition to tileResolved phase BEFORE processing
     // This allows methods like _showQuestion and _handleTaxTile to pass their guards
-    manager.setTurnPhase(TurnPhase.tileResolved);
-    state = manager.state; // Sync state immediately
-    debugPrint('🏁 Phase updated to: tileResolved');
+    // Direct state update to ensure atomic phase change
+    state = state.copyWith(turnPhase: TurnPhase.tileResolved);
+    // Sync manager with new state
+    manager.updateState(state);
+
+    debugPrint('🏁 Phase updated to: ${state.turnPhase} (Manual Override)');
 
     switch (tile.type) {
       case TileType.corner:
