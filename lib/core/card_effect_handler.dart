@@ -1,6 +1,7 @@
 import '../models/player.dart';
 import '../models/card.dart';
 import '../models/turn_phase.dart';
+import '../models/tile.dart';
 import '../constants/game_constants.dart';
 import 'game_state_manager.dart';
 import 'game_rules_engine.dart';
@@ -10,10 +11,7 @@ class CardEffectHandler {
   final GameStateManager stateManager;
   final GameRulesEngine rulesEngine;
 
-  CardEffectHandler({
-    required this.stateManager,
-    required this.rulesEngine,
-  });
+  CardEffectHandler({required this.stateManager, required this.rulesEngine});
 
   /// Ana giriş noktası: Kart efektini uygula
   void applyCardEffect(Card card, Player currentPlayer) {
@@ -27,19 +25,22 @@ class CardEffectHandler {
         case CardEffect.gainStars:
           _applyGainStars(currentPlayer, card.starAmount ?? 0);
           isPersonal = true;
-          logMessage = '${currentPlayer.name}: +${card.starAmount ?? 0} yıldız kazandı';
+          logMessage =
+              '${currentPlayer.name}: +${card.starAmount ?? 0} yıldız kazandı';
           break;
 
         case CardEffect.loseStars:
           _applyLoseStars(currentPlayer, card.starAmount ?? 0);
           isPersonal = true;
-          logMessage = '${currentPlayer.name}: -${card.starAmount ?? 0} yıldız kaybetti';
+          logMessage =
+              '${currentPlayer.name}: -${card.starAmount ?? 0} yıldız kaybetti';
           break;
 
         case CardEffect.skipNextTax:
           _applySkipNextTax(currentPlayer);
           isPersonal = true;
-          logMessage = '${currentPlayer.name}: Bir sonraki vergi ödemesi atlanacak';
+          logMessage =
+              '${currentPlayer.name}: Bir sonraki vergi ödemesi atlanacak';
           break;
 
         case CardEffect.freeTurn:
@@ -64,7 +65,8 @@ class CardEffectHandler {
         case CardEffect.allPlayersLoseStars:
           _applyAllPlayersLoseStars(card.starAmount ?? 0);
           isGlobal = true;
-          logMessage = 'Tüm oyuncular: -${card.starAmount ?? 0} yıldız kaybetti';
+          logMessage =
+              'Tüm oyuncular: -${card.starAmount ?? 0} yıldız kaybetti';
           break;
 
         case CardEffect.taxWaiver:
@@ -83,13 +85,15 @@ class CardEffectHandler {
         case CardEffect.publisherOwnersLose:
           final count = _applyPublisherOwnersLose(card.starAmount ?? 0);
           isGlobal = true;
-          logMessage = 'Yayınevi sahipleri ($count oyuncu): -${card.starAmount ?? 0} yıldız kaybetti';
+          logMessage =
+              'Yayınevi sahipleri ($count oyuncu): -${card.starAmount ?? 0} yıldız kaybetti';
           break;
 
         case CardEffect.richPlayerPays:
           final name = _applyRichPlayerPays(card.starAmount ?? 0);
           isGlobal = true;
-          logMessage = '$name (en zengin): -${card.starAmount ?? 0} yıldız ödedi';
+          logMessage =
+              '$name (en zengin): -${card.starAmount ?? 0} yıldız ödedi';
           break;
       }
 
@@ -102,7 +106,6 @@ class CardEffectHandler {
       } else if (isGlobal) {
         _checkAllPlayersBankruptcy();
       }
-
     } catch (e) {
       stateManager.addLogMessage("Kart hatası: $e");
     } finally {
@@ -168,7 +171,9 @@ class CardEffectHandler {
     final tiles = stateManager.state.tiles;
 
     for (var p in stateManager.state.players) {
-      bool hasPublisher = tiles.any((t) => t.owner == p.id && t.type == TileType.publisher);
+      bool hasPublisher = tiles.any(
+        (t) => t.owner == p.id && t.type == TileType.publisher,
+      );
       if (hasPublisher) {
         final newStars = (p.stars - amount).clamp(0, 9999);
         stateManager.updatePlayer(p.copyWith(stars: newStars));
@@ -182,8 +187,8 @@ class CardEffectHandler {
     if (stateManager.state.players.isEmpty) return '';
 
     // En zengini bul
-    final richest = stateManager.state.players.reduce((curr, next) =>
-      curr.stars > next.stars ? curr : next
+    final richest = stateManager.state.players.reduce(
+      (curr, next) => curr.stars > next.stars ? curr : next,
     );
 
     final newStars = (richest.stars - amount).clamp(0, richest.stars);
@@ -203,7 +208,8 @@ class CardEffectHandler {
 
   void _checkAllPlayersBankruptcy() {
     for (var p in stateManager.state.players) {
-      if (!p.isBankrupt && rulesEngine.isBankrupt(p, GameConstants.bankruptcyThreshold)) {
+      if (!p.isBankrupt &&
+          rulesEngine.isBankrupt(p, GameConstants.bankruptcyThreshold)) {
         stateManager.updatePlayer(p.copyWith(isBankrupt: true));
         stateManager.addLogMessage('${p.name} İFLAS OLDU!');
       }
