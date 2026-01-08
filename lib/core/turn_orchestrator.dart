@@ -72,15 +72,19 @@ class TurnOrchestrator {
         break;
 
       case TurnPhase.diceRolled:
-        // Zar atıldı, hareket bekleniyor (Otomatik)
-        debugPrint('🎲 Dice rolled. Waiting for animation before moving...');
+        debugPrint('🎲 Dice rolled. Waiting for animation...');
         await Future.delayed(
-          const Duration(seconds: 1),
-        ); // Wait for user to see dice
+          const Duration(milliseconds: 1500),
+        ); // Allow UI to show dice
         // Get the last dice roll total from state manager
         final lastRoll = stateManager.state.lastDiceRoll;
-        if (lastRoll != null) {
-          onMovePlayer(lastRoll.total); // <--- Trigger the move!
+        if (onMovePlayer != null) {
+          debugPrint('🚀 Triggering onMovePlayer callback...');
+          if (lastRoll != null) {
+            onMovePlayer!(lastRoll.total); // EXECUTE THE CALLBACK
+          }
+        } else {
+          debugPrint('❌ CRITICAL ERROR: onMovePlayer callback is null!');
         }
         break;
 
