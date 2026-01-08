@@ -1,3 +1,4 @@
+import 'dart:math'; // min fonksiyonu için gerekli
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -15,18 +16,25 @@ class SquareBoardWidget extends ConsumerWidget {
 
     if (tiles.isEmpty) return const SizedBox();
 
-    // 12.6x12.6 Grid System (Thicker Ring for Larger Tiles)
+    // 12.6x12.6 Grid System
     return LayoutBuilder(
       builder: (context, constraints) {
         final boardSize = constraints.biggest.shortestSide;
-        final u = boardSize / 12.6; // Unit size
+
+        // Çerçeve (Border) Hesaplaması
+        final borderWidth = 4.0;
+        final innerSize = boardSize - (borderWidth * 2);
+        final u = innerSize / 12.6; // Unit size
 
         return Container(
           width: boardSize,
           height: boardSize,
           decoration: BoxDecoration(
             color: const Color(0xFFD7CCC8),
-            border: Border.all(color: const Color(0xFF5D4037), width: 4),
+            border: Border.all(
+              color: const Color(0xFF5D4037),
+              width: borderWidth,
+            ),
             borderRadius: BorderRadius.circular(8),
             boxShadow: [const BoxShadow(blurRadius: 12, color: Colors.black54)],
           ),
@@ -43,11 +51,10 @@ class SquareBoardWidget extends ConsumerWidget {
                 top: 1.8 * u,
                 width: 9 * u,
                 height: 9 * u,
-                child: const CenterArea(),
+                child: CenterArea(u: u),
               ),
 
               // --- PLAYER TOKENS ---
-              // Bu metod her oyuncu için bir AnimatedPositioned döndürür
               ..._buildPlayerTokens(gameState.players, u),
             ],
           ),
@@ -107,6 +114,51 @@ class SquareBoardWidget extends ConsumerWidget {
     return Rect.zero;
   }
 
+  /// METİN BOYUTU HESAPLAYICI (GÜNCELLENDİ)
+  /// Hem toplam karakter sayısına hem de EN UZUN KELİMEYE bakar.
+  /// Böylece "Kuyucaklı" gibi uzun kelimeler bölünmez.
+  double _calculateFontSize(String text, double u) {
+    // 1. En uzun kelimeyi bul
+    List<String> words = text.split(' ');
+    int maxWordLength = 0;
+    for (var word in words) {
+      if (word.length > maxWordLength) {
+        maxWordLength = word.length;
+      }
+    }
+
+    // Eğer metin tek bir uzun kelimeden oluşmuyorsa (ör: "Kürk Mantolu Madonna")
+    // en uzun kelime "Madonna" (7 harf) olur.
+
+    // MATEMATİKSEL HESAP:
+    // Poppins fontunun ortalama karakter genişliği 0.6 * fontSize civarındadır.
+    // Kutucuk genişliği padding düşünce yaklaşık 0.9 * u.
+    // Denklem: (maxWordLength * 0.6 * fontSize) <= 0.9 * u
+    // fontSize <= (1.5 * u) / maxWordLength
+
+    // Biraz daha güvenli olsun diye 1.4 katsayısını kullanıyoruz:
+    double wordBasedMaxSize =
+        (1.4 * u) / (maxWordLength > 0 ? maxWordLength : 1);
+
+    // Tavan değer: 0.19u'dan büyük olmasın
+    wordBasedMaxSize = wordBasedMaxSize.clamp(0.08 * u, 0.19 * u);
+
+    // 2. Toplam uzunluk kontrolü (Eski mantık, genel yoğunluk için)
+    double lengthBasedSize = u * 0.18;
+    int len = text.length;
+    if (len > 40)
+      lengthBasedSize = u * 0.11;
+    else if (len > 30)
+      lengthBasedSize = u * 0.12;
+    else if (len > 20)
+      lengthBasedSize = u * 0.14;
+    else if (len > 12)
+      lengthBasedSize = u * 0.16;
+
+    // İki kriterden hangisi daha küçük (daha kısıtlayıcı) ise onu seç
+    return min(wordBasedMaxSize, lengthBasedSize);
+  }
+
   Widget _buildPositionedTile(
     List<Tile> allTiles,
     List<Player> players,
@@ -127,6 +179,9 @@ class SquareBoardWidget extends ConsumerWidget {
     final isCorner = id % 10 == 0;
     final hasOwner = tile.owner != null;
 
+    // AKILLI FONT HESAPLAMA
+    final fontSize = _calculateFontSize(tile.name, u);
+
     return Positioned(
       left: rect.left,
       top: rect.top,
@@ -140,6 +195,7 @@ class SquareBoardWidget extends ConsumerWidget {
             width: hasOwner ? 2.0 : 0.5,
           ),
         ),
+        padding: EdgeInsets.symmetric(horizontal: u * 0.05),
         child: Stack(
           children: [
             Column(
@@ -148,19 +204,37 @@ class SquareBoardWidget extends ConsumerWidget {
                 if (isCorner)
                   Icon(
                     _getIconForCorner(id),
-                    size: u * 0.3,
+                    size: u * 0.4,
                     color: Colors.black54,
                   ),
-                // Tile text...
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      tile.name,
+                      textAlign: TextAlign.center,
+                      // Satır sayısını maksimize et
+                      maxLines: isCorner ? 2 : 4,
+                      // Kelime bütünlüğü için ellipsis kullan, ama wrap normal davranır
+                      overflow: TextOverflow.visible,
+                      style: GoogleFonts.poppins(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                        height: 1.05, // Satırları hafif açtık, okunaklılık için
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             if (hasOwner)
               Positioned(
-                right: 2,
-                top: 2,
+                right: 0,
+                top: 0,
                 child: Container(
-                  width: u * 0.2,
-                  height: u * 0.2,
+                  width: u * 0.25,
+                  height: u * 0.25,
                   decoration: BoxDecoration(
                     color: _getOwnerColor(tile.owner, allTiles, players),
                     shape: BoxShape.circle,
@@ -174,17 +248,18 @@ class SquareBoardWidget extends ConsumerWidget {
     );
   }
 
-  // Get owner color
   Color _getOwnerColor(
     String? ownerId,
     List<Tile> allTiles,
     List<Player> players,
   ) {
     if (ownerId == null) return Colors.transparent;
+
     final player = players.firstWhere(
       (p) => p.id == ownerId,
       orElse: () => Player(id: '', name: '', color: '#000000', stars: 0),
     );
+
     try {
       return Color(int.parse(player.color.replaceFirst('#', '0xFF')));
     } catch (e) {
@@ -192,31 +267,25 @@ class SquareBoardWidget extends ConsumerWidget {
     }
   }
 
-  // --- OYUNCU TOKEN MANTIĞI ---
   List<Widget> _buildPlayerTokens(List<Player> players, double u) {
     List<Widget> tokenWidgets = [];
     double tokenSize = u * 0.45;
 
-    // 1. Gruplama mantığı
     final Map<int, List<Player>> groups = {};
     for (var p in players) {
       groups.putIfAbsent(p.position, () => []).add(p);
     }
 
-    // 2. Oyuncu listesini sırayla dönerek token üret
     for (var player in players) {
       final group = groups[player.position]!;
-      // Grup içinde ID'ye göre sabit sıralama yap (titremeyi önler)
       group.sort((a, b) => a.id.compareTo(b.id));
       final indexInGroup = group.indexWhere((p) => p.id == player.id);
 
-      // Konum hesaplama
       final rect = _getTileRect(player.position, u);
       double cx = rect.left + (rect.width / 2);
       double cy = rect.top + (rect.height / 2);
 
-      // Ofsetler
-      double off = tokenSize * 0.15;
+      double off = tokenSize * 0.20;
       List<Offset> offsets = [
         Offset(-off, -off),
         Offset(off, -off),
@@ -232,12 +301,6 @@ class SquareBoardWidget extends ConsumerWidget {
       final double left = cx + o.dx - (tokenSize / 2);
       final double top = cy + o.dy - (tokenSize / 2);
 
-      // DEBUG: Konsola konum bilgisini yaz
-      // Bu sayede State'in güncellenip güncellenmediğini görebiliriz
-      debugPrint(
-        '[BOARD DEBUG] Player: ${player.name} (ID:${player.id}) -> Pos: ${player.position}, L:$left, T:$top',
-      );
-
       Color playerColor;
       try {
         playerColor = Color(int.parse(player.color.replaceFirst('#', '0xFF')));
@@ -249,7 +312,6 @@ class SquareBoardWidget extends ConsumerWidget {
 
       tokenWidgets.add(
         AnimatedPositioned(
-          // KESİN ÇÖZÜM: ID tabanlı benzersiz anahtar
           key: ValueKey("TOKEN_${player.id}"),
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeInOutCubic,
@@ -324,7 +386,9 @@ class SquareBoardWidget extends ConsumerWidget {
 }
 
 class CenterArea extends StatelessWidget {
-  const CenterArea({super.key});
+  final double u;
+  const CenterArea({super.key, required this.u});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -338,13 +402,13 @@ class CenterArea extends StatelessWidget {
         children: [
           Transform.rotate(
             angle: -0.1,
-            child: const Icon(Icons.school, size: 48, color: Colors.amber),
+            child: Icon(Icons.school, size: u * 1.5, color: Colors.amber),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: u * 0.2),
           Text(
             "EDEBINGO",
             style: GoogleFonts.titanOne(
-              fontSize: 28,
+              fontSize: u * 0.7,
               color: Colors.brown.shade800,
             ),
           ),
