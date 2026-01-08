@@ -24,9 +24,8 @@ class _GameViewState extends ConsumerState<GameView> {
   bool _isDialogOpen = false;
 
   @override
-  void initState() {
-    super.initState();
-
+  Widget build(BuildContext context) {
+    // --- LİSTENER BURADA OLMALI ---
     // Listen to game state changes to show dialogs at appropriate phases
     ref.listen<GameState>(gameProvider, (previous, next) {
       // Faz değişikliklerini izle
@@ -65,10 +64,8 @@ class _GameViewState extends ConsumerState<GameView> {
         }
       }
     });
-  }
+    // -----------------------------
 
-  @override
-  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
     final questionState = ref.watch(questionStateProvider);
