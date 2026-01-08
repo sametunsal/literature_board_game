@@ -14,6 +14,8 @@ import '../models/player_type.dart';
 import '../constants/game_constants.dart';
 import '../repositories/question_repository.dart';
 import '../utils/turn_summary_generator.dart';
+import '../core/game_rules_engine.dart';
+import '../core/game_state_manager.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -236,6 +238,13 @@ class GameNotifier extends StateNotifier<GameState> {
   // Guard flag to prevent recursive calls to applyCardEffect
   bool _isApplyingEffect = false;
 
+  // --- YENİ MİMARİ ARAÇLARI ---
+  final _rulesEngine = GameRulesEngine();
+
+  // StateManager her çağrıldığında mevcut durumu (state) sarmalayacak
+  GameStateManager get _stateManager => GameStateManager(state);
+  // ---------------------------
+
   GameNotifier()
     : super(
         const GameState(
@@ -414,12 +423,12 @@ class GameNotifier extends StateNotifier<GameState> {
     return true;
   }
 
-  // Roll dice - Step 1 of turn
+  // Roll dice - Step 1 of turn (REFACTORED)
   void rollDice() {
     debugPrint('🎲 rollDice() called');
     if (!_requirePhase(TurnPhase.start, 'rollDice')) return;
 
-    // canRoll şimdi botlar için de true dönecek
+    // canRoll kontrolü
     if (!state.canRoll) {
       debugPrint('⛔ rollDice engellendi: canRoll false');
       return;
@@ -427,38 +436,33 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (state.currentPlayer == null) return;
 
-    // Generate random dice roll
-    final diceRoll = DiceRoll.random();
-
-    // Get current player
+    // 1. KURAL MOTORU: Zarı at
+    final diceRoll = _rulesEngine.rollDice();
     final currentPlayer = state.currentPlayer!;
 
-    // Update phase to diceRolled
-    state = state.copyWith(turnPhase: TurnPhase.diceRolled);
+    // 2. DURUM YÖNETİCİSİ: Fazı güncelle
+    final manager = _stateManager; // Geçici yönetici oluştur
+    manager.setTurnPhase(TurnPhase.diceRolled);
     debugPrint('🎲 Phase updated to: diceRolled');
 
-    // Human turns manually continue to move phase
-    if (currentPlayer.type == PlayerType.human) {
-      moveCurrentPlayer(diceRoll.total);
-    }
-
-    // Update player immutably
+    // 3. OYUNCU GÜNCELLEMESİ: Zar bilgisini oyuncuya işle
     final updatedPlayer = currentPlayer.copyWith(
       lastRoll: diceRoll.total,
       doubleDiceCount: diceRoll.isDouble
           ? currentPlayer.doubleDiceCount + 1
           : 0,
     );
+    manager.updatePlayer(updatedPlayer);
 
-    // FIX: Update active player by Index to be safe
-    // This ensures state update even if IDs are mismatched
-    final updatedPlayers = List<Player>.from(state.players);
-    if (state.currentPlayerIndex >= 0 &&
-        state.currentPlayerIndex < updatedPlayers.length) {
-      updatedPlayers[state.currentPlayerIndex] = updatedPlayer;
-    }
+    // 4. LOGLAMA: Zarı kaydet ve log ekle
+    manager.setLastDiceRoll(diceRoll);
 
-    // Log dice roll event to transcript
+    String logMessage =
+        '${currentPlayer.name} zar attı: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}';
+    if (diceRoll.isDouble) logMessage += ' (ÇİFT!)';
+    manager.addLogMessage(logMessage);
+
+    // Transkript Logu
     _logEvent(
       TurnEventType.diceRoll,
       description: '${currentPlayer.name} zar attı: ${diceRoll.total}',
@@ -470,36 +474,34 @@ class GameNotifier extends StateNotifier<GameState> {
       },
     );
 
-    // GAMEPLAY LOG: Dice roll result
-    String logMessage =
-        '${currentPlayer.name} zar attı: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}';
+    // Çift zar durumunu bildir
     if (diceRoll.isDouble) {
-      logMessage += ' (ÇİFT!)';
-    }
-
-    state = state
-        .copyWith(lastDiceRoll: diceRoll, players: updatedPlayers)
-        .withLogMessage(logMessage);
-
-    // UI FEEDBACK LOG: Double dice counter status
-    if (diceRoll.isDouble) {
-      state = state.withLogMessage(
+      manager.addLogMessage(
         '${currentPlayer.name}: Çift zar sayısı: ${updatedPlayer.doubleDiceCount}/3',
       );
-
-      // Check for 3x double → Library Watch
-      if (updatedPlayer.doubleDiceCount >= 3) {
-        _handleTripleDouble();
-        return;
-      }
     } else {
-      state = state.withLogMessage(
+      manager.addLogMessage(
         '${currentPlayer.name}: Çift zar sayacı sıfırlandı',
       );
     }
+
+    // --- DEĞİŞİKLİKLERİ UYGULA ---
+    state = manager.state;
+
+    // 5. ORKESTRASYON: Hareket veya Ceza
+    // 3 çift zar kontrolü (Kural Motoru üzerinden yapılmalı ama şimdilik burada)
+    if (updatedPlayer.doubleDiceCount >= 3) {
+      _handleTripleDouble();
+      return;
+    }
+
+    // İnsan oyuncu ise otomatik hareket et
+    if (currentPlayer.type == PlayerType.human) {
+      moveCurrentPlayer(diceRoll.total);
+    }
   }
 
-  // Move player - Step 2 of turn
+  // Move player - Step 2 of turn (REFACTORED)
   void moveCurrentPlayer(int diceTotal) {
     debugPrint('🚶 moveCurrentPlayer() called - Dice total: $diceTotal');
     if (!_requirePhase(TurnPhase.diceRolled, 'moveCurrentPlayer')) return;
@@ -508,55 +510,59 @@ class GameNotifier extends StateNotifier<GameState> {
     final currentPlayer = state.currentPlayer!;
     final oldPosition = currentPlayer.position;
 
-    // Counter-clockwise movement: position increases
-    final newPosition = _calculateNewPosition(oldPosition, diceTotal);
+    // 1. KURAL MOTORU: Yeni pozisyonu hesapla
+    final newPosition = _rulesEngine.calculateNewPosition(
+      oldPosition,
+      diceTotal,
+      GameConstants.boardSize,
+    );
 
-    // Check if passed START (tile 1)
-    final passedStart = _passedStart(oldPosition, diceTotal);
+    // Başlangıç noktasından geçti mi?
+    final passedStart = _rulesEngine.passedStart(
+      oldPosition,
+      diceTotal,
+      GameConstants.boardSize,
+    );
 
     debugPrint(
       '🚶 Player moving: $oldPosition → $newPosition (passed start: $passedStart)',
     );
 
-    // Update player immutably
+    // 2. DURUM YÖNETİCİSİ: Oyuncuyu güncelle
+    final manager = _stateManager;
+
+    // Konumu güncelle
     var updatedPlayer = currentPlayer.copyWith(position: newPosition);
 
-    // Award stars if passed START
+    // Başlangıç ödülünü ver
     if (passedStart) {
       updatedPlayer = updatedPlayer.copyWith(
         stars: updatedPlayer.stars + GameConstants.passStartReward,
       );
-    }
-
-    // FIX: Update active player by Index to be safe
-    // This ensures state update even if IDs are mismatched
-    final updatedPlayers = List<Player>.from(state.players);
-    if (state.currentPlayerIndex >= 0 &&
-        state.currentPlayerIndex < updatedPlayers.length) {
-      updatedPlayers[state.currentPlayerIndex] = updatedPlayer;
-    }
-
-    // GAMEPLAY LOG: Player movement
-    state = state
-        .copyWith(
-          players: updatedPlayers,
-          oldPosition: oldPosition,
-          newPosition: newPosition,
-          passedStart: passedStart,
-          turnPhase: TurnPhase.moved,
-        )
-        .withLogMessage(
-          '${currentPlayer.name} kutucuk $oldPosition\'den $newPosition\'e hareket etti',
-        );
-
-    debugPrint('🚶 Phase updated to: moved');
-
-    // GAMEPLAY LOG: Passing START bonus
-    if (passedStart) {
-      state = state.withLogMessage(
-        '${currentPlayer.name} BAŞLANGIÇ\'ten geçti! +${GameConstants.passStartReward} yıldız',
+      manager.addLogMessage(
+        '${currentPlayer.name} BAŞLANGIÇ\'tan geçti! +${GameConstants.passStartReward} yıldız',
       );
     }
+
+    manager.updatePlayer(updatedPlayer);
+
+    // 3. DURUM YÖNETİCİSİ: Oyun durumu güncellemeleri
+    // Not: GameStateManager'a bu özel alanları (oldPosition vb.) eklemedik,
+    // o yüzden şimdilik manuel copyWith ile devam ediyoruz.
+    var newState = manager.state.copyWith(
+      oldPosition: oldPosition,
+      newPosition: newPosition,
+      passedStart: passedStart,
+      turnPhase: TurnPhase.moved,
+    );
+
+    // Log ekle
+    newState = newState.withLogMessage(
+      '${currentPlayer.name} kutucuk $oldPosition\'den $newPosition\'e hareket etti',
+    );
+
+    state = newState;
+    debugPrint('🚶 Phase updated to: moved');
   }
 
   // Calculate new position (counter-clockwise, 0-39)
