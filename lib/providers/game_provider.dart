@@ -259,6 +259,18 @@ class GameNotifier extends StateNotifier<GameState> {
     stateManager: _stateManager,
     rulesEngine: _rulesEngine,
     botAI: _botAI,
+    onRollDice: rollDice,
+    onMovePlayer: moveCurrentPlayer,
+    onResolveTile: resolveTile,
+    onBotAnswer: _botAnswerQuestion,
+    onApplyCard: () {
+      if (state.currentCard != null) {
+        applyCardEffect(state.currentCard!);
+      }
+    },
+    onHandleCopyrightDecision: _handleBotCopyrightDecision,
+    onEndTurn: endTurn,
+    onStartNextTurn: startNextTurn,
   );
   // ---------------------------
 
@@ -354,79 +366,11 @@ class GameNotifier extends StateNotifier<GameState> {
     // Eğer oyun bittiyse dur
     if (state.isGameOver) return;
 
-    // YENİ YAPI: Orkestratörden talimat al
-    // (Şu anlık manuel switch-case ile yapıyoruz, sonra tamamen orchestrator'a geçecek)
-
-    switch (state.turnPhase) {
-      case TurnPhase.start:
-        // Bot ise otomatik zar at
-        if (state.currentPlayer?.type == PlayerType.bot) {
-          debugPrint('🤖 Bot turn starting...');
-          await Future.delayed(const Duration(seconds: 1));
-          rollDice();
-        } else {
-          // İnsan oyuncu: UI üzerinden rollDice() çağrılmasını bekle.
-          debugPrint('👤 İnsan oyuncu sırası. Butona basılması bekleniyor.');
-        }
-        break;
-
-      case TurnPhase.diceRolled:
-        // Zar atıldı, hareket bekleniyor (Otomatik)
-        // moveCurrentPlayer içinde otomatik çağrılmıyorsa burada çağır
-        // Ama biz moveCurrentPlayer'ı rollDice içinde çağırdık.
-        // Sadece animasyon bekleme süresi gerekebilir.
-        break;
-
-      case TurnPhase.moved:
-        // Hareket bitti, Tile çözümle
-        debugPrint('🎮 Auto-advance directive: resolveTile');
-        await Future.delayed(
-          const Duration(milliseconds: 500),
-        ); // Animasyon payı
-        resolveTile();
-        break;
-
-      case TurnPhase.questionWaiting:
-        // Bot ise cevap ver
-        if (state.currentPlayer?.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 2));
-          _botAnswerQuestion();
-        }
-        break;
-
-      case TurnPhase.cardWaiting:
-        // Bot ise kart çek (UI açılmadan)
-        if (state.currentPlayer?.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
-          if (state.currentCard != null) {
-            applyCardEffect(state.currentCard!);
-          } else {
-            // Should not happen if drawCard works, but fallback
-            endTurn();
-          }
-        }
-        break;
-
-      case TurnPhase.questionResolved:
-        // Soru çözüldü, satın alma kararı veya tur sonu
-        if (state.currentPlayer?.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
-          _handleBotCopyrightDecision();
-        }
-        break;
-
-      case TurnPhase.turnEnded:
-        // Tur bitti, sonraki tura geç
-        debugPrint('🎮 Auto-advance directive: nextTurn');
-        if (state.currentPlayer?.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
-          startNextTurn();
-        }
-        break;
-
-      default:
-        break;
-    }
+    // Delegate to orchestrator
+    await _orchestrator.executeTurnLogic(
+      currentPhase: state.turnPhase,
+      currentPlayer: state.currentPlayer,
+    );
   }
 
   // Phase guard helper method
@@ -1524,6 +1468,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // UI FEEDBACK LOG: Turn transition
     state = state.withLogMessage('Sıra: ${state.players[nextIndex].name}');
+
+    // If the new current player is a bot, trigger playTurn after a small delay
+    if (state.players[nextIndex].type == PlayerType.bot) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        playTurn();
+      });
+    }
   }
 
   // Check bankruptcy
