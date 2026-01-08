@@ -655,6 +655,9 @@ class GameNotifier extends StateNotifier<GameState> {
     manager.updateState(state);
 
     debugPrint('🏁 Phase updated to: ${state.turnPhase} (Manual Override)');
+    manager.setTurnPhase(TurnPhase.tileResolved);
+    state = manager.state; // Sync state immediately
+    debugPrint('🏁 Phase updated to: tileResolved');
 
     switch (tile.type) {
       case TileType.corner:
