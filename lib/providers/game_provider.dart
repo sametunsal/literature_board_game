@@ -17,6 +17,7 @@ import '../utils/turn_summary_generator.dart';
 import '../core/game_rules_engine.dart';
 import '../core/game_state_manager.dart';
 import '../core/card_effect_handler.dart';
+import '../core/bot_ai_controller.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -250,6 +251,9 @@ class GameNotifier extends StateNotifier<GameState> {
         stateManager: _stateManager,
         rulesEngine: _rulesEngine,
       );
+
+  // Bot zeka yöneticisi
+  BotAIController get _botAI => BotAIController(rulesEngine: _rulesEngine);
   // ---------------------------
 
   GameNotifier()
@@ -684,109 +688,84 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // Show question for book/publisher tiles
+  // Show question (REFACTORED)
   void _showQuestion(Tile tile) {
     if (!_requirePhase(TurnPhase.tileResolved, '_showQuestion')) return;
     if (state.currentPlayer == null) return;
+
     final currentPlayer = state.currentPlayer!;
+    final manager = _stateManager;
 
-    // Update phase to questionWaiting (dialog stays open until answered)
-    state = state.copyWith(turnPhase: TurnPhase.questionWaiting);
+    // Faz güncelle
+    manager.setTurnPhase(TurnPhase.questionWaiting);
 
-    // Get a random question from repository
+    // Kategori belirle
+    // Not: Repository kullanımı ilerde RulesEngine içine de taşınabilir ama şimdilik burada kalabilir
+    // Ancak soru SEÇİMİ (Random vs Easy) RulesEngine'e geçiyor.
     final category = tile.questionCategory ?? QuestionCategory.benKimim;
-    Question question = QuestionRepository.getRandomQuestion(category);
 
-    // If player has easyQuestionNext flag, consume it and get an easy question
-    if (currentPlayer.easyQuestionNext) {
-      question = _getEasyQuestion();
-      // Consume the flag immediately
-      final updatedPlayer = currentPlayer.copyWith(easyQuestionNext: false);
-      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
-      state = state.copyWith(players: updatedPlayers);
+    // Soru havuzunu filtrele (Kategoriye göre)
+    // Not: Normalde repository'den çekeriz ama burada state'deki pool'u kullanıyoruz.
+    // Basitlik için tüm havuzu gönderiyoruz, RulesEngine içindeki selectQuestion metodunu güncelleyebiliriz
+    // veya şimdilik repository mantığını koruyup sadece easy/random seçimini devredebiliriz.
+
+    // Mevcut yapıyı koruyarak daha temiz hale getirelim:
+    List<Question> categoryPool = state.questionPool
+        .where((q) => q.category == category)
+        .toList();
+
+    // Eğer kategori boşsa genel havuzdan seç
+    if (categoryPool.isEmpty) categoryPool = state.questionPool;
+
+    // Easy mode kontrolü
+    bool isEasyMode = currentPlayer.easyQuestionNext;
+
+    // 1. KURAL MOTORU: Soruyu seç
+    final question = _rulesEngine.selectQuestion(categoryPool, easyMode: isEasyMode);
+
+    // Easy flag'ini tüket
+    if (isEasyMode) {
+      manager.updatePlayer(currentPlayer.copyWith(easyQuestionNext: false));
     }
 
-    // UI FEEDBACK LOG: Question being asked
-    state = state
-        .copyWith(
-          questionState: QuestionState.answering,
-          currentQuestion: question,
-          questionTimer: GameConstants.questionTimerDuration,
-        )
-        .withLogMessage('${tile.name} için soru soruluyor...');
+    // 2. LOGLAMA VE STATE
+    manager.setCurrentQuestion(question);
+
+    // Timer ve durum ayarla
+    // Not: Bu kısımlar GameStateManager'a eklenebilir ama şimdilik manuel copyWith yapıyoruz
+    state = manager.state.copyWith(
+      questionState: QuestionState.answering,
+      questionTimer: GameConstants.questionTimerDuration,
+    );
+
+    manager.addLogMessage('${tile.name} için soru soruluyor...');
+    state = manager.state;
   }
 
-  // Bot auto-answer question
+  // Bot auto-answer question (REFACTORED)
   void _botAnswerQuestion() {
     debugPrint('🤖 Bot answering question...');
-
     if (state.currentQuestion == null) return;
 
-    // Bot always answers with low probability
-    // Always wrong (70% incorrect = 30% correct)
-    const correctProbability =
-        0.30; // Always ~30% correct across all difficulties
-
-    final randomValue = _random.nextDouble();
-    final shouldAnswerCorrectly = randomValue < correctProbability;
+    // YENİ YAPI: Kararı BotAI versin
+    final shouldAnswerCorrectly = _botAI.shouldAnswerCorrectly(
+      state.currentQuestion!,
+    );
 
     if (shouldAnswerCorrectly) {
       answerQuestionCorrect();
-      debugPrint(
-        '🤖 Bot answered correctly (${(correctProbability * 100).toInt()}% chance)',
-      );
+      debugPrint('🤖 Bot answered correctly');
     } else {
       answerQuestionWrong();
-      debugPrint(
-        '🤖 Bot answered incorrectly (${(100 - correctProbability * 100).toInt()}% chance)',
-      );
+      debugPrint('🤖 Bot answered incorrectly');
     }
 
-    // Advance phase to questionResolved
-    state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+    // Advance phase
+    final manager = _stateManager;
+    manager.setTurnPhase(TurnPhase.questionResolved);
+    state = manager.state;
   }
 
-  // Get a random question from the pool
-  Question _getRandomQuestion() {
-    if (state.questionPool.isEmpty) {
-      return Question(
-        id: 'default',
-        category: QuestionCategory.benKimim,
-        difficulty: Difficulty.easy,
-        question: 'Soru havuzu boş!',
-        answer: 'Boş',
-      );
-    }
-
-    final randomIndex = _random.nextInt(state.questionPool.length);
-    return state.questionPool[randomIndex];
-  }
-
-  // Get an easy question from the pool
-  Question _getEasyQuestion() {
-    if (state.questionPool.isEmpty) {
-      return Question(
-        id: 'default',
-        category: QuestionCategory.benKimim,
-        difficulty: Difficulty.easy,
-        question: 'Soru havuzu boş!',
-        answer: 'Boş',
-      );
-    }
-
-    // Filter for easy questions
-    final easyQuestions = state.questionPool
-        .where((q) => q.difficulty == Difficulty.easy)
-        .toList();
-
-    if (easyQuestions.isEmpty) {
-      // If no easy questions, return any question
-      return _getRandomQuestion();
-    }
-
-    final randomIndex = _random.nextInt(easyQuestions.length);
-    return easyQuestions[randomIndex];
-  }
 
   // Draw a card from the appropriate deck
   void drawCard(CardType cardType) {
@@ -982,94 +961,77 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  // Bot copyright purchase decision
+  // Bot copyright purchase decision (REFACTORED)
   void _handleBotCopyrightDecision() {
     debugPrint('🤖 Bot making copyright purchase decision...');
 
-    if (state.currentPlayer == null) return;
-    if (state.newPosition == null) return;
+    if (state.currentPlayer == null || state.newPosition == null) return;
 
     final currentPlayer = state.currentPlayer!;
     final tileId = state.newPosition!;
+
+    // Tile bul
     final tile = state.tiles.firstWhere(
       (t) => t.id == tileId,
       orElse: () => state.tiles[0],
     );
 
-    // Check if tile can be owned
-    if (!tile.canBeOwned) {
-      debugPrint('🤖 Bot skipping - tile cannot be owned');
-      // Set phase to questionResolved before calling endTurn
-      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+    final manager = _stateManager;
+
+    // Temel kontroller
+    if (!tile.canBeOwned || tile.owner != null) {
+      debugPrint('🤖 Bot skipping - not purchasable');
+      manager.setTurnPhase(TurnPhase.questionResolved);
+      state = manager.state;
       endTurn();
       return;
     }
 
-    // Check if tile is already owned
-    if (tile.owner != null) {
-      debugPrint('🤖 Bot skipping - tile already owned');
-      // Set phase to questionResolved before calling endTurn
-      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
-      endTurn();
-      return;
-    }
-
-    final price = tile.purchasePrice ?? 0;
-    final rentIncome = tile.copyrightFee ?? 0;
-
-    // Bot intelligence: Smart purchase decision
-    // 1. Can afford (has at least 1.5x the price to stay safe)
-    // 2. Good ROI (rent income is at least 10% of purchase price)
-    // 3. Keep reserve (don't spend if it leaves less than 50 stars)
-    final canAfford = currentPlayer.stars >= (price * 1.5).toInt();
-    final goodROI = rentIncome >= (price * 0.1).toInt();
-    final keepsReserve = (currentPlayer.stars - price) >= 50;
-
-    final shouldPurchase = canAfford && goodROI && keepsReserve;
+    // YENİ YAPI: Kararı BotAI versin
+    final shouldPurchase = _botAI.shouldPurchaseCopyright(tile, currentPlayer);
 
     if (shouldPurchase) {
-      debugPrint(
-        '🤖 Bot purchasing ${tile.name} for $price stars (ROI: ${((rentIncome / price) * 100).toStringAsFixed(1)}%)',
-      );
+      final price = tile.purchasePrice ?? 0;
 
-      // Perform the purchase transaction
+      // Satın alma işlemini yap
       final updatedPlayer = currentPlayer.copyWith(
         stars: currentPlayer.stars - price,
         ownedTiles: [...currentPlayer.ownedTiles, tileId],
       );
-      final updatedPlayers = _updatePlayerInList(state.players, updatedPlayer);
+      manager.updatePlayer(updatedPlayer);
 
-      // Update tile owner
+      // Tile sahibini güncelle
       final updatedTile = tile.copyWith(owner: currentPlayer.id);
-      final updatedTiles = _updateTileInList(state.tiles, updatedTile);
+      // Not: updateTile metodunu StateManager'a eklemediysek,
+      // tiles listesini manuel güncelleyip state'e verelim.
+      // GameStateManager içinde updateTile yoksa şu anlık manuel yapalım:
+      final updatedTiles = state.tiles
+          .map((t) => t.id == tile.id ? updatedTile : t)
+          .toList();
 
-      // CRITICAL: Set phase to questionResolved (valid for endTurn)
-      state = state.copyWith(
-        turnPhase: TurnPhase.questionResolved,
-        players: updatedPlayers,
-        tiles: updatedTiles,
-      );
+      // State güncelle
+      state = manager.state.copyWith(tiles: updatedTiles);
 
-      // GAMEPLAY LOG: Copyright purchase
-      state = state.withLogMessage(
+      // Loglama
+      manager.addLogMessage(
         '${currentPlayer.name} ${tile.name} telifini satın aldı! -$price yıldız',
       );
 
-      // Log event to transcript
       _logEvent(
         TurnEventType.copyrightPurchased,
         description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
         data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
       );
 
-      // After purchase, end turn
+      // Faz güncelle ve turu bitir
+      manager.setTurnPhase(TurnPhase.questionResolved);
+      state = manager.state;
       endTurn();
+
     } else {
-      debugPrint(
-        '🤖 Bot declining purchase (affordable: $canAfford, ROI: $goodROI, reserve: $keepsReserve)',
-      );
-      // Set phase to questionResolved before calling endTurn
-      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
+      debugPrint('🤖 Bot declining purchase');
+      manager.setTurnPhase(TurnPhase.questionResolved);
+      state = manager.state;
       endTurn();
     }
   }
