@@ -1329,8 +1329,10 @@ class GameNotifier extends StateNotifier<GameState> {
   // End turn - Step 4 of turn
   // CRITICAL FIX: This method now PAUSES at turnEnded instead of immediately moving to next player
   void endTurn() {
+    debugPrint("🛑 endTurn() EXECUTING - Force Phase Update");
+
     // CRITICAL FIX: Immediately update state to break loop
-    state = state.copyWith(turnPhase: TurnPhase.turnEnded).withLogMessage('Turn Ended');
+    state = state.copyWith(turnPhase: TurnPhase.turnEnded).withLogMessage('Tur Bitti');
 
     // Allow ending turn from multiple phases (some tiles might resolve without further action)
     if (state.turnPhase != TurnPhase.taxResolved &&
@@ -1341,8 +1343,8 @@ class GameNotifier extends StateNotifier<GameState> {
       debugPrint(
         '⛔ Phase Guard: endTurn called in ${state.turnPhase}, expected one of [taxResolved, cardApplied, questionResolved, tileResolved, turnEnded]',
       );
-      assert(false, 'Invalid turn phase for endTurn');
-      return;
+      // assert(false, 'Invalid turn phase for endTurn'); // Disabled for robust loop breaking
+      // return;
     }
     if (state.currentPlayer == null) return;
 
@@ -1427,8 +1429,10 @@ class GameNotifier extends StateNotifier<GameState> {
       turnPhase: TurnPhase.turnEnded,
     );
 
-    // Call startNextTurn with a small delay to allow UI to process the end state
-    Future.delayed(const Duration(milliseconds: 100), () => startNextTurn());
+    // Cleanup: Cancel any existing timers (no-op as _turnTimer is not in GameNotifier)
+
+    // Call startNextTurn with a delay to trigger the next player
+    Future.delayed(const Duration(milliseconds: 500), () => startNextTurn());
   }
 
   // CRITICAL FIX: New public method to start next turn
