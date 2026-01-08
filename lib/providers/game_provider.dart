@@ -351,6 +351,9 @@ class GameNotifier extends StateNotifier<GameState> {
           debugPrint('🤖 Bot turn starting...');
           await Future.delayed(const Duration(seconds: 1));
           rollDice();
+        } else {
+          // İnsan oyuncu: UI üzerinden rollDice() çağrılmasını bekle.
+          debugPrint('👤 İnsan oyuncu sırası. Butona basılması bekleniyor.');
         }
         break;
 
@@ -426,7 +429,15 @@ class GameNotifier extends StateNotifier<GameState> {
   // Roll dice - Step 1 of turn (REFACTORED)
   void rollDice() {
     debugPrint('🎲 rollDice() called');
-    if (!_requirePhase(TurnPhase.start, 'rollDice')) return;
+
+    if (state.isGameOver) return;
+
+    // Faz kontrolü: Start veya TurnEnded (yeni tur başı) fazlarına izin ver
+    if (state.turnPhase != TurnPhase.start &&
+        state.turnPhase != TurnPhase.turnEnded) {
+      debugPrint('⛔ rollDice engellendi: Yanlış faz (${state.turnPhase})');
+      return;
+    }
 
     // canRoll kontrolü
     if (!state.canRoll) {

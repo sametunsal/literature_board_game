@@ -60,7 +60,7 @@ class _EnhancedDiceWidgetState extends ConsumerState<EnhancedDiceWidget>
     // 1. Set phase to diceRolled
     // 2. Set isDiceAnimationComplete to false
     // 3. Generate and record the dice roll
-    ref.read(gameProvider.notifier).playTurn();
+    ref.read(gameProvider.notifier).rollDice();
 
     // Start rolling animation
     await _rollController.forward();
