@@ -403,7 +403,8 @@ class _GameViewState extends ConsumerState<GameView> {
 
           // Question dialog overlay
           // Phase 3: UI is passive observer, QuestionDialog handles orchestration internally
-          if (questionState == QuestionState.answering &&
+          // CRITICAL FIX: Use turnPhase as the primary source of truth for dialog visibility
+          if (turnPhase == TurnPhase.questionWaiting &&
               currentQuestion != null)
             QuestionDialog(question: currentQuestion),
 
