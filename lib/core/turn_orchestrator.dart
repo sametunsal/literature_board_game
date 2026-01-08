@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../models/turn_phase.dart';
 import '../models/player_type.dart';
 import '../models/player.dart';
@@ -72,9 +73,15 @@ class TurnOrchestrator {
 
       case TurnPhase.diceRolled:
         // Zar atıldı, hareket bekleniyor (Otomatik)
-        // moveCurrentPlayer içinde otomatik çağrılmıyorsa burada çağır
-        // Ama biz moveCurrentPlayer'ı rollDice içinde çağırdık.
-        // Sadece animasyon bekleme süresi gerekebilir.
+        debugPrint('🎲 Dice rolled. Waiting for animation before moving...');
+        await Future.delayed(
+          const Duration(seconds: 1),
+        ); // Wait for user to see dice
+        // Get the last dice roll total from state manager
+        final lastRoll = stateManager.state.lastDiceRoll;
+        if (lastRoll != null) {
+          onMovePlayer(lastRoll.total); // <--- Trigger the move!
+        }
         break;
 
       case TurnPhase.moved:
