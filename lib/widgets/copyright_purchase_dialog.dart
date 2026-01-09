@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/tile.dart';
-import '../models/player_type.dart';
+import '../models/turn_phase.dart';
 import '../providers/game_provider.dart';
 
 class CopyrightPurchaseDialog extends ConsumerStatefulWidget {
@@ -18,20 +18,26 @@ class CopyrightPurchaseDialog extends ConsumerStatefulWidget {
 class _CopyrightPurchaseDialogState
     extends ConsumerState<CopyrightPurchaseDialog> {
   @override
+  void initState() {
+    super.initState();
+    // Listen for phase changes to auto-close dialog
+    ref.listen<TurnPhase>(turnPhaseProvider, (previous, next) {
+      // Close dialog when phase changes away from copyrightPurchased
+      if (previous == TurnPhase.copyrightPurchased &&
+          next != TurnPhase.copyrightPurchased) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
 
     if (currentPlayer == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Phase 4: Bot auto-decline - Dialog not rendered for bots
-    if (currentPlayer.type == PlayerType.bot) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!mounted) return;
-        ref.read(gameProvider.notifier).playTurn();
-      });
       return const SizedBox.shrink();
     }
 

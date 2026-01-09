@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/card.dart' as game_models;
-import '../models/player_type.dart';
+import '../models/turn_phase.dart';
 import '../providers/game_provider.dart';
 
 /// Dialog for displaying Chance (Sans) and Fate (Kader) cards
@@ -27,6 +27,15 @@ class _CardDialogState extends ConsumerState<CardDialog>
   @override
   void initState() {
     super.initState();
+    // Listen for phase changes to auto-close dialog
+    ref.listen<TurnPhase>(turnPhaseProvider, (previous, next) {
+      // Close dialog when phase changes away from cardWaiting
+      if (previous == TurnPhase.cardWaiting && next != TurnPhase.cardWaiting) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    });
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -62,19 +71,6 @@ class _CardDialogState extends ConsumerState<CardDialog>
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final currentPlayer = gameState.currentPlayer;
-
-    if (currentPlayer?.type == PlayerType.bot) {
-      // Tekrarlı tetiklemeyi önlemek için basit kontrol
-      if (!_botActionTriggered) {
-        _botActionTriggered = true;
-        Future.delayed(const Duration(milliseconds: 1000), () {
-          if (mounted) {
-            ref.read(gameProvider.notifier).applyCardEffect(widget.card);
-          }
-        });
-      }
-      return const SizedBox.shrink();
-    }
 
     final isSans = widget.card.type == game_models.CardType.sans;
     final isPositive = widget.card.isPositiveForPlayer;

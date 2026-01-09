@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/game_provider.dart';
-import '../models/player_type.dart';
 import '../models/turn_phase.dart';
 import '../utils/turn_summary_generator.dart';
 
@@ -102,18 +101,7 @@ class _TurnSummaryOverlayState extends ConsumerState<TurnSummaryOverlay>
     // Start animation
     if (_controller.value == 0) {
       _controller.forward();
-      // Bot control - Auto-advance after 2 seconds for bots
-      if (gameState.players[turnResult.playerIndex].type == PlayerType.bot) {
-        debugPrint('🤖 Bot turn summary - will auto-advance in 2 seconds');
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted && ref.read(turnPhaseProvider) == TurnPhase.turnEnded) {
-            debugPrint('🤖 Bot auto-advancing to next turn');
-            _handleContinue();
-          }
-        });
-      }
     }
-
     final player = gameState.players[turnResult.playerIndex];
     final summaryText = TurnSummaryGenerator.generateTurnSummary(
       turnResult,

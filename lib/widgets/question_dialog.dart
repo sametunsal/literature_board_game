@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/question.dart';
 import '../models/turn_phase.dart';
-import '../models/player_type.dart';
 // ignore: unused_import
 import '../models/turn_result.dart';
 import '../providers/game_provider.dart';
 import '../constants/game_constants.dart';
+import '../models/turn_phase.dart';
 
 /// Question dialog - Phase 3 adaptation with timer integration
 ///
@@ -49,6 +49,16 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
     super.initState();
     // Start timer when dialog is created
     _startTimer();
+    // Listen for phase changes to auto-close dialog
+    ref.listen<TurnPhase>(turnPhaseProvider, (previous, next) {
+      // Close dialog when phase changes away from questionWaiting
+      if (previous == TurnPhase.questionWaiting &&
+          next != TurnPhase.questionWaiting) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    });
   }
 
   @override
@@ -103,18 +113,6 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
 
     final currentPlayer = gameState.currentPlayer;
     _remainingTime = questionTimer;
-
-    // Phase 5.1: Bot auto-resolve - Dialog not rendered for bots
-    // Bot always answers wrong (dummy logic)
-    if (currentPlayer?.type == PlayerType.bot) {
-      // Bot auto-resolves with delay
-      Future.delayed(const Duration(milliseconds: 500), () {
-        // Guard: Check if widget is still mounted before using ref
-        if (!mounted) return;
-        _handleAnswer(false); // Always wrong
-      });
-      return const SizedBox.shrink();
-    }
 
     // Question dialog buttons are only enabled during TurnPhase.questionWaiting
     final canAnswer = turnPhase == TurnPhase.questionWaiting;

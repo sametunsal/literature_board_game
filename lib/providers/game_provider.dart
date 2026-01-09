@@ -11,14 +11,12 @@ import '../models/turn_phase.dart';
 import '../models/turn_event.dart';
 import '../models/turn_result.dart';
 import '../models/turn_history.dart';
-import '../models/player_type.dart';
 import '../constants/game_constants.dart';
 import '../repositories/question_repository.dart';
 import '../utils/turn_summary_generator.dart';
 import '../core/game_rules_engine.dart';
 import '../core/game_state_manager.dart';
 import '../core/card_effect_handler.dart';
-import '../core/bot_ai_controller.dart';
 import '../core/turn_orchestrator.dart';
 import '../core/game_random.dart';
 
@@ -267,28 +265,24 @@ class GameNotifier extends StateNotifier<GameState> {
   CardEffectHandler get _cardHandler =>
       CardEffectHandler(stateManager: _stateManager, rulesEngine: _rulesEngine);
 
-  // Bot zeka yöneticisi
-  BotAIController get _botAI => BotAIController(rulesEngine: _rulesEngine);
-
   // Oyun akış yönetmeni
   TurnOrchestrator get _orchestrator => TurnOrchestrator(
     stateManager: _stateManager,
     rulesEngine: _rulesEngine,
-    botAI: _botAI,
     onRollDice: rollDice,
     onMovePlayer: moveCurrentPlayer,
     onResolveTile: resolveTile,
-    onBotAnswer: _botAnswerQuestion,
     onApplyCard: () {
       if (state.currentCard != null) {
         applyCardEffect(state.currentCard!);
       }
     },
-    onHandleCopyrightDecision: _handleBotCopyrightDecision,
+    onHandleCopyrightDecision: () {
+      // Human players make decision via UI
+    },
     onEndTurn: endTurn,
     onStartNextTurn: startNextTurn,
     diceAnimationDelay: const Duration(milliseconds: 1500),
-    botThinkDelay: const Duration(seconds: 1),
     movementDelay: const Duration(milliseconds: 500),
   );
   // ---------------------------
@@ -494,10 +488,8 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
-      // İnsan oyuncu ise otomatik hareket et
-      if (currentPlayer.type == PlayerType.human) {
-        moveCurrentPlayer(diceRoll.total);
-      }
+      // All players are human - auto move
+      moveCurrentPlayer(diceRoll.total);
     } finally {
       _isProcessingTurn = false;
     }
@@ -644,17 +636,10 @@ class GameNotifier extends StateNotifier<GameState> {
     // 2. Tile Tipine Göre İşlem
     final manager = _stateManager;
 
-    // CRITICAL FIX: Transition to tileResolved phase BEFORE processing
-    // This allows methods like _showQuestion and _handleTaxTile to pass their guards
-    // Direct state update to ensure atomic phase change
-    state = state.copyWith(turnPhase: TurnPhase.tileResolved);
-    // Sync manager with new state
-    manager.updateState(state);
-
-    debugPrint('🏁 Phase updated to: ${state.turnPhase} (Manual Override)');
+    // CRITICAL FIX: Set TurnPhase.tileResolved BEFORE switch(tile.type)
+    // _showQuestion() REQUIRES TurnPhase.tileResolved by contract
     manager.setTurnPhase(TurnPhase.tileResolved);
-    state = manager.state; // Sync state immediately
-    debugPrint('🏁 Phase updated to: tileResolved');
+    state = manager.state;
 
     switch (tile.type) {
       case TileType.corner:
@@ -673,6 +658,8 @@ class GameNotifier extends StateNotifier<GameState> {
         if (tile.owner == null || tile.owner == currentPlayer.id) {
           // Sahibi yoksa veya kendisiyse -> Soru Sor
           _showQuestion(tile);
+          // CRITICAL: Immediately return after _showQuestion() to prevent overrides
+          return;
         } else {
           // Başkasının -> Kira Öde
           payRent();
@@ -773,30 +760,6 @@ class GameNotifier extends StateNotifier<GameState> {
     state = manager.state;
   }
 
-  // Bot auto-answer question (REFACTORED)
-  void _botAnswerQuestion() {
-    debugPrint('🤖 Bot answering question...');
-    if (state.currentQuestion == null) return;
-
-    // YENİ YAPI: Kararı BotAI versin
-    final shouldAnswerCorrectly = _botAI.shouldAnswerCorrectly(
-      state.currentQuestion!,
-    );
-
-    if (shouldAnswerCorrectly) {
-      answerQuestionCorrect();
-      debugPrint('🤖 Bot answered correctly');
-    } else {
-      answerQuestionWrong();
-      debugPrint('🤖 Bot answered incorrectly');
-    }
-
-    // Advance phase
-    final manager = _stateManager;
-    manager.setTurnPhase(TurnPhase.questionResolved);
-    state = manager.state;
-  }
-
   // Draw a card from the appropriate deck
   void drawCard(CardType cardType) {
     // Select the appropriate card deck based on card type
@@ -873,17 +836,12 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // Auto-advance directive for bot and human turns
+  // Auto-advance directive for human turns
   String? getAutoAdvanceDirective() {
-    final isBot = state.currentPlayer?.type == PlayerType.bot;
-
-    // Humans need to manually click button for Phase.start and questionWaiting
-    // Bots auto-advance through all phases
-    // Both auto-advance through all other phases
+    // All players are human - UI triggers actions, engine transitions phases
     switch (state.turnPhase) {
       case TurnPhase.start:
-        // Only bots auto-roll dice, humans must click button
-        return isBot ? 'rollDice' : null;
+        return null;
       case TurnPhase.diceRolled:
         return 'movePlayer';
       case TurnPhase.moved:
@@ -891,27 +849,17 @@ class GameNotifier extends StateNotifier<GameState> {
       case TurnPhase.tileResolved:
         return 'handleTileEffect';
       case TurnPhase.cardWaiting:
-        // HARD BLOCK: applyCard ONLY when ALL conditions are met
-        if (state.turnPhase == TurnPhase.cardWaiting &&
-            state.currentCard != null &&
-            state.currentCardOwnerId == state.currentPlayer?.id &&
-            state.currentPlayer?.type == PlayerType.bot) {
-          return 'applyCard';
-        }
         return null;
       case TurnPhase.questionWaiting:
-        // Bots auto-answer questions, humans wait for input
-        return isBot ? 'answerQuestion' : null;
+        return null;
       case TurnPhase.cardApplied:
       case TurnPhase.questionResolved:
       case TurnPhase.taxResolved:
         return 'endTurn';
       case TurnPhase.copyrightPurchased:
-        // Bots auto-decide on copyright purchase, humans wait for dialog
-        return isBot ? 'handleCopyrightDecision' : null;
+        return null;
       case TurnPhase.turnEnded:
-        // CRITICAL FIX: Bots auto-advance to next turn, humans wait for summary button
-        return isBot ? 'nextTurn' : null;
+        return null;
     }
   }
 
@@ -989,82 +937,6 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.withLogMessage(
       '${state.currentPlayer!.name} telif satın almayı reddetti.',
     );
-  }
-
-  // Bot copyright purchase decision (REFACTORED)
-  void _handleBotCopyrightDecision() {
-    debugPrint('🤖 Bot making copyright purchase decision...');
-
-    if (state.currentPlayer == null || state.newPosition == null) return;
-
-    final currentPlayer = state.currentPlayer!;
-    final tileId = state.newPosition!;
-
-    // Tile bul
-    final tile = state.tiles.firstWhere(
-      (t) => t.id == tileId,
-      orElse: () => state.tiles[0],
-    );
-
-    final manager = _stateManager;
-
-    // Temel kontroller
-    if (!tile.canBeOwned || tile.owner != null) {
-      debugPrint('🤖 Bot skipping - not purchasable');
-      manager.setTurnPhase(TurnPhase.questionResolved);
-      state = manager.state;
-      endTurn();
-      return;
-    }
-
-    // YENİ YAPI: Kararı BotAI versin
-    final shouldPurchase = _botAI.shouldPurchaseCopyright(tile, currentPlayer);
-
-    if (shouldPurchase) {
-      final price = tile.purchasePrice ?? 0;
-
-      // Satın alma işlemini yap
-      final updatedPlayer = currentPlayer.copyWith(
-        stars: currentPlayer.stars - price,
-        ownedTiles: [...currentPlayer.ownedTiles, tileId],
-      );
-      manager.updatePlayer(updatedPlayer);
-
-      // Tile sahibini güncelle
-      final updatedTile = tile.copyWith(owner: currentPlayer.id);
-      // Not: updateTile metodunu StateManager'a eklemediysek,
-      // tiles listesini manuel güncelleyip state'e verelim.
-      // GameStateManager içinde updateTile yoksa şu anlık manuel yapalım:
-      final updatedTiles = state.tiles
-          .map((t) => t.id == tile.id ? updatedTile : t)
-          .toList();
-
-      // State güncelle (Tiles değişikliğini StateManager'a bildir)
-      // GameStateManager şimdilik sadece oyuncu odaklı, bu yüzden manuel senkronizasyon yapıyoruz.
-      // Önce manager'ın kendi state'ini güncelleyelim ki sonraki işlemler eski state'i kullanmasın.
-      manager.updateState(manager.state.copyWith(tiles: updatedTiles));
-
-      // Loglama
-      manager.addLogMessage(
-        '${currentPlayer.name} ${tile.name} telifini satın aldı! -$price yıldız',
-      );
-
-      _logEvent(
-        TurnEventType.copyrightPurchased,
-        description: '${currentPlayer.name} ${tile.name} telifini satın aldı',
-        data: {'tileId': tileId, 'tileName': tile.name, 'price': price},
-      );
-
-      // Faz güncelle ve turu bitir
-      manager.setTurnPhase(TurnPhase.questionResolved);
-      state = manager.state;
-      endTurn();
-    } else {
-      debugPrint('🤖 Bot declining purchase');
-      manager.setTurnPhase(TurnPhase.questionResolved);
-      state = manager.state;
-      endTurn();
-    }
   }
 
   // Helper method to update a tile in tiles list immutably
@@ -1584,13 +1456,12 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Reset game to initial state while keeping player names and types
   /// This allows restarting the game without recreating all player data
   void resetGame() {
-    // Preserve player names, colors, and types
+    // Preserve player names and colors
     final preservedPlayers = state.players.map((p) {
       return Player(
         id: p.id,
         name: p.name,
         color: p.color,
-        type: p.type,
         stars: GameConstants.initialStars,
         position: 0, // Start position
       );

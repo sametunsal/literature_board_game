@@ -10,7 +10,6 @@ import 'providers/tile_provider.dart';
 import 'providers/question_provider.dart';
 import 'providers/card_provider.dart';
 import 'models/player.dart';
-import 'models/player_type.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -144,23 +143,20 @@ class _MyAppState extends ConsumerState<MyApp> {
 
 List<Player> _generatePlayers() {
   return [
-    // Human player
+    // Human players
     Player(
       id: const Uuid().v4(),
       name: 'Oyuncu 1',
       color: '#FF5722',
       stars: 150,
       position: 1,
-      type: PlayerType.human,
     ),
-    // Bot players
     Player(
       id: const Uuid().v4(),
       name: 'Oyuncu 2',
       color: '#2196F3',
       stars: 150,
       position: 1,
-      type: PlayerType.bot,
     ),
     Player(
       id: const Uuid().v4(),
@@ -168,7 +164,6 @@ List<Player> _generatePlayers() {
       color: '#4CAF50',
       stars: 150,
       position: 1,
-      type: PlayerType.bot,
     ),
     Player(
       id: const Uuid().v4(),
@@ -176,7 +171,6 @@ List<Player> _generatePlayers() {
       color: '#FFEB3B',
       stars: 150,
       position: 1,
-      type: PlayerType.bot,
     ),
   ];
 }

@@ -1,17 +1,14 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/turn_phase.dart';
-import '../models/player_type.dart';
 import '../models/player.dart';
 import 'game_state_manager.dart';
 import 'game_rules_engine.dart';
-import 'bot_ai_controller.dart';
 
 /// Callback definitions for turn orchestration
 typedef OnRollDice = void Function();
 typedef OnMovePlayer = void Function(int diceTotal);
 typedef OnResolveTile = void Function();
-typedef OnBotAnswer = void Function();
 typedef OnApplyCard = void Function();
 typedef OnHandleCopyrightDecision = void Function();
 typedef OnEndTurn = void Function();
@@ -21,18 +18,15 @@ typedef OnStartNextTurn = void Function();
 class TurnOrchestrator {
   final GameStateManager stateManager;
   final GameRulesEngine rulesEngine;
-  final BotAIController botAI;
 
   // Configurable delays
   final Duration diceAnimationDelay;
-  final Duration botThinkDelay;
   final Duration movementDelay;
 
   // Callbacks for turn actions
   final OnRollDice onRollDice;
   final OnMovePlayer onMovePlayer;
   final OnResolveTile onResolveTile;
-  final OnBotAnswer onBotAnswer;
   final OnApplyCard onApplyCard;
   final OnHandleCopyrightDecision onHandleCopyrightDecision;
   final OnEndTurn onEndTurn;
@@ -41,21 +35,18 @@ class TurnOrchestrator {
   TurnOrchestrator({
     required this.stateManager,
     required this.rulesEngine,
-    required this.botAI,
     required this.onRollDice,
     required this.onMovePlayer,
     required this.onResolveTile,
-    required this.onBotAnswer,
     required this.onApplyCard,
     required this.onHandleCopyrightDecision,
     required this.onEndTurn,
     required this.onStartNextTurn,
     this.diceAnimationDelay = const Duration(milliseconds: 1500),
-    this.botThinkDelay = const Duration(seconds: 1),
     this.movementDelay = const Duration(milliseconds: 500),
   });
 
-  /// Execute turn logic based on current phase and player type
+  /// Execute turn logic based on current phase
   /// This method contains the switch-case logic for turn orchestration
   Future<void> executeTurnLogic({
     required TurnPhase currentPhase,
@@ -66,11 +57,6 @@ class TurnOrchestrator {
 
     switch (currentPhase) {
       case TurnPhase.start:
-        // Bot ise otomatik zar at
-        if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(botThinkDelay);
-          onRollDice();
-        }
         // İnsan oyuncu: UI üzerinden rollDice() çağrılmasını bekle
         break;
 
@@ -96,33 +82,20 @@ class TurnOrchestrator {
         break;
 
       case TurnPhase.questionWaiting:
-        // Bot ise cevap ver
-        if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(botThinkDelay);
-          onBotAnswer();
-        }
+        // İnsan oyuncu: UI üzerinden cevap vermesini bekle
         break;
 
       case TurnPhase.cardWaiting:
-        // Bot ise kart çek (UI açılmadan)
-        if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(botThinkDelay);
-          onApplyCard();
-        }
+        // İnsan oyuncu: UI üzerinden kart uygulamasını bekle
         break;
 
       case TurnPhase.questionResolved:
-        // Soru çözüldü, satın alma kararı veya tur sonu
-        if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(botThinkDelay);
-          onHandleCopyrightDecision();
-        }
+        // İnsan oyuncu: UI üzerinden satın alma kararını bekle
         break;
 
       case TurnPhase.turnEnded:
         debugPrint('🏁 Turn ended. Next player: ${currentPlayer.name}');
-        // Sonraki oyuncunun turunu başlat
-        onStartNextTurn();
+        // Humans wait for TurnSummaryOverlay button
         break;
 
       default:
@@ -131,12 +104,10 @@ class TurnOrchestrator {
   }
 
   /// UI için otomatik ilerleme talimatı (Auto-advance)
-  String? getAutoAdvanceDirective(TurnPhase phase, PlayerType playerType) {
-    final isBot = playerType == PlayerType.bot;
-
+  String? getAutoAdvanceDirective(TurnPhase phase) {
     switch (phase) {
       case TurnPhase.start:
-        return isBot ? 'rollDice' : null;
+        return null;
       case TurnPhase.diceRolled:
         return 'movePlayer';
       case TurnPhase.moved:
@@ -144,21 +115,17 @@ class TurnOrchestrator {
       case TurnPhase.tileResolved:
         return 'handleTileEffect';
       case TurnPhase.cardWaiting:
-        // HARD BLOCK: applyCard ONLY when ALL conditions are met
-        return isBot ? 'applyCard' : null;
+        return null;
       case TurnPhase.questionWaiting:
-        // Bots auto-answer questions, humans wait for input
-        return isBot ? 'answerQuestion' : null;
+        return null;
       case TurnPhase.cardApplied:
       case TurnPhase.questionResolved:
       case TurnPhase.taxResolved:
         return 'endTurn';
       case TurnPhase.copyrightPurchased:
-        // Bots auto-decide on copyright purchase, humans wait for dialog
-        return isBot ? 'handleCopyrightDecision' : null;
+        return null;
       case TurnPhase.turnEnded:
-        // CRITICAL FIX: Bots auto-advance to next turn, humans wait for summary button
-        return isBot ? 'nextTurn' : null;
+        return null;
     }
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/turn_phase.dart';
-import '../models/player_type.dart';
 import '../providers/game_provider.dart';
 
 /// Turn End Overlay - Phase 4 implementation
@@ -32,12 +31,6 @@ class TurnEndOverlay extends ConsumerWidget {
     final lastTurnResult = ref.watch(lastTurnResultProvider);
 
     final currentPlayer = gameState.currentPlayer;
-
-    // Phase 5.1: Bot skip - TurnEndOverlay is hidden for bot players
-    // Bot turns auto-progress, no manual "Devam" button needed
-    if (currentPlayer?.type == PlayerType.bot) {
-      return const SizedBox.shrink();
-    }
 
     // Overlay is visible ONLY during TurnPhase.turnEnded
     final isVisible = turnPhase == TurnPhase.turnEnded;
