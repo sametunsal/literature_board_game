@@ -1,176 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:uuid/uuid.dart';
-
-import 'views/game_view.dart';
-import 'providers/game_provider.dart';
-import 'providers/question_provider.dart';
-import 'providers/card_provider.dart';
-import 'models/player.dart';
-import 'utils/board_setup.dart';
+import 'widgets/board_view.dart';
+import 'widgets/setup_screen.dart'; // Yeni import
+import 'models/game_enums.dart'; // Yeni import
+import 'providers/game_notifier.dart'; // Yeni import
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(const ProviderScope(child: EdebiyatOyunuApp()));
 }
 
-class MyApp extends ConsumerStatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  ConsumerState<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends ConsumerState<MyApp> {
-  bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_initialized) return;
-
-      // CRITICAL: Load questions from repository into game state before initializing
-      await ref.read(gameProvider.notifier).loadQuestions();
-
-      // Oyunu başlat
-      ref
-          .read(gameProvider.notifier)
-          .initializeGame(
-            players: _generatePlayers(),
-            tiles: BoardSetup.generateTiles(),
-            sansCards: generateSansCards(),
-            kaderCards: generateKaderCards(),
-          );
-
-      _initialized = true;
-    });
-  }
+class EdebiyatOyunuApp extends StatelessWidget {
+  const EdebiyatOyunuApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // ÖNEMLİ: Sadece tek bir MaterialApp döndürüyoruz.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Edebiyat Oyunu',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.brown,
-          brightness: Brightness.light,
-        ),
-        textTheme: GoogleFonts.poppinsTextTheme(),
-      ),
-      // Home widget'ını bir Consumer ile sarmalıyoruz
-      // Böylece yükleme durumu değiştiğinde MaterialApp yeniden kurulmaz,
-      // sadece içerideki sayfa değişir.
-      home: Consumer(
-        builder: (context, ref, child) {
-          final questionsAsync = ref.watch(questionLoadingProvider);
-
-          // 1. Yükleniyor durumu
-          if (questionsAsync.isLoading) {
-            return const Scaffold(
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Sorular yükleniyor...',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // 2. Hata durumu
-          if (questionsAsync.hasError) {
-            return Scaffold(
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Sorular yüklenirken hata oluştu',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Hata: ${questionsAsync.error}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Retry loading questions
-                        ref.invalidate(questionLoadingProvider);
-                      },
-                      child: const Text('Tekrar Dene'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // 3. Oyun ekranı
-          return const GameView();
-        },
-      ),
+      title: 'Edebiyat Macera',
+      theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
+      home: const BoardView(),
     );
   }
-}
-
-/// HELPERS
-
-List<Player> _generatePlayers() {
-  return [
-    // Human players
-    Player(
-      id: const Uuid().v4(),
-      name: 'Oyuncu 1',
-      color: '#FF5722',
-      stars: 150,
-      position: 1,
-    ),
-    Player(
-      id: const Uuid().v4(),
-      name: 'Oyuncu 2',
-      color: '#2196F3',
-      stars: 150,
-      position: 1,
-    ),
-    Player(
-      id: const Uuid().v4(),
-      name: 'Oyuncu 3',
-      color: '#4CAF50',
-      stars: 150,
-      position: 1,
-    ),
-    Player(
-      id: const Uuid().v4(),
-      name: 'Oyuncu 4',
-      color: '#FFEB3B',
-      stars: 150,
-      position: 1,
-    ),
-  ];
 }
