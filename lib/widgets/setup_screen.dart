@@ -11,11 +11,9 @@ class SetupScreen extends ConsumerStatefulWidget {
 }
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
-  int playerCount =
-      2; // Varsayılan 2 ama 4-6 istenmiş, kullanıcı min 2 max 6 yapabilir
-  List<Player> tempPlayers = [];
-
-  final List<Color> availableColors = [
+  int playerCount = 4;
+  final List<TextEditingController> _controllers = [];
+  final List<Color> _colors = [
     Colors.red,
     Colors.blue,
     Colors.green,
@@ -23,162 +21,122 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     Colors.purple,
     Colors.teal,
   ];
-
-  final List<IconData> availableIcons = [
-    Icons.person,
-    Icons.face,
-    Icons.pets,
-    Icons.emoji_emotions,
-    Icons.star,
-    Icons.android,
-  ];
+  final List<int> _selectedIcons = [];
 
   @override
   void initState() {
     super.initState();
-    _resetPlayers();
+    _updateControllers();
   }
 
-  void _resetPlayers() {
-    tempPlayers = List.generate(
-      playerCount,
-      (index) => Player(
-        id: DateTime.now().millisecondsSinceEpoch.toString() + index.toString(),
-        name: 'Oyuncu ${index + 1}',
-        color: availableColors[index % availableColors.length],
-        icon: availableIcons[index % availableIcons.length],
-      ),
-    );
+  void _updateControllers() {
+    _controllers.clear();
+    _selectedIcons.clear();
+    for (int i = 0; i < playerCount; i++) {
+      _controllers.add(TextEditingController(text: "Oyuncu ${i + 1}"));
+      _selectedIcons.add(i);
+    }
   }
 
-  void _updatePlayerCount(int count) {
-    setState(() {
-      playerCount = count;
-      _resetPlayers();
-    });
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Oyun Kurulumu')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.blueGrey[50],
+      appBar: AppBar(title: const Text("OYUN KURULUMU")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Oyuncu Sayısı Seçimi
-            const Text(
-              "Oyuncu Sayısı",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            DropdownButton<int>(
+              value: playerCount,
+              items: [2, 3, 4, 5, 6]
+                  .map(
+                    (e) =>
+                        DropdownMenuItem(value: e, child: Text("$e Kişilik")),
+                  )
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    playerCount = val;
+                    _updateControllers();
+                  });
+                }
+              },
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [4, 5, 6].map((count) {
-                // 4, 5, 6 istenmiş
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: ChoiceChip(
-                    label: Text("$count"),
-                    selected: playerCount == count,
-                    onSelected: (selected) {
-                      if (selected) _updatePlayerCount(count);
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-            const Divider(),
-
-            // Oyuncu Ayarları
-            ...List.generate(playerCount, (index) {
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: "${index + 1}. Oyuncu İsmi",
+            Expanded(
+              child: ListView.builder(
+                itemCount: playerCount,
+                itemBuilder: (ctx, i) => Card(
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _colors[i],
+                      child: Icon(
+                        IconData(
+                          0xe000 + _selectedIcons[i],
+                          fontFamily: 'MaterialIcons',
                         ),
-                        controller:
-                            TextEditingController(text: tempPlayers[index].name)
-                              ..selection = TextSelection.fromPosition(
-                                TextPosition(
-                                  offset: tempPlayers[index].name.length,
-                                ),
-                              ),
-                        onChanged: (val) {
-                          tempPlayers[index] = tempPlayers[index].copyWith(
-                            name: val,
-                          );
-                        },
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          // Renk Seçimi
-                          DropdownButton<Color>(
-                            value: tempPlayers[index].color,
-                            items: availableColors
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                    value: c,
-                                    child: Container(
-                                      width: 20,
-                                      height: 20,
-                                      color: c,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  tempPlayers[index] = tempPlayers[index]
-                                      .copyWith(color: val);
-                                });
-                              }
-                            },
+                    ),
+                    title: TextField(
+                      controller: _controllers[i],
+                      decoration: const InputDecoration(labelText: "İsim"),
+                    ),
+                    trailing: DropdownButton<int>(
+                      value: _selectedIcons[i],
+                      items: List.generate(
+                        10,
+                        (idx) => DropdownMenuItem(
+                          value: idx,
+                          child: Icon(
+                            IconData(0xe000 + idx, fontFamily: 'MaterialIcons'),
                           ),
-                          // İkon Seçimi
-                          DropdownButton<IconData>(
-                            value: tempPlayers[index].icon,
-                            items: availableIcons
-                                .map(
-                                  (i) => DropdownMenuItem(
-                                    value: i,
-                                    child: Icon(i),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  tempPlayers[index] = tempPlayers[index]
-                                      .copyWith(icon: val);
-                                });
-                              }
-                            },
-                          ),
-                        ],
+                        ),
                       ),
-                    ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedIcons[i] = val);
+                        }
+                      },
+                    ),
                   ),
                 ),
-              );
-            }),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
               ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
               onPressed: () {
-                ref.read(gameProvider.notifier).initializeGame(tempPlayers);
+                List<Player> players = [];
+                for (int i = 0; i < playerCount; i++) {
+                  players.add(
+                    Player(
+                      id:
+                          DateTime.now().millisecondsSinceEpoch.toString() +
+                          "$i",
+                      name: _controllers[i].text,
+                      color: _colors[i],
+                      iconIndex: _selectedIcons[i],
+                    ),
+                  );
+                }
+                // Using initializeGame which adheres to our provider
+                ref.read(gameProvider.notifier).initializeGame(players);
               },
-              child: const Text("OYUNA BAŞLA"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 50,
+                  vertical: 20,
+                ),
+              ),
+              child: const Text("OYUNA BAŞLA", style: TextStyle(fontSize: 20)),
             ),
           ],
         ),

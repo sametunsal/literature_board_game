@@ -139,13 +139,13 @@ const List<Question> mockQuestions = [
     text: "Divan edebiyatında 'Hiciv' (eleştiri) ustası kimdir?",
     options: ["Fuzuli", "Baki", "Nefi", "Nedim"],
     correctIndex: 2,
-    category: QuestionCategory.divanEdebiyati,
+    category: QuestionCategory.turkEdebiyatindaIlkler,
   ),
   Question(
     text: "'Su Kasidesi' kime aittir?",
     options: ["Fuzuli", "Baki", "Nedim", "Şeyhi"],
     correctIndex: 0,
-    category: QuestionCategory.divanEdebiyati,
+    category: QuestionCategory.turkEdebiyatindaIlkler,
   ),
 
   // Cumhuriyet Dönemi
@@ -153,13 +153,13 @@ const List<Question> mockQuestions = [
     text: "'Saatleri Ayarlama Enstitüsü' kime aittir?",
     options: ["Ahmet Hamdi Tanpınar", "Oğuz Atay", "Peyami Safa", "Sait Faik"],
     correctIndex: 0,
-    category: QuestionCategory.cumhuriyetDonemi,
+    category: QuestionCategory.edebiyatAkimlari,
   ),
   Question(
     text: "'İnce Memed' serisinin yazarı kimdir?",
     options: ["Kemal Tahir", "Orhan Kemal", "Yaşar Kemal", "Sabahattin Ali"],
     correctIndex: 2,
-    category: QuestionCategory.cumhuriyetDonemi,
+    category: QuestionCategory.edebiyatAkimlari,
   ),
 
   // Genel Kültür / Karışık
@@ -167,12 +167,12 @@ const List<Question> mockQuestions = [
     text: "İstiklal Marşı'nın yazarı kimdir?",
     options: ["Mehmet Akif Ersoy", "Ziya Gökalp", "Namık Kemal", "Faruk Nafiz"],
     correctIndex: 0,
-    category: QuestionCategory.genelKultur,
+    category: QuestionCategory.turkEdebiyatindaIlkler,
   ),
   Question(
     text: "Hangisi Yakup Kadri Karaosmanoğlu'nun eseridir?",
     options: ["Yaban", "Sinekli Bakkal", "Fatih-Harbiye", "Aylak Adam"],
     correctIndex: 0,
-    category: QuestionCategory.cumhuriyetDonemi,
+    category: QuestionCategory.edebiyatAkimlari,
   ),
 ];

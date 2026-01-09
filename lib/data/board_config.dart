@@ -2,7 +2,7 @@ import '../models/game_enums.dart';
 import '../models/board_tile.dart';
 
 class BoardConfig {
-  static const List<BoardTile> tiles = [
+  static List<BoardTile> tiles = [
     // 1. BAŞLANGIÇ (Index 0)
     BoardTile(id: 0, title: 'BAŞLANGIÇ', type: TileType.start),
 
@@ -13,7 +13,7 @@ class BoardConfig {
       type: TileType.property,
       price: 100,
       baseRent: 10,
-      questionCategory: QuestionCategory.eserKarakter,
+      category: QuestionCategory.eserKarakter,
     ),
     BoardTile(id: 2, title: 'KADER KARTI', type: TileType.fate),
     BoardTile(
@@ -22,7 +22,7 @@ class BoardConfig {
       type: TileType.property,
       price: 120,
       baseRent: 12,
-      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
     // VERGİ & YAYINEVİ
@@ -33,7 +33,7 @@ class BoardConfig {
       type: TileType.publisher,
       price: 200,
       baseRent: 25,
-      isUtilities: true,
+      isUtility: true,
     ),
 
     // 2. GRUP KİTAPLAR
@@ -43,7 +43,7 @@ class BoardConfig {
       type: TileType.property,
       price: 140,
       baseRent: 14,
-      questionCategory: QuestionCategory.benKimim,
+      category: QuestionCategory.benKimim,
     ),
     BoardTile(id: 7, title: 'ŞANS KARTI', type: TileType.chance),
     BoardTile(
@@ -52,7 +52,7 @@ class BoardConfig {
       type: TileType.property,
       price: 140,
       baseRent: 14,
-      questionCategory: QuestionCategory.eserKarakter,
+      category: QuestionCategory.eserKarakter,
     ),
     BoardTile(
       id: 9,
@@ -60,7 +60,7 @@ class BoardConfig {
       type: TileType.property,
       price: 160,
       baseRent: 16,
-      questionCategory: QuestionCategory.benKimim,
+      category: QuestionCategory.benKimim,
     ),
 
     // 11. KÜTÜPHANE NÖBETİ (Index 10)
@@ -73,7 +73,7 @@ class BoardConfig {
       type: TileType.property,
       price: 180,
       baseRent: 18,
-      questionCategory: QuestionCategory.edebiyatAkimlari,
+      category: QuestionCategory.edebiyatAkimlari,
     ),
     BoardTile(
       id: 12,
@@ -87,7 +87,7 @@ class BoardConfig {
       type: TileType.property,
       price: 180,
       baseRent: 18,
-      questionCategory: QuestionCategory.eserKarakter,
+      category: QuestionCategory.eserKarakter,
     ),
     BoardTile(
       id: 14,
@@ -95,7 +95,7 @@ class BoardConfig {
       type: TileType.property,
       price: 200,
       baseRent: 20,
-      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
     BoardTile(
@@ -104,7 +104,7 @@ class BoardConfig {
       type: TileType.publisher,
       price: 200,
       baseRent: 25,
-      isUtilities: true,
+      isUtility: true,
     ),
 
     // 4. GRUP KİTAPLAR
@@ -114,7 +114,7 @@ class BoardConfig {
       type: TileType.property,
       price: 220,
       baseRent: 22,
-      questionCategory: QuestionCategory.benKimim,
+      category: QuestionCategory.benKimim,
     ),
     BoardTile(id: 17, title: 'KADER KARTI', type: TileType.fate),
     BoardTile(
@@ -123,7 +123,7 @@ class BoardConfig {
       type: TileType.property,
       price: 220,
       baseRent: 22,
-      questionCategory: QuestionCategory.edebiSanatlar,
+      category: QuestionCategory.edebiSanatlar,
     ),
     BoardTile(
       id: 19,
@@ -131,7 +131,7 @@ class BoardConfig {
       type: TileType.property,
       price: 240,
       baseRent: 24,
-      questionCategory: QuestionCategory.edebiSanatlar,
+      category: QuestionCategory.edebiSanatlar,
     ),
 
     // 21. İMZA GÜNÜ (Index 20)
@@ -144,7 +144,7 @@ class BoardConfig {
       type: TileType.property,
       price: 260,
       baseRent: 26,
-      questionCategory: QuestionCategory.benKimim,
+      category: QuestionCategory.benKimim,
     ),
     BoardTile(id: 22, title: 'ŞANS KARTI', type: TileType.chance),
     BoardTile(
@@ -153,7 +153,7 @@ class BoardConfig {
       type: TileType.property,
       price: 260,
       baseRent: 26,
-      questionCategory: QuestionCategory.eserKarakter,
+      category: QuestionCategory.eserKarakter,
     ),
     BoardTile(
       id: 24,
@@ -161,7 +161,7 @@ class BoardConfig {
       type: TileType.property,
       price: 280,
       baseRent: 28,
-      questionCategory: QuestionCategory.benKimim,
+      category: QuestionCategory.benKimim,
     ),
 
     BoardTile(
@@ -170,7 +170,7 @@ class BoardConfig {
       type: TileType.publisher,
       price: 200,
       baseRent: 25,
-      isUtilities: true,
+      isUtility: true,
     ),
 
     // 6. GRUP KİTAPLAR
@@ -180,7 +180,7 @@ class BoardConfig {
       type: TileType.property,
       price: 300,
       baseRent: 30,
-      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
     BoardTile(
       id: 27,
@@ -188,14 +188,14 @@ class BoardConfig {
       type: TileType.property,
       price: 300,
       baseRent: 30,
-      questionCategory: QuestionCategory.turkEdebiyatindaIlkler,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
     BoardTile(
       id: 28,
       title: 'EĞİTİM VAKFI',
       type: TileType.educationFoundation,
       price: 150,
-      isUtilities: true,
+      isUtility: true,
     ),
     BoardTile(
       id: 29,
@@ -203,7 +203,7 @@ class BoardConfig {
       type: TileType.property,
       price: 320,
       baseRent: 32,
-      questionCategory: QuestionCategory.edebiyatAkimlari,
+      category: QuestionCategory.edebiyatAkimlari,
     ),
 
     // 31. İFLAS RİSKİ (Index 30)
@@ -216,7 +216,7 @@ class BoardConfig {
       type: TileType.property,
       price: 350,
       baseRent: 35,
-      questionCategory: QuestionCategory.edebiyatAkimlari,
+      category: QuestionCategory.edebiyatAkimlari,
     ),
     BoardTile(
       id: 32,
@@ -224,7 +224,7 @@ class BoardConfig {
       type: TileType.property,
       price: 350,
       baseRent: 35,
-      questionCategory: QuestionCategory.edebiyatAkimlari,
+      category: QuestionCategory.edebiyatAkimlari,
     ),
     BoardTile(id: 33, title: 'KADER KARTI', type: TileType.fate),
     BoardTile(
@@ -233,7 +233,7 @@ class BoardConfig {
       type: TileType.property,
       price: 380,
       baseRent: 40,
-      questionCategory: QuestionCategory.edebiSanatlar,
+      category: QuestionCategory.edebiSanatlar,
     ),
 
     BoardTile(
@@ -242,7 +242,7 @@ class BoardConfig {
       type: TileType.publisher,
       price: 200,
       baseRent: 25,
-      isUtilities: true,
+      isUtility: true,
     ),
 
     BoardTile(id: 36, title: 'ŞANS KARTI', type: TileType.chance),
@@ -254,7 +254,7 @@ class BoardConfig {
       type: TileType.property,
       price: 400,
       baseRent: 50,
-      questionCategory: QuestionCategory.benKimim,
+      category: QuestionCategory.benKimim,
     ),
     BoardTile(id: 38, title: 'YAZARLIK VERGİSİ', type: TileType.writingTax),
     BoardTile(
@@ -263,7 +263,16 @@ class BoardConfig {
       type: TileType.property,
       price: 420,
       baseRent: 60,
-      questionCategory: QuestionCategory.eserKarakter,
+      category: QuestionCategory.eserKarakter,
     ),
   ];
+
+  static BoardTile getTile(int id) => tiles[id];
+
+  static void upgradeTile(int id) {
+    var old = tiles[id];
+    if (old.upgradeLevel < 4) {
+      tiles[id] = old.copyWith(upgradeLevel: old.upgradeLevel + 1);
+    }
+  }
 }

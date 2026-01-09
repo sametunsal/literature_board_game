@@ -5,16 +5,16 @@ class Player {
   final String name;
   final int balance;
   final int position;
-  final List<int> ownedTiles; // Satın alınan kutucuk ID'leri
+  final List<int> ownedTiles;
   final bool inJail;
-  final Color color; // Oyuncu rengi
-  final IconData icon; // Oyuncu ikonu
+  final Color color;
+  final int iconIndex; // Setup ekranında seçilen ikonun indexi
 
   const Player({
     required this.id,
     required this.name,
     required this.color,
-    this.icon = Icons.person, // Varsayılan ikon
+    required this.iconIndex,
     this.balance = 1000,
     this.position = 0,
     this.ownedTiles = const [],
@@ -24,7 +24,7 @@ class Player {
   Player copyWith({
     String? name,
     Color? color,
-    IconData? icon,
+    int? iconIndex,
     int? balance,
     int? position,
     List<int>? ownedTiles,
@@ -34,7 +34,7 @@ class Player {
       id: id,
       name: name ?? this.name,
       color: color ?? this.color,
-      icon: icon ?? this.icon,
+      iconIndex: iconIndex ?? this.iconIndex,
       balance: balance ?? this.balance,
       position: position ?? this.position,
       ownedTiles: ownedTiles ?? this.ownedTiles,
