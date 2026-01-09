@@ -8,8 +8,9 @@ import '../providers/game_provider.dart';
 /// Dialog for displaying Chance (Sans) and Fate (Kader) cards
 class CardDialog extends ConsumerStatefulWidget {
   final game_models.Card card;
+  final VoidCallback? onDismiss;
 
-  const CardDialog({super.key, required this.card});
+  const CardDialog({super.key, required this.card, this.onDismiss});
 
   @override
   ConsumerState<CardDialog> createState() => _CardDialogState();
@@ -62,6 +63,12 @@ class _CardDialogState extends ConsumerState<CardDialog>
 
   void _applyCard() {
     if (_isProcessing) return;
+
+    if (widget.onDismiss != null) {
+      widget.onDismiss!();
+      return;
+    }
+
     setState(() => _isProcessing = true);
     final gameNotifier = ref.read(gameProvider.notifier);
     gameNotifier.applyCardEffect(widget.card);

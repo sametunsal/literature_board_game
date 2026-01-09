@@ -32,8 +32,9 @@ import '../models/turn_phase.dart';
 /// - Visual warning at <10s (orange), <5s (red)
 class QuestionDialog extends ConsumerStatefulWidget {
   final Question question;
+  final Function(bool)? onAnswer;
 
-  const QuestionDialog({super.key, required this.question});
+  const QuestionDialog({super.key, required this.question, this.onAnswer});
 
   @override
   ConsumerState<QuestionDialog> createState() => _QuestionDialogState();
@@ -470,6 +471,11 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
   void _handleAnswer(bool isCorrect) {
     // Guard: Check if widget is still mounted before using ref
     if (!mounted) return;
+
+    if (widget.onAnswer != null) {
+      widget.onAnswer!(isCorrect);
+      return;
+    }
 
     // CRITICAL FIX: Capture the notifier reference before any state changes
     final gameNotifier = ref.read(gameProvider.notifier);

@@ -6,10 +6,10 @@ import 'package:uuid/uuid.dart';
 
 import 'views/game_view.dart';
 import 'providers/game_provider.dart';
-import 'providers/tile_provider.dart';
 import 'providers/question_provider.dart';
 import 'providers/card_provider.dart';
 import 'models/player.dart';
+import 'utils/board_setup.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +45,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           .read(gameProvider.notifier)
           .initializeGame(
             players: _generatePlayers(),
-            tiles: generateTiles(),
+            tiles: BoardSetup.generateTiles(),
             sansCards: generateSansCards(),
             kaderCards: generateKaderCards(),
           );
