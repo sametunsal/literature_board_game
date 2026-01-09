@@ -1,4 +1,6 @@
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/board_config.dart';
 import '../models/board_tile.dart';
@@ -6,18 +8,45 @@ import '../models/game_enums.dart'; // GamePhase, CardType
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import 'dice_roller.dart';
 import 'game_tile_widget.dart';
 
-class BoardView extends ConsumerWidget {
+class BoardView extends ConsumerStatefulWidget {
   const BoardView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BoardView> createState() => _BoardViewState();
+}
+
+class _BoardViewState extends ConsumerState<BoardView> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 10),
+    );
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     // Ekranın kısa kenarını baz alarak tahta boyutunu belirle
     final boardSize = MediaQuery.of(context).size.shortestSide * 0.95;
     final tileSize =
         boardSize / 13; // 13 birimlik grid (9 normal + 2x2 köşeler)
+
+    // Oyun bittiyse konfeti patlat
+    if (gameState.phase == GamePhase.gameOver) {
+      _confettiController.play();
+    }
 
     return Scaffold(
       backgroundColor: GameTheme.backgroundTable,
@@ -34,26 +63,51 @@ class BoardView extends ConsumerWidget {
               // 2. KUTUCUKLAR (Tiles)
               ...BoardConfig.tiles.map((tile) => _buildTile(tile, tileSize)),
 
-              // 3. OYUNCULAR (Piyonlar)
+              // 3. OYUNCULAR (Piyonlar) - Animated
               ..._buildGroupedPlayers(gameState.players, tileSize),
 
-              // 4. DIALOGLAR (Overlay)
-              // (Soru, Kart, Satın Alma dialogları buraya eklenecek - Mevcut kodlarını koru veya buraya taşı)
-              // Örnek basit placeholder:
+              // 4. KONFETİ (En üst katman)
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: true,
+                  colors: const [
+                    Colors.green,
+                    Colors.blue,
+                    Colors.pink,
+                    Colors.orange,
+                    Colors.purple,
+                  ],
+                ),
+              ),
+
+              // 5. DIALOGLAR (Overlay) - Animated Pop-in
               if (gameState.showCardDialog && gameState.currentCard != null)
-                _buildOverlay(
-                  child: _buildCardDialog(ref, gameState),
-                ), // Mevcut dialog metodlarını kullanacağız
+                _buildOverlay(child: _buildCardDialog(ref, gameState))
+                    .animate()
+                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                    .fadeIn(duration: 300.ms),
 
               if (gameState.showQuestionDialog &&
                   gameState.currentQuestion != null)
-                _buildOverlay(child: _buildQuestionDialog(ref, gameState)),
+                _buildOverlay(child: _buildQuestionDialog(ref, gameState))
+                    .animate()
+                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                    .fadeIn(duration: 300.ms),
 
               if (gameState.showPurchaseDialog && gameState.currentTile != null)
-                _buildOverlay(child: _buildPurchaseDialog(ref, gameState)),
+                _buildOverlay(child: _buildPurchaseDialog(ref, gameState))
+                    .animate()
+                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                    .fadeIn(duration: 300.ms),
 
               if (gameState.showUpgradeDialog && gameState.currentTile != null)
-                _buildOverlay(child: _buildUpgradeDialog(ref, gameState)),
+                _buildOverlay(child: _buildUpgradeDialog(ref, gameState))
+                    .animate()
+                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                    .fadeIn(duration: 300.ms),
             ],
           ),
         ),
@@ -65,10 +119,6 @@ class BoardView extends ConsumerWidget {
   Widget _buildTile(BoardTile tile, double size) {
     double top = 0;
     double left = 0;
-
-    // Grid: 0..12 (13 birim)
-    // Köşeler 2 birim, Normaller 1 birim yer kaplar görsel olarak.
-    // Logic: 0 (Sol Alt) -> Saat Yönü
 
     if (tile.id == 0) {
       left = 0;
@@ -123,7 +173,6 @@ class BoardView extends ConsumerWidget {
     List<Widget> pawnWidgets = [];
 
     groups.forEach((pos, group) {
-      // Tile koordinatını bul (Yukarıdaki mantığın aynısı)
       double top = 0, left = 0;
       if (pos == 0) {
         left = 0;
@@ -151,18 +200,18 @@ class BoardView extends ConsumerWidget {
         top = 11.5 * size;
       }
 
-      // Köşe ise alan büyük (1.5x), normal ise (1x)
       double areaSize = (pos % 10 == 0) ? size * 1.5 : size;
 
       pawnWidgets.add(
-        Positioned(
+        AnimatedPositioned(
+          duration: 600.ms,
+          curve: Curves.easeInOutCubic,
           left: left,
           top: top,
           child: Container(
             width: areaSize,
             height: areaSize,
             alignment: Alignment.center,
-            // GRUP İÇİ DİZİLİM (Wrap)
             child: Wrap(
               alignment: WrapAlignment.center,
               spacing: 2,
@@ -237,20 +286,17 @@ class BoardView extends ConsumerWidget {
               !state.showCardDialog &&
               !state.showPurchaseDialog &&
               !state.showQuestionDialog)
-            ElevatedButton.icon(
-              onPressed: () => ref.read(gameProvider.notifier).rollDice(),
-              icon: const Icon(Icons.casino),
-              label: const Text("ZAR AT"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: GameTheme.primaryText,
-                foregroundColor: Colors.white,
-              ),
-            )
-          else if (state.isDiceRolled)
-            Text(
-              "${state.diceTotal}",
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
+            const DiceRoller() // Yeni widget kullanımı
+          else if (state.isDiceRolled &&
+              !state.showCardDialog &&
+              !state.showPurchaseDialog &&
+              !state.showQuestionDialog)
+            // Zar animasyonu DiceRoller içinde yönetildiği için buradaki text'e gerek kalmayabilir
+            // ama DiceRoller sadece "isDiceRolled" durumunda da görünüyor.
+            // BoardView içindeki logic DiceRoller'ı render etmeli.
+            // Yukardaki if/else yapısını DiceRoller'a bıraktık zaten.
+            // Tekrar düzenleyelim:
+            const DiceRoller(),
         ],
       ),
     );
@@ -275,9 +321,6 @@ class BoardView extends ConsumerWidget {
       ),
     );
   }
-
-  // --- HATA DÜZELTME: Eski Helper Metodlarını Geri Ekliyoruz ---
-  // (Overlay ve Dialoglar için)
 
   Widget _buildOverlay({required Widget child}) {
     return Container(
