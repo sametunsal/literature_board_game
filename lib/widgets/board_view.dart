@@ -10,6 +10,7 @@ import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
 import 'dice_roller.dart';
 import 'game_tile_widget.dart';
+import 'game_log.dart';
 
 class BoardView extends ConsumerStatefulWidget {
   const BoardView({super.key});
@@ -108,6 +109,13 @@ class _BoardViewState extends ConsumerState<BoardView> {
                     .animate()
                     .scale(duration: 400.ms, curve: Curves.easeOutBack)
                     .fadeIn(duration: 300.ms),
+
+              // 6. OYUN GÜNLÜĞÜ (Log)
+              Positioned(
+                bottom: 20,
+                right: 20,
+                child: GameLog(logs: gameState.logs),
+              ),
             ],
           ),
         ),
