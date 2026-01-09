@@ -1,15 +1,18 @@
 import 'dart:math';
+import 'game_random.dart';
 import '../models/player.dart';
 import '../models/tile.dart';
 import '../models/dice_roll.dart';
 import '../models/question.dart';
 import '../repositories/question_repository.dart';
+import '../constants/game_constants.dart';
 
 /// Temel oyun mantığı ve kuralları (Saf fonksiyonlar)
 class GameRulesEngine {
   final Random random;
 
-  GameRulesEngine({Random? random}) : random = random ?? Random();
+  GameRulesEngine({Random? random})
+    : random = random ?? GameRandom.instance.random;
 
   // Hareket Hesaplamaları
   int calculateNewPosition(int currentPosition, int diceTotal, int boardSize) {
@@ -32,7 +35,9 @@ class GameRulesEngine {
   // Vergi Hesaplamaları
   int calculateTax(int stars, int percentage) {
     final percentageTax = (stars * percentage) ~/ 100;
-    final minTax = percentage == 10 ? 20 : 30;
+    final minTax = percentage == GameConstants.incomeTaxRate
+        ? GameConstants.incomeTaxMin
+        : GameConstants.authorTaxMin;
     return percentageTax > minTax ? percentageTax : minTax;
   }
 

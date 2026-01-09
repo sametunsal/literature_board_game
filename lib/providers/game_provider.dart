@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ import '../core/game_state_manager.dart';
 import '../core/card_effect_handler.dart';
 import '../core/bot_ai_controller.dart';
 import '../core/turn_orchestrator.dart';
+import '../core/game_random.dart';
 
 /// LOGGING BOUNDARIES DOCUMENTATION
 /// =================================
@@ -44,7 +46,7 @@ import '../core/turn_orchestrator.dart';
 /// Logs are for game history and debugging, TurnResult is for immediate UI display.
 
 // Shared Random instance for consistent randomness across the game
-final _random = Random();
+final _random = GameRandom.instance.random;
 
 // Sentinel object to distinguish between "not passed" and "passed null"
 const _undefined = Object();
@@ -103,7 +105,18 @@ class GameState {
   // Flags
   final bool isGameOver;
 
-  const GameState({
+  // Lazy computed properties (memoization via caching)
+  List<Player>? _cachedActivePlayers;
+
+  List<Player> get activePlayers {
+    return _cachedActivePlayers ??= players
+        .where((p) => !p.isBankrupt)
+        .toList();
+  }
+
+  bool get hasActivePlayers => activePlayers.isNotEmpty;
+
+  GameState({
     required this.players,
     required this.tiles,
     required this.questionPool,
@@ -235,6 +248,9 @@ class GameState {
 
 // Game Notifier
 class GameNotifier extends StateNotifier<GameState> {
+  // Timer for turn end delay (to prevent callback after disposal)
+  Timer? _turnEndTimer;
+
   // Guard flag to prevent re-entry during turn processing
   bool _isProcessingTurn = false;
 
@@ -271,12 +287,15 @@ class GameNotifier extends StateNotifier<GameState> {
     onHandleCopyrightDecision: _handleBotCopyrightDecision,
     onEndTurn: endTurn,
     onStartNextTurn: startNextTurn,
+    diceAnimationDelay: const Duration(milliseconds: 1500),
+    botThinkDelay: const Duration(seconds: 1),
+    movementDelay: const Duration(milliseconds: 500),
   );
   // ---------------------------
 
   GameNotifier()
     : super(
-        const GameState(
+        GameState(
           players: [],
           tiles: [],
           questionPool: [],
@@ -392,6 +411,11 @@ class GameNotifier extends StateNotifier<GameState> {
   void rollDice() {
     debugPrint('🎲 rollDice() called');
 
+    if (_isProcessingTurn) {
+      debugPrint('⚠️ Turn already processing, ignoring rollDice');
+      return;
+    }
+
     if (state.isGameOver) return;
 
     // Faz kontrolü: Start veya TurnEnded (yeni tur başı) fazlarına izin ver
@@ -409,68 +433,73 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (state.currentPlayer == null) return;
 
-    // 1. KURAL MOTORU: Zarı at
-    final diceRoll = _rulesEngine.rollDice();
-    final currentPlayer = state.currentPlayer!;
+    _isProcessingTurn = true;
+    try {
+      // 1. KURAL MOTORU: Zarı at
+      final diceRoll = _rulesEngine.rollDice();
+      final currentPlayer = state.currentPlayer!;
 
-    // 2. DURUM YÖNETİCİSİ: Fazı güncelle
-    final manager = _stateManager; // Geçici yönetici oluştur
-    manager.setTurnPhase(TurnPhase.diceRolled);
-    debugPrint('🎲 Phase updated to: diceRolled');
+      // 2. DURUM YÖNETİCİSİ: Fazı güncelle
+      final manager = _stateManager; // Geçici yönetici oluştur
+      manager.setTurnPhase(TurnPhase.diceRolled);
+      debugPrint('🎲 Phase updated to: diceRolled');
 
-    // 3. OYUNCU GÜNCELLEMESİ: Zar bilgisini oyuncuya işle
-    final updatedPlayer = currentPlayer.copyWith(
-      lastRoll: diceRoll.total,
-      doubleDiceCount: diceRoll.isDouble
-          ? currentPlayer.doubleDiceCount + 1
-          : 0,
-    );
-    manager.updatePlayer(updatedPlayer);
-
-    // 4. LOGLAMA: Zarı kaydet ve log ekle
-    manager.setLastDiceRoll(diceRoll);
-
-    String logMessage =
-        '${currentPlayer.name} zar attı: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}';
-    if (diceRoll.isDouble) logMessage += ' (ÇİFT!)';
-    manager.addLogMessage(logMessage);
-
-    // Transkript Logu
-    _logEvent(
-      TurnEventType.diceRoll,
-      description: '${currentPlayer.name} zar attı: ${diceRoll.total}',
-      data: {
-        'die1': diceRoll.die1,
-        'die2': diceRoll.die2,
-        'total': diceRoll.total,
-        'isDouble': diceRoll.isDouble,
-      },
-    );
-
-    // Çift zar durumunu bildir
-    if (diceRoll.isDouble) {
-      manager.addLogMessage(
-        '${currentPlayer.name}: Çift zar sayısı: ${updatedPlayer.doubleDiceCount}/3',
+      // 3. OYUNCU GÜNCELLEMESİ: Zar bilgisini oyuncuya işle
+      final updatedPlayer = currentPlayer.copyWith(
+        lastRoll: diceRoll.total,
+        doubleDiceCount: diceRoll.isDouble
+            ? currentPlayer.doubleDiceCount + 1
+            : 0,
       );
-    } else {
-      manager.addLogMessage(
-        '${currentPlayer.name}: Çift zar sayacı sıfırlandı',
+      manager.updatePlayer(updatedPlayer);
+
+      // 4. LOGLAMA: Zarı kaydet ve log ekle
+      manager.setLastDiceRoll(diceRoll);
+
+      String logMessage =
+          '${currentPlayer.name} zar attı: ${diceRoll.die1} + ${diceRoll.die2} = ${diceRoll.total}';
+      if (diceRoll.isDouble) logMessage += ' (ÇİFT!)';
+      manager.addLogMessage(logMessage);
+
+      // Transkript Logu
+      _logEvent(
+        TurnEventType.diceRoll,
+        description: '${currentPlayer.name} zar attı: ${diceRoll.total}',
+        data: {
+          'die1': diceRoll.die1,
+          'die2': diceRoll.die2,
+          'total': diceRoll.total,
+          'isDouble': diceRoll.isDouble,
+        },
       );
-    }
 
-    // --- DEĞİŞİKLİKLERİ UYGULA ---
-    state = manager.state;
+      // Çift zar durumunu bildir
+      if (diceRoll.isDouble) {
+        manager.addLogMessage(
+          '${currentPlayer.name}: Çift zar sayısı: ${updatedPlayer.doubleDiceCount}/3',
+        );
+      } else {
+        manager.addLogMessage(
+          '${currentPlayer.name}: Çift zar sayacı sıfırlandı',
+        );
+      }
 
-    // 5. ORKESTRASYON: Hareket veya Ceza
-    // 3 çift zar kontrolü (Kural Motoru üzerinden yapılmalı ama şimdilik burada)
-    if (updatedPlayer.doubleDiceCount >= 3) {
-      _handleTripleDouble();
-      return;
-    }
+      // --- DEĞİŞİKLİKLERİ UYGULA ---
+      state = manager.state;
 
-    // İnsan oyuncu ise otomatik hareket et
-    if (currentPlayer.type == PlayerType.human) {
-      moveCurrentPlayer(diceRoll.total);
+      // 5. ORKESTRASYON: Hareket veya Ceza
+      // 3 çift zar kontrolü (Kural Motoru üzerinden yapılmalı ama şimdilik burada)
+      if (updatedPlayer.doubleDiceCount >= 3) {
+        _handleTripleDouble();
+        return;
+      }
+
+      // İnsan oyuncu ise otomatik hareket et
+      if (currentPlayer.type == PlayerType.human) {
+        moveCurrentPlayer(diceRoll.total);
+      }
+    } finally {
+      _isProcessingTurn = false;
     }
   }
 
@@ -599,10 +628,16 @@ class GameNotifier extends StateNotifier<GameState> {
     final tileId = state.newPosition!;
 
     // Tile bul
-    final tile = state.tiles.firstWhere(
-      (t) => t.id == tileId,
-      orElse: () => state.tiles[0],
-    );
+    final tile = state.tiles.isNotEmpty
+        ? state.tiles.firstWhere(
+            (t) => t.id == tileId,
+            orElse: () => state.tiles[0],
+          )
+        : null;
+    if (tile == null) {
+      debugPrint('⛔ No tiles available in state');
+      return;
+    }
 
     debugPrint('📍 Player landed on: ${tile.name} (${tile.type})');
 
@@ -796,7 +831,7 @@ class GameNotifier extends StateNotifier<GameState> {
   void applyCardEffect(Card card) {
     // GUARD CHECKS
     if (_isApplyingEffect) {
-      debugPrint("🛑 Çakışma önlendi: applyCardEffect zaten çalışıyor.");
+      debugPrint('⚠️ Effect already applying, ignoring applyCardEffect');
       return;
     }
     if (state.currentPlayer == null) return;
@@ -895,6 +930,7 @@ class GameNotifier extends StateNotifier<GameState> {
     // Validate purchase is possible
     if (!tile.canBeOwned) {
       debugPrint('⛔ Tile cannot be owned: ${tile.name}');
+      state = state.copyWith(turnPhase: TurnPhase.questionResolved);
       return;
     }
 
@@ -1433,7 +1469,11 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     // Call startNextTurn with a small delay to allow UI to process the end state
-    Future.delayed(const Duration(milliseconds: 500), () => startNextTurn());
+    // Using Timer to prevent callback after disposal
+    _turnEndTimer?.cancel();
+    _turnEndTimer = Timer(const Duration(milliseconds: 500), () {
+      startNextTurn();
+    });
   }
 
   // CRITICAL FIX: New public method to start next turn
@@ -1466,9 +1506,17 @@ class GameNotifier extends StateNotifier<GameState> {
     int attempts = 0;
     final totalPlayers = state.players.length;
     while (state.players[nextIndex].isBankrupt && attempts < totalPlayers) {
-      state = state.copyWith(currentPlayerIndex: nextIndex);
       nextIndex = (nextIndex + 1) % totalPlayers;
       attempts++;
+
+      // Tüm oyuncular bankrupt ise oyunu bitir
+      if (attempts >= totalPlayers) {
+        debugPrint('⚠️ All players are bankrupt, ending game');
+        state = state.copyWith(isGameOver: true);
+        return;
+      }
+
+      state = state.copyWith(currentPlayerIndex: nextIndex);
     }
 
     state = state.copyWith(
@@ -1478,15 +1526,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // UI FEEDBACK LOG: Turn transition
     state = state.withLogMessage('Sıra: ${state.players[nextIndex].name}');
+  }
 
-    // If the new current player is a bot, trigger playTurn after a small delay
-    final nextPlayer = state.players[nextIndex];
-    if (nextPlayer.type == PlayerType.bot) {
-      debugPrint('🤖 Bot Turn Detected: Triggering Auto-Play...');
-      Future.delayed(const Duration(seconds: 1), () {
-        playTurn();
-      });
-    }
+  @override
+  void dispose() {
+    _turnEndTimer?.cancel();
+    super.dispose();
   }
 
   // Check bankruptcy

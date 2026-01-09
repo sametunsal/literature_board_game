@@ -67,6 +67,9 @@ class GameConstants {
   static const int authorTaxRate = 15;
   static const int authorTaxMin = 30;
 
+  // Stars
+  static const int maxStars = 9999;
+
   // Bankruptcy loss percentage
   static const double bankruptcyLossPercentage = 0.5;
 
@@ -77,6 +80,12 @@ class GameConstants {
   // Question answering configuration
   static const int questionTimerDuration = 30; // seconds to answer
   static const int wrongAnswerPenalty = 10; // stars penalty for wrong answer
+
+  // Bot AI configuration
+  static const double botCorrectProbability = 0.30;
+  static const double botAffordabilityMultiplier = 1.5;
+  static const double botRoiThreshold = 0.1;
+  static const int botReserveAmount = 50;
 }
 
 /// Tile type colors

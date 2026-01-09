@@ -102,7 +102,10 @@ class CardEffectHandler {
 
       // İflas Kontrolleri
       if (isPersonal) {
-        _checkBankruptcyForPlayer(stateManager.state.currentPlayer!);
+        final currentPlayer = stateManager.state.currentPlayer;
+        if (currentPlayer != null) {
+          _checkBankruptcyForPlayer(currentPlayer);
+        }
       } else if (isGlobal) {
         _checkAllPlayersBankruptcy();
       }
@@ -148,7 +151,7 @@ class CardEffectHandler {
 
   void _applyAllPlayersLoseStars(int amount) {
     for (var p in stateManager.state.players) {
-      final newStars = (p.stars - amount).clamp(0, 9999);
+      final newStars = (p.stars - amount).clamp(0, GameConstants.maxStars);
       stateManager.updatePlayer(p.copyWith(stars: newStars));
     }
   }
@@ -175,7 +178,7 @@ class CardEffectHandler {
         (t) => t.owner == p.id && t.type == TileType.publisher,
       );
       if (hasPublisher) {
-        final newStars = (p.stars - amount).clamp(0, 9999);
+        final newStars = (p.stars - amount).clamp(0, GameConstants.maxStars);
         stateManager.updatePlayer(p.copyWith(stars: newStars));
         count++;
       }

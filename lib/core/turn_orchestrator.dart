@@ -23,6 +23,11 @@ class TurnOrchestrator {
   final GameRulesEngine rulesEngine;
   final BotAIController botAI;
 
+  // Configurable delays
+  final Duration diceAnimationDelay;
+  final Duration botThinkDelay;
+  final Duration movementDelay;
+
   // Callbacks for turn actions
   final OnRollDice onRollDice;
   final OnMovePlayer onMovePlayer;
@@ -45,12 +50,10 @@ class TurnOrchestrator {
     required this.onHandleCopyrightDecision,
     required this.onEndTurn,
     required this.onStartNextTurn,
+    this.diceAnimationDelay = const Duration(milliseconds: 1500),
+    this.botThinkDelay = const Duration(seconds: 1),
+    this.movementDelay = const Duration(milliseconds: 500),
   });
-
-  /// Mevcut faza göre bir sonraki adımı çalıştır
-  void executeNextStep(TurnPhase currentPhase) {
-    // Deprecated: Use executeTurnLogic instead
-  }
 
   /// Execute turn logic based on current phase and player type
   /// This method contains the switch-case logic for turn orchestration
@@ -65,7 +68,7 @@ class TurnOrchestrator {
       case TurnPhase.start:
         // Bot ise otomatik zar at
         if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
+          await Future.delayed(botThinkDelay);
           onRollDice();
         }
         // İnsan oyuncu: UI üzerinden rollDice() çağrılmasını bekle
@@ -73,9 +76,7 @@ class TurnOrchestrator {
 
       case TurnPhase.diceRolled:
         debugPrint('🎲 Dice rolled. Waiting for animation...');
-        await Future.delayed(
-          const Duration(milliseconds: 1500),
-        ); // Allow UI to show dice
+        await Future.delayed(diceAnimationDelay); // Allow UI to show dice
         // Get the last dice roll total from state manager
         final lastRoll = stateManager.state.lastDiceRoll;
         if (onMovePlayer != null) {
@@ -90,14 +91,14 @@ class TurnOrchestrator {
 
       case TurnPhase.moved:
         // Hareket bitti, Tile çözümle
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(movementDelay);
         onResolveTile();
         break;
 
       case TurnPhase.questionWaiting:
         // Bot ise cevap ver
         if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 2));
+          await Future.delayed(botThinkDelay);
           onBotAnswer();
         }
         break;
@@ -105,7 +106,7 @@ class TurnOrchestrator {
       case TurnPhase.cardWaiting:
         // Bot ise kart çek (UI açılmadan)
         if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
+          await Future.delayed(botThinkDelay);
           onApplyCard();
         }
         break;
@@ -113,17 +114,15 @@ class TurnOrchestrator {
       case TurnPhase.questionResolved:
         // Soru çözüldü, satın alma kararı veya tur sonu
         if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
+          await Future.delayed(botThinkDelay);
           onHandleCopyrightDecision();
         }
         break;
 
       case TurnPhase.turnEnded:
-        // Tur bitti, sonraki tura geç
-        if (currentPlayer.type == PlayerType.bot) {
-          await Future.delayed(const Duration(seconds: 1));
-          onStartNextTurn();
-        }
+        debugPrint('🏁 Turn ended. Next player: ${currentPlayer.name}');
+        // Sonraki oyuncunun turunu başlat
+        onStartNextTurn();
         break;
 
       default:
