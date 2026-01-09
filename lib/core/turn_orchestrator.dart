@@ -93,6 +93,15 @@ class TurnOrchestrator {
         // İnsan oyuncu: UI üzerinden satın alma kararını bekle
         break;
 
+      // --- EKLENECEK KISIM BURASI ---
+      case TurnPhase.cardApplied:
+      case TurnPhase.taxResolved:
+        // Kart uygulandıysa veya vergi ödendiyse turu bitirmeye yönlendir
+        debugPrint('🔄 Phase: $currentPhase -> Triggering EndTurn');
+        onEndTurn();
+        break;
+      // -----------------------------
+
       case TurnPhase.turnEnded:
         debugPrint('🏁 Turn ended. Next player: ${currentPlayer.name}');
         // Humans wait for TurnSummaryOverlay button

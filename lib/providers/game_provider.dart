@@ -816,6 +816,17 @@ class GameNotifier extends StateNotifier<GameState> {
     } finally {
       // Handler zaten state'i temizledi ama flag'i burada kaldırıyoruz
       _isApplyingEffect = false;
+
+      // --- DÜZELTİLEN KISIM BURASI ---
+      // Fazı güncelle ve motoru tekrar tetikle
+      final manager = _stateManager;
+      manager.setCurrentCard(null, null); // Kartı UI'dan temizle
+      manager.setTurnPhase(TurnPhase.cardApplied);
+      state = manager.state;
+
+      debugPrint("🔄 applyCardEffect tamamlandı, playTurn tetikleniyor...");
+      playTurn(); // <--- BU SATIR EKSİKTİ, OYUNU DEVAM ETTİREN BU
+      // -------------------------------
     }
   }
 
