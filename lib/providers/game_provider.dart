@@ -703,61 +703,44 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // Show question (REFACTORED)
+  // Show question (REFACTORED - FIX APPLIED)
   void _showQuestion(Tile tile) {
     if (!_requirePhase(TurnPhase.tileResolved, '_showQuestion')) return;
     if (state.currentPlayer == null) return;
 
     final currentPlayer = state.currentPlayer!;
-    final manager = _stateManager;
+    final manager = _stateManager; // Mevcut durumu sarmala
 
-    // Faz güncelle
+    // 1. Temel durumları ayarla (Faz ve Soru)
     manager.setTurnPhase(TurnPhase.questionWaiting);
 
-    // Kategori belirle
-    // Not: Repository kullanımı ilerde RulesEngine içine de taşınabilir ama şimdilik burada kalabilir
-    // Ancak soru SEÇİMİ (Random vs Easy) RulesEngine'e geçiyor.
+    // Kategori ve Havuz mantığı
     final category = tile.questionCategory ?? QuestionCategory.benKimim;
-
-    // Soru havuzunu filtrele (Kategoriye göre)
-    // Not: Normalde repository'den çekeriz ama burada state'deki pool'u kullanıyoruz.
-    // Basitlik için tüm havuzu gönderiyoruz, RulesEngine içindeki selectQuestion metodunu güncelleyebiliriz
-    // veya şimdilik repository mantığını koruyup sadece easy/random seçimini devredebiliriz.
-
-    // Mevcut yapıyı koruyarak daha temiz hale getirelim:
     List<Question> categoryPool = state.questionPool
         .where((q) => q.category == category)
         .toList();
-
-    // Eğer kategori boşsa genel havuzdan seç
     if (categoryPool.isEmpty) categoryPool = state.questionPool;
 
-    // Easy mode kontrolü
+    // Soru seçimi
     bool isEasyMode = currentPlayer.easyQuestionNext;
-
-    // 1. KURAL MOTORU: Soruyu seç
     final question = _rulesEngine.selectQuestion(
       categoryPool,
       easyMode: isEasyMode,
     );
 
-    // Easy flag'ini tüket
     if (isEasyMode) {
       manager.updatePlayer(currentPlayer.copyWith(easyQuestionNext: false));
     }
 
-    // 2. LOGLAMA VE STATE
     manager.setCurrentQuestion(question);
+    manager.addLogMessage('${tile.name} için soru soruluyor...');
 
-    // Timer ve durum ayarla
-    // Not: Bu kısımlar GameStateManager'a eklenebilir ama şimdilik manuel copyWith yapıyoruz
+    // 2. CRITICAL FIX: Manager'dan gelen son durumu alıp, üzerine timer ve answering durumunu ekle.
+    // Böylece önceki güncellemeler (log, faz, player update) korunur.
     state = manager.state.copyWith(
       questionState: QuestionState.answering,
       questionTimer: GameConstants.questionTimerDuration,
     );
-
-    manager.addLogMessage('${tile.name} için soru soruluyor...');
-    state = manager.state;
   }
 
   // Draw a card from the appropriate deck

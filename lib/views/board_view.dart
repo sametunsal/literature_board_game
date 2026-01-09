@@ -20,15 +20,21 @@ class BoardView extends ConsumerWidget {
 
     // Dialog Listeners
     ref.listen(gameProvider, (previous, next) {
-      if (next.turnPhase == TurnPhase.questionWaiting &&
-          next.currentQuestion != null) {
+      // Soru Dialog Tetikleyicisi
+      // Sadece 'questionWaiting' fazına YENİ geçildiğinde çalışır.
+      final didPhaseChangeToQuestion =
+          previous?.turnPhase != TurnPhase.questionWaiting &&
+          next.turnPhase == TurnPhase.questionWaiting;
+
+      if (didPhaseChangeToQuestion && next.currentQuestion != null) {
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (_) => QuestionDialog(
             question: next.currentQuestion!,
             onAnswer: (isCorrect) {
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(); // Pencereyi kapat
+              // Cevabı işle
               if (isCorrect) {
                 ref.read(gameProvider.notifier).answerQuestionCorrect();
               } else {
@@ -39,7 +45,13 @@ class BoardView extends ConsumerWidget {
         );
       }
 
-      if (next.turnPhase == TurnPhase.cardWaiting && next.currentCard != null) {
+      // Kart Dialog Tetikleyicisi
+      // Sadece 'cardWaiting' fazına YENİ geçildiğinde çalışır.
+      final didPhaseChangeToCard =
+          previous?.turnPhase != TurnPhase.cardWaiting &&
+          next.turnPhase == TurnPhase.cardWaiting;
+
+      if (didPhaseChangeToCard && next.currentCard != null) {
         showDialog(
           context: context,
           barrierDismissible: false,
