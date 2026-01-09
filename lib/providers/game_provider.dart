@@ -482,14 +482,17 @@ class GameNotifier extends StateNotifier<GameState> {
       state = manager.state;
 
       // 5. ORKESTRASYON: Hareket veya Ceza
-      // 3 çift zar kontrolü (Kural Motoru üzerinden yapılmalı ama şimdilik burada)
+      // 3 çift zar kontrolü
       if (updatedPlayer.doubleDiceCount >= 3) {
         _handleTripleDouble();
         return;
       }
 
-      // All players are human - auto move
-      moveCurrentPlayer(diceRoll.total);
+      // FIX: Manuel moveCurrentPlayer çağrısını kaldırdık.
+      // Bunun yerine playTurn() çağırarak kontrolü TurnOrchestrator'a bırakıyoruz.
+      // Orchestrator, 'diceRolled' fazını görecek, animasyon süresi kadar bekleyecek
+      // ve ardından 'onMovePlayer' callback'ini tetikleyecektir.
+      playTurn();
     } finally {
       _isProcessingTurn = false;
     }
