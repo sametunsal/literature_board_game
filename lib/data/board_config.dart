@@ -1,78 +1,85 @@
-import '../models/game_enums.dart';
 import '../models/board_tile.dart';
+import '../models/game_enums.dart';
 
 class BoardConfig {
+  // Statik liste, oyun başladığında değiştirilebilir olacak (Baskı seviyeleri için)
   static List<BoardTile> tiles = [
-    // 1. BAŞLANGIÇ (Index 0)
+    // --- 1. KENAR (ALT: SAĞDAN SOLA veya SOL ALT KÖŞEDEN BAŞLAYIP SAAT YÖNÜNE) ---
+    // Bizim yapımız: 0 (Sol Alt) -> Saat Yönünde (Clockwise)
+
+    // 0. BAŞLANGIÇ
     BoardTile(id: 0, title: 'BAŞLANGIÇ', type: TileType.start),
 
-    // 1. GRUP KİTAPLAR
+    // 1. Grup (Mor)
     BoardTile(
       id: 1,
       title: 'Çalıkuşu',
       type: TileType.property,
-      price: 100,
-      baseRent: 10,
+      price: 60,
+      baseRent: 2,
       category: QuestionCategory.eserKarakter,
     ),
     BoardTile(id: 2, title: 'KADER KARTI', type: TileType.fate),
     BoardTile(
       id: 3,
-      title: 'Eylül',
+      title: 'Dudaktan Kalbe',
       type: TileType.property,
-      price: 120,
-      baseRent: 12,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
+      price: 60,
+      baseRent: 4,
+      category: QuestionCategory.eserKarakter,
     ),
 
-    // VERGİ & YAYINEVİ
+    // Vergi
     BoardTile(id: 4, title: 'GELİR VERGİSİ', type: TileType.incomeTax),
+
+    // Yayınevi (Utility)
     BoardTile(
       id: 5,
-      title: '1. YAYINEVİ (Can)',
+      title: '1. YAYINEVİ',
       type: TileType.publisher,
       price: 200,
-      baseRent: 25,
       isUtility: true,
     ),
 
-    // 2. GRUP KİTAPLAR
+    // 2. Grup (Açık Mavi)
     BoardTile(
       id: 6,
       title: 'Yaban',
       type: TileType.property,
-      price: 140,
-      baseRent: 14,
-      category: QuestionCategory.benKimim,
+      price: 100,
+      baseRent: 6,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
     BoardTile(id: 7, title: 'ŞANS KARTI', type: TileType.chance),
     BoardTile(
       id: 8,
       title: 'Sinekli Bakkal',
       type: TileType.property,
-      price: 140,
-      baseRent: 14,
-      category: QuestionCategory.eserKarakter,
+      price: 100,
+      baseRent: 6,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
     BoardTile(
       id: 9,
       title: 'Kiralık Konak',
       type: TileType.property,
-      price: 160,
-      baseRent: 16,
-      category: QuestionCategory.benKimim,
+      price: 120,
+      baseRent: 8,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
-    // 11. KÜTÜPHANE NÖBETİ (Index 10)
-    BoardTile(id: 10, title: 'KÜTÜPHANE NÖBETİ', type: TileType.libraryWatch),
+    // --- KÖŞE 1 (SOL ÜST) ---
+    // 10. KÜTÜPHANE NÖBETİ
+    BoardTile(id: 10, title: 'KÜTÜPHANE\nNÖBETİ', type: TileType.libraryWatch),
 
-    // 3. GRUP KİTAPLAR
+    // --- 2. KENAR (ÜST) ---
+    // 3. Grup (Pembe)
     BoardTile(
       id: 11,
       title: 'Mai ve Siyah',
       type: TileType.property,
-      price: 180,
-      baseRent: 18,
+      price: 140,
+      baseRent: 10,
       category: QuestionCategory.edebiyatAkimlari,
     ),
     BoardTile(
@@ -80,114 +87,117 @@ class BoardConfig {
       title: 'YAZARLIK OKULU',
       type: TileType.writingSchool,
       price: 150,
+      isUtility: true,
     ),
     BoardTile(
       id: 13,
       title: 'Aşk-ı Memnu',
       type: TileType.property,
-      price: 180,
-      baseRent: 18,
+      price: 140,
+      baseRent: 10,
       category: QuestionCategory.eserKarakter,
     ),
     BoardTile(
       id: 14,
-      title: 'Araba Sevdası',
+      title: 'Eylül',
       type: TileType.property,
-      price: 200,
-      baseRent: 20,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
+      price: 160,
+      baseRent: 12,
+      category: QuestionCategory.edebiSanatlar,
     ),
 
+    // Yayınevi
     BoardTile(
       id: 15,
-      title: '2. YAYINEVİ (İletişim)',
+      title: '2. YAYINEVİ',
       type: TileType.publisher,
       price: 200,
-      baseRent: 25,
       isUtility: true,
     ),
 
-    // 4. GRUP KİTAPLAR
+    // 4. Grup (Turuncu)
     BoardTile(
       id: 16,
       title: 'İnce Memed',
       type: TileType.property,
-      price: 220,
-      baseRent: 22,
+      price: 180,
+      baseRent: 14,
       category: QuestionCategory.benKimim,
     ),
     BoardTile(id: 17, title: 'KADER KARTI', type: TileType.fate),
     BoardTile(
       id: 18,
-      title: 'Saatleri Ayarlama',
+      title: 'Yer Demir Gök Bakır',
       type: TileType.property,
-      price: 220,
-      baseRent: 22,
-      category: QuestionCategory.edebiSanatlar,
+      price: 180,
+      baseRent: 14,
+      category: QuestionCategory.benKimim,
     ),
     BoardTile(
       id: 19,
-      title: 'Huzur',
+      title: 'Teneke',
       type: TileType.property,
-      price: 240,
-      baseRent: 24,
-      category: QuestionCategory.edebiSanatlar,
+      price: 200,
+      baseRent: 16,
+      category: QuestionCategory.benKimim,
     ),
 
-    // 21. İMZA GÜNÜ (Index 20)
+    // --- KÖŞE 2 (SAĞ ÜST) ---
+    // 20. İMZA GÜNÜ
     BoardTile(id: 20, title: 'İMZA GÜNÜ', type: TileType.autographDay),
 
-    // 5. GRUP KİTAPLAR
+    // --- 3. KENAR (SAĞ) ---
+    // 5. Grup (Kırmızı)
     BoardTile(
       id: 21,
-      title: 'Dokuzuncu Hariciye',
+      title: 'Saatleri Ayarlama',
       type: TileType.property,
-      price: 260,
-      baseRent: 26,
-      category: QuestionCategory.benKimim,
+      price: 220,
+      baseRent: 18,
+      category: QuestionCategory.eserKarakter,
     ),
     BoardTile(id: 22, title: 'ŞANS KARTI', type: TileType.chance),
     BoardTile(
       id: 23,
-      title: 'Fatih-Harbiye',
+      title: 'Huzur',
       type: TileType.property,
-      price: 260,
-      baseRent: 26,
+      price: 220,
+      baseRent: 18,
       category: QuestionCategory.eserKarakter,
     ),
     BoardTile(
       id: 24,
-      title: 'Kuyucaklı Yusuf',
+      title: 'Beş Şehir',
       type: TileType.property,
-      price: 280,
-      baseRent: 28,
-      category: QuestionCategory.benKimim,
+      price: 240,
+      baseRent: 20,
+      category: QuestionCategory.edebiSanatlar,
     ),
 
+    // Yayınevi
     BoardTile(
       id: 25,
-      title: '3. YAYINEVİ (Yapı Kredi)',
+      title: '3. YAYINEVİ',
       type: TileType.publisher,
       price: 200,
-      baseRent: 25,
       isUtility: true,
     ),
 
-    // 6. GRUP KİTAPLAR
+    // 6. Grup (Sarı)
     BoardTile(
       id: 26,
       title: 'Devlet Ana',
       type: TileType.property,
-      price: 300,
-      baseRent: 30,
+      price: 260,
+      baseRent: 22,
       category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
     BoardTile(
       id: 27,
       title: 'Yorgun Savaşçı',
       type: TileType.property,
-      price: 300,
-      baseRent: 30,
+      price: 260,
+      baseRent: 22,
       category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
     BoardTile(
@@ -199,78 +209,83 @@ class BoardConfig {
     ),
     BoardTile(
       id: 29,
-      title: 'Aylak Adam',
+      title: 'Esir Şehrin İnsanları',
       type: TileType.property,
-      price: 320,
-      baseRent: 32,
-      category: QuestionCategory.edebiyatAkimlari,
+      price: 280,
+      baseRent: 24,
+      category: QuestionCategory.turkEdebiyatindaIlkler,
     ),
 
-    // 31. İFLAS RİSKİ (Index 30)
+    // --- KÖŞE 3 (SAĞ ALT) ---
+    // 30. İFLAS RİSKİ
     BoardTile(id: 30, title: 'İFLAS RİSKİ', type: TileType.bankruptcyRisk),
 
-    // 7. GRUP KİTAPLAR
+    // --- 4. KENAR (ALT) ---
+    // 7. Grup (Yeşil)
     BoardTile(
       id: 31,
       title: 'Tutunamayanlar',
       type: TileType.property,
-      price: 350,
-      baseRent: 35,
+      price: 300,
+      baseRent: 26,
       category: QuestionCategory.edebiyatAkimlari,
     ),
     BoardTile(
       id: 32,
       title: 'Tehlikeli Oyunlar',
       type: TileType.property,
-      price: 350,
-      baseRent: 35,
+      price: 300,
+      baseRent: 26,
       category: QuestionCategory.edebiyatAkimlari,
     ),
     BoardTile(id: 33, title: 'KADER KARTI', type: TileType.fate),
     BoardTile(
       id: 34,
-      title: 'Kara Kitap',
+      title: 'Oyunlarla Yaşayanlar',
       type: TileType.property,
-      price: 380,
-      baseRent: 40,
-      category: QuestionCategory.edebiSanatlar,
+      price: 320,
+      baseRent: 28,
+      category: QuestionCategory.edebiyatAkimlari,
     ),
 
+    // Yayınevi
     BoardTile(
       id: 35,
-      title: '4. YAYINEVİ (Alfa)',
+      title: '4. YAYINEVİ',
       type: TileType.publisher,
       price: 200,
-      baseRent: 25,
       isUtility: true,
     ),
 
+    // 8. Grup (Lacivert/Mavi)
     BoardTile(id: 36, title: 'ŞANS KARTI', type: TileType.chance),
-
-    // 8. GRUP KİTAPLAR
     BoardTile(
       id: 37,
-      title: 'Benim Adım Kırmızı',
+      title: 'Kara Kitap',
       type: TileType.property,
-      price: 400,
-      baseRent: 50,
-      category: QuestionCategory.benKimim,
+      price: 350,
+      baseRent: 35,
+      category: QuestionCategory.edebiSanatlar,
     ),
     BoardTile(id: 38, title: 'YAZARLIK VERGİSİ', type: TileType.writingTax),
     BoardTile(
       id: 39,
-      title: 'Masumiyet Müzesi',
+      title: 'Benim Adım Kırmızı',
       type: TileType.property,
-      price: 420,
-      baseRent: 60,
-      category: QuestionCategory.eserKarakter,
+      price: 400,
+      baseRent: 50,
+      category: QuestionCategory.edebiSanatlar,
     ),
   ];
 
-  static BoardTile getTile(int id) => tiles[id];
+  static BoardTile getTile(int id) {
+    if (id < 0 || id >= tiles.length) return tiles[0];
+    return tiles[id];
+  }
 
   static void upgradeTile(int id) {
     var old = tiles[id];
+    // Sadece level 4'ten küçükse artır
     if (old.upgradeLevel < 4) {
       tiles[id] = old.copyWith(upgradeLevel: old.upgradeLevel + 1);
     }

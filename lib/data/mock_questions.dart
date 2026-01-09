@@ -15,164 +15,105 @@ class Question {
 }
 
 const List<Question> mockQuestions = [
-  // Eser-Karakter
+  // ESER-KARAKTER
   Question(
-    text: "Çalıkuşu romanının baş karakteri kimdir?",
-    options: ["Feride", "Bihter", "Hürrem", "Kösem"],
-    correctIndex: 0,
-    category: QuestionCategory.eserKarakter,
-  ),
-  Question(
-    text: "Sinekli Bakkal'ın Rabia'sı hangi müzik aletiyle ilgilenir?",
-    options: ["Ud", "Ney", "Keman", "Piyano"],
-    correctIndex:
-        1, // Neyzen Tevfik etkisi, ama kitapta ses/hafız da var. Aslında Rabia hafız ve mevlithandır. Ama şıklarda aldatmaca olsun.
-    category: QuestionCategory.eserKarakter,
-  ),
-  Question(
-    text: "Mai ve Siyah'ın Ahmet Cemil'i ne iş yapar?",
-    options: ["Doktor", "Şair/Gazeteci", "Mühendis", "Asker"],
+    text: "Çalıkuşu romanının baş karakteri Feride'nin mesleği nedir?",
+    options: ["Hemşire", "Öğretmen", "Doktor", "Avukat"],
     correctIndex: 1,
     category: QuestionCategory.eserKarakter,
   ),
   Question(
-    text: "Aşk-ı Memnu'daki Behlül'ün yasak aşkı kimdir?",
-    options: ["Nihal", "Bihter", "Firdevs", "Peyker"],
+    text: "Bihter ve Behlül hangi romanın karakterleridir?",
+    options: ["Yaprak Dökümü", "Aşk-ı Memnu", "Eylül", "Mai ve Siyah"],
     correctIndex: 1,
     category: QuestionCategory.eserKarakter,
   ),
   Question(
-    text: "Huzur romanının baş karakteri Mümtaz'ın sevgilisi kimdir?",
-    options: ["Nuran", "Suat", "Handan", "Ferhunde"],
-    correctIndex: 0,
+    text: "'İnce Memed' romanının yazarı kimdir?",
+    options: ["Orhan Kemal", "Yaşar Kemal", "Kemal Tahir", "Sabahattin Ali"],
+    correctIndex: 1,
     category: QuestionCategory.eserKarakter,
   ),
 
-  // Türk Edebiyatında İlkler
+  // İLKLER
+  Question(
+    text: "Türk Edebiyatındaki ilk psikolojik roman hangisidir?",
+    options: ["Eylül", "İntibah", "Araba Sevdası", "Mai ve Siyah"],
+    correctIndex: 0,
+    category: QuestionCategory.turkEdebiyatindaIlkler,
+  ),
   Question(
     text: "İlk yerli tiyatro eserimiz hangisidir?",
-    options: ["Vatan Yahut Silistre", "Şair Evlenmesi", "İntibah", "Cezmi"],
-    correctIndex: 1,
-    category: QuestionCategory.turkEdebiyatindaIlkler,
-  ),
-  Question(
-    text: "İlk yerli romanımız hangisidir?",
-    options: ["Taaşşuk-ı Talat ve Fitnat", "Mai ve Siyah", "İntibah", "Cezmi"],
-    correctIndex: 0,
-    category: QuestionCategory.turkEdebiyatindaIlkler,
-  ),
-  Question(
-    text: "İlk edebi romanımız kabul edilen eser hangisidir?",
-    options: ["İntibah", "Araba Sevdası", "Eylül", "Karabibik"],
-    correctIndex: 0,
-    category: QuestionCategory.turkEdebiyatindaIlkler,
-  ),
-  Question(
-    text: "Sahnelenen ilk tiyatro eserimiz hangisidir?",
     options: [
-      "Şair Evlenmesi",
       "Vatan Yahut Silistre",
+      "Şair Evlenmesi",
       "Zavallı Çocuk",
       "Akif Bey",
     ],
     correctIndex: 1,
     category: QuestionCategory.turkEdebiyatindaIlkler,
   ),
-
-  // Edebiyat Akımları
   Question(
-    text: "Hangisi 'Beş Hececiler'den biri değildir?",
-    options: ["Orhan Veli", "Faruk Nafiz", "Yusuf Ziya", "Enis Behiç"],
-    correctIndex: 0,
-    category: QuestionCategory.edebiyatAkimlari,
-  ),
-  Question(
-    text: "Garip Akımı (I. Yeni) kurucularından biri kimdir?",
+    text: "Batılı anlamda ilk romanımız hangisidir?",
     options: [
-      "Cemal Süreya",
-      "Melih Cevdet Anday",
+      "Taaşşuk-ı Talat ve Fitnat",
+      "Mai ve Siyah",
+      "İntibah",
+      "Araba Sevdası",
+    ],
+    correctIndex: 1,
+    category: QuestionCategory.turkEdebiyatindaIlkler,
+  ),
+
+  // AKIMLAR
+  Question(
+    text: "Hangisi 'Garip' akımı şairlerinden biridir?",
+    options: [
       "Nazım Hikmet",
-      "Atilla İlhan",
+      "Orhan Veli Kanık",
+      "Necip Fazıl",
+      "Attila İlhan",
     ],
     correctIndex: 1,
     category: QuestionCategory.edebiyatAkimlari,
   ),
   Question(
-    text: "Servet-i Fünun dönemi hangi akımın etkisindedir?",
-    options: ["Realizm / Parnasizm", "Romantizm", "Klasisizm", "Sürrealizm"],
-    correctIndex: 0,
+    text: "Servet-i Fünun dönemi hangi edebi akımdan etkilenmiştir?",
+    options: ["Romantizm", "Realizm ve Sembolizm", "Klasisizm", "Sürrealizm"],
+    correctIndex: 1,
     category: QuestionCategory.edebiyatAkimlari,
   ),
 
-  // Ben Kimim? (Yazar Tahmini)
+  // BEN KİMİM?
   Question(
-    text: "'İstanbul Şairi' olarak bilinen yazarımız kimdir?",
+    text: "'Vatan Şairi' olarak bilinen şairimiz kimdir?",
     options: [
-      "Yahya Kemal Beyatlı",
-      "Orhan Veli",
-      "Ahmet Hamdi Tanpınar",
-      "Necip Fazıl",
-    ],
-    correctIndex: 0,
-    category: QuestionCategory.benKimim,
-  ),
-  Question(
-    text: "'Vatan Şairi' olarak anılan isim kimdir?",
-    options: [
-      "Mehmet Akif Ersoy",
       "Namık Kemal",
       "Ziya Gökalp",
+      "Mehmet Akif Ersoy",
       "Tevfik Fikret",
     ],
-    correctIndex: 1,
+    correctIndex: 0,
     category: QuestionCategory.benKimim,
   ),
   Question(
-    text: "Nobel Edebiyat Ödülü'nü alan ilk Türk yazar kimdir?",
-    options: ["Yaşar Kemal", "Orhan Pamuk", "Aziz Nesin", "Elif Şafak"],
-    correctIndex: 1,
+    text: "'Sultan-ı Şuara' (Şairler Sultanı) ünvanlı Divan şairi kimdir?",
+    options: ["Fuzuli", "Nedim", "Baki", "Nefi"],
+    correctIndex: 2,
     category: QuestionCategory.benKimim,
   ),
 
-  // Divan Edebiyatı
+  // EDEBİ SANATLAR
   Question(
-    text: "Divan edebiyatında 'Hiciv' (eleştiri) ustası kimdir?",
-    options: ["Fuzuli", "Baki", "Nefi", "Nedim"],
-    correctIndex: 2,
-    category: QuestionCategory.turkEdebiyatindaIlkler,
+    text: "Bir şeyi olduğundan çok fazla veya az gösterme sanatına ne denir?",
+    options: ["Teşbih", "Mübalağa", "İntak", "Tezat"],
+    correctIndex: 1,
+    category: QuestionCategory.edebiSanatlar,
   ),
   Question(
-    text: "'Su Kasidesi' kime aittir?",
-    options: ["Fuzuli", "Baki", "Nedim", "Şeyhi"],
-    correctIndex: 0,
-    category: QuestionCategory.turkEdebiyatindaIlkler,
-  ),
-
-  // Cumhuriyet Dönemi
-  Question(
-    text: "'Saatleri Ayarlama Enstitüsü' kime aittir?",
-    options: ["Ahmet Hamdi Tanpınar", "Oğuz Atay", "Peyami Safa", "Sait Faik"],
-    correctIndex: 0,
-    category: QuestionCategory.edebiyatAkimlari,
-  ),
-  Question(
-    text: "'İnce Memed' serisinin yazarı kimdir?",
-    options: ["Kemal Tahir", "Orhan Kemal", "Yaşar Kemal", "Sabahattin Ali"],
-    correctIndex: 2,
-    category: QuestionCategory.edebiyatAkimlari,
-  ),
-
-  // Genel Kültür / Karışık
-  Question(
-    text: "İstiklal Marşı'nın yazarı kimdir?",
-    options: ["Mehmet Akif Ersoy", "Ziya Gökalp", "Namık Kemal", "Faruk Nafiz"],
-    correctIndex: 0,
-    category: QuestionCategory.turkEdebiyatindaIlkler,
-  ),
-  Question(
-    text: "Hangisi Yakup Kadri Karaosmanoğlu'nun eseridir?",
-    options: ["Yaban", "Sinekli Bakkal", "Fatih-Harbiye", "Aylak Adam"],
-    correctIndex: 0,
-    category: QuestionCategory.edebiyatAkimlari,
+    text: "İnsan dışındaki varlıkları konuşturma sanatına ne denir?",
+    options: ["Teşhis", "İntak", "Kinaye", "Tevriye"],
+    correctIndex: 1,
+    category: QuestionCategory.edebiSanatlar,
   ),
 ];
