@@ -14,8 +14,52 @@ import 'question_dialog.dart';
 import 'card_dialog.dart';
 import 'copyright_purchase_dialog.dart';
 
+// ════════════════════════════════════════════════════════════════════════════
+// LAYOUT CONFIGURATION
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Cached layout calculations for the game board
+/// Prevents recalculation on every build
+class BoardLayoutConfig {
+  final double boardSize;
+
+  /// Base unit size (1/12 of board)
+  late final double unitSize;
+
+  /// Corner tile dimension (1.5 units)
+  late final double cornerSize;
+
+  /// Normal tile dimension (1 unit)
+  late final double normalSize;
+
+  /// Icon size ratio for center decoration
+  static const double centerIconRatio = 0.3;
+
+  /// Board size ratio relative to screen
+  static const double boardToScreenRatio = 0.95;
+
+  /// Grid units: 2 corners (1.5 each) + 9 normal tiles = 12 units total
+  static const double totalGridUnits = 12.0;
+
+  BoardLayoutConfig(this.boardSize) {
+    unitSize = boardSize / totalGridUnits;
+    cornerSize = unitSize * 1.5;
+    normalSize = unitSize;
+  }
+
+  /// Factory to create from screen size
+  factory BoardLayoutConfig.fromScreen(double shortestSide) {
+    return BoardLayoutConfig(shortestSide * boardToScreenRatio);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN BOARD VIEW
+// ════════════════════════════════════════════════════════════════════════════
+
 class BoardView extends ConsumerStatefulWidget {
   const BoardView({super.key});
+
   @override
   ConsumerState<BoardView> createState() => _BoardViewState();
 }
@@ -40,224 +84,242 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
-    if (state.phase == GamePhase.gameOver) _confettiController.play();
 
-    // EKRAN VE TAHTA BOYUTU
-    final double screenShortest = MediaQuery.of(context).size.shortestSide;
-    final double boardSize = screenShortest * 0.95; // Ekranın %95'i
+    // Trigger confetti on game over
+    if (state.phase == GamePhase.gameOver) {
+      _confettiController.play();
+    }
 
-    // TEMEL BİRİM (Unit)
-    // Standart Monopoly: 2 Köşe + 9 Kare = 11 birim gibi düşünülür ama
-    // Köşeler karelerden büyüktür.
-    // Bizim Formül: 12 Birim = 1.5 (Köşe) + 9 (Kare) + 1.5 (Köşe)
-    final double u = boardSize / 12.0;
-
-    final double normalSize = u; // Normal Karenin dar kenarı
-    final double cornerSize =
-        u * 1.5; // Köşenin kenarı (ve normal karenin uzun kenarı)
+    // Calculate layout dimensions
+    final screenShortest = MediaQuery.of(context).size.shortestSide;
+    final layout = BoardLayoutConfig.fromScreen(screenShortest);
 
     return Scaffold(
-      backgroundColor: GameTheme.backgroundTable,
-      body: Center(
-        child: Container(
-          width: boardSize,
-          height: boardSize,
+      backgroundColor: GameTheme.backgroundTable.gradient != null
+          ? null
+          : GameTheme.primaryText,
+      body: Container(
+        decoration: GameTheme.backgroundTable,
+        child: Center(child: _buildBoard(state, layout)),
+      ),
+    );
+  }
+
+  /// Main board container with all layers
+  Widget _buildBoard(GameState state, BoardLayoutConfig layout) {
+    return Container(
+          width: layout.boardSize,
+          height: layout.boardSize,
           decoration: GameTheme.boardDecoration,
           child: Stack(
-            // Stack içinde koordinat sistemi (0,0) Sol Üst'tür.
             children: [
-              // 1. ORTA ALAN (Background)
-              Positioned(
-                top: cornerSize,
-                left: cornerSize,
-                right: cornerSize,
-                bottom: cornerSize,
-                child: Container(
-                  decoration: GameTheme.centerAreaDecoration,
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Opacity(
-                          opacity: 0.1,
-                          child: Icon(
-                            Icons.menu_book,
-                            size: boardSize * 0.3,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      Center(child: _buildHUD(state)),
-                    ],
-                  ),
-                ),
-              ),
+              // Layer 1: Center area background
+              _buildCenterArea(layout),
 
-              // 2. KUTUCUKLARIN YERLEŞTİRİLMESİ
-              // List.generate yerine manuel döngülerle kenarları çizmek daha kontrollü.
+              // Layer 2: All tiles (corners + edges)
+              ..._buildAllTiles(layout),
 
-              // --- ALT KENAR (Bottom) ---
-              // Index: 0 (Sol Alt) -> 1..9 (Alt Kenar ? Hayır, senaryoya göre değişir)
-              // BİZİM YAPIMIZ (Varsayım):
-              // 0: Sol Alt Köşe.
-              // 1..9: SOL KENAR (Yukarı doğru).
-              // 10: Sol Üst Köşe.
-              // 11..19: ÜST KENAR (Sağa doğru).
-              // 20: Sağ Üst Köşe.
-              // 21..29: SAĞ KENAR (Aşağı doğru).
-              // 30: Sağ Alt Köşe.
-              // 31..39: ALT KENAR (Sola doğru).
+              // Layer 3: Player pawns
+              ..._buildPlayers(state.players, layout),
 
-              // KÖŞELER
-              _buildTileAbsolute(
-                0,
-                0,
-                boardSize - cornerSize,
-                cornerSize,
-                cornerSize,
-                0,
-              ), // SOL ALT
-              _buildTileAbsolute(
-                10,
-                0,
-                0,
-                cornerSize,
-                cornerSize,
-                1,
-              ), // SOL ÜST (90 derece dönük başlık için)
-              _buildTileAbsolute(
-                20,
-                boardSize - cornerSize,
-                0,
-                cornerSize,
-                cornerSize,
-                2,
-              ), // SAĞ ÜST
-              _buildTileAbsolute(
-                30,
-                boardSize - cornerSize,
-                boardSize - cornerSize,
-                cornerSize,
-                cornerSize,
-                3,
-              ), // SAĞ ALT
-              // SOL KENAR (1..9) -> Yukarı Çıkıyor
-              ...List.generate(9, (i) {
-                // X: 0
-                // Y: Alttan yukarı doğru. İlk eleman (1) 0. köşe'nin üstünde.
-                // Y = (BoardHeight - Corner) - (i+1)*Normal
-                double top = boardSize - cornerSize - ((i + 1) * normalSize);
-                // Genişlik: CornerSize (Çünkü yatay duruyor), Yükseklik: NormalSize
-                return _buildTileAbsolute(
-                  1 + i,
-                  0,
-                  top,
-                  cornerSize,
-                  normalSize,
-                  1,
-                ); // 1 = 90 Derece
-              }),
-
-              // ÜST KENAR (11..19) -> Sağa Gidiyor
-              ...List.generate(9, (i) {
-                // Y: 0
-                // X: Soldan sağa.
-                double left = cornerSize + (i * normalSize);
-                return _buildTileAbsolute(
-                  11 + i,
-                  left,
-                  0,
-                  normalSize,
-                  cornerSize,
-                  2,
-                ); // 2 = 180 Derece
-              }),
-
-              // SAĞ KENAR (21..29) -> Aşağı İniyor
-              ...List.generate(9, (i) {
-                // X: En sağ (Board - Corner)
-                double left = boardSize - cornerSize;
-                double top = cornerSize + (i * normalSize);
-                return _buildTileAbsolute(
-                  21 + i,
-                  left,
-                  top,
-                  cornerSize,
-                  normalSize,
-                  3,
-                ); // 3 = 270 Derece
-              }),
-
-              // ALT KENAR (31..39) -> Sola Gidiyor
-              ...List.generate(9, (i) {
-                // Y: En alt (Board - Corner)
-                double top = boardSize - cornerSize;
-                // X: Sağdan sola.
-                double left = boardSize - cornerSize - ((i + 1) * normalSize);
-                return _buildTileAbsolute(
-                  31 + i,
-                  left,
-                  top,
-                  normalSize,
-                  cornerSize,
-                  0,
-                ); // 0 = 0 Derece
-              }),
-
-              // 3. PİYONLAR
-              ..._buildPlayers(
-                state.players,
-                boardSize,
-                cornerSize,
-                normalSize,
-              ),
-
-              // 4. EFEKTLER & DIALOGLAR
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirectionality: BlastDirectionality.explosive,
-                ),
-              ),
-              Positioned(
-                bottom: cornerSize + 10,
-                right: cornerSize + 10,
-                child: GameLog(logs: state.logs),
-              ),
-
-              if (state.showQuestionDialog && state.currentQuestion != null)
-                _dialogOverlay(
-                  QuestionDialog(question: state.currentQuestion!),
-                ),
-              if (state.showPurchaseDialog && state.currentTile != null)
-                _dialogOverlay(
-                  CopyrightPurchaseDialog(tile: state.currentTile!),
-                ),
-              if (state.showCardDialog && state.currentCard != null)
-                _dialogOverlay(CardDialog(card: state.currentCard!)),
+              // Layer 4: Effects and dialogs
+              ..._buildEffectsAndDialogs(state, layout),
             ],
           ),
+        )
+        .animate()
+        .fadeIn(duration: GameTheme.boardFadeDuration)
+        .scale(
+          begin: const Offset(0.95, 0.95),
+          end: const Offset(1, 1),
+          duration: GameTheme.boardEntryDuration,
+          curve: Curves.easeOutBack,
+        );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CENTER AREA
+  // ════════════════════════════════════════════════════════════════════════════
+
+  Widget _buildCenterArea(BoardLayoutConfig layout) {
+    final state = ref.watch(gameProvider);
+
+    return Positioned(
+      top: layout.cornerSize,
+      left: layout.cornerSize,
+      right: layout.cornerSize,
+      bottom: layout.cornerSize,
+      child: Container(
+        decoration: GameTheme.centerAreaDecoration,
+        child: Stack(
+          children: [
+            // Background icon (faded book)
+            Center(
+              child: Opacity(
+                opacity: 0.1,
+                child: Icon(
+                  Icons.menu_book,
+                  size: layout.boardSize * BoardLayoutConfig.centerIconRatio,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            // HUD content
+            Center(child: _buildHUD(state)),
+          ],
         ),
       ),
     );
   }
 
-  // YARDIMCI: Kutucuk Çizici
-  Widget _buildTileAbsolute(
-    int id,
-    double left,
-    double top,
-    double width,
-    double height,
-    int rotation,
-  ) {
-    // Rotation: 0=0, 1=90, 2=180, 3=270
-    // RotatedBox, çocuğu çevirir.
-    // Eğer dikey bir kutuyu (W:Normal, H:Corner) 90 derece çevirirsek (W:Corner, H:Normal) olur.
-    // Positioned'a verdiğimiz width/height, ÇEVRİLMİŞ HALİ olmalıdır.
+  Widget _buildHUD(GameState state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('EDEBİYAT', style: GameTheme.hudTitleStyle),
+        const SizedBox(height: 10),
+        const DiceRoller(),
+        const SizedBox(height: 5),
+        Text(state.lastAction, style: GameTheme.hudSubtitleStyle),
+      ],
+    );
+  }
 
-    // EnhancedTileWidget her zaman "Dikey" (Upright) içerik bekler.
-    // Biz onu RotatedBox ile çeviririz.
+  // ════════════════════════════════════════════════════════════════════════════
+  // TILE GENERATION
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Generate all tiles (4 corners + 36 edge tiles)
+  List<Widget> _buildAllTiles(BoardLayoutConfig layout) {
+    return [
+      // Corner tiles
+      ..._buildCornerTiles(layout),
+
+      // Edge tiles (4 edges x 9 tiles each)
+      ..._buildLeftEdge(layout),
+      ..._buildTopEdge(layout),
+      ..._buildRightEdge(layout),
+      ..._buildBottomEdge(layout),
+    ];
+  }
+
+  /// Build the 4 corner tiles
+  List<Widget> _buildCornerTiles(BoardLayoutConfig layout) {
+    final L = layout;
+    final S = L.boardSize;
+    final C = L.cornerSize;
+
+    return [
+      // Bottom-Left (Start) - ID: 0
+      _buildTile(id: 0, left: 0, top: S - C, width: C, height: C, rotation: 0),
+      // Top-Left - ID: 10
+      _buildTile(id: 10, left: 0, top: 0, width: C, height: C, rotation: 1),
+      // Top-Right - ID: 20
+      _buildTile(id: 20, left: S - C, top: 0, width: C, height: C, rotation: 2),
+      // Bottom-Right - ID: 30
+      _buildTile(
+        id: 30,
+        left: S - C,
+        top: S - C,
+        width: C,
+        height: C,
+        rotation: 3,
+      ),
+    ];
+  }
+
+  /// Left edge tiles (IDs 1-9, going upward)
+  List<Widget> _buildLeftEdge(BoardLayoutConfig layout) {
+    final L = layout;
+    final S = L.boardSize;
+    final C = L.cornerSize;
+    final N = L.normalSize;
+
+    return List.generate(9, (i) {
+      final top = S - C - ((i + 1) * N);
+      return _buildTile(
+        id: 1 + i,
+        left: 0,
+        top: top,
+        width: C,
+        height: N,
+        rotation: 1,
+      );
+    });
+  }
+
+  /// Top edge tiles (IDs 11-19, going rightward)
+  List<Widget> _buildTopEdge(BoardLayoutConfig layout) {
+    final L = layout;
+    final C = L.cornerSize;
+    final N = L.normalSize;
+
+    return List.generate(9, (i) {
+      final left = C + (i * N);
+      return _buildTile(
+        id: 11 + i,
+        left: left,
+        top: 0,
+        width: N,
+        height: C,
+        rotation: 2,
+      );
+    });
+  }
+
+  /// Right edge tiles (IDs 21-29, going downward)
+  List<Widget> _buildRightEdge(BoardLayoutConfig layout) {
+    final L = layout;
+    final S = L.boardSize;
+    final C = L.cornerSize;
+    final N = L.normalSize;
+
+    return List.generate(9, (i) {
+      final top = C + (i * N);
+      return _buildTile(
+        id: 21 + i,
+        left: S - C,
+        top: top,
+        width: C,
+        height: N,
+        rotation: 3,
+      );
+    });
+  }
+
+  /// Bottom edge tiles (IDs 31-39, going leftward)
+  List<Widget> _buildBottomEdge(BoardLayoutConfig layout) {
+    final L = layout;
+    final S = L.boardSize;
+    final C = L.cornerSize;
+    final N = L.normalSize;
+
+    return List.generate(9, (i) {
+      final left = S - C - ((i + 1) * N);
+      return _buildTile(
+        id: 31 + i,
+        left: left,
+        top: S - C,
+        width: N,
+        height: C,
+        rotation: 0,
+      );
+    });
+  }
+
+  /// Build a single positioned and rotated tile
+  Widget _buildTile({
+    required int id,
+    required double left,
+    required double top,
+    required double width,
+    required double height,
+    required int rotation,
+  }) {
+    // For rotated tiles, swap internal dimensions
+    final isRotated = rotation % 2 != 0;
+    final internalWidth = isRotated ? height : width;
+    final internalHeight = isRotated ? width : height;
 
     return Positioned(
       left: left,
@@ -268,140 +330,169 @@ class _BoardViewState extends ConsumerState<BoardView> {
         quarterTurns: rotation,
         child: EnhancedTileWidget(
           tile: BoardConfig.getTile(id),
-          // Widget'a, onun "kendi iç dünyasındaki" boyutları gönderiyoruz.
-          // Eğer 90/270 derece döndüyse, dışarıdaki width aslında içerideki height'tır.
-          width: (rotation % 2 == 0) ? width : height,
-          height: (rotation % 2 == 0) ? height : width,
+          width: internalWidth,
+          height: internalHeight,
         ),
       ),
     );
   }
 
-  // YARDIMCI: Piyon Konumlandırıcı (Grid Merkezine Oturtma)
-  List<Widget> _buildPlayers(
-    List<Player> players,
-    double boardSize,
-    double C,
-    double N,
-  ) {
-    Map<int, List<Player>> groups = {};
-    for (var p in players) groups.putIfAbsent(p.position, () => []).add(p);
+  // ════════════════════════════════════════════════════════════════════════════
+  // PLAYER PAWNS
+  // ════════════════════════════════════════════════════════════════════════════
 
-    List<Widget> widgets = [];
-    groups.forEach((pos, group) {
-      Offset center = _getTileCenter(pos, boardSize, C, N);
+  /// Build positioned pawns for all players
+  List<Widget> _buildPlayers(List<Player> players, BoardLayoutConfig layout) {
+    // Group players by position
+    final Map<int, List<Player>> groups = {};
+    for (final player in players) {
+      groups.putIfAbsent(player.position, () => []).add(player);
+    }
+
+    final currentPlayerId = ref.watch(
+      gameProvider.select((s) => s.currentPlayer.id),
+    );
+
+    final List<Widget> widgets = [];
+
+    groups.forEach((position, group) {
+      final center = _getTileCenter(position, layout);
+      final pawnAreaSize = layout.cornerSize;
 
       widgets.add(
         AnimatedPositioned(
-          duration: 600.ms,
+          duration: GameTheme.pawnMoveDuration,
           curve: Curves.easeInOutCubic,
-          // Piyon grubunu tam merkeze koymak için: Center - (Size/2)
-          left: center.dx - (C / 2),
-          top: center.dy - (C / 2),
-          child: Container(
-            width: C, // Grup alanı köşe kadar geniş olsun
-            height: C,
-            alignment: Alignment.center,
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 2,
-              children: group.map((p) => _buildPawn(p, N * 0.4)).toList(),
+          left: center.dx - (pawnAreaSize / 2),
+          top: center.dy - (pawnAreaSize / 2),
+          child: SizedBox(
+            width: pawnAreaSize,
+            height: pawnAreaSize,
+            child: Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 2,
+                children: group
+                    .map(
+                      (p) => _buildPawn(
+                        p,
+                        layout.normalSize * 0.4,
+                        currentPlayerId,
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
           ),
         ),
       );
     });
+
     return widgets;
   }
 
-  Offset _getTileCenter(int i, double S, double C, double N) {
-    // Kutucukların merkez koordinatını döndürür.
-    // 0 Sol Alt
-    if (i == 0) return Offset(C / 2, S - C / 2);
-    // 1-9 Sol Kenar
-    if (i < 10) {
-      double top = S - C - ((i - 1 + 1) * N);
-      // Tile Rect: Left=0, Top=top, W=C, H=N. Center = (C/2, top + N/2)
-      return Offset(C / 2, top + N / 2);
-    }
-    // 10 Sol Üst
-    if (i == 10) return Offset(C / 2, C / 2);
-    // 11-19 Üst Kenar
-    if (i < 20) {
-      double left = C + ((i - 11) * N);
-      return Offset(left + N / 2, C / 2);
-    }
-    // 20 Sağ Üst
-    if (i == 20) return Offset(S - C / 2, C / 2);
-    // 21-29 Sağ Kenar
-    if (i < 30) {
-      double top = C + ((i - 21) * N);
-      return Offset(S - C / 2, top + N / 2);
-    }
-    // 30 Sağ Alt
-    if (i == 30)
-      return Offset(S - C / 2, S - C / 2);
-    // 31-39 Alt Kenar
-    else {
-      double left = S - C - ((i - 31 + 1) * N);
-      return Offset(left + N / 2, S - C / 2);
-    }
-  }
+  /// Build a single pawn widget
+  Widget _buildPawn(Player player, double size, String currentPlayerId) {
+    final isActive = player.id == currentPlayerId;
 
-  Widget _buildPawn(Player p, double size) {
-    bool isActive = ref.read(gameProvider).currentPlayer.id == p.id;
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: p.color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: isActive
-            ? [BoxShadow(color: Colors.white, blurRadius: 10)]
-            : [BoxShadow(color: Colors.black54, blurRadius: 4)],
-      ),
+      decoration: GameTheme.pawnDecoration(player.color, isActive: isActive),
       child: Icon(
-        IconData(0xe000 + p.iconIndex, fontFamily: 'MaterialIcons'),
+        IconData(0xe000 + player.iconIndex, fontFamily: 'MaterialIcons'),
         size: size * 0.7,
         color: Colors.white,
       ),
     );
   }
 
-  Widget _dialogOverlay(Widget child) {
-    return Container(
-      color: Colors.black54,
-      child: Center(
-        child: child
-            .animate()
-            .scale(duration: 300.ms, curve: Curves.easeOutBack)
-            .fadeIn(),
-      ),
-    );
+  /// Calculate the center point of a tile for pawn positioning
+  Offset _getTileCenter(int tileId, BoardLayoutConfig layout) {
+    final S = layout.boardSize;
+    final C = layout.cornerSize;
+    final N = layout.normalSize;
+
+    // Corner tiles
+    if (tileId == 0) return Offset(C / 2, S - C / 2);
+    if (tileId == 10) return Offset(C / 2, C / 2);
+    if (tileId == 20) return Offset(S - C / 2, C / 2);
+    if (tileId == 30) return Offset(S - C / 2, S - C / 2);
+
+    // Left edge (1-9)
+    if (tileId < 10) {
+      final top = S - C - ((tileId) * N);
+      return Offset(C / 2, top + N / 2);
+    }
+
+    // Top edge (11-19)
+    if (tileId < 20) {
+      final left = C + ((tileId - 11) * N);
+      return Offset(left + N / 2, C / 2);
+    }
+
+    // Right edge (21-29)
+    if (tileId < 30) {
+      final top = C + ((tileId - 21) * N);
+      return Offset(S - C / 2, top + N / 2);
+    }
+
+    // Bottom edge (31-39)
+    final left = S - C - ((tileId - 30) * N);
+    return Offset(left + N / 2, S - C / 2);
   }
 
-  Widget _buildHUD(dynamic state) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          "EDEBIİNA",
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontFamily: 'Georgia',
-          ),
+  // ════════════════════════════════════════════════════════════════════════════
+  // EFFECTS AND DIALOGS
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Build all overlay effects and modal dialogs
+  List<Widget> _buildEffectsAndDialogs(
+    GameState state,
+    BoardLayoutConfig layout,
+  ) {
+    return [
+      // Confetti effect
+      Align(
+        alignment: Alignment.topCenter,
+        child: ConfettiWidget(
+          confettiController: _confettiController,
+          blastDirectionality: BlastDirectionality.explosive,
         ),
-        SizedBox(height: 10),
-        DiceRoller(),
-        SizedBox(height: 5),
-        Text(
-          state.lastAction,
-          style: TextStyle(color: Colors.white70, fontSize: 10),
-        ),
-      ],
+      ),
+
+      // Game log
+      Positioned(
+        bottom: layout.cornerSize + 10,
+        right: layout.cornerSize + 10,
+        child: GameLog(logs: state.logs),
+      ),
+
+      // Modal dialogs
+      if (state.showQuestionDialog && state.currentQuestion != null)
+        _buildDialogOverlay(QuestionDialog(question: state.currentQuestion!)),
+
+      if (state.showPurchaseDialog && state.currentTile != null)
+        _buildDialogOverlay(CopyrightPurchaseDialog(tile: state.currentTile!)),
+
+      if (state.showCardDialog && state.currentCard != null)
+        _buildDialogOverlay(CardDialog(card: state.currentCard!)),
+    ];
+  }
+
+  /// Wrap dialog in overlay with animation
+  Widget _buildDialogOverlay(Widget dialog) {
+    return Container(
+      color: GameTheme.dialogOverlayColor,
+      child: Center(
+        child: dialog
+            .animate()
+            .scale(
+              duration: GameTheme.dialogEntryDuration,
+              curve: Curves.easeOutBack,
+            )
+            .fadeIn(),
+      ),
     );
   }
 }

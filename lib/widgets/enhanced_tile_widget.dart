@@ -3,6 +3,8 @@ import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../core/theme/game_theme.dart';
 
+/// Enhanced tile widget with card-like appearance
+/// Handles both property tiles and corner tiles with appropriate styling
 class EnhancedTileWidget extends StatelessWidget {
   final BoardTile tile;
   final double width;
@@ -15,38 +17,41 @@ class EnhancedTileWidget extends StatelessWidget {
     required this.height,
   });
 
+  /// Check if this tile is a corner tile (id divisible by 10)
+  bool get _isCorner => tile.id % 10 == 0;
+
   @override
   Widget build(BuildContext context) {
-    bool isCorner = tile.id % 10 == 0;
-
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: GameTheme.parchment,
-        border: Border.all(color: Colors.black87, width: 0.8),
-      ),
-      child: isCorner ? _buildCornerContent() : _buildPropertyContent(),
+      decoration: GameTheme.cardDecoration,
+      child: _isCorner
+          ? _CornerContent(tile: tile, width: width)
+          : _PropertyContent(tile: tile, height: height),
     );
   }
+}
 
-  Widget _buildPropertyContent() {
-    // Dikey mi Yatay mı? (Kenara göre karar verilir ama burada basit tutuyoruz, dışarıdan rotated box ile çevrilecek)
+/// Property tile content with color strip and title
+class _PropertyContent extends StatelessWidget {
+  final BoardTile tile;
+  final double height;
+
+  const _PropertyContent({required this.tile, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
-        // RENK ŞERİDİ (Üst %25)
+        // COLOR STRIP (Top 25%)
         Container(
           height: height * 0.25,
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: _getGroupColor(tile.id),
-            border: Border(
-              bottom: BorderSide(color: Colors.black87, width: 0.5),
-            ),
-          ),
-          child: _buildUpgradeIcons(), // Yıldızlar
+          decoration: GameTheme.groupColorStrip(tile.id),
+          child: _UpgradeIcons(upgradeLevel: tile.upgradeLevel),
         ),
-        // İÇERİK
+        // CONTENT
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
@@ -56,31 +61,12 @@ class EnhancedTileWidget extends StatelessWidget {
                 Text(
                   tile.title,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 8, // Küçük ama okunaklı
-                    fontWeight: FontWeight.w700,
-                    color: GameTheme.textPrimary,
-                    fontFamily:
-                        'RobotoCondensed', // Sıkışık font daha iyi sığar
-                  ),
+                  style: GameTheme.propertyTitleStyle,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (tile.price != null && !tile.isUtility)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: Colors.black.withOpacity(0.05),
-                    ),
-                    child: Text(
-                      "${tile.price}₺",
-                      style: TextStyle(
-                        fontSize: 7,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  _PriceBadge(price: tile.price!),
               ],
             ),
           ),
@@ -88,57 +74,37 @@ class EnhancedTileWidget extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildCornerContent() {
-    // Köşeler için özel, ikon odaklı tasarım
-    IconData icon;
-    String label;
-    Color bg;
+/// Corner tile content with icon and label
+class _CornerContent extends StatelessWidget {
+  final BoardTile tile;
+  final double width;
 
-    switch (tile.type) {
-      case TileType.start:
-        icon = Icons.start;
-        label = "BAŞLANGIÇ";
-        bg = Color(0xFFE8F5E9);
-        break;
-      case TileType.libraryWatch:
-        icon = Icons.local_library;
-        label = "NÖBET";
-        bg = Color(0xFFFFF3E0);
-        break;
-      case TileType.autographDay:
-        icon = Icons.campaign;
-        label = "İMZA GÜNÜ";
-        bg = Color(0xFFF3E5F5);
-        break;
-      case TileType.bankruptcyRisk:
-        icon = Icons.gavel;
-        label = "İFLAS RİSKİ";
-        bg = Color(0xFFFFEBEE);
-        break;
-      default:
-        icon = Icons.help;
-        label = "";
-        bg = Colors.white;
-    }
+  const _CornerContent({required this.tile, required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    // Get config from theme, with fallback for unknown types
+    final config = _getCornerConfig();
 
     return Container(
-      color: bg,
+      color: config.backgroundColor,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Arka plan ikonu (büyük ve soluk)
-          Opacity(opacity: 0.1, child: Icon(icon, size: width * 0.8)),
-          // Ön plan
+          // Background icon (large and faded)
+          Opacity(opacity: 0.1, child: Icon(config.icon, size: width * 0.8)),
+          // Foreground content
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: width * 0.4, color: Colors.black87),
-              SizedBox(height: 4),
+              Icon(config.icon, size: width * 0.4, color: Colors.black87),
+              const SizedBox(height: 4),
               Text(
-                label,
+                config.label,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900),
+                style: GameTheme.cornerLabelStyle,
               ),
             ],
           ),
@@ -147,28 +113,80 @@ class EnhancedTileWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildUpgradeIcons() {
-    if (tile.upgradeLevel == 0) return SizedBox();
+  /// Get corner configuration from theme or derive from tile type
+  CornerTileConfig _getCornerConfig() {
+    // First try to get from predefined configs
+    final predefined = GameTheme.cornerConfigs[tile.id];
+    if (predefined != null) return predefined;
+
+    // Fallback: derive from tile type
+    return switch (tile.type) {
+      TileType.start => const CornerTileConfig(
+        icon: Icons.start,
+        label: 'BAŞLANGIÇ',
+        backgroundColor: Color(0xFFE8F5E9),
+      ),
+      TileType.libraryWatch => const CornerTileConfig(
+        icon: Icons.local_library,
+        label: 'NÖBET',
+        backgroundColor: Color(0xFFFFF3E0),
+      ),
+      TileType.autographDay => const CornerTileConfig(
+        icon: Icons.campaign,
+        label: 'İMZA GÜNÜ',
+        backgroundColor: Color(0xFFF3E5F5),
+      ),
+      TileType.bankruptcyRisk => const CornerTileConfig(
+        icon: Icons.gavel,
+        label: 'İFLAS RİSKİ',
+        backgroundColor: Color(0xFFFFEBEE),
+      ),
+      _ => const CornerTileConfig(
+        icon: Icons.help,
+        label: '',
+        backgroundColor: Colors.white,
+      ),
+    };
+  }
+}
+
+/// Upgrade level indicator with star icons
+class _UpgradeIcons extends StatelessWidget {
+  final int upgradeLevel;
+
+  const _UpgradeIcons({required this.upgradeLevel});
+
+  @override
+  Widget build(BuildContext context) {
+    if (upgradeLevel == 0) return const SizedBox.shrink();
+
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
-          tile.upgradeLevel,
-          (i) => Icon(Icons.star, size: 8, color: Colors.white),
+          upgradeLevel,
+          (i) => const Icon(Icons.star, size: 8, color: Colors.white),
         ),
       ),
     );
   }
+}
 
-  Color _getGroupColor(int id) {
-    if (id > 0 && id < 5) return Color(0xFF7B1FA2); // Mor
-    if (id > 5 && id < 10) return Color(0xFF1976D2); // Mavi
-    if (id > 10 && id < 15) return Color(0xFFC2185B); // Pembe
-    if (id > 15 && id < 20) return Color(0xFFF57C00); // Turuncu
-    if (id > 20 && id < 25) return Color(0xFFD32F2F); // Kırmızı
-    if (id > 25 && id < 30) return Color(0xFFFBC02D); // Sarı
-    if (id > 30 && id < 35) return Color(0xFF388E3C); // Yeşil
-    if (id > 35 && id < 40) return Color(0xFF0288D1); // Açık Mavi
-    return Colors.grey[400]!;
+/// Price badge widget with subtle background
+class _PriceBadge extends StatelessWidget {
+  final int price;
+
+  const _PriceBadge({required this.price});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        color: Colors.black.withValues(alpha: 0.05),
+      ),
+      child: Text('$price₺', style: GameTheme.priceBadgeStyle),
+    );
   }
 }
