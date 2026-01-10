@@ -137,17 +137,21 @@ class _BoardViewState extends ConsumerState<BoardView> {
                       child: Row(
                         children: [
                           // SOL KENAR (Yukarıdan Aşağı: 9 -> 1)
+                          // SOL KENAR (Yukarıdan Aşağı: 9 -> 1) - DÖNÜK (90 derece)
                           SizedBox(
                             width: cornerSize,
                             child: Column(
-                              children: List.generate(9, (i) {
-                                // 9, 8, ..., 1
-                                return EnhancedTileWidget(
-                                  tile: BoardConfig.tiles[9 - i],
-                                  width: cornerSize,
-                                  height: normalSize,
-                                );
-                              }),
+                              children: List.generate(
+                                9,
+                                (i) => RotatedBox(
+                                  quarterTurns: 1,
+                                  child: EnhancedTileWidget(
+                                    tile: BoardConfig.tiles[9 - i],
+                                    width: normalSize,
+                                    height: cornerSize,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
 
@@ -175,15 +179,19 @@ class _BoardViewState extends ConsumerState<BoardView> {
                           ),
 
                           // SAĞ KENAR (Yukarıdan Aşağı: 21 -> 29)
+                          // SAĞ KENAR (21 -> 29) - DÖNÜK (270 derece)
                           SizedBox(
                             width: cornerSize,
                             child: Column(
                               children: List.generate(
                                 9,
-                                (i) => EnhancedTileWidget(
-                                  tile: BoardConfig.tiles[21 + i],
-                                  width: cornerSize,
-                                  height: normalSize,
+                                (i) => RotatedBox(
+                                  quarterTurns: 3,
+                                  child: EnhancedTileWidget(
+                                    tile: BoardConfig.tiles[21 + i],
+                                    width: normalSize,
+                                    height: cornerSize,
+                                  ),
                                 ),
                               ),
                             ),
