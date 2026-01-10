@@ -11,6 +11,7 @@ import '../core/theme/game_theme.dart';
 import 'dice_roller.dart';
 import 'game_tile_widget.dart';
 import 'game_log.dart';
+import 'floating_score.dart'; // Import added
 
 class BoardView extends ConsumerStatefulWidget {
   const BoardView({super.key});
@@ -21,6 +22,8 @@ class BoardView extends ConsumerStatefulWidget {
 
 class _BoardViewState extends ConsumerState<BoardView> {
   late ConfettiController _confettiController;
+  // Local list to manage multiple overlapping floating effects
+  final List<Widget> _floatingEffects = [];
 
   @override
   void initState() {
@@ -36,9 +39,50 @@ class _BoardViewState extends ConsumerState<BoardView> {
     super.dispose();
   }
 
+  void _addFloatingEffect(String text, Color color) {
+    if (!mounted) return;
+
+    // Unique key to identify this specific widget instance
+    Key key = UniqueKey();
+
+    setState(() {
+      _floatingEffects.add(
+        Positioned(
+          key: key,
+          top: MediaQuery.of(context).size.shortestSide * 0.45,
+          left: MediaQuery.of(context).size.shortestSide * 0.4,
+          width: 200, // Constrain width
+          child: FloatingScore(
+            text: text,
+            color: color,
+            onComplete: () {
+              if (mounted) {
+                setState(() {
+                  _floatingEffects.removeWhere((w) => w.key == key);
+                });
+              }
+            },
+          ),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
+
+    // Listen for effect triggers
+    ref.listen(gameProvider, (previous, next) {
+      if (next.floatingEffect != null &&
+          next.floatingEffect != previous?.floatingEffect) {
+        _addFloatingEffect(
+          next.floatingEffect!.text,
+          next.floatingEffect!.color,
+        );
+      }
+    });
+
     // Ekranın kısa kenarını baz alarak tahta boyutunu belirle
     final boardSize = MediaQuery.of(context).size.shortestSide * 0.95;
     final tileSize =
@@ -50,73 +94,92 @@ class _BoardViewState extends ConsumerState<BoardView> {
     }
 
     return Scaffold(
-      backgroundColor: GameTheme.backgroundTable,
-      body: Center(
-        child: Container(
-          width: boardSize,
-          height: boardSize,
-          decoration: GameTheme.boardDecoration,
-          child: Stack(
-            children: [
-              // 1. ORTA ALAN (Center)
-              Center(child: _buildCenterArea(gameState, boardSize, ref)),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            colors: [
+              Color(0xFF37474F),
+              Color(0xFF263238),
+            ], // Ortası daha açık, kenarlar koyu
+            radius: 1.2,
+          ),
+        ),
+        child: Center(
+          child: Container(
+            width: boardSize,
+            height: boardSize,
+            decoration: GameTheme.boardDecoration,
+            child: Stack(
+              children: [
+                // 1. ORTA ALAN (Center)
+                Center(child: _buildCenterArea(gameState, boardSize, ref)),
 
-              // 2. KUTUCUKLAR (Tiles)
-              ...BoardConfig.tiles.map((tile) => _buildTile(tile, tileSize)),
+                // 2. KUTUCUKLAR (Tiles)
+                ...BoardConfig.tiles.map((tile) => _buildTile(tile, tileSize)),
 
-              // 3. OYUNCULAR (Piyonlar) - Animated
-              ..._buildGroupedPlayers(gameState.players, tileSize),
-
-              // 4. KONFETİ (En üst katman)
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  shouldLoop: true,
-                  colors: const [
-                    Colors.green,
-                    Colors.blue,
-                    Colors.pink,
-                    Colors.orange,
-                    Colors.purple,
-                  ],
+                // 3. OYUNCULAR (Piyonlar) - Animated
+                ..._buildGroupedPlayers(
+                  gameState.players,
+                  tileSize,
+                  gameState.currentPlayer.id,
                 ),
-              ),
 
-              // 5. DIALOGLAR (Overlay) - Animated Pop-in
-              if (gameState.showCardDialog && gameState.currentCard != null)
-                _buildOverlay(child: _buildCardDialog(ref, gameState))
-                    .animate()
-                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                    .fadeIn(duration: 300.ms),
+                // 4. FLOATING EFFECTS (Para uçuşları)
+                ..._floatingEffects,
 
-              if (gameState.showQuestionDialog &&
-                  gameState.currentQuestion != null)
-                _buildOverlay(child: _buildQuestionDialog(ref, gameState))
-                    .animate()
-                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                    .fadeIn(duration: 300.ms),
+                // 5. KONFETİ (En üst katman)
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConfettiWidget(
+                    confettiController: _confettiController,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    shouldLoop: true,
+                    colors: const [
+                      Colors.green,
+                      Colors.blue,
+                      Colors.pink,
+                      Colors.orange,
+                      Colors.purple,
+                    ],
+                  ),
+                ),
 
-              if (gameState.showPurchaseDialog && gameState.currentTile != null)
-                _buildOverlay(child: _buildPurchaseDialog(ref, gameState))
-                    .animate()
-                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                    .fadeIn(duration: 300.ms),
+                // 6. DIALOGLAR (Overlay) - Animated Pop-in
+                if (gameState.showCardDialog && gameState.currentCard != null)
+                  _buildOverlay(child: _buildCardDialog(ref, gameState))
+                      .animate()
+                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                      .fadeIn(duration: 300.ms),
 
-              if (gameState.showUpgradeDialog && gameState.currentTile != null)
-                _buildOverlay(child: _buildUpgradeDialog(ref, gameState))
-                    .animate()
-                    .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                    .fadeIn(duration: 300.ms),
+                if (gameState.showQuestionDialog &&
+                    gameState.currentQuestion != null)
+                  _buildOverlay(child: _buildQuestionDialog(ref, gameState))
+                      .animate()
+                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                      .fadeIn(duration: 300.ms),
 
-              // 6. OYUN GÜNLÜĞÜ (Log)
-              Positioned(
-                bottom: 20,
-                right: 20,
-                child: GameLog(logs: gameState.logs),
-              ),
-            ],
+                if (gameState.showPurchaseDialog &&
+                    gameState.currentTile != null)
+                  _buildOverlay(child: _buildPurchaseDialog(ref, gameState))
+                      .animate()
+                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                      .fadeIn(duration: 300.ms),
+
+                if (gameState.showUpgradeDialog &&
+                    gameState.currentTile != null)
+                  _buildOverlay(child: _buildUpgradeDialog(ref, gameState))
+                      .animate()
+                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
+                      .fadeIn(duration: 300.ms),
+
+                // 7. OYUN GÜNLÜĞÜ (Log)
+                Positioned(
+                  bottom: 20,
+                  right: 20,
+                  child: GameLog(logs: gameState.logs),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -170,7 +233,11 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   // --- Player Positioning Logic (Grouped to avoid overlap) ---
-  List<Widget> _buildGroupedPlayers(List<Player> players, double size) {
+  List<Widget> _buildGroupedPlayers(
+    List<Player> players,
+    double size,
+    String currentPlayerId,
+  ) {
     // Oyuncuları bulundukları kareye göre grupla
     Map<int, List<Player>> groups = {};
     for (var p in players) {
@@ -224,7 +291,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
               alignment: WrapAlignment.center,
               spacing: 2,
               runSpacing: 2,
-              children: group.map((p) => _buildPawn(p, size)).toList(),
+              children: group
+                  .map((p) => _buildPawn(p, size, currentPlayerId))
+                  .toList(),
             ),
           ),
         ),
@@ -234,8 +303,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
     return pawnWidgets;
   }
 
-  Widget _buildPawn(Player p, double size) {
-    return Container(
+  Widget _buildPawn(Player p, double size, String currentPlayerId) {
+    Widget pawn = Container(
       width: size * 0.35,
       height: size * 0.35,
       decoration: BoxDecoration(
@@ -250,6 +319,30 @@ class _BoardViewState extends ConsumerState<BoardView> {
         color: Colors.white,
       ),
     );
+
+    if (p.id == currentPlayerId) {
+      return pawn
+          .animate(onPlay: (c) => c.repeat())
+          .boxShadow(
+            begin: const BoxShadow(
+              color: Colors.white,
+              blurRadius: 0,
+              spreadRadius: 0,
+            ),
+            end: const BoxShadow(
+              color: Colors.white,
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          )
+          .scale(
+            begin: const Offset(1, 1),
+            end: const Offset(1.2, 1.2),
+            duration: 1000.ms,
+            curve: Curves.easeInOut,
+          );
+    }
+    return pawn;
   }
 
   // --- Center Area ---

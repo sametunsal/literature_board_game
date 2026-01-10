@@ -10,6 +10,13 @@ import '../data/mock_questions.dart';
 import '../data/game_cards.dart';
 import '../core/audio_manager.dart'; // Audio Import
 
+// Floating Effect Data Model
+class FloatingEffect {
+  final String text;
+  final Color color;
+  FloatingEffect(this.text, this.color);
+}
+
 class GameState {
   final List<Player> players;
   final List<BoardTile> tiles;
@@ -20,7 +27,10 @@ class GameState {
   final GamePhase phase;
 
   // LOGS
-  final List<String> logs; // Yeni Log Listesi
+  final List<String> logs;
+
+  // Floating Effect (Visual)
+  final FloatingEffect? floatingEffect;
 
   // Dialog Durumları
   final Question? currentQuestion;
@@ -42,7 +52,8 @@ class GameState {
     this.lastAction = 'Oyun Kurulumu Bekleniyor...',
     this.isDiceRolled = false,
     this.phase = GamePhase.setup,
-    this.logs = const [], // Varsayılan boş
+    this.logs = const [],
+    this.floatingEffect, // New field
     this.currentQuestion,
     this.showQuestionDialog = false,
     this.showPurchaseDialog = false,
@@ -67,6 +78,7 @@ class GameState {
     bool? isDiceRolled,
     GamePhase? phase,
     List<String>? logs,
+    FloatingEffect? floatingEffect, // New parameter
     Question? currentQuestion,
     bool? showQuestionDialog,
     bool? showPurchaseDialog,
@@ -86,6 +98,7 @@ class GameState {
       isDiceRolled: isDiceRolled ?? this.isDiceRolled,
       phase: phase ?? this.phase,
       logs: logs ?? this.logs,
+      floatingEffect: floatingEffect, // Allows null to clear
       currentQuestion: currentQuestion ?? this.currentQuestion,
       showQuestionDialog: showQuestionDialog ?? this.showQuestionDialog,
       showPurchaseDialog: showPurchaseDialog ?? this.showPurchaseDialog,
@@ -275,16 +288,12 @@ class GameNotifier extends StateNotifier<GameState> {
       }
     }
 
+    // Payer loses money
     _updateBalance(state.currentPlayer, state.currentPlayer.balance - rent);
 
-    int ownerIdx = state.players.indexWhere((p) => p.id == owner.id);
-    if (ownerIdx != -1) {
-      List<Player> temp = List.from(state.players);
-      temp[ownerIdx] = temp[ownerIdx].copyWith(
-        balance: temp[ownerIdx].balance + rent,
-      );
-      state = state.copyWith(players: temp);
-    }
+    // Owner gains money
+    Player? currentOwner = state.players.firstWhere((p) => p.id == owner.id);
+    _updateBalance(currentOwner, currentOwner.balance + rent);
 
     _addLog("${owner.name}'e $rent puan kira ödendi.", type: 'purchase');
     endTurn();
@@ -511,12 +520,35 @@ class GameNotifier extends StateNotifier<GameState> {
     _addLog("Sıra ${state.players[next].name} oyuncusunda.", type: 'turn');
   }
 
-  void _updateBalance(Player p, int bal) {
+  void _updateBalance(Player p, int bal) async {
     int idx = state.players.indexWhere((x) => x.id == p.id);
     if (idx == -1) return;
+
+    int diff = bal - p.balance;
+    if (diff != 0) {
+      String sign = diff > 0 ? "+" : "";
+      Color color = diff > 0 ? Colors.greenAccent : Colors.redAccent;
+      // Trigger effect
+      state = state.copyWith(
+        floatingEffect: FloatingEffect("$sign$diff", color),
+      );
+
+      // Clear effect after delay to allow re-triggering
+      // Note: In UI we play animation on change.
+      // To ensure 'change' is detected even if same value, we might need a timestamp or unique ID.
+      // But for now, let's just set it.
+      // To prevent 'stuck' state if multiple updates happen fast, UI should handle keying.
+    }
+
     List<Player> list = List.from(state.players);
     list[idx] = list[idx].copyWith(balance: bal);
     state = state.copyWith(players: list);
+
+    // Auto-reset effect state after a short duration so next event triggers change
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      state = state.copyWith(floatingEffect: null);
+    }
   }
 
   Player? _getTileOwner(int id) {
