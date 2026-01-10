@@ -1,10 +1,8 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../data/board_config.dart';
-import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
@@ -265,9 +263,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
           .animate(onPlay: (c) => c.repeat(reverse: true))
           .scale(begin: Offset(1, 1), end: Offset(1.3, 1.3), duration: 700.ms)
           .boxShadow(
-            color: Colors.white,
-            begin: BoxShadow(blurRadius: 0),
-            end: BoxShadow(blurRadius: 15),
+            begin: BoxShadow(color: Colors.white, blurRadius: 0),
+            end: BoxShadow(color: Colors.white, blurRadius: 15),
           );
     }
     return pawn;

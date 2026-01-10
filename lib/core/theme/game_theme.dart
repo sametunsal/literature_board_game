@@ -8,6 +8,7 @@ class GameTheme {
     0xFF2E7D32,
   ); // Klasik Çuha Yeşili (Orta Alan)
   static const Color parchment = Color(0xFFFFF3E0); // Parşömen (Kutucuklar)
+  static const Color backgroundTable = Color(0xFF263238); // Koyu Masa Rengi
 
   static const Color textPrimary = Color(0xFF263238);
   static const Color textSecondary = Color(0xFF455A64);

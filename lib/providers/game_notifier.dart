@@ -5,6 +5,7 @@ import '../models/player.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/game_card.dart';
+import '../models/question.dart';
 import '../data/board_config.dart';
 import '../data/mock_questions.dart';
 import '../data/game_cards.dart';

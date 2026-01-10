@@ -1,20 +1,7 @@
 import '../models/game_enums.dart';
+import '../models/question.dart';
 
-class Question {
-  final String text;
-  final List<String> options;
-  final int correctIndex;
-  final QuestionCategory category;
-
-  const Question({
-    required this.text,
-    required this.options,
-    required this.correctIndex,
-    required this.category,
-  });
-}
-
-const List<Question> mockQuestions = [
+final List<Question> mockQuestions = [
   // ESER-KARAKTER
   Question(
     text: "Çalıkuşu romanının baş karakteri Feride'nin mesleği nedir?",
