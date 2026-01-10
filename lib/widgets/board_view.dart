@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -13,6 +15,9 @@ import 'dice_roller.dart';
 import 'question_dialog.dart';
 import 'card_dialog.dart';
 import 'copyright_purchase_dialog.dart';
+import 'pawn_widget.dart';
+import 'pause_dialog.dart';
+import 'settings_screen.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
 // LAYOUT CONFIGURATION
@@ -47,9 +52,13 @@ class BoardLayoutConfig {
     normalSize = unitSize;
   }
 
-  /// Factory to create from screen size
-  factory BoardLayoutConfig.fromScreen(double shortestSide) {
-    return BoardLayoutConfig(shortestSide * boardToScreenRatio);
+  /// Factory to create from screen size (uses height in landscape for optimal fit)
+  factory BoardLayoutConfig.fromScreen(Size screenSize) {
+    // In landscape, height is the limiting dimension for the square board
+    final shortestSide = screenSize.shortestSide;
+    // Use slightly less of the screen to leave room for UI elements
+    final availableSize = shortestSide * boardToScreenRatio;
+    return BoardLayoutConfig(availableSize);
   }
 }
 
@@ -66,10 +75,16 @@ class BoardView extends ConsumerStatefulWidget {
 
 class _BoardViewState extends ConsumerState<BoardView> {
   late ConfettiController _confettiController;
+  bool _showPauseMenu = false;
 
   @override
   void initState() {
     super.initState();
+    // Force landscape orientation for game board
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
@@ -78,6 +93,11 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   void dispose() {
     _confettiController.dispose();
+    // Reset to portrait when leaving board view
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     super.dispose();
   }
 
@@ -90,17 +110,93 @@ class _BoardViewState extends ConsumerState<BoardView> {
       _confettiController.play();
     }
 
-    // Calculate layout dimensions
-    final screenShortest = MediaQuery.of(context).size.shortestSide;
-    final layout = BoardLayoutConfig.fromScreen(screenShortest);
+    // Calculate layout dimensions (use full screen size for landscape optimization)
+    final screenSize = MediaQuery.of(context).size;
+    final layout = BoardLayoutConfig.fromScreen(screenSize);
 
     return Scaffold(
-      backgroundColor: GameTheme.backgroundTable.gradient != null
-          ? null
-          : GameTheme.primaryText,
-      body: Container(
-        decoration: GameTheme.backgroundTable,
-        child: Center(child: _buildBoard(state, layout)),
+      backgroundColor: GameTheme.tableBackgroundColor,
+      body: Stack(
+        children: [
+          // BACKGROUND
+          Container(
+            decoration: GameTheme.tableDecoration,
+            child: Center(child: _buildBoard(state, layout)),
+          ),
+
+          // PAUSE BUTTON (top-right)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 12,
+            right: 16,
+            child: _buildPauseButton(),
+          ),
+
+          // PAUSE MENU OVERLAY
+          if (_showPauseMenu) _buildPauseOverlay(),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // PAUSE MENU
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Build the pause button with glass decoration
+  Widget _buildPauseButton() {
+    return GestureDetector(
+          onTap: () => setState(() => _showPauseMenu = true),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(Icons.pause, color: GameTheme.goldAccent, size: 28),
+          ),
+        )
+        .animate()
+        .fadeIn(delay: 500.ms, duration: 400.ms)
+        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+  }
+
+  /// Build the pause menu overlay
+  Widget _buildPauseOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.6),
+        child: PauseDialog(
+          onResume: () => setState(() => _showPauseMenu = false),
+          onSettings: () {
+            // Navigate to settings screen
+            setState(() => _showPauseMenu = false);
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+            );
+          },
+          onExit: () {
+            // Reset orientation to portrait before leaving
+            SystemChrome.setPreferredOrientations([
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.portraitDown,
+            ]);
+            // Navigate back to setup screen
+            setState(() => _showPauseMenu = false);
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        ),
       ),
     );
   }
@@ -127,13 +223,14 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ],
           ),
         )
+        // Entrance animation chain
         .animate()
-        .fadeIn(duration: GameTheme.boardFadeDuration)
+        .fadeIn(duration: 800.ms)
         .scale(
-          begin: const Offset(0.95, 0.95),
-          end: const Offset(1, 1),
-          duration: GameTheme.boardEntryDuration,
-          curve: Curves.easeOutBack,
+          begin: const Offset(1.05, 1.05),
+          end: const Offset(1.0, 1.0),
+          duration: 800.ms,
+          curve: Curves.easeOutCubic,
         );
   }
 
@@ -150,7 +247,18 @@ class _BoardViewState extends ConsumerState<BoardView> {
       right: layout.cornerSize,
       bottom: layout.cornerSize,
       child: Container(
-        decoration: GameTheme.centerAreaDecoration,
+        decoration: BoxDecoration(
+          // Parchment color for contrast with green table
+          color: GameTheme.parchmentColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(2, 2),
+            ),
+          ],
+        ),
         child: Stack(
           children: [
             // Background icon (faded book)
@@ -160,7 +268,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
                 child: Icon(
                   Icons.menu_book,
                   size: layout.boardSize * BoardLayoutConfig.centerIconRatio,
-                  color: Colors.white,
+                  color: GameTheme.textDark,
                 ),
               ),
             ),
@@ -176,6 +284,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Use hudTitleStyle from GameTheme
         Text('EDEBİYAT', style: GameTheme.hudTitleStyle),
         const SizedBox(height: 10),
         const DiceRoller(),
@@ -307,7 +416,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
     });
   }
 
-  /// Build a single positioned and rotated tile
+  /// Build a single positioned and rotated tile using EnhancedTileWidget
   Widget _buildTile({
     required int id,
     required double left,
@@ -321,6 +430,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
     final internalWidth = isRotated ? height : width;
     final internalHeight = isRotated ? width : height;
 
+    // Get tile data from BoardConfig
+    final tile = BoardConfig.getTile(id);
+
     return Positioned(
       left: left,
       top: top,
@@ -329,9 +441,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
       child: RotatedBox(
         quarterTurns: rotation,
         child: EnhancedTileWidget(
-          tile: BoardConfig.getTile(id),
+          tile: tile,
           width: internalWidth,
           height: internalHeight,
+          quarterTurns: rotation, // Pass rotation for text counter-rotation
         ),
       ),
     );
@@ -341,7 +454,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
   // PLAYER PAWNS
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Build positioned pawns for all players
+  /// Build positioned pawns for all players using AnimatedPawnContainer
   List<Widget> _buildPlayers(List<Player> players, BoardLayoutConfig layout) {
     // Group players by position
     final Map<int, List<Player>> groups = {};
@@ -358,53 +471,21 @@ class _BoardViewState extends ConsumerState<BoardView> {
     groups.forEach((position, group) {
       final center = _getTileCenter(position, layout);
       final pawnAreaSize = layout.cornerSize;
+      final pawnSize = layout.normalSize * 0.45;
 
       widgets.add(
-        AnimatedPositioned(
-          duration: GameTheme.pawnMoveDuration,
-          curve: Curves.easeInOutCubic,
-          left: center.dx - (pawnAreaSize / 2),
-          top: center.dy - (pawnAreaSize / 2),
-          child: SizedBox(
-            width: pawnAreaSize,
-            height: pawnAreaSize,
-            child: Center(
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 2,
-                children: group
-                    .map(
-                      (p) => _buildPawn(
-                        p,
-                        layout.normalSize * 0.4,
-                        currentPlayerId,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ),
+        AnimatedPawnContainer(
+          key: ValueKey('pawn_group_$position'),
+          center: center,
+          areaSize: pawnAreaSize,
+          players: group,
+          currentPlayerId: currentPlayerId,
+          pawnSize: pawnSize,
         ),
       );
     });
 
     return widgets;
-  }
-
-  /// Build a single pawn widget
-  Widget _buildPawn(Player player, double size, String currentPlayerId) {
-    final isActive = player.id == currentPlayerId;
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: GameTheme.pawnDecoration(player.color, isActive: isActive),
-      child: Icon(
-        IconData(0xe000 + player.iconIndex, fontFamily: 'MaterialIcons'),
-        size: size * 0.7,
-        color: Colors.white,
-      ),
-    );
   }
 
   /// Calculate the center point of a tile for pawn positioning
@@ -452,12 +533,49 @@ class _BoardViewState extends ConsumerState<BoardView> {
     BoardLayoutConfig layout,
   ) {
     return [
-      // Confetti effect
+      // Confetti effect - shoots from bottom center with celebratory colors
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: ConfettiWidget(
+          confettiController: _confettiController,
+          blastDirectionality: BlastDirectionality.explosive,
+          blastDirection: -3.14159 / 2, // Shoots upward (π/2 radians)
+          emissionFrequency: 0.05,
+          numberOfParticles: 30,
+          maxBlastForce: 40,
+          minBlastForce: 20,
+          gravity: 0.1,
+          particleDrag: 0.05,
+          colors: const [
+            Color(0xFFD4AF37), // Gold
+            Color(0xFF1976D2), // Blue
+            Color(0xFFD32F2F), // Red
+            Color(0xFF388E3C), // Green
+            Color(0xFFFFFFFF), // White
+            Color(0xFFE91E63), // Pink
+          ],
+          createParticlePath: _drawStar,
+        ),
+      ),
+      // Secondary confetti from top for rain effect
       Align(
         alignment: Alignment.topCenter,
         child: ConfettiWidget(
           confettiController: _confettiController,
-          blastDirectionality: BlastDirectionality.explosive,
+          blastDirectionality: BlastDirectionality.directional,
+          blastDirection: 3.14159 / 2, // Shoots downward
+          emissionFrequency: 0.03,
+          numberOfParticles: 15,
+          maxBlastForce: 10,
+          minBlastForce: 5,
+          gravity: 0.15,
+          particleDrag: 0.02,
+          colors: const [
+            Color(0xFFD4AF37), // Gold
+            Color(0xFF1976D2), // Blue
+            Color(0xFFD32F2F), // Red
+            Color(0xFF388E3C), // Green
+          ],
         ),
       ),
 
@@ -494,5 +612,32 @@ class _BoardViewState extends ConsumerState<BoardView> {
             .fadeIn(),
       ),
     );
+  }
+
+  /// Custom star-shaped particle path for confetti
+  Path _drawStar(Size size) {
+    final path = Path();
+    final double centerX = size.width / 2;
+    final double centerY = size.height / 2;
+    final double outerRadius = size.width / 2;
+    final double innerRadius = size.width / 4;
+    const int points = 5;
+    const double rotation = -math.pi / 2; // Start from top
+
+    for (int i = 0; i < points * 2; i++) {
+      final double radius = i.isEven ? outerRadius : innerRadius;
+      final double angle = rotation + (i * math.pi / points);
+      final double x = centerX + radius * math.cos(angle);
+      final double y = centerY + radius * math.sin(angle);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    path.close();
+    return path;
   }
 }

@@ -10,22 +10,23 @@ class GameTheme {
   // COLOR PALETTE
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Primary table background - deep rich green
-  static const Color _tableColor = Color(0xFF2E4A3C);
+  /// Deep, rich green for the game table background
+  static const Color tableBackgroundColor = Color(0xFF1B4721);
 
-  /// Board surface - warm parchment beige
-  static const Color _boardColor = Color(0xFFF5E6D3);
+  /// Lighter green for gradient center (spotlight effect)
+  static const Color tableHighlightColor = Color(0xFF2E7D32);
 
-  /// Compatibility aliases for existing code
-  static const Color parchment = _boardColor;
-  static const Color textPrimary = Color(0xFF263238);
-  static const Color primaryText = textPrimary;
-  static const Color accentRed = Color(0xFFE57373);
-  static const Color accentGold = Color(0xFFFFD54F);
-  static const Color tileBorder = Color(0xFF5D4037);
+  /// Warm beige/parchment color for paper elements
+  static const Color parchmentColor = Color(0xFFF5F5DC);
+
+  /// Gold accent for highlights and borders
+  static const Color goldAccent = Color(0xFFD4AF37);
+
+  /// Dark brown/black for high contrast text
+  static const Color textDark = Color(0xFF212121);
 
   /// Dialog overlay color
-  static const Color dialogOverlayColor = Color(0x8A000000); // Colors.black54
+  static const Color dialogOverlayColor = Color(0x8A000000);
 
   // ════════════════════════════════════════════════════════════════════════════
   // GROUP COLORS (Property color strips by tile ID range)
@@ -84,24 +85,92 @@ class GameTheme {
   };
 
   // ════════════════════════════════════════════════════════════════════════════
-  // BACKGROUND & CONTAINER DECORATIONS
+  // TYPOGRAPHY - BASE FONTS
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Main table background with radial gradient
-  static BoxDecoration get backgroundTable => const BoxDecoration(
+  /// Header font - Playfair Display for elegant titles
+  static TextStyle get headerFont => GoogleFonts.playfairDisplay();
+
+  /// Body font - Poppins for readable UI text
+  static TextStyle get bodyFont => GoogleFonts.poppins();
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // TEXT STYLES
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// HUD title style (EDEBİYAT) - Large, bold, Gold/White, Playfair
+  static TextStyle get hudTitleStyle => GoogleFonts.playfairDisplay(
+    fontSize: 28,
+    fontWeight: FontWeight.bold,
+    color: goldAccent,
+    shadows: [
+      Shadow(
+        color: Colors.black.withValues(alpha: 0.5),
+        blurRadius: 8,
+        offset: const Offset(2, 2),
+      ),
+      Shadow(
+        color: Colors.white.withValues(alpha: 0.3),
+        blurRadius: 4,
+        offset: const Offset(-1, -1),
+      ),
+    ],
+  );
+
+  /// HUD subtitle/action text style
+  static TextStyle get hudSubtitleStyle =>
+      GoogleFonts.poppins(color: Colors.white70, fontSize: 10);
+
+  /// Tile title style - Small, bold, TextDark, Poppins
+  static TextStyle get tileTitleStyle => GoogleFonts.poppins(
+    fontSize: 8,
+    fontWeight: FontWeight.w700,
+    color: textDark,
+  );
+
+  /// Tile price style - Very small, grey, Poppins
+  static TextStyle get tilePriceStyle => GoogleFonts.poppins(
+    fontSize: 7,
+    fontWeight: FontWeight.w500,
+    color: Colors.grey.shade600,
+  );
+
+  /// Corner tile label style
+  static TextStyle get cornerLabelStyle => GoogleFonts.poppins(
+    fontSize: 8,
+    fontWeight: FontWeight.w900,
+    color: Colors.black87,
+  );
+
+  /// Price badge text style
+  static const TextStyle priceBadgeStyle = TextStyle(
+    fontSize: 7,
+    fontWeight: FontWeight.bold,
+  );
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // DECORATIONS
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Main table background with radial gradient spotlight effect
+  static BoxDecoration get tableDecoration => BoxDecoration(
     gradient: RadialGradient(
-      center: Alignment(-0.3, -0.3),
-      radius: 1.2,
+      center: Alignment.center,
+      radius: 1.0,
       colors: [
-        Color(0xFF3D5A4D), // Lighter green
-        _tableColor,
+        tableHighlightColor, // Lighter green at center
+        tableBackgroundColor, // Deep green at edges
       ],
+      stops: const [0.0, 1.0],
     ),
   );
 
+  /// Alias for backward compatibility
+  static BoxDecoration get backgroundTable => tableDecoration;
+
   /// Board container with 3D shadow effect
   static BoxDecoration get boardDecoration => BoxDecoration(
-    color: _boardColor,
+    color: parchmentColor,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       // Outer dark shadow for depth
@@ -123,15 +192,12 @@ class GameTheme {
 
   /// Center area with subtle gradient
   static BoxDecoration get centerAreaDecoration => BoxDecoration(
-    color: _boardColor,
+    color: parchmentColor,
     borderRadius: BorderRadius.circular(12),
-    gradient: const LinearGradient(
+    gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [
-        _boardColor,
-        Color(0xFFE8D5C4), // Slightly darker beige
-      ],
+      colors: [parchmentColor, parchmentColor.withValues(alpha: 0.9)],
     ),
     boxShadow: [
       BoxShadow(
@@ -142,15 +208,37 @@ class GameTheme {
     ],
   );
 
-  /// Tile card decoration with subtle shadow
+  /// Card decoration for tiles/panels with 3D floating effect
   static BoxDecoration get cardDecoration => BoxDecoration(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(12),
+    borderRadius: BorderRadius.circular(8.0),
     boxShadow: [
+      // Ambient shadow (soft, spread)
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.15),
+        color: Colors.black.withValues(alpha: 0.1),
+        blurRadius: 10,
+        spreadRadius: 1,
+      ),
+      // Direct shadow (sharper, offset for 3D effect)
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.2),
         blurRadius: 6,
         offset: const Offset(2, 4),
+      ),
+    ],
+  );
+
+  /// Glass decoration for overlays/panels
+  /// White with 10% opacity for glassmorphism effect
+  static BoxDecoration get glassDecoration => BoxDecoration(
+    color: Colors.white.withValues(alpha: 0.1),
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.1),
+        blurRadius: 20,
+        spreadRadius: -5,
       ),
     ],
   );
@@ -177,75 +265,13 @@ class GameTheme {
       );
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TEXT STYLES
-  // ════════════════════════════════════════════════════════════════════════════
-
-  /// Tile title text style
-  static const TextStyle tileTitle = TextStyle(
-    fontSize: 9,
-    fontWeight: FontWeight.bold,
-    color: textPrimary,
-    letterSpacing: -0.2,
-  );
-
-  /// Tile price text style
-  static const TextStyle tilePrice = TextStyle(
-    fontSize: 8,
-    fontWeight: FontWeight.w500,
-    color: Colors.black54,
-  );
-
-  /// HUD title style (EDEBİYAT)
-  static TextStyle get hudTitleStyle => GoogleFonts.playfairDisplay(
-    fontSize: 28,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-    shadows: [
-      Shadow(
-        color: Colors.black.withValues(alpha: 0.5),
-        blurRadius: 8,
-        offset: const Offset(2, 2),
-      ),
-      Shadow(
-        color: Colors.white.withValues(alpha: 0.3),
-        blurRadius: 4,
-        offset: const Offset(-1, -1),
-      ),
-    ],
-  );
-
-  /// HUD subtitle/action text style
-  static TextStyle get hudSubtitleStyle =>
-      GoogleFonts.poppins(color: Colors.white70, fontSize: 10);
-
-  /// Property tile title style
-  static TextStyle get propertyTitleStyle => GoogleFonts.poppins(
-    fontSize: 8,
-    fontWeight: FontWeight.w700,
-    color: textPrimary,
-  );
-
-  /// Corner tile label style
-  static TextStyle get cornerLabelStyle => GoogleFonts.poppins(
-    fontSize: 8,
-    fontWeight: FontWeight.w900,
-    color: Colors.black87,
-  );
-
-  /// Price badge text style
-  static const TextStyle priceBadgeStyle = TextStyle(
-    fontSize: 7,
-    fontWeight: FontWeight.bold,
-  );
-
-  // ════════════════════════════════════════════════════════════════════════════
   // BUTTON STYLES
   // ════════════════════════════════════════════════════════════════════════════
 
   /// Primary elevated button style
   static ButtonStyle get elevatedButtonStyle => ElevatedButton.styleFrom(
-    backgroundColor: const Color(0xFFD4A574), // Golden
-    foregroundColor: const Color(0xFF3A2F26), // Dark brown text
+    backgroundColor: goldAccent,
+    foregroundColor: textDark,
     shadowColor: Colors.black.withValues(alpha: 0.4),
     elevation: 8,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -264,6 +290,34 @@ class GameTheme {
   static const Duration pawnMoveDuration = Duration(milliseconds: 600);
   static const Duration dialogEntryDuration = Duration(milliseconds: 300);
   static const Duration diceRollDuration = Duration(milliseconds: 500);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // LEGACY ALIASES (For backward compatibility)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  static const Color parchment = parchmentColor;
+  static const Color textPrimary = textDark;
+  static const Color primaryText = textDark;
+  static const Color accentRed = Color(0xFFE57373);
+  static const Color accentGold = goldAccent;
+  static const Color tileBorder = Color(0xFF5D4037);
+
+  /// Legacy text styles
+  static const TextStyle tileTitle = TextStyle(
+    fontSize: 9,
+    fontWeight: FontWeight.bold,
+    color: textDark,
+    letterSpacing: -0.2,
+  );
+
+  static const TextStyle tilePrice = TextStyle(
+    fontSize: 8,
+    fontWeight: FontWeight.w500,
+    color: Colors.black54,
+  );
+
+  /// Alias for propertyTitleStyle (backward compatibility)
+  static TextStyle get propertyTitleStyle => tileTitleStyle;
 }
 
 /// Configuration data for corner tiles

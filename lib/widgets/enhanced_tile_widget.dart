@@ -1,24 +1,39 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
-import '../core/theme/game_theme.dart';
+import '../../core/theme/game_theme.dart';
 
 /// Enhanced tile widget with card-like appearance
 /// Handles both property tiles and corner tiles with appropriate styling
+/// Text is counter-rotated to remain readable regardless of tile orientation
 class EnhancedTileWidget extends StatelessWidget {
   final BoardTile tile;
   final double width;
   final double height;
+
+  /// Quarter turns the tile is rotated (0-3)
+  /// 0 = Bottom edge, 1 = Left edge, 2 = Top edge, 3 = Right edge
+  final int quarterTurns;
 
   const EnhancedTileWidget({
     super.key,
     required this.tile,
     required this.width,
     required this.height,
+    this.quarterTurns = 0,
   });
 
   /// Check if this tile is a corner tile (id divisible by 10)
   bool get _isCorner => tile.id % 10 == 0;
+
+  /// Calculate the counter-rotation angle to keep text upright
+  /// Returns radians to rotate text back to readable orientation
+  double get _counterRotationAngle {
+    // Quarter turns: 0=0°, 1=90°, 2=180°, 3=270°
+    // Counter-rotation: negative of the rotation
+    return -quarterTurns * math.pi / 2;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,89 +41,192 @@ class EnhancedTileWidget extends StatelessWidget {
       width: width,
       height: height,
       decoration: GameTheme.cardDecoration,
+      clipBehavior: Clip.antiAlias,
       child: _isCorner
-          ? _CornerContent(tile: tile, width: width)
-          : _PropertyContent(tile: tile, height: height),
+          ? _CornerContent(
+              tile: tile,
+              width: width,
+              height: height,
+              counterRotation: _counterRotationAngle,
+            )
+          : _PropertyContent(
+              tile: tile,
+              width: width,
+              height: height,
+              counterRotation: _counterRotationAngle,
+            ),
     );
   }
 }
 
-/// Property tile content with color strip and title
+/// Property tile content with color strip, title, and price
+/// Text is counter-rotated to remain readable
 class _PropertyContent extends StatelessWidget {
   final BoardTile tile;
+  final double width;
   final double height;
+  final double counterRotation;
 
-  const _PropertyContent({required this.tile, required this.height});
+  const _PropertyContent({
+    required this.tile,
+    required this.width,
+    required this.height,
+    required this.counterRotation,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // COLOR STRIP (Top 25%)
+        // COLOR STRIP (Top - 10px height for property group identification)
         Container(
-          height: height * 0.25,
+          height: 10,
           width: double.infinity,
           decoration: GameTheme.groupColorStrip(tile.id),
           child: _UpgradeIcons(upgradeLevel: tile.upgradeLevel),
         ),
-        // CONTENT
+
+        // CONTENT AREA
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  tile.title,
-                  textAlign: TextAlign.center,
-                  style: GameTheme.propertyTitleStyle,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (tile.price != null && !tile.isUtility)
-                  _PriceBadge(price: tile.price!),
-              ],
+            padding: const EdgeInsets.all(4.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // TITLE (counter-rotated)
+                    Expanded(
+                      child: Center(
+                        child: Transform.rotate(
+                          angle: counterRotation,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: _getMaxTextWidth(constraints),
+                              ),
+                              child: Text(
+                                tile.title,
+                                textAlign: TextAlign.center,
+                                style: GameTheme.tileTitleStyle,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // PRICE (counter-rotated, only if applicable)
+                    if (tile.price != null && !tile.isUtility)
+                      Transform.rotate(
+                        angle: counterRotation,
+                        child: _PriceBadge(price: tile.price!),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ],
     );
   }
+
+  /// Calculate max text width based on rotation
+  double _getMaxTextWidth(BoxConstraints constraints) {
+    // For rotated tiles (90° or 270°), use height as width constraint
+    final isRotated =
+        counterRotation.abs() == math.pi / 2 ||
+        counterRotation.abs() == 3 * math.pi / 2;
+    if (isRotated) {
+      return constraints.maxHeight * 0.9;
+    }
+    return constraints.maxWidth * 0.95;
+  }
 }
 
 /// Corner tile content with icon and label
+/// Content is counter-rotated to remain readable
 class _CornerContent extends StatelessWidget {
   final BoardTile tile;
   final double width;
+  final double height;
+  final double counterRotation;
 
-  const _CornerContent({required this.tile, required this.width});
+  const _CornerContent({
+    required this.tile,
+    required this.width,
+    required this.height,
+    required this.counterRotation,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Get config from theme, with fallback for unknown types
     final config = _getCornerConfig();
+    final minDimension = width < height ? width : height;
+    final iconSize = minDimension * 0.35;
 
     return Container(
       color: config.backgroundColor,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background icon (large and faded)
-          Opacity(opacity: 0.1, child: Icon(config.icon, size: width * 0.8)),
-          // Foreground content
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            alignment: Alignment.center,
             children: [
-              Icon(config.icon, size: width * 0.4, color: Colors.black87),
-              const SizedBox(height: 4),
-              Text(
-                config.label,
-                textAlign: TextAlign.center,
-                style: GameTheme.cornerLabelStyle,
+              // BACKGROUND ICON (large and faded) - also counter-rotated
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.1,
+                  child: Transform.rotate(
+                    angle: counterRotation,
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(config.icon, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // FOREGROUND CONTENT (counter-rotated)
+              Transform.rotate(
+                angle: counterRotation,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ICON
+                      Icon(config.icon, size: iconSize, color: Colors.black87),
+                      const SizedBox(height: 4),
+
+                      // LABEL
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: minDimension * 0.85,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            config.label,
+                            textAlign: TextAlign.center,
+                            style: GameTheme.cornerLabelStyle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -165,7 +283,7 @@ class _UpgradeIcons extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           upgradeLevel,
-          (i) => const Icon(Icons.star, size: 8, color: Colors.white),
+          (i) => const Icon(Icons.star, size: 6, color: Colors.white),
         ),
       ),
     );
@@ -186,7 +304,7 @@ class _PriceBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         color: Colors.black.withValues(alpha: 0.05),
       ),
-      child: Text('$price₺', style: GameTheme.priceBadgeStyle),
+      child: Text('$price₺', style: GameTheme.tilePriceStyle),
     );
   }
 }
