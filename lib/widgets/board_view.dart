@@ -3,33 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/board_config.dart';
-import '../models/board_tile.dart';
 import '../models/game_enums.dart'; // GamePhase, CardType
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
 import 'dice_roller.dart';
-import 'game_tile_widget.dart';
 import 'game_log.dart';
 import 'floating_score.dart'; // Import added
+import 'enhanced_tile_widget.dart'; // New import for the new implementation
 
 class BoardView extends ConsumerStatefulWidget {
   const BoardView({super.key});
-
   @override
   ConsumerState<BoardView> createState() => _BoardViewState();
 }
 
 class _BoardViewState extends ConsumerState<BoardView> {
   late ConfettiController _confettiController;
-  // Local list to manage multiple overlapping floating effects
   final List<Widget> _floatingEffects = [];
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 5),
     );
   }
 
@@ -41,17 +38,14 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   void _addFloatingEffect(String text, Color color) {
     if (!mounted) return;
-
-    // Unique key to identify this specific widget instance
     Key key = UniqueKey();
-
     setState(() {
       _floatingEffects.add(
         Positioned(
           key: key,
           top: MediaQuery.of(context).size.shortestSide * 0.45,
           left: MediaQuery.of(context).size.shortestSide * 0.4,
-          width: 200, // Constrain width
+          width: 200,
           child: FloatingScore(
             text: text,
             color: color,
@@ -70,7 +64,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   @override
   Widget build(BuildContext context) {
-    final gameState = ref.watch(gameProvider);
+    final state = ref.watch(gameProvider);
+    if (state.phase == GamePhase.gameOver) _confettiController.play();
 
     // Listen for effect triggers
     ref.listen(gameProvider, (previous, next) {
@@ -83,162 +78,315 @@ class _BoardViewState extends ConsumerState<BoardView> {
       }
     });
 
-    // Ekranın kısa kenarını baz alarak tahta boyutunu belirle
-    final boardSize = MediaQuery.of(context).size.shortestSide * 0.95;
-    final tileSize =
-        boardSize / 13; // 13 birimlik grid (9 normal + 2x2 köşeler)
+    // Responsive Kare Boyutu Hesaplama
+    final double screenShortest = MediaQuery.of(context).size.shortestSide;
+    final double boardSize = screenShortest * 0.95; // Ekranın %95'i
 
-    // Oyun bittiyse konfeti patlat
-    if (gameState.phase == GamePhase.gameOver) {
-      _confettiController.play();
-    }
+    // Kenar uzunluğu logic: 2 KÖŞE + 9 NORMAL
+    // Köşeler normalin 1.5 katı olsun.
+    // 1.5 + 9 + 1.5 = 12 birim.
+    final double unitSize = boardSize / 12;
+    final double cornerSize = unitSize * 1.5;
+    final double normalSize = unitSize;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            colors: [
-              Color(0xFF37474F),
-              Color(0xFF263238),
-            ], // Ortası daha açık, kenarlar koyu
-            radius: 1.2,
-          ),
-        ),
+        width: double.infinity,
+        height: double.infinity,
+        decoration: GameTheme.tableDecoration,
         child: Center(
-          child: Container(
-            width: boardSize,
-            height: boardSize,
-            decoration: GameTheme.boardDecoration,
-            child: Stack(
-              children: [
-                // 1. ORTA ALAN (Center)
-                Center(child: _buildCenterArea(gameState, boardSize, ref)),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // --- ANA TAHTA KATMANI (Grid System) ---
+              Container(
+                width: boardSize,
+                height: boardSize,
+                decoration: GameTheme.boardDecoration,
+                child: Column(
+                  children: [
+                    // ÜST SATIR (Soldan Sağa: 10 -> 20)
+                    SizedBox(
+                      height: cornerSize,
+                      child: Row(
+                        children: [
+                          EnhancedTileWidget(
+                            tile: BoardConfig.tiles[10],
+                            width: cornerSize,
+                            height: cornerSize,
+                          ),
+                          ...List.generate(
+                            9,
+                            (i) => EnhancedTileWidget(
+                              tile: BoardConfig.tiles[11 + i],
+                              width: normalSize,
+                              height: cornerSize,
+                            ),
+                          ),
+                          EnhancedTileWidget(
+                            tile: BoardConfig.tiles[20],
+                            width: cornerSize,
+                            height: cornerSize,
+                          ),
+                        ],
+                      ),
+                    ),
 
-                // 2. KUTUCUKLAR (Tiles)
-                ...BoardConfig.tiles.map((tile) => _buildTile(tile, tileSize)),
+                    // ORTA BÖLÜM (Sol Kenar + Orta Alan + Sağ Kenar)
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // SOL KENAR (Yukarıdan Aşağı: 9 -> 1)
+                          SizedBox(
+                            width: cornerSize,
+                            child: Column(
+                              children: List.generate(9, (i) {
+                                // 9, 8, ..., 1
+                                return EnhancedTileWidget(
+                                  tile: BoardConfig.tiles[9 - i],
+                                  width: cornerSize,
+                                  height: normalSize,
+                                );
+                              }),
+                            ),
+                          ),
 
-                // 3. OYUNCULAR (Piyonlar) - Animated
-                ..._buildGroupedPlayers(
-                  gameState.players,
-                  tileSize,
-                  gameState.currentPlayer.id,
+                          // ORTA ALAN (Center)
+                          Expanded(
+                            child: Container(
+                              decoration: GameTheme.centerAreaDecoration,
+                              margin: const EdgeInsets.all(4),
+                              child: Stack(
+                                children: [
+                                  const Center(
+                                    child: Opacity(
+                                      opacity: 0.1,
+                                      child: Icon(
+                                        Icons.menu_book,
+                                        size: 150,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  Center(child: _buildHUD(state)),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // SAĞ KENAR (Yukarıdan Aşağı: 21 -> 29)
+                          SizedBox(
+                            width: cornerSize,
+                            child: Column(
+                              children: List.generate(
+                                9,
+                                (i) => EnhancedTileWidget(
+                                  tile: BoardConfig.tiles[21 + i],
+                                  width: cornerSize,
+                                  height: normalSize,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ALT SATIR (Soldan Sağa: 0 -> 39..31 -> 30) - Hayır Layout:
+                    // 0 Sol Alt, 30 Sağ Alt.
+                    // Alt kenar (30 ile 0 arası) : 31..39 (Sağdan sola akar)
+                    // Row Children: [0] + [39, 38, ..., 31] + [30]
+                    SizedBox(
+                      height: cornerSize,
+                      child: Row(
+                        children: [
+                          EnhancedTileWidget(
+                            tile: BoardConfig.tiles[0],
+                            width: cornerSize,
+                            height: cornerSize,
+                          ),
+                          ...List.generate(
+                            9,
+                            (i) => EnhancedTileWidget(
+                              tile: BoardConfig.tiles[39 - i],
+                              width: normalSize,
+                              height: cornerSize,
+                            ),
+                          ),
+                          EnhancedTileWidget(
+                            tile: BoardConfig.tiles[30],
+                            width: cornerSize,
+                            height: cornerSize,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+              ),
 
-                // 4. FLOATING EFFECTS (Para uçuşları)
-                ..._floatingEffects,
+              // --- PİYONLAR (Grid Koordinat Hesaplamalı) ---
+              ..._buildGroupedPlayers(
+                state.players,
+                boardSize,
+                cornerSize,
+                normalSize,
+                state.currentPlayer.id,
+              ),
 
-                // 5. KONFETİ (En üst katman)
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: ConfettiWidget(
-                    confettiController: _confettiController,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    shouldLoop: true,
-                    colors: const [
-                      Colors.green,
-                      Colors.blue,
-                      Colors.pink,
-                      Colors.orange,
-                      Colors.purple,
-                    ],
-                  ),
-                ),
+              // --- EFEKTLER ---
+              ..._floatingEffects,
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(confettiController: _confettiController),
+              ),
 
-                // 6. DIALOGLAR (Overlay) - Animated Pop-in
-                if (gameState.showCardDialog && gameState.currentCard != null)
-                  _buildOverlay(child: _buildCardDialog(ref, gameState))
-                      .animate()
-                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                      .fadeIn(duration: 300.ms),
+              // Log (Bottom Right corner area)
+              Positioned(
+                bottom: cornerSize + 20,
+                right: cornerSize + 20,
+                child: GameLog(logs: state.logs),
+              ),
 
-                if (gameState.showQuestionDialog &&
-                    gameState.currentQuestion != null)
-                  _buildOverlay(child: _buildQuestionDialog(ref, gameState))
-                      .animate()
-                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                      .fadeIn(duration: 300.ms),
+              // --- DIALOGLAR ---
+              if (state.showCardDialog && state.currentCard != null)
+                _buildOverlay(child: _buildCardDialog(ref, state)),
 
-                if (gameState.showPurchaseDialog &&
-                    gameState.currentTile != null)
-                  _buildOverlay(child: _buildPurchaseDialog(ref, gameState))
-                      .animate()
-                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                      .fadeIn(duration: 300.ms),
+              if (state.showQuestionDialog && state.currentQuestion != null)
+                _buildOverlay(child: _buildQuestionDialog(ref, state)),
 
-                if (gameState.showUpgradeDialog &&
-                    gameState.currentTile != null)
-                  _buildOverlay(child: _buildUpgradeDialog(ref, gameState))
-                      .animate()
-                      .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                      .fadeIn(duration: 300.ms),
+              if (state.showPurchaseDialog && state.currentTile != null)
+                _buildOverlay(child: _buildPurchaseDialog(ref, state)),
 
-                // 7. OYUN GÜNLÜĞÜ (Log)
-                Positioned(
-                  bottom: 20,
-                  right: 20,
-                  child: GameLog(logs: gameState.logs),
-                ),
-              ],
-            ),
+              if (state.showUpgradeDialog && state.currentTile != null)
+                _buildOverlay(child: _buildUpgradeDialog(ref, state)),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // --- Tile Positioning Logic ---
-  Widget _buildTile(BoardTile tile, double size) {
-    double top = 0;
-    double left = 0;
-
-    if (tile.id == 0) {
-      left = 0;
-      top = 11 * size;
-    } // Sol Alt
-    else if (tile.id > 0 && tile.id < 10) {
-      // SOL KENAR (Yukarı Çıkıyor)
-      left = 0;
-      top = (11 - tile.id) * size;
-    } else if (tile.id == 10) {
-      left = 0;
-      top = 0;
-    } // SOL ÜST
-    else if (tile.id > 10 && tile.id < 20) {
-      // ÜST KENAR (Sağa Gidiyor)
-      left = (tile.id - 10 + 0.5) * size;
-      top = 0;
-    } else if (tile.id == 20) {
-      left = 11 * size;
-      top = 0;
-    } // SAĞ ÜST
-    else if (tile.id > 20 && tile.id < 30) {
-      // SAĞ KENAR (Aşağı İniyor)
-      left = 11.5 * size;
-      top = (tile.id - 20 + 0.5) * size;
-    } else if (tile.id == 30) {
-      left = 11 * size;
-      top = 11 * size;
-    } // SAĞ ALT
-    else if (tile.id > 30) {
-      // ALT KENAR (Sola Gidiyor)
-      left = (11 - (tile.id - 30) + 0.5) * size;
-      top = 11.5 * size;
-    }
-
-    return Positioned(
-      left: left,
-      top: top,
-      child: GameTileWidget(tile: tile, size: size),
+  Widget _buildHUD(dynamic state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          "EDEBİYAT MACERA",
+          style: TextStyle(
+            fontFamily: 'Georgia',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 20),
+        const DiceRoller(),
+        const SizedBox(height: 10),
+        Text(
+          state.lastAction,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
-  // --- Player Positioning Logic (Grouped to avoid overlap) ---
+  // Koordinat Hesaplayıcı
+  Offset _calculateTileOffset(
+    int tileId,
+    double cornerSize,
+    double normalSize,
+  ) {
+    // 0: Sol Alt
+    if (tileId == 0) return Offset(0, cornerSize + 9 * normalSize);
+
+    // 1-9: Sol Kenar (Aşağıdan Yukarı) -> Ama görselde Yukarıdan Aşağı 9..1
+    // Tile 1: En alt. Y = cornerSize + 8*normalSize. Wait.
+    // 0 H = corner. 1..9 H = 9*normal. 10 H = corner. Total = 2C + 9N.
+    // Logic:
+    // Left Column Top is at Y = cornerSize.
+    // Tile 9 is Y = cornerSize + 0*normal.
+    // Tile 1 is Y = cornerSize + 8*normal.
+    // Generic: Y = cornerSize + (9 - tileId) * normalSize. X = 0.
+    if (tileId > 0 && tileId < 10) {
+      return Offset(0, cornerSize + (9 - tileId) * normalSize);
+    }
+
+    // 10: Sol Üst
+    if (tileId == 10) return Offset(0, 0);
+
+    // 11-19: Üst Kenar (Soldan Sağa)
+    // X = cornerSize + (tileId - 11) * normalSize. Y = 0.
+    if (tileId > 10 && tileId < 20) {
+      return Offset(cornerSize + (tileId - 11) * normalSize, 0);
+    }
+
+    // 20: Sağ Üst
+    // X = cornerSize + 9*normalSize.
+    if (tileId == 20) return Offset(cornerSize + 9 * normalSize, 0);
+
+    // 21-29: Sağ Kenar (Yukarıdan Aşağı)
+    // X = cornerSize + 9*normalSize. Y = cornerSize + (tileId - 21) * normalSize.
+    if (tileId > 20 && tileId < 30) {
+      return Offset(
+        cornerSize + 9 * normalSize,
+        cornerSize + (tileId - 21) * normalSize,
+      );
+    }
+
+    // 30: Sağ Alt
+    // X = cornerSize + 9*normalSize. Y = cornerSize + 9*normalSize.
+    if (tileId == 30)
+      return Offset(cornerSize + 9 * normalSize, cornerSize + 9 * normalSize);
+
+    // 31-39: Alt Kenar (Sağdan Sola)
+    // X logic: Tile 31 is right-most (next to 30).
+    // Tile 39 is left-most (next to 0).
+    // X = cornerSize + (39 - tileId) * normalSize. Y = cornerSize + 9*normalSize.
+    if (tileId > 30) {
+      return Offset(
+        cornerSize + (39 - tileId) * normalSize,
+        cornerSize + 9 * normalSize,
+      );
+    }
+
+    return Offset.zero;
+  }
+
+  // Center Offset Helper
+  Offset _getTileCenter(int tileId, double cornerSize, double normalSize) {
+    Offset topLeft = _calculateTileOffset(tileId, cornerSize, normalSize);
+    double w = normalSize;
+    double h = normalSize;
+
+    if (tileId % 10 == 0) {
+      w = cornerSize;
+      h = cornerSize;
+    } else {
+      // Hangi kenarda?
+      if (tileId < 10 || (tileId > 20 && tileId < 30)) {
+        // Sol ve Sağ kenar dikeydir. Genişlik cornerSize, Yükseklik normalSize mı?
+        // Kodda: EnhancedTileWidget(width: cornerSize, height: normalSize)
+        w = cornerSize;
+        h = normalSize;
+      } else {
+        // Üst ve Alt kenar yataydır.
+        // Kodda: EnhancedTileWidget(width: normalSize, height: cornerSize)
+        w = normalSize;
+        h = cornerSize;
+      }
+    }
+    return topLeft + Offset(w / 2, h / 2);
+  }
+
   List<Widget> _buildGroupedPlayers(
     List<Player> players,
-    double size,
+    double boardSize,
+    double cornerSize,
+    double normalSize,
     String currentPlayerId,
   ) {
-    // Oyuncuları bulundukları kareye göre grupla
     Map<int, List<Player>> groups = {};
     for (var p in players) {
       if (!groups.containsKey(p.position)) groups[p.position] = [];
@@ -247,35 +395,19 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
     List<Widget> pawnWidgets = [];
 
-    groups.forEach((pos, group) {
-      double top = 0, left = 0;
-      if (pos == 0) {
-        left = 0;
-        top = 11 * size;
-      } else if (pos < 10) {
-        left = 0;
-        top = (11 - pos) * size;
-      } else if (pos == 10) {
-        left = 0;
-        top = 0;
-      } else if (pos < 20) {
-        left = (pos - 10 + 0.5) * size;
-        top = 0;
-      } else if (pos == 20) {
-        left = 11 * size;
-        top = 0;
-      } else if (pos < 30) {
-        left = 11.5 * size;
-        top = (pos - 20 + 0.5) * size;
-      } else if (pos == 30) {
-        left = 11 * size;
-        top = 11 * size;
-      } else {
-        left = (11 - (pos - 30) + 0.5) * size;
-        top = 11.5 * size;
-      }
+    // Player Pawn Size
+    double pawnSize = normalSize * 0.4;
 
-      double areaSize = (pos % 10 == 0) ? size * 1.5 : size;
+    groups.forEach((pos, group) {
+      Offset tileCenter = _getTileCenter(pos, cornerSize, normalSize);
+
+      // Center the wrap around the tile center
+      // Since AnimatedPositioned works Top-Left, we calculate top/left for the container
+      // Container size estimates:
+      double wrapSize = (pos % 10 == 0) ? cornerSize * 0.8 : normalSize * 0.8;
+
+      double left = tileCenter.dx - wrapSize / 2;
+      double top = tileCenter.dy - wrapSize / 2;
 
       pawnWidgets.add(
         AnimatedPositioned(
@@ -284,15 +416,13 @@ class _BoardViewState extends ConsumerState<BoardView> {
           left: left,
           top: top,
           child: Container(
-            width: areaSize,
-            height: areaSize,
+            width: wrapSize,
+            height: wrapSize,
             alignment: Alignment.center,
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: 2,
-              runSpacing: 2,
               children: group
-                  .map((p) => _buildPawn(p, size, currentPlayerId))
+                  .map((p) => _buildPawn(p, pawnSize, currentPlayerId))
                   .toList(),
             ),
           ),
@@ -305,8 +435,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   Widget _buildPawn(Player p, double size, String currentPlayerId) {
     Widget pawn = Container(
-      width: size * 0.35,
-      height: size * 0.35,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: p.color,
         shape: BoxShape.circle,
@@ -315,7 +445,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
       ),
       child: Icon(
         IconData(0xe000 + p.iconIndex, fontFamily: 'MaterialIcons'),
-        size: size * 0.2,
+        size: size * 0.6,
         color: Colors.white,
       ),
     );
@@ -324,16 +454,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
       return pawn
           .animate(onPlay: (c) => c.repeat())
           .boxShadow(
-            begin: const BoxShadow(
-              color: Colors.white,
-              blurRadius: 0,
-              spreadRadius: 0,
-            ),
-            end: const BoxShadow(
-              color: Colors.white,
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
+            begin: const BoxShadow(color: Colors.white, blurRadius: 0),
+            end: const BoxShadow(color: Colors.white, blurRadius: 15),
           )
           .scale(
             begin: const Offset(1, 1),
@@ -343,84 +465,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
           );
     }
     return pawn;
-  }
-
-  // --- Center Area ---
-  Widget _buildCenterArea(var state, double boardSize, WidgetRef ref) {
-    return Container(
-      width: boardSize * 0.5,
-      height: boardSize * 0.5,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "EDEBİYAT MACERA",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Georgia',
-              color: GameTheme.primaryText,
-            ),
-          ),
-          const Divider(),
-          Text(
-            state.lastAction,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildDeck("ŞANS", Colors.pink[100]!),
-              const SizedBox(width: 10),
-              _buildDeck("KADER", Colors.teal[100]!),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (!state.isDiceRolled &&
-              !state.showCardDialog &&
-              !state.showPurchaseDialog &&
-              !state.showQuestionDialog)
-            const DiceRoller() // Yeni widget kullanımı
-          else if (state.isDiceRolled &&
-              !state.showCardDialog &&
-              !state.showPurchaseDialog &&
-              !state.showQuestionDialog)
-            // Zar animasyonu DiceRoller içinde yönetildiği için buradaki text'e gerek kalmayabilir
-            // ama DiceRoller sadece "isDiceRolled" durumunda da görünüyor.
-            // BoardView içindeki logic DiceRoller'ı render etmeli.
-            // Yukardaki if/else yapısını DiceRoller'a bıraktık zaten.
-            // Tekrar düzenleyelim:
-            const DiceRoller(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeck(String title, Color color) {
-    return Container(
-      width: 60,
-      height: 80,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black26),
-        boxShadow: const [
-          BoxShadow(offset: Offset(2, 2), color: Colors.black12),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-      ),
-    );
   }
 
   Widget _buildOverlay({required Widget child}) {
@@ -433,13 +477,15 @@ class _BoardViewState extends ConsumerState<BoardView> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: const [BoxShadow(blurRadius: 20, color: Colors.black)],
           ),
           child: child,
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 200.ms);
   }
 
+  // --- Dialog Builders (Mevcut koddan taşınanlar) ---
   Widget _buildQuestionDialog(WidgetRef ref, GameState state) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
@@ -467,13 +513,13 @@ class _BoardViewState extends ConsumerState<BoardView> {
   Widget _buildPurchaseDialog(WidgetRef ref, GameState state) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      const Icon(Icons.shopping_cart, size: 50, color: Colors.green),
-      const SizedBox(height: 10),
-      const Text("TELİF HAKKI", style: TextStyle(fontWeight: FontWeight.bold)),
-      Text(state.currentTile!.title, style: const TextStyle(fontSize: 18)),
-      const SizedBox(height: 10),
+      Icon(Icons.shopping_cart, size: 50, color: Colors.green),
+      SizedBox(height: 10),
+      Text("TELİF HAKKI", style: TextStyle(fontWeight: FontWeight.bold)),
+      Text(state.currentTile!.title, style: TextStyle(fontSize: 18)),
+      SizedBox(height: 10),
       Text("Fiyat: ${state.currentTile!.price} Yıldız"),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -494,40 +540,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
             child: const Text("SATIN AL"),
           ),
         ],
-      ),
-    ],
-  );
-
-  Widget _buildCardDialog(WidgetRef ref, GameState state) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(
-        state.currentCard!.type == CardType.sans ? Icons.star : Icons.bolt,
-        size: 60,
-        color: state.currentCard!.type == CardType.sans
-            ? Colors.pink
-            : Colors.teal,
-      ),
-      const SizedBox(height: 16),
-      Text(
-        state.currentCard!.type == CardType.sans ? "ŞANS KARTI" : "KADER KARTI",
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-      ),
-      const SizedBox(height: 16),
-      Text(
-        state.currentCard!.description,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 16),
-      ),
-      const SizedBox(height: 24),
-      ElevatedButton(
-        onPressed: () => ref.read(gameProvider.notifier).closeCardDialog(),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(120, 45),
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
-        ),
-        child: const Text("TAMAM"),
       ),
     ],
   );
@@ -570,6 +582,40 @@ class _BoardViewState extends ConsumerState<BoardView> {
             child: const Text("Evet, Geliştir"),
           ),
         ],
+      ),
+    ],
+  );
+
+  Widget _buildCardDialog(WidgetRef ref, GameState state) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(
+        state.currentCard!.type == CardType.sans ? Icons.star : Icons.bolt,
+        size: 60,
+        color: state.currentCard!.type == CardType.sans
+            ? Colors.pink
+            : Colors.teal,
+      ),
+      const SizedBox(height: 16),
+      Text(
+        state.currentCard!.type == CardType.sans ? "ŞANS KARTI" : "KADER KARTI",
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+      ),
+      const SizedBox(height: 16),
+      Text(
+        state.currentCard!.description,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 16),
+      ),
+      const SizedBox(height: 24),
+      ElevatedButton(
+        onPressed: () => ref.read(gameProvider.notifier).closeCardDialog(),
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(120, 45),
+          backgroundColor: Colors.indigo,
+          foregroundColor: Colors.white,
+        ),
+        child: const Text("TAMAM"),
       ),
     ],
   );

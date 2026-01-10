@@ -1,22 +1,77 @@
 import 'package:flutter/material.dart';
 
 class GameTheme {
-  // Renk Paleti (Edebiyat / Kütüphane Estetiği)
-  static const Color backgroundTable = Color(0xFF263238); // Koyu Maun Masa
-  static const Color boardBackground = Color(0xFFF0E6D2); // Parşömen Kağıdı
-  static const Color primaryText = Color(0xFF4E342E); // Mürekkep Rengi
+  // --- Renk Paleti ---
+  static const Color woodDark = Color(0xFF3E2723); // Maun Çerçeve
+  static const Color woodLight = Color(0xFF5D4037);
+  static const Color feltGreen = Color(
+    0xFF2E7D32,
+  ); // Klasik Çuha Yeşili (Orta Alan)
+  static const Color parchment = Color(0xFFFFF3E0); // Parşömen (Kutucuklar)
 
-  static const Color accentGold = Color(0xFFFFD54F); // Vurgu (Yıldızlar)
-  static const Color accentRed = Color(0xFFE57373); // Ceza
-  static const Color accentGreen = Color(0xFF81C784); // Onay/Para
+  static const Color textPrimary = Color(0xFF263238);
+  static const Color textSecondary = Color(0xFF455A64);
 
-  static const Color tileBorder = Color(0xFF5D4037); // Kutu Çerçevesi
+  // --- Dekorasyonlar ---
 
-  // Text Styles
+  // 1. Oyun Masası (Deri/Ahşap Hissi)
+  static BoxDecoration tableDecoration = BoxDecoration(
+    gradient: RadialGradient(
+      colors: [Color(0xFF455A64), Color(0xFF263238)],
+      radius: 1.2,
+      center: Alignment.center,
+    ),
+  );
+
+  // 2. Oyun Tahtası (Fiziksel Karton Hissi)
+  static BoxDecoration boardDecoration = BoxDecoration(
+    color: parchment,
+    borderRadius: BorderRadius.circular(8),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.6),
+        blurRadius: 30,
+        spreadRadius: 5,
+        offset: Offset(0, 10),
+      ), // Masaya düşen gölge
+    ],
+    border: Border.all(color: woodDark, width: 12), // Kalın Ahşap Çerçeve
+  );
+
+  // 3. Kutucuk Stili (Kart Hissi)
+  static BoxDecoration tileDecoration(bool isCorner) => BoxDecoration(
+    color: Colors.white,
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Colors.white, Color(0xFFF5F5F5)], // Hafif kağıt dokusu
+    ),
+    border: Border.all(color: Colors.black12, width: 0.5),
+    // Köşeler biraz daha belirgin olsun
+  );
+
+  // 4. Orta Alan (Çuha Kumaş Hissi)
+  static BoxDecoration centerAreaDecoration = BoxDecoration(
+    color: feltGreen,
+    borderRadius: BorderRadius.circular(4),
+    boxShadow: [
+      // Flutter'da BoxShadow inset parametresi yoktur.
+      // Derinlik hissi için iç kenar gibi davranan bir gradient veya border kullanabiliriz.
+      // Şimdilik standart gölge ile devam ediyoruz.
+      BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 2)),
+    ],
+  );
+
+  // --- Compatibility / Legacy Support (Eski widget'lar kırılmasın diye) ---
+  static const Color primaryText = textPrimary;
+  static const Color accentRed = Color(0xFFE57373);
+  static const Color accentGold = Color(0xFFFFD54F);
+  static const Color tileBorder = woodLight;
+
   static const TextStyle tileTitle = TextStyle(
     fontSize: 9,
     fontWeight: FontWeight.bold,
-    color: primaryText,
+    color: textPrimary,
     letterSpacing: -0.2,
   );
 
@@ -24,20 +79,5 @@ class GameTheme {
     fontSize: 8,
     fontWeight: FontWeight.w500,
     color: Colors.black54,
-  );
-
-  // Decorations
-  static BoxDecoration boardDecoration = BoxDecoration(
-    color: boardBackground,
-    borderRadius: BorderRadius.circular(4),
-    border: Border.all(color: Color(0xFF3E2723), width: 8), // Deri Cilt Çerçeve
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black87,
-        blurRadius: 20,
-        spreadRadius: 5,
-        offset: Offset(0, 10),
-      ),
-    ],
   );
 }
