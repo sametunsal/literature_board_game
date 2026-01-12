@@ -17,6 +17,7 @@ class MyApp extends ConsumerWidget {
     final state = ref.watch(gameProvider);
 
     return MaterialApp(
+      title: 'EDEBİNA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

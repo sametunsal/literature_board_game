@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
-import 'setup_screen.dart';
+import 'main_menu_screen.dart';
 
 /// Premium splash screen with brand presentation and font preloading
 /// Displays the game logo with elegant animations before navigating to setup
@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const SetupScreen(),
+              const MainMenuScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -123,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen> {
   /// Main game title with gold styling
   Widget _buildTitle() {
     return Text(
-          "EDEBİYAT OYUNU",
+          "EDEBİNA",
           style: GoogleFonts.playfairDisplay(
             fontSize: 36,
             fontWeight: FontWeight.bold,

@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../utils/sound_manager.dart';
 import 'board_view.dart';
+import 'main_menu_screen.dart';
 
 /// Premium styled setup screen with Literature theme
 /// Matches the visual polish of the main game board
@@ -149,6 +151,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
               // START BUTTON
               _buildStartButton(),
+              const SizedBox(height: 12),
+
+              // EXIT BUTTON
+              _buildExitButton(),
             ],
           ),
         )
@@ -554,8 +560,57 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         );
   }
 
+  /// Exit button to close the application
+  Widget _buildExitButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () {
+          debugPrint("Exit button pressed");
+          SoundManager.instance.playClick();
+          // Navigate back to main menu
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+            (route) => false,
+          );
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: GameTheme.textDark.withValues(alpha: 0.7),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(
+            color: GameTheme.textDark.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.exit_to_app,
+              size: 22,
+              color: GameTheme.textDark.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "ÇIKIŞ",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Initialize the game with configured players and navigate to board
   void _startGame() {
+    SoundManager.instance.playClick();
     // Validate minimum players
     if (playerCount < 2) {
       ScaffoldMessenger.of(context).showSnackBar(

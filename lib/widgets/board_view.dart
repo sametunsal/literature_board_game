@@ -15,9 +15,13 @@ import 'dice_roller.dart';
 import 'question_dialog.dart';
 import 'card_dialog.dart';
 import 'copyright_purchase_dialog.dart';
+import 'notification_dialogs.dart';
 import 'pawn_widget.dart';
 import 'pause_dialog.dart';
 import 'settings_screen.dart';
+import 'main_menu_screen.dart';
+import 'game_over_dialog.dart';
+import '../utils/sound_manager.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
 // LAYOUT CONFIGURATION
@@ -105,9 +109,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
 
-    // Trigger confetti on game over
+    // Trigger confetti and victory sound on game over
     if (state.phase == GamePhase.gameOver) {
       _confettiController.play();
+      SoundManager.instance.playVictory();
     }
 
     // Calculate layout dimensions (use full screen size for landscape optimization)
@@ -118,10 +123,28 @@ class _BoardViewState extends ConsumerState<BoardView> {
       backgroundColor: GameTheme.tableBackgroundColor,
       body: Stack(
         children: [
-          // BACKGROUND
+          // BACKGROUND + BOARD
           Container(
             decoration: GameTheme.tableDecoration,
             child: Center(child: _buildBoard(state, layout)),
+          ),
+
+          // LEFT SIDEBAR - GAME LOG / SCORE PANEL
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: SafeArea(
+              child: Container(
+                width: 280,
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                child: GameLog(
+                  logs: state.logs,
+                  players: state.players,
+                  currentPlayerIndex: state.currentPlayerIndex,
+                ),
+              ),
+            ),
           ),
 
           // PAUSE BUTTON (top-right)
@@ -133,6 +156,37 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
           // PAUSE MENU OVERLAY
           if (_showPauseMenu) _buildPauseOverlay(),
+
+          // CONFETTI (on top)
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: math.pi / 2,
+              maxBlastForce: 15,
+              minBlastForce: 5,
+              emissionFrequency: 0.05,
+              numberOfParticles: 30,
+              gravity: 0.2,
+              colors: const [
+                Colors.red,
+                Colors.blue,
+                Colors.green,
+                Colors.yellow,
+                Colors.purple,
+                Colors.orange,
+              ],
+            ),
+          ),
+
+          // GAME OVER DIALOG (on top of confetti)
+          if (state.phase == GamePhase.gameOver)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.6),
+                child: const GameOverDialog(),
+              ),
+            ),
         ],
       ),
     );
@@ -180,21 +234,24 @@ class _BoardViewState extends ConsumerState<BoardView> {
         child: PauseDialog(
           onResume: () => setState(() => _showPauseMenu = false),
           onSettings: () {
-            // Navigate to settings screen
             setState(() => _showPauseMenu = false);
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const SettingsScreen()),
             );
           },
+          onEndGame: () {
+            setState(() => _showPauseMenu = false);
+            ref.read(gameProvider.notifier).endGame();
+          },
           onExit: () {
-            // Reset orientation to portrait before leaving
             SystemChrome.setPreferredOrientations([
               DeviceOrientation.portraitUp,
               DeviceOrientation.portraitDown,
             ]);
-            // Navigate back to setup screen
-            setState(() => _showPauseMenu = false);
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const MainMenuScreen()),
+              (route) => false,
+            );
           },
         ),
       ),
@@ -284,12 +341,22 @@ class _BoardViewState extends ConsumerState<BoardView> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Use hudTitleStyle from GameTheme
-        Text('EDEBİYAT', style: GameTheme.hudTitleStyle),
-        const SizedBox(height: 10),
+        // Game title with gold accent
+        Text(
+          'EDEBİNA',
+          style: GameTheme.hudTitleStyle.copyWith(
+            color: GameTheme.goldAccent,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 8,
+                offset: const Offset(2, 3),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         const DiceRoller(),
-        const SizedBox(height: 5),
-        Text(state.lastAction, style: GameTheme.hudSubtitleStyle),
       ],
     );
   }
@@ -352,7 +419,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
         top: top,
         width: C,
         height: N,
-        rotation: 1,
+        rotation: 3,
       );
     });
   }
@@ -391,7 +458,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
         top: top,
         width: C,
         height: N,
-        rotation: 3,
+        rotation: 1,
       );
     });
   }
@@ -416,7 +483,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
     });
   }
 
-  /// Build a single positioned and rotated tile using EnhancedTileWidget
+  /// Build a single positioned tile using EnhancedTileWidget
+  /// The widget handles its own internal orientation based on quarterTurns
   Widget _buildTile({
     required int id,
     required double left,
@@ -425,27 +493,39 @@ class _BoardViewState extends ConsumerState<BoardView> {
     required double height,
     required int rotation,
   }) {
-    // For rotated tiles, swap internal dimensions
-    final isRotated = rotation % 2 != 0;
-    final internalWidth = isRotated ? height : width;
-    final internalHeight = isRotated ? width : height;
-
     // Get tile data from BoardConfig
     final tile = BoardConfig.getTile(id);
 
+    // Find owner from state
+    final state = ref.watch(gameProvider);
+    Player? owner;
+    for (final player in state.players) {
+      if (player.ownedTiles.contains(id)) {
+        owner = player;
+        break;
+      }
+    }
+
+    // Calculate rent based on upgrade level
+    int? calculatedRent;
+    if (owner != null && tile.baseRent != null) {
+      final multiplier = tile.upgradeLevel == 4 ? 10 : (tile.upgradeLevel + 1);
+      calculatedRent = (tile.baseRent ?? 20) * multiplier;
+    }
+
+    // Pass actual container dimensions - EnhancedTileWidget handles orientation internally
     return Positioned(
       left: left,
       top: top,
       width: width,
       height: height,
-      child: RotatedBox(
+      child: EnhancedTileWidget(
+        tile: tile,
+        width: width,
+        height: height,
         quarterTurns: rotation,
-        child: EnhancedTileWidget(
-          tile: tile,
-          width: internalWidth,
-          height: internalHeight,
-          quarterTurns: rotation, // Pass rotation for text counter-rotation
-        ),
+        owner: owner,
+        calculatedRent: calculatedRent,
       ),
     );
   }
@@ -579,13 +659,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
         ),
       ),
 
-      // Game log
-      Positioned(
-        bottom: layout.cornerSize + 10,
-        right: layout.cornerSize + 10,
-        child: GameLog(logs: state.logs),
-      ),
-
       // Modal dialogs
       if (state.showQuestionDialog && state.currentQuestion != null)
         _buildDialogOverlay(QuestionDialog(question: state.currentQuestion!)),
@@ -595,6 +668,22 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
       if (state.showCardDialog && state.currentCard != null)
         _buildDialogOverlay(CardDialog(card: state.currentCard!)),
+
+      // Notification dialogs
+      if (state.showRentDialog &&
+          state.rentOwnerName != null &&
+          state.rentAmount != null)
+        _buildDialogOverlay(
+          RentNotificationDialog(
+            ownerName: state.rentOwnerName!,
+            rentAmount: state.rentAmount!,
+          ),
+        ),
+
+      if (state.showLibraryPenaltyDialog)
+        _buildDialogOverlay(const LibraryPenaltyDialog()),
+
+      if (state.showImzaGunuDialog) _buildDialogOverlay(const ImzaGunuDialog()),
     ];
   }
 

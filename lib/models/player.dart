@@ -8,17 +8,19 @@ class Player {
   final List<int> ownedTiles;
   final bool inJail;
   final Color color;
-  final int iconIndex; // Setup ekranında seçilen ikonun indexi
+  final int iconIndex;
+  final int turnsToSkip; // Library watch penalty turns remaining
 
   const Player({
     required this.id,
     required this.name,
     required this.color,
     required this.iconIndex,
-    this.balance = 1000,
+    this.balance = 2500,
     this.position = 0,
     this.ownedTiles = const [],
     this.inJail = false,
+    this.turnsToSkip = 0,
   });
 
   Player copyWith({
@@ -29,6 +31,7 @@ class Player {
     int? position,
     List<int>? ownedTiles,
     bool? inJail,
+    int? turnsToSkip,
   }) {
     return Player(
       id: id,
@@ -39,6 +42,7 @@ class Player {
       position: position ?? this.position,
       ownedTiles: ownedTiles ?? this.ownedTiles,
       inJail: inJail ?? this.inJail,
+      turnsToSkip: turnsToSkip ?? this.turnsToSkip,
     );
   }
 }

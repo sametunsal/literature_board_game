@@ -2,19 +2,27 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
+import '../models/player.dart';
 import '../../core/theme/game_theme.dart';
 
-/// Enhanced tile widget with card-like appearance
-/// Handles both property tiles and corner tiles with appropriate styling
-/// Text is counter-rotated to remain readable regardless of tile orientation
+/// Enhanced tile widget with classic Monopoly-style appearance
+///
+/// STRICT LAYOUT RULES BY EDGE (quarterTurns) - All strips face INWARD:
+/// - Bottom (0): Column [Strip(top), Text] - Text 0° (no rotation)
+/// - Right (1): Row [Text, Strip(right)] - RotatedBox(quarterTurns: 3) = bottom→top reading
+/// - Top (2): Column [Text, Strip(bottom)] - Text 180° (Transform.rotate)
+/// - Left (3): Row [Strip(left), Text] - RotatedBox(quarterTurns: 1) = top→bottom reading
+///
+/// No parent RotatedBox wrapper - widget handles all orientation internally
 class EnhancedTileWidget extends StatelessWidget {
   final BoardTile tile;
   final double width;
   final double height;
 
-  /// Quarter turns the tile is rotated (0-3)
-  /// 0 = Bottom edge, 1 = Left edge, 2 = Top edge, 3 = Right edge
+  /// Quarter turns: 0=Bottom, 1=Right, 2=Top, 3=Left
   final int quarterTurns;
+  final Player? owner;
+  final int? calculatedRent;
 
   const EnhancedTileWidget({
     super.key,
@@ -22,240 +30,305 @@ class EnhancedTileWidget extends StatelessWidget {
     required this.width,
     required this.height,
     this.quarterTurns = 0,
+    this.owner,
+    this.calculatedRent,
   });
 
-  /// Check if this tile is a corner tile (id divisible by 10)
   bool get _isCorner => tile.id % 10 == 0;
-
-  /// Calculate the counter-rotation angle to keep text upright
-  /// Returns radians to rotate text back to readable orientation
-  double get _counterRotationAngle {
-    // Quarter turns: 0=0°, 1=90°, 2=180°, 3=270°
-    // Counter-rotation: negative of the rotation
-    return -quarterTurns * math.pi / 2;
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: width,
       height: height,
-      decoration: GameTheme.cardDecoration,
+      decoration: BoxDecoration(
+        color: GameTheme.parchmentColor,
+        border: Border.all(color: const Color(0xFF2C2C2C), width: 0.5),
+      ),
       clipBehavior: Clip.antiAlias,
-      child: _isCorner
-          ? _CornerContent(
-              tile: tile,
-              width: width,
-              height: height,
-              counterRotation: _counterRotationAngle,
-            )
-          : _PropertyContent(
-              tile: tile,
-              width: width,
-              height: height,
-              counterRotation: _counterRotationAngle,
-            ),
-    );
-  }
-}
-
-/// Property tile content with color strip, title, and price
-/// Text is counter-rotated to remain readable
-class _PropertyContent extends StatelessWidget {
-  final BoardTile tile;
-  final double width;
-  final double height;
-  final double counterRotation;
-
-  const _PropertyContent({
-    required this.tile,
-    required this.width,
-    required this.height,
-    required this.counterRotation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // COLOR STRIP (Top - 10px height for property group identification)
-        Container(
-          height: 10,
-          width: double.infinity,
-          decoration: GameTheme.groupColorStrip(tile.id),
-          child: _UpgradeIcons(upgradeLevel: tile.upgradeLevel),
-        ),
-
-        // CONTENT AREA
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // TITLE (counter-rotated)
-                    Expanded(
-                      child: Center(
-                        child: Transform.rotate(
-                          angle: counterRotation,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: _getMaxTextWidth(constraints),
-                              ),
-                              child: Text(
-                                tile.title,
-                                textAlign: TextAlign.center,
-                                style: GameTheme.tileTitleStyle,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // PRICE (counter-rotated, only if applicable)
-                    if (tile.price != null && !tile.isUtility)
-                      Transform.rotate(
-                        angle: counterRotation,
-                        child: _PriceBadge(price: tile.price!),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-      ],
+      child: _isCorner ? _buildCornerContent() : _buildPropertyContent(),
     );
   }
 
-  /// Calculate max text width based on rotation
-  double _getMaxTextWidth(BoxConstraints constraints) {
-    // For rotated tiles (90° or 270°), use height as width constraint
-    final isRotated =
-        counterRotation.abs() == math.pi / 2 ||
-        counterRotation.abs() == 3 * math.pi / 2;
-    if (isRotated) {
-      return constraints.maxHeight * 0.9;
+  /// Build property tile with edge-specific layout
+  Widget _buildPropertyContent() {
+    final groupColor = tile.groupColor;
+    final isOwned = owner != null;
+
+    // Color strip widget
+    Widget colorStrip = Container(
+      decoration: BoxDecoration(
+        color: groupColor,
+        border: Border.all(color: const Color(0xFF2C2C2C), width: 0.5),
+      ),
+      child: _buildUpgradeIcons(),
+    );
+
+    // Text content widget (title + price)
+    Widget textContent = _buildTextContent(isOwned);
+
+    // STRICT SWITCH BY EDGE POSITION
+    switch (quarterTurns) {
+      case 0:
+        // BOTTOM EDGE: Strip TOP, Text 0° (upright)
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Strip at TOP
+            SizedBox(height: 10, child: colorStrip),
+            // Text CENTER (no rotation)
+            Expanded(child: _wrapWithRotation(textContent, 0)),
+          ],
+        );
+
+      case 1:
+        // RIGHT EDGE (physical right side of board): Strip on LEFT faces center
+        // Layout: [Color Strip | Text (RotatedBox quarterTurns: 3)]
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Strip on LEFT side of tile = faces LEFT toward board center
+            SizedBox(width: 10, child: colorStrip),
+            // Text rotated -90° (bottom-to-top reading)
+            Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
+          ],
+        );
+
+      case 2:
+        // TOP EDGE: Strip BOTTOM, Text readable (0°)
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Text CENTER (no rotation - readable from player side)
+            Expanded(child: textContent),
+            // Strip at BOTTOM
+            SizedBox(height: 10, child: colorStrip),
+          ],
+        );
+
+      case 3:
+        // LEFT EDGE (physical left side of board): Strip on RIGHT faces center
+        // Layout: [Text (RotatedBox quarterTurns: 1) | Color Strip]
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Text rotated +90° (top-to-bottom reading)
+            Expanded(child: RotatedBox(quarterTurns: 1, child: textContent)),
+            // Strip on RIGHT side of tile = faces RIGHT toward board center
+            SizedBox(width: 10, child: colorStrip),
+          ],
+        );
+
+      default:
+        return Column(
+          children: [
+            SizedBox(height: 10, child: colorStrip),
+            Expanded(child: textContent),
+          ],
+        );
     }
-    return constraints.maxWidth * 0.95;
   }
-}
 
-/// Corner tile content with icon and label
-/// Content is counter-rotated to remain readable
-class _CornerContent extends StatelessWidget {
-  final BoardTile tile;
-  final double width;
-  final double height;
-  final double counterRotation;
+  /// Wrap content with rotation transform
+  Widget _wrapWithRotation(Widget child, double degrees) {
+    if (degrees == 0) return child;
 
-  const _CornerContent({
-    required this.tile,
-    required this.width,
-    required this.height,
-    required this.counterRotation,
-  });
+    return Transform.rotate(angle: degrees * (math.pi / 180), child: child);
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final config = _getCornerConfig();
-    final minDimension = width < height ? width : height;
-    final iconSize = minDimension * 0.35;
-
-    return Container(
-      color: config.backgroundColor,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            alignment: Alignment.center,
+  /// Build the text content (title + price/rent + owner indicator)
+  Widget _buildTextContent(bool isOwned) {
+    return Padding(
+      padding: const EdgeInsets.all(2.0),
+      child: Stack(
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // BACKGROUND ICON (large and faded) - also counter-rotated
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.1,
-                  child: Transform.rotate(
-                    angle: counterRotation,
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(config.icon, color: Colors.black),
+              // TITLE
+              Expanded(
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      tile.title,
+                      textAlign: TextAlign.center,
+                      style: GameTheme.tileTitleStyle.copyWith(
+                        fontSize: 8,
+                        height: 1.1,
                       ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
               ),
-
-              // FOREGROUND CONTENT (counter-rotated)
-              Transform.rotate(
-                angle: counterRotation,
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ICON
-                      Icon(config.icon, size: iconSize, color: Colors.black87),
-                      const SizedBox(height: 4),
-
-                      // LABEL
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: minDimension * 0.85,
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            config.label,
-                            textAlign: TextAlign.center,
-                            style: GameTheme.cornerLabelStyle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              // PRICE or RENT
+              if (tile.price != null && !tile.isUtility)
+                _buildPriceRentBadge(isOwned),
+            ],
+          ),
+          // Owner icon
+          if (isOwned)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: owner!.color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 2,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          );
-        },
+            ),
+        ],
       ),
     );
   }
 
-  /// Get corner configuration from theme or derive from tile type
+  /// Build upgrade icons (houses/hotel)
+  Widget _buildUpgradeIcons() {
+    if (tile.upgradeLevel == 0) return const SizedBox.shrink();
+
+    if (tile.upgradeLevel == 4) {
+      return const Center(child: Icon(Icons.home, size: 7, color: Colors.red));
+    }
+
+    // Vertical for left/right edges, horizontal for top/bottom
+    bool isVertical = quarterTurns == 1 || quarterTurns == 3;
+
+    if (isVertical) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            tile.upgradeLevel,
+            (i) => const Icon(Icons.home, size: 5, color: Colors.green),
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          tile.upgradeLevel,
+          (i) => const Icon(Icons.home, size: 5, color: Colors.green),
+        ),
+      ),
+    );
+  }
+
+  /// Build price/rent badge
+  Widget _buildPriceRentBadge(bool isOwned) {
+    final displayValue = isOwned
+        ? (calculatedRent ?? tile.price!)
+        : tile.price!;
+    final label = isOwned ? 'K' : '₺';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        color: isOwned
+            ? Colors.orange.withValues(alpha: 0.2)
+            : Colors.black.withValues(alpha: 0.08),
+      ),
+      child: Text(
+        '$label$displayValue',
+        style: GameTheme.tilePriceStyle.copyWith(
+          fontSize: 7,
+          fontWeight: FontWeight.bold,
+          color: isOwned ? Colors.deepOrange : GameTheme.textDark,
+        ),
+      ),
+    );
+  }
+
+  /// Build corner tile content
+  Widget _buildCornerContent() {
+    final config = _getCornerConfig();
+    final minDimension = width < height ? width : height;
+    final iconSize = minDimension * 0.28;
+
+    // Corner text rotation based on position
+    // Top corners (quarterTurns 1 and 2) should be readable (0°)
+    double rotation = switch (quarterTurns) {
+      0 => 0, // Bottom-left: normal
+      1 => 0, // Top-left: readable (was -90°)
+      2 => 0, // Top-right: readable (was 180°)
+      3 => 90 * (math.pi / 180), // Bottom-right: rotated
+      _ => 0,
+    };
+
+    return Container(
+      color: config.backgroundColor,
+      child: Center(
+        child: Transform.rotate(
+          angle: rotation,
+          child: Padding(
+            padding: const EdgeInsets.all(3.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(config.icon, size: iconSize, color: Colors.black87),
+                const SizedBox(height: 1),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: minDimension * 0.85),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      config.label,
+                      textAlign: TextAlign.center,
+                      style: GameTheme.cornerLabelStyle.copyWith(
+                        fontSize: 7,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   CornerTileConfig _getCornerConfig() {
-    // First try to get from predefined configs
     final predefined = GameTheme.cornerConfigs[tile.id];
     if (predefined != null) return predefined;
 
-    // Fallback: derive from tile type
     return switch (tile.type) {
       TileType.start => const CornerTileConfig(
-        icon: Icons.start,
+        icon: Icons.arrow_forward,
         label: 'BAŞLANGIÇ',
         backgroundColor: Color(0xFFE8F5E9),
       ),
       TileType.libraryWatch => const CornerTileConfig(
         icon: Icons.local_library,
-        label: 'NÖBET',
+        label: 'KÜTÜPHANE\nNÖBETİ',
         backgroundColor: Color(0xFFFFF3E0),
       ),
       TileType.autographDay => const CornerTileConfig(
-        icon: Icons.campaign,
+        icon: Icons.edit,
         label: 'İMZA GÜNÜ',
         backgroundColor: Color(0xFFF3E5F5),
       ),
       TileType.bankruptcyRisk => const CornerTileConfig(
-        icon: Icons.gavel,
+        icon: Icons.warning,
         label: 'İFLAS RİSKİ',
         backgroundColor: Color(0xFFFFEBEE),
       ),
@@ -265,46 +338,5 @@ class _CornerContent extends StatelessWidget {
         backgroundColor: Colors.white,
       ),
     };
-  }
-}
-
-/// Upgrade level indicator with star icons
-class _UpgradeIcons extends StatelessWidget {
-  final int upgradeLevel;
-
-  const _UpgradeIcons({required this.upgradeLevel});
-
-  @override
-  Widget build(BuildContext context) {
-    if (upgradeLevel == 0) return const SizedBox.shrink();
-
-    return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          upgradeLevel,
-          (i) => const Icon(Icons.star, size: 6, color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
-/// Price badge widget with subtle background
-class _PriceBadge extends StatelessWidget {
-  final int price;
-
-  const _PriceBadge({required this.price});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: Colors.black.withValues(alpha: 0.05),
-      ),
-      child: Text('$price₺', style: GameTheme.tilePriceStyle),
-    );
   }
 }

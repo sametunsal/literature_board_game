@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
+import '../utils/sound_manager.dart';
 
-/// Pause menu dialog with resume, settings, and exit options
+/// Pause menu dialog with resume, settings, end game, and exit options
 /// Styled to match the premium Literature Board Game theme
 class PauseDialog extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onSettings;
+  final VoidCallback onEndGame;
   final VoidCallback onExit;
 
   const PauseDialog({
     super.key,
     required this.onResume,
     required this.onSettings,
+    required this.onEndGame,
     required this.onExit,
   });
 
@@ -88,7 +91,7 @@ class PauseDialog extends StatelessWidget {
                 _MenuButton(
                   label: "OYUNA DÖN",
                   icon: Icons.play_arrow,
-                  color: const Color(0xFF388E3C), // Green
+                  color: const Color(0xFF388E3C),
                   onPressed: onResume,
                 ),
                 const SizedBox(height: 12),
@@ -97,16 +100,25 @@ class PauseDialog extends StatelessWidget {
                 _MenuButton(
                   label: "AYARLAR",
                   icon: Icons.settings,
-                  color: const Color(0xFF546E7A), // Blue-grey
+                  color: const Color(0xFF546E7A),
                   onPressed: onSettings,
+                ),
+                const SizedBox(height: 12),
+
+                // END GAME BUTTON
+                _MenuButton(
+                  label: "OYUNU BİTİR",
+                  icon: Icons.flag,
+                  color: const Color(0xFFFF8C00),
+                  onPressed: onEndGame,
                 ),
                 const SizedBox(height: 12),
 
                 // EXIT BUTTON
                 _MenuButton(
-                  label: "ÇIKIŞ",
+                  label: "ANA MENÜ",
                   icon: Icons.exit_to_app,
-                  color: const Color(0xFFD32F2F), // Red
+                  color: const Color(0xFFD32F2F),
                   onPressed: onExit,
                 ),
               ],
@@ -184,7 +196,10 @@ class _MenuButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: () {
+          SoundManager.instance.playClick();
+          onPressed();
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
