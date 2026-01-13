@@ -40,24 +40,15 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   /// Selected color index for each player
   final List<int> _selectedColors = [];
 
-  /// Selected icon index for each player
+  /// Selected icon index for each player (now references avatar images)
   final List<int> _selectedIcons = [];
 
-  /// Literature-themed icons for player avatars
-  static const List<IconData> _literatureIcons = [
-    Icons.menu_book, // Book
-    Icons.auto_stories, // Open book/stories
-    Icons.history_edu, // History/quill
-    Icons.edit_note, // Writing/edit
-    Icons.school, // Education
-    Icons.local_library, // Library
-    Icons.workspace_premium, // Premium/award
-    Icons.bookmark, // Bookmark
-    Icons.article, // Article/document
-    Icons.psychology, // Mind/thinking
-    Icons.lightbulb, // Ideas
-    Icons.emoji_events, // Trophy/achievement
-  ];
+  /// Custom avatar image paths (20 avatars)
+  static final List<String> _avatarPaths = List.generate(
+    20,
+    (index) =>
+        'assets/images/avatar_${(index + 1).toString().padLeft(2, '0')}.png',
+  );
 
   @override
   void initState() {
@@ -78,7 +69,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     _selectedColors.clear();
     for (int i = 0; i < playerCount; i++) {
       _controllers.add(TextEditingController(text: "Oyuncu ${i + 1}"));
-      _selectedIcons.add(i % _literatureIcons.length);
+      _selectedIcons.add(i % _avatarPaths.length);
       _selectedColors.add(i % _colorPalette.length);
     }
   }
@@ -94,22 +85,41 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Deep green radial gradient background
-      body: Container(
-        decoration: GameTheme.tableDecoration,
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: _buildMainCard(),
+      // V2.5 Modern Dark Academia - Layered Background
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // LAYER 1: Base Background Color
+          Container(decoration: GameTheme.tableDecoration),
+
+          // LAYER 2: Paper Noise Texture - Tactile Effect
+          Opacity(
+            opacity: 0.12,
+            child: Image.asset(
+              'assets/images/paper_noise.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              colorBlendMode: BlendMode.multiply,
+              color: Colors.white,
             ),
           ),
-        ),
+
+          // LAYER 3: Content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildMainCard(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Main parchment-styled card container
+  /// Main parchment-styled card container - V2.5 Dark Academia
   Widget _buildMainCard() {
     return Container(
           constraints: const BoxConstraints(maxWidth: 500),
@@ -117,16 +127,20 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           decoration: BoxDecoration(
             color: GameTheme.parchmentColor,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: GameTheme.copperAccent.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: Colors.black.withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 40,
-                spreadRadius: 5,
+                color: GameTheme.copperAccent.withValues(alpha: 0.1),
+                blurRadius: 30,
+                spreadRadius: 2,
               ),
             ],
           ),
@@ -163,22 +177,36 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         .slideY(begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOut);
   }
 
-  /// Header with decorative title
+  /// Header with decorative title - V2.5 Cinzel styling
   Widget _buildHeader() {
     return Column(
       children: [
-        // Decorative icon
-        Icon(Icons.menu_book, size: 48, color: GameTheme.goldAccent),
-        const SizedBox(height: 12),
+        // Decorative icon with glow
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: GameTheme.copperAccent.withValues(alpha: 0.15),
+            boxShadow: [
+              BoxShadow(
+                color: GameTheme.goldAccent.withValues(alpha: 0.2),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Icon(Icons.menu_book, size: 42, color: GameTheme.goldAccent),
+        ),
+        const SizedBox(height: 16),
 
-        // Title
+        // Title - Cinzel font
         Text(
           "OYUN KURULUMU",
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 28,
+          style: GoogleFonts.cinzel(
+            fontSize: 26,
             fontWeight: FontWeight.bold,
-            color: GameTheme.textDark,
-            letterSpacing: 2,
+            color: GameTheme.tableBackgroundColor,
+            letterSpacing: 3,
           ),
         ),
 
@@ -189,34 +217,41 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           "Oyuncuları belirleyin",
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: GameTheme.textDark.withValues(alpha: 0.6),
+            color: GameTheme.tableBackgroundColor.withValues(alpha: 0.6),
           ),
         ),
       ],
     );
   }
 
-  /// Elegant player count dropdown
+  /// Elegant player count dropdown - V2.5 copper styling
   Widget _buildPlayerCountSelector() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.5),
+        color: Colors.white.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: GameTheme.goldAccent.withValues(alpha: 0.3),
-          width: 1,
+          color: GameTheme.copperAccent.withValues(alpha: 0.5),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: GameTheme.copperAccent.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: playerCount,
-          icon: Icon(Icons.arrow_drop_down, color: GameTheme.goldAccent),
+          icon: Icon(Icons.arrow_drop_down, color: GameTheme.copperAccent),
           dropdownColor: GameTheme.parchmentColor,
           style: GoogleFonts.poppins(
             fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: GameTheme.textDark,
+            fontWeight: FontWeight.w600,
+            color: GameTheme.tableBackgroundColor,
           ),
           items: [2, 3, 4, 5, 6]
               .map((e) => DropdownMenuItem(value: e, child: Text("$e Oyuncu")))
@@ -234,7 +269,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  /// Decorative divider
+  /// Decorative divider - V2.5 copper gradient
   Widget _buildDivider() {
     return Row(
       children: [
@@ -245,7 +280,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  GameTheme.goldAccent.withValues(alpha: 0.5),
+                  GameTheme.copperAccent.withValues(alpha: 0.5),
                 ],
               ),
             ),
@@ -253,7 +288,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Icon(Icons.star, size: 16, color: GameTheme.goldAccent),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: GameTheme.copperAccent.withValues(alpha: 0.2),
+            ),
+            child: Icon(Icons.star, size: 14, color: GameTheme.copperAccent),
+          ),
         ),
         Expanded(
           child: Container(
@@ -261,7 +303,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  GameTheme.goldAccent.withValues(alpha: 0.5),
+                  GameTheme.copperAccent.withValues(alpha: 0.5),
                   Colors.transparent,
                 ],
               ),
@@ -323,25 +365,34 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // AVATAR (centered)
+              // AVATAR (centered) - Custom Image
               Container(
-                width: 42,
-                height: 42,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: playerColor,
+                  color: GameTheme.parchmentColor,
                   shape: BoxShape.circle,
+                  border: Border.all(color: playerColor, width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color: playerColor.withValues(alpha: 0.5),
-                      blurRadius: 6,
+                      color: playerColor.withValues(alpha: 0.4),
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: Icon(
-                  _literatureIcons[_selectedIcons[index]],
-                  color: Colors.white,
-                  size: 20,
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: Image.asset(
+                      _avatarPaths[_selectedIcons[index]],
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to icon if image fails
+                        return Icon(Icons.person, color: playerColor, size: 24);
+                      },
+                    ),
+                  ),
                 ),
               ),
 
@@ -393,7 +444,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: List.generate(
-                      _literatureIcons.length,
+                      _avatarPaths.length,
                       (iconIndex) => _buildIconOption(index, iconIndex),
                     ),
                   ),
@@ -443,43 +494,52 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  /// Build individual icon option for horizontal selector (compact)
+  /// Build individual avatar option for horizontal selector - V2.5 Custom Images
   Widget _buildIconOption(int playerIndex, int iconIndex) {
     final isSelected = _selectedIcons[playerIndex] == iconIndex;
-    final playerColor = _colorPalette[_selectedColors[playerIndex]];
 
     return GestureDetector(
       onTap: () => setState(() => _selectedIcons[playerIndex] = iconIndex),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(right: 5),
-        width: 32,
-        height: 32,
+        margin: const EdgeInsets.only(right: 6),
+        width: isSelected ? 38 : 32,
+        height: isSelected ? 38 : 32,
         decoration: BoxDecoration(
-          color: isSelected ? playerColor : Colors.white.withValues(alpha: 0.4),
+          color: GameTheme.parchmentColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? playerColor
-                : GameTheme.textDark.withValues(alpha: 0.08),
-            width: isSelected ? 2 : 1,
+                ? GameTheme.copperAccent
+                : GameTheme.tableBackgroundColor.withValues(alpha: 0.2),
+            width: isSelected ? 2.5 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: playerColor.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
+                    color: GameTheme.copperAccent.withValues(alpha: 0.4),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ]
               : null,
         ),
-        child: Icon(
-          _literatureIcons[iconIndex],
-          size: 16,
-          color: isSelected
-              ? Colors.white
-              : GameTheme.textDark.withValues(alpha: 0.35),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Image.asset(
+              _avatarPaths[iconIndex],
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.person,
+                  size: 16,
+                  color: GameTheme.tableBackgroundColor.withValues(alpha: 0.5),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -519,36 +579,53 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  /// Premium styled start button
+  /// Premium styled start button - V2.5 Copper Accent
   Widget _buildStartButton() {
-    return SizedBox(
+    return Container(
           width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _startGame,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: GameTheme.goldAccent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              elevation: 8,
-              shadowColor: GameTheme.goldAccent.withValues(alpha: 0.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [GameTheme.copperAccent, GameTheme.goldAccent],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.play_arrow, size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  "OYUNA BAŞLA",
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: GameTheme.copperAccent.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _startGame,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.play_arrow,
+                      size: 28,
+                      color: GameTheme.tableBackgroundColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "OYUNA BAŞLA",
+                      style: GoogleFonts.cinzel(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: GameTheme.tableBackgroundColor,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         )
@@ -556,7 +633,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         .shimmer(
           delay: 2000.ms,
           duration: 1500.ms,
-          color: Colors.white.withValues(alpha: 0.3),
+          color: Colors.white.withValues(alpha: 0.2),
         );
   }
 

@@ -42,8 +42,20 @@ class EnhancedTileWidget extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: GameTheme.parchmentColor,
-        border: Border.all(color: const Color(0xFF2C2C2C), width: 0.5),
+        color: GameTheme.parchmentColor, // Worn Leather background
+        border: Border.all(
+          color: GameTheme.copperAccent.withValues(
+            alpha: 0.4,
+          ), // Copper border for visibility
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 2,
+            offset: const Offset(1, 1),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: _isCorner ? _buildCornerContent() : _buildPropertyContent(),
@@ -52,14 +64,35 @@ class EnhancedTileWidget extends StatelessWidget {
 
   /// Build property tile with edge-specific layout
   Widget _buildPropertyContent() {
+    // Check for special tiles that use custom images
+    if (_isLibraryTile()) {
+      return _buildSpecialTileContent(
+        imagePath: 'assets/images/library.png',
+        backgroundColor: const Color(0xFFFFF8E1), // Warm amber tint
+      );
+    }
+
+    if (_isChanceOrFateTile()) {
+      return _buildSpecialTileContent(
+        imagePath: 'assets/images/old_shop.png',
+        backgroundColor: const Color(0xFFF3E5F5), // Light purple tint
+      );
+    }
+
     final groupColor = tile.groupColor;
     final isOwned = owner != null;
 
-    // Color strip widget
+    // Color strip widget with improved border
     Widget colorStrip = Container(
       decoration: BoxDecoration(
         color: groupColor,
-        border: Border.all(color: const Color(0xFF2C2C2C), width: 0.5),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.3),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 1),
+        ],
       ),
       child: _buildUpgradeIcons(),
     );
@@ -129,6 +162,87 @@ class EnhancedTileWidget extends StatelessWidget {
           ],
         );
     }
+  }
+
+  /// Check if this is a Library/Question tile
+  bool _isLibraryTile() {
+    final titleLower = tile.title.toLowerCase();
+    return titleLower.contains('kütüphane') ||
+        tile.type == TileType.libraryWatch ||
+        tile.type == TileType.writingSchool ||
+        tile.type == TileType.educationFoundation;
+  }
+
+  /// Check if this is a Chance or Fate tile
+  bool _isChanceOrFateTile() {
+    final titleLower = tile.title.toLowerCase();
+    return titleLower.contains('şans') ||
+        titleLower.contains('kader') ||
+        tile.type == TileType.chance ||
+        tile.type == TileType.fate;
+  }
+
+  /// Build special tile with custom image (Pop-Up Book style)
+  Widget _buildSpecialTileContent({
+    required String imagePath,
+    required Color backgroundColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [backgroundColor, backgroundColor.withValues(alpha: 0.8)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Centered image with shadow
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(3.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      spreadRadius: 0.5,
+                      offset: const Offset(1, 2),
+                    ),
+                  ],
+                ),
+                child: Image.asset(imagePath, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+          // Title label at bottom
+          Positioned(
+            left: 2,
+            right: 2,
+            bottom: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Text(
+                tile.title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GameTheme.tileTitleStyle.copyWith(
+                  fontSize: 6,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Wrap content with rotation transform
@@ -258,6 +372,11 @@ class EnhancedTileWidget extends StatelessWidget {
 
   /// Build corner tile content
   Widget _buildCornerContent() {
+    // Check if this is the Start Tile - use custom image
+    if (tile.id == 0 || tile.type == TileType.start) {
+      return _buildStartTileContent();
+    }
+
     final config = _getCornerConfig();
     final minDimension = width < height ? width : height;
     final iconSize = minDimension * 0.28;
@@ -301,6 +420,73 @@ class EnhancedTileWidget extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build Start Tile with custom gate.png image
+  Widget _buildStartTileContent() {
+    final minDimension = width < height ? width : height;
+
+    return Container(
+      decoration: BoxDecoration(
+        // Warm gradient background for Start tile
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFE8F5E9), // Light green
+            const Color(0xFFC8E6C9), // Slightly darker green
+          ],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Gate Image with shadow effect
+              Expanded(
+                flex: 3,
+                child: Container(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                        offset: const Offset(2, 3),
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    'assets/images/gate.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Label text
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: minDimension * 0.85),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'BAŞLANGIÇ',
+                    textAlign: TextAlign.center,
+                    style: GameTheme.cornerLabelStyle.copyWith(
+                      fontSize: 7,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2E7D32), // Dark green for contrast
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

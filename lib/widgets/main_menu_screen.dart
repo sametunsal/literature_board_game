@@ -3,13 +3,39 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
+import '../services/streak_service.dart';
 import 'setup_screen.dart';
 import 'settings_screen.dart';
+import 'streak_candle_widget.dart';
 
-/// Main menu screen with EDEBİNA branding
+/// Main menu screen with EDEBİNA branding - Modern Dark Academia V2.5
 /// Provides navigation to Play, Settings, and About
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen> {
+  int _streakDays = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initStreak();
+  }
+
+  Future<void> _initStreak() async {
+    final streakDays = await StreakService.instance.checkAndUpdateStreak();
+    if (mounted) {
+      setState(() {
+        _streakDays = streakDays;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,42 +46,95 @@ class MainMenuScreen extends StatelessWidget {
     ]);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.2,
-            colors: [
-              Color(0xFF1B4721), // Table green at center
-              Color(0xFF0D2818), // Darker at edges
-            ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ═══════════════════════════════════════════════════════════════
+          // LAYER 1 (Bottom): Library Room Background Image
+          // ═══════════════════════════════════════════════════════════════
+          Image.asset(
+            'assets/images/library_room.png',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // LOGO
-                _buildLogo(),
-                const SizedBox(height: 24),
 
-                // TITLE
-                _buildTitle(),
-                const SizedBox(height: 8),
+          // ═══════════════════════════════════════════════════════════════
+          // LAYER 2 (Middle): Dark Color Overlay for Contrast
+          // ═══════════════════════════════════════════════════════════════
+          Container(
+            color: GameTheme.tableBackgroundColor.withValues(alpha: 0.85),
+          ),
 
-                // SUBTITLE
-                _buildSubtitle(),
-                const SizedBox(height: 48),
-
-                // MENU BUTTONS
-                _buildMenuButtons(context),
-              ],
+          // ═══════════════════════════════════════════════════════════════
+          // LAYER 3 (Top): Paper Noise Texture - Tactile Rebellion Effect
+          // ═══════════════════════════════════════════════════════════════
+          Opacity(
+            opacity: 0.15,
+            child: Image.asset(
+              'assets/images/paper_noise.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              colorBlendMode: BlendMode.multiply,
+              color: Colors.white,
             ),
           ),
-        ),
+
+          // ═══════════════════════════════════════════════════════════════
+          // CONTENT LAYER: Menu UI
+          // ═══════════════════════════════════════════════════════════════
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // LOGO
+                  _buildLogo(),
+                  const SizedBox(height: 24),
+
+                  // TITLE
+                  _buildTitle(),
+                  const SizedBox(height: 8),
+
+                  // SUBTITLE
+                  _buildSubtitle(),
+                  const SizedBox(height: 48),
+
+                  // MENU BUTTONS
+                  _buildMenuButtons(context),
+                ],
+              ),
+            ),
+          ),
+
+          // ═══════════════════════════════════════════════════════════════
+          // GAMIFICATION: Streak Candle (Top-Right)
+          // ═══════════════════════════════════════════════════════════════
+          if (!_isLoading)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child:
+                  Column(
+                        children: [
+                          StreakCandleWidget(
+                            streakDays: _streakDays,
+                            size: 50,
+                            isLit: _streakDays > 0, // Lit if streak active
+                          ),
+                        ],
+                      )
+                      .animate()
+                      .fadeIn(delay: 800.ms, duration: 600.ms)
+                      .slideY(
+                        begin: -0.3,
+                        end: 0,
+                        delay: 800.ms,
+                        duration: 500.ms,
+                      ),
+            ),
+        ],
       ),
     );
   }
@@ -94,14 +173,19 @@ class MainMenuScreen extends StatelessWidget {
   Widget _buildTitle() {
     return Text(
           "EDEBİNA",
-          style: GoogleFonts.playfairDisplay(
+          style: GoogleFonts.cinzel(
             fontSize: 52,
             fontWeight: FontWeight.bold,
-            color: GameTheme.goldAccent,
-            letterSpacing: 8,
+            color: GameTheme.textDark, // Antique Lace - premium readability
+            letterSpacing: 10,
             shadows: [
+              // Glow effect for depth
               Shadow(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                blurRadius: 20,
+              ),
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.7),
                 blurRadius: 12,
                 offset: const Offset(2, 4),
               ),
@@ -118,7 +202,7 @@ class MainMenuScreen extends StatelessWidget {
       "Türk Edebiyatı Masa Oyunu",
       style: GoogleFonts.poppins(
         fontSize: 14,
-        color: Colors.white.withValues(alpha: 0.6),
+        color: GameTheme.textDark.withValues(alpha: 0.6),
         letterSpacing: 2,
       ),
     ).animate().fadeIn(delay: 400.ms, duration: 500.ms);
@@ -127,11 +211,11 @@ class MainMenuScreen extends StatelessWidget {
   Widget _buildMenuButtons(BuildContext context) {
     return Column(
       children: [
-        // OYNA (Play) Button
+        // OYNA (Play) Button - Burnished Copper CTA
         _MenuButton(
               label: "OYNA",
               icon: Icons.play_arrow,
-              color: GameTheme.goldAccent,
+              color: GameTheme.copperAccent, // Burnished Copper for primary CTA
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   PageRouteBuilder(
@@ -159,7 +243,7 @@ class MainMenuScreen extends StatelessWidget {
         _MenuButton(
               label: "AYARLAR",
               icon: Icons.settings,
-              color: Colors.white70,
+              color: GameTheme.textDark.withValues(alpha: 0.8),
               isSecondary: true,
               onPressed: () {
                 Navigator.of(context).push(
@@ -177,7 +261,7 @@ class MainMenuScreen extends StatelessWidget {
         _MenuButton(
               label: "HAKKINDA",
               icon: Icons.info_outline,
-              color: Colors.white70,
+              color: GameTheme.textDark.withValues(alpha: 0.8),
               isSecondary: true,
               onPressed: () => _showAboutDialog(context),
             )

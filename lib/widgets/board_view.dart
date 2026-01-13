@@ -81,6 +81,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
   late ConfettiController _confettiController;
   bool _showPauseMenu = false;
 
+  // Landing pulse effect state
+  int? _pulsingTileId;
+  Map<String, int> _lastPlayerPositions = {};
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +113,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
 
+    // Check for player position changes to trigger landing pulse
+    _checkForLandingPulse(state);
+
     // Trigger confetti and victory sound on game over
     if (state.phase == GamePhase.gameOver) {
       _confettiController.play();
@@ -123,11 +130,30 @@ class _BoardViewState extends ConsumerState<BoardView> {
       backgroundColor: GameTheme.tableBackgroundColor,
       body: Stack(
         children: [
-          // BACKGROUND + BOARD
-          Container(
-            decoration: GameTheme.tableDecoration,
-            child: Center(child: _buildBoard(state, layout)),
+          // ═══════════════════════════════════════════════════════════════
+          // LAYER 1: Base Background Color
+          // ═══════════════════════════════════════════════════════════════
+          Container(decoration: GameTheme.tableDecoration),
+
+          // ═══════════════════════════════════════════════════════════════
+          // LAYER 2: Paper Noise Texture - Tactile Paper Effect
+          // ═══════════════════════════════════════════════════════════════
+          Opacity(
+            opacity: 0.1,
+            child: Image.asset(
+              'assets/images/paper_noise.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              colorBlendMode: BlendMode.multiply,
+              color: Colors.white,
+            ),
           ),
+
+          // ═══════════════════════════════════════════════════════════════
+          // LAYER 3: Game Board Content
+          // ═══════════════════════════════════════════════════════════════
+          Center(child: _buildBoard(state, layout)),
 
           // LEFT SIDEBAR - GAME LOG / SCORE PANEL
           Positioned(
@@ -513,21 +539,101 @@ class _BoardViewState extends ConsumerState<BoardView> {
       calculatedRent = (tile.baseRent ?? 20) * multiplier;
     }
 
-    // Pass actual container dimensions - EnhancedTileWidget handles orientation internally
+    // Check if this tile should pulse (landing effect)
+    final isPulsing = _pulsingTileId == id;
+
+    // Tile widget
+    Widget tileWidget = EnhancedTileWidget(
+      tile: tile,
+      width: width,
+      height: height,
+      quarterTurns: rotation,
+      owner: owner,
+      calculatedRent: calculatedRent,
+    );
+
+    // Apply landing pulse animation if active
+    if (isPulsing) {
+      tileWidget = TweenAnimationBuilder<double>(
+        key: ValueKey('pulse_$id'),
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutBack,
+        onEnd: () {
+          // Clear pulse state after animation
+          if (mounted && _pulsingTileId == id) {
+            setState(() => _pulsingTileId = null);
+          }
+        },
+        builder: (context, value, child) {
+          // Scale animation: 1.0 -> 1.15 -> 1.0
+          final scale = value < 0.5
+              ? 1.0 +
+                    (value * 2 * 0.15) // 1.0 to 1.15
+              : 1.15 - ((value - 0.5) * 2 * 0.15); // 1.15 to 1.0
+
+          // Border flash opacity: fade in then out
+          final borderOpacity = value < 0.5 ? value * 2 : (1.0 - value) * 2;
+
+          return Transform.scale(
+            scale: scale,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: GameTheme.copperAccent.withValues(
+                    alpha: borderOpacity * 0.8,
+                  ),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: GameTheme.goldAccent.withValues(
+                      alpha: borderOpacity * 0.4,
+                    ),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: child,
+            ),
+          );
+        },
+        child: tileWidget,
+      );
+    }
+
     return Positioned(
       left: left,
       top: top,
       width: width,
       height: height,
-      child: EnhancedTileWidget(
-        tile: tile,
-        width: width,
-        height: height,
-        quarterTurns: rotation,
-        owner: owner,
-        calculatedRent: calculatedRent,
-      ),
+      child: tileWidget,
     );
+  }
+
+  /// Check for player position changes and trigger landing pulse
+  void _checkForLandingPulse(GameState state) {
+    for (final player in state.players) {
+      final lastPos = _lastPlayerPositions[player.id];
+      final currentPos = player.position;
+
+      // If position changed and player has moved (not first detection)
+      if (lastPos != null && lastPos != currentPos) {
+        // Only pulse if not already pulsing another tile
+        if (_pulsingTileId == null) {
+          // Schedule pulse on next frame to avoid setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() => _pulsingTileId = currentPos);
+            }
+          });
+        }
+      }
+
+      _lastPlayerPositions[player.id] = currentPos;
+    }
   }
 
   // ════════════════════════════════════════════════════════════════════════════

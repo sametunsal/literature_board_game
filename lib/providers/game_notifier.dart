@@ -61,7 +61,7 @@ class GameState {
     this.isDiceRolled = false,
     this.phase = GamePhase.setup,
     this.logs = const [],
-    this.floatingEffect, // New field
+    this.floatingEffect,
     this.currentQuestion,
     this.showQuestionDialog = false,
     this.showPurchaseDialog = false,
@@ -91,7 +91,7 @@ class GameState {
     bool? isDiceRolled,
     GamePhase? phase,
     List<String>? logs,
-    FloatingEffect? floatingEffect, // New parameter
+    FloatingEffect? floatingEffect,
     Question? currentQuestion,
     bool? showQuestionDialog,
     bool? showPurchaseDialog,
@@ -116,7 +116,7 @@ class GameState {
       isDiceRolled: isDiceRolled ?? this.isDiceRolled,
       phase: phase ?? this.phase,
       logs: logs ?? this.logs,
-      floatingEffect: floatingEffect, // Allows null to clear
+      floatingEffect: floatingEffect,
       currentQuestion: currentQuestion ?? this.currentQuestion,
       showQuestionDialog: showQuestionDialog ?? this.showQuestionDialog,
       showPurchaseDialog: showPurchaseDialog ?? this.showPurchaseDialog,
@@ -288,6 +288,7 @@ class GameNotifier extends StateNotifier<GameState> {
     }
 
     final tile = state.tiles[currentPos];
+
     state = state.copyWith(currentTile: tile);
     _addLog("${tile.title} karesine gelindi.");
 

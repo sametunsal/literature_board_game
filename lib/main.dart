@@ -4,6 +4,7 @@ import 'providers/game_notifier.dart';
 import 'models/game_enums.dart';
 import 'widgets/splash_screen.dart';
 import 'widgets/board_view.dart';
+import 'core/theme/game_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -21,9 +22,24 @@ class MyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1B4721),
-          brightness: Brightness.light,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: GameTheme.tableBackgroundColor,
+        colorScheme: ColorScheme.dark(
+          surface: GameTheme.parchmentColor,
+          primary: GameTheme.copperAccent,
+          secondary: GameTheme.goldAccent,
+          error: GameTheme.errorColor,
+          onSurface: GameTheme.textDark,
+          onPrimary: GameTheme.textDark,
+        ),
+        cardColor: GameTheme.parchmentColor,
+        appBarTheme: AppBarTheme(
+          backgroundColor: GameTheme.tableBackgroundColor,
+          foregroundColor: GameTheme.textDark,
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: GameTheme.elevatedButtonStyle,
         ),
       ),
       home: _getHome(state.phase),
@@ -38,22 +54,25 @@ class MyApp extends ConsumerWidget {
       case GamePhase.rollingForOrder:
         return Scaffold(
           body: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 1.2,
-                colors: [Color(0xFF1B4721), Color(0xFF0D2818)],
+                colors: [
+                  GameTheme.tableHighlightColor,
+                  GameTheme.tableBackgroundColor,
+                ],
               ),
             ),
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Color(0xFFD4AF37)),
-                  SizedBox(height: 16),
+                  CircularProgressIndicator(color: GameTheme.goldAccent),
+                  const SizedBox(height: 16),
                   Text(
                     "Sıra belirleniyor...",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: GameTheme.textDark, fontSize: 16),
                   ),
                 ],
               ),

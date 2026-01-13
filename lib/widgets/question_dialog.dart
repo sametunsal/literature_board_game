@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,6 +8,7 @@ import '../models/question.dart';
 import '../models/game_enums.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import 'reward_particles_widget.dart';
 
 /// Question dialog with 45-second timer and CEVAPLA -> BİLDİN/BİLEMEDİN flow
 class QuestionDialog extends ConsumerStatefulWidget {
@@ -103,166 +105,219 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
         ? Colors.red
         : (_remainingSeconds <= 20 ? Colors.orange : GameTheme.textDark);
 
-    return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 520),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: GameTheme.cardDecoration.copyWith(
-              color: GameTheme.parchmentColor,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // TIMER DISPLAY
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
+    // Focus Mode - Backdrop Blur for immersion
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child:
+            ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 420,
+                    maxHeight: 540,
                   ),
-                  decoration: BoxDecoration(
-                    color: timerColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: timerColor.withValues(alpha: 0.3),
-                      width: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      // Glassmorphism base
+                      color: GameTheme.tableBackgroundColor.withValues(
+                        alpha: 0.9,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: GameTheme.copperAccent,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                        BoxShadow(
+                          color: GameTheme.copperAccent.withValues(alpha: 0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        // Paper texture overlay
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: Opacity(
+                              opacity: 0.1,
+                              child: Image.asset(
+                                'assets/images/paper_noise.png',
+                                fit: BoxFit.cover,
+                                colorBlendMode: BlendMode.multiply,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // TIMER DISPLAY
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: timerColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: timerColor.withValues(alpha: 0.4),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.timer,
+                                      color: timerColor,
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '$_remainingSeconds',
+                                      style: GoogleFonts.cinzel(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: timerColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      's',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: timerColor.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // CATEGORY BADGE
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: categoryColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: categoryColor.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _getCategoryIcon(question.category),
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      categoryName,
+                                      style: GoogleFonts.cinzel(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: Colors.white,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // QUESTION TEXT - Serif font for immersion
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: GameTheme.parchmentColor
+                                          .withValues(alpha: 0.95),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: GameTheme.copperAccent
+                                            .withValues(alpha: 0.4),
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      question.text,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.cinzel(
+                                        fontSize: 15,
+                                        color: GameTheme.tableBackgroundColor,
+                                        height: 1.6,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+
+                              // BUTTONS
+                              if (!_showAnswerButtons)
+                                _buildCevaplaButton()
+                              else
+                                _buildAnswerButtons(),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.timer, color: timerColor, size: 20),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$_remainingSeconds',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: timerColor,
-                        ),
-                      ),
-                      Text(
-                        's',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: timerColor.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
+                )
+                .animate()
+                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                .slideY(
+                  begin: 0.5,
+                  end: 0,
+                  duration: 500.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                .scale(
+                  begin: const Offset(0.9, 0.9),
+                  end: const Offset(1.0, 1.0),
+                  duration: 400.ms,
+                  curve: Curves.easeOut,
                 ),
-                const SizedBox(height: 12),
-
-                // CATEGORY BADGE
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: categoryColor,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: categoryColor.withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _getCategoryIcon(question.category),
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        categoryName,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // QUESTION TEXT
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: categoryColor.withValues(alpha: 0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: Text(
-                        question.text,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: GameTheme.textDark,
-                          height: 1.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // BUTTONS
-                if (!_showAnswerButtons)
-                  // CEVAPLA BUTTON (before timer ends)
-                  _buildCevaplaButton()
-                else
-                  // BİLDİN / BİLEMEDİN BUTTONS (after CEVAPLA or timeout)
-                  _buildAnswerButtons(),
-              ],
-            ),
-          ),
-        )
-        .animate()
-        // Paper sliding on table feel
-        .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-        .slideY(
-          begin: 0.6,
-          end: 0,
-          duration: 500.ms,
-          curve: Curves.easeOutCubic,
-        )
-        // Slight tilt during slide (not perfectly flat)
-        .rotate(
-          begin: 0.03, // Start with slight tilt
-          end: 0,
-          duration: 450.ms,
-          curve: Curves.easeOut,
-        )
-        // Scale pulse: start smaller, overshoot slightly, then settle
-        .scale(
-          begin: const Offset(0.88, 0.88),
-          end: const Offset(1.02, 1.02), // Slight overshoot
-          delay: 50.ms,
-          duration: 350.ms,
-          curve: Curves.easeOut,
-        )
-        .then() // Chain for the settle
-        .scale(
-          begin: const Offset(1.02, 1.02),
-          end: const Offset(1.0, 1.0),
-          duration: 150.ms,
-          curve: Curves.easeInOut,
-        );
+      ),
+    );
   }
 
   Widget _buildCevaplaButton() {
@@ -345,11 +400,15 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
             ),
             const SizedBox(width: 10),
 
-            // BİLDİN (Correct)
+            // BİLDİN (Correct) - With Particle Celebration
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () =>
-                    ref.read(gameProvider.notifier).answerQuestion(true),
+                onPressed: () {
+                  // Show celebratory particle effect
+                  RewardParticlesOverlay.show(context);
+                  // Process correct answer
+                  ref.read(gameProvider.notifier).answerQuestion(true);
+                },
                 icon: const Icon(Icons.check, size: 20),
                 label: Text(
                   "BİLDİN",

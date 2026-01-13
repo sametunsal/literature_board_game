@@ -7,26 +7,32 @@ class GameTheme {
   GameTheme._(); // Private constructor to prevent instantiation
 
   // ════════════════════════════════════════════════════════════════════════════
-  // COLOR PALETTE
+  // COLOR PALETTE - MODERN DARK ACADEMIA (V2.5)
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Deep, rich green for the game table background
-  static const Color tableBackgroundColor = Color(0xFF1B4721);
+  /// Primary background / Canvas - Hayalet Siyahı (Phantom Black)
+  static const Color tableBackgroundColor = Color(0xFF202621);
 
-  /// Lighter green for gradient center (spotlight effect)
-  static const Color tableHighlightColor = Color(0xFF2E7D32);
+  /// Slightly lighter shade for gradient spotlight effect
+  static const Color tableHighlightColor = Color(0xFF2A3029);
 
-  /// Warm beige/parchment color for paper elements
-  static const Color parchmentColor = Color(0xFFF5F5DC);
+  /// Panel/Surface color - Eskitilmiş Deri (Worn Leather)
+  static const Color parchmentColor = Color(0xFF734838);
 
-  /// Gold accent for highlights and borders
-  static const Color goldAccent = Color(0xFFD4AF37);
+  /// Success/Gold accent for highlights and borders - Altın (Gold)
+  static const Color goldAccent = Color(0xFFFFD700);
 
-  /// Dark brown/black for high contrast text
-  static const Color textDark = Color(0xFF212121);
+  /// Primary CTA/Accent - Parlatılmış Bakır (Burnished Copper)
+  static const Color copperAccent = Color(0xFFA66F5B);
 
-  /// Dialog overlay color
-  static const Color dialogOverlayColor = Color(0x8A000000);
+  /// Primary text color - Antik Dantel (Antique Lace)
+  static const Color textDark = Color(0xFFD9B596);
+
+  /// Error color - Derin Bordo (Deep Burgundy)
+  static const Color errorColor = Color(0xFF401B1B);
+
+  /// Dialog overlay color (darker for dark theme)
+  static const Color dialogOverlayColor = Color(0xCC000000);
 
   // ════════════════════════════════════════════════════════════════════════════
   // GROUP COLORS (Property color strips by tile ID range)
@@ -98,54 +104,50 @@ class GameTheme {
   // TEXT STYLES
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// HUD title style (EDEBİYAT) - Large, bold, Gold/White, Playfair
+  /// HUD title style (EDEBİNA) - Large, bold, Gold, Playfair
   static TextStyle get hudTitleStyle => GoogleFonts.playfairDisplay(
     fontSize: 28,
     fontWeight: FontWeight.bold,
     color: goldAccent,
     shadows: [
       Shadow(
-        color: Colors.black.withValues(alpha: 0.5),
-        blurRadius: 8,
-        offset: const Offset(2, 2),
-      ),
-      Shadow(
-        color: Colors.white.withValues(alpha: 0.3),
-        blurRadius: 4,
-        offset: const Offset(-1, -1),
+        color: Colors.black.withValues(alpha: 0.7),
+        blurRadius: 10,
+        offset: const Offset(2, 3),
       ),
     ],
   );
 
-  /// HUD subtitle/action text style
+  /// HUD subtitle/action text style - Antique Lace for readability
   static TextStyle get hudSubtitleStyle =>
-      GoogleFonts.poppins(color: Colors.white70, fontSize: 10);
+      GoogleFonts.poppins(color: textDark.withValues(alpha: 0.8), fontSize: 10);
 
-  /// Tile title style - Small, bold, TextDark, Poppins
+  /// Tile title style - Small, bold, Antique Lace, Poppins
   static TextStyle get tileTitleStyle => GoogleFonts.poppins(
     fontSize: 8,
     fontWeight: FontWeight.w700,
     color: textDark,
   );
 
-  /// Tile price style - Very small, grey, Poppins
+  /// Tile price style - Very small, lighter Antique Lace, Poppins
   static TextStyle get tilePriceStyle => GoogleFonts.poppins(
     fontSize: 7,
     fontWeight: FontWeight.w500,
-    color: Colors.grey.shade600,
+    color: textDark.withValues(alpha: 0.7),
   );
 
-  /// Corner tile label style
+  /// Corner tile label style - Antique Lace for dark backgrounds
   static TextStyle get cornerLabelStyle => GoogleFonts.poppins(
     fontSize: 8,
     fontWeight: FontWeight.w900,
-    color: Colors.black87,
+    color: textDark,
   );
 
-  /// Price badge text style
+  /// Price badge text style - Antique Lace
   static const TextStyle priceBadgeStyle = TextStyle(
     fontSize: 7,
     fontWeight: FontWeight.bold,
+    color: textDark,
   );
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -208,21 +210,22 @@ class GameTheme {
     ],
   );
 
-  /// Card decoration for tiles/panels with 3D floating effect
+  /// Card decoration for tiles/panels with 3D floating effect - Worn Leather surface
   static BoxDecoration get cardDecoration => BoxDecoration(
-    color: Colors.white,
+    color: parchmentColor,
     borderRadius: BorderRadius.circular(8.0),
+    border: Border.all(color: copperAccent.withValues(alpha: 0.3), width: 1),
     boxShadow: [
       // Ambient shadow (soft, spread)
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.1),
-        blurRadius: 10,
+        color: Colors.black.withValues(alpha: 0.3),
+        blurRadius: 12,
         spreadRadius: 1,
       ),
       // Direct shadow (sharper, offset for 3D effect)
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.2),
-        blurRadius: 6,
+        color: Colors.black.withValues(alpha: 0.4),
+        blurRadius: 8,
         offset: const Offset(2, 4),
       ),
     ],
@@ -268,11 +271,25 @@ class GameTheme {
   // BUTTON STYLES
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Primary elevated button style
+  /// Primary elevated button style - Burnished Copper CTA
   static ButtonStyle get elevatedButtonStyle => ElevatedButton.styleFrom(
-    backgroundColor: goldAccent,
+    backgroundColor: copperAccent,
     foregroundColor: textDark,
-    shadowColor: Colors.black.withValues(alpha: 0.4),
+    shadowColor: Colors.black.withValues(alpha: 0.5),
+    elevation: 8,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    textStyle: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      fontSize: 18,
+      color: textDark,
+    ),
+  );
+
+  /// Secondary/Gold button style for special actions
+  static ButtonStyle get goldButtonStyle => ElevatedButton.styleFrom(
+    backgroundColor: goldAccent,
+    foregroundColor: tableBackgroundColor,
+    shadowColor: goldAccent.withValues(alpha: 0.4),
     elevation: 8,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
     textStyle: GoogleFonts.playfairDisplay(
@@ -298,8 +315,9 @@ class GameTheme {
   static const Color parchment = parchmentColor;
   static const Color textPrimary = textDark;
   static const Color primaryText = textDark;
-  static const Color accentRed = Color(0xFFE57373);
+  static const Color accentRed = errorColor;
   static const Color accentGold = goldAccent;
+  static const Color accentCopper = copperAccent;
   static const Color tileBorder = Color(0xFF5D4037);
 
   /// Legacy text styles

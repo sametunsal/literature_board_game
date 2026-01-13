@@ -131,18 +131,31 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
         const SizedBox(height: 12),
 
-        // TOTAL display below both dice
+        // TOTAL display below both dice - V2.5 styled
         if (_showResult)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: GameTheme.goldAccent,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [GameTheme.copperAccent, GameTheme.goldAccent],
+              ),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: GameTheme.goldAccent.withValues(alpha: 0.6),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(3, 4),
+                ),
+                BoxShadow(
+                  color: GameTheme.goldAccent.withValues(alpha: 0.2),
                   blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  spreadRadius: -2,
                 ),
               ],
             ),
@@ -151,7 +164,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: GameTheme.textDark,
+                color: GameTheme.tableBackgroundColor, // Dark text for contrast
               ),
             ),
           ),
@@ -159,7 +172,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     );
   }
 
-  /// Build a single die with Lottie animation and number below
+  /// Build a single die with Lottie animation and number below - V2.5 Tactile Rebellion
   Widget _buildSingleDie(int value) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -180,94 +193,211 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
         const SizedBox(height: 6),
 
-        // Individual die value BELOW (not overlapping)
+        // Individual die value BELOW - V2.5 styled with gradient
         if (_showResult)
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: Colors.white,
+              // Copper to Gold gradient for tactile feel
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [GameTheme.copperAccent, GameTheme.goldAccent],
+              ),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: GameTheme.goldAccent, width: 2),
+              border: Border.all(
+                color: GameTheme.goldAccent.withValues(alpha: 0.8),
+                width: 2,
+              ),
+              // Heavy 3D shadow for raised effect
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 8,
+                  offset: const Offset(4, 4),
+                ),
+                BoxShadow(
+                  color: GameTheme.goldAccent.withValues(alpha: 0.3),
                   blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  spreadRadius: -1,
+                  offset: const Offset(-1, -1),
                 ),
               ],
             ),
-            child: Center(
-              child: Text(
-                '$value',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: GameTheme.textDark,
+            child: Stack(
+              children: [
+                // Paper texture overlay
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Opacity(
+                    opacity: 0.05,
+                    child: Image.asset(
+                      'assets/images/paper_noise.png',
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                      colorBlendMode: BlendMode.overlay,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
+                // Pip number - dark for contrast
+                Center(
+                  child: Text(
+                    '$value',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: GameTheme.tableBackgroundColor, // Dark pips
+                      shadows: [
+                        Shadow(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          blurRadius: 1,
+                          offset: const Offset(0.5, 0.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
       ],
     );
   }
 
-  /// Fallback die display if Lottie fails
+  /// Fallback die display if Lottie fails - V2.5 Tactile Rebellion style
   Widget _buildFallbackDie(int value) {
     return Container(
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Copper to Gold gradient
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [GameTheme.copperAccent, GameTheme.goldAccent],
+        ),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade400, width: 2),
+        border: Border.all(
+          color: GameTheme.goldAccent.withValues(alpha: 0.8),
+          width: 2,
+        ),
+        // Heavy 3D shadow for raised effect
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 6,
-            offset: const Offset(2, 3),
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 8,
+            offset: const Offset(4, 4),
+          ),
+          BoxShadow(
+            color: GameTheme.goldAccent.withValues(alpha: 0.2),
+            blurRadius: 4,
+            spreadRadius: -2,
+            offset: const Offset(-2, -2),
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          '$value',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: GameTheme.textDark,
+      child: Stack(
+        children: [
+          // Paper texture overlay
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Opacity(
+              opacity: 0.05,
+              child: Image.asset(
+                'assets/images/paper_noise.png',
+                fit: BoxFit.cover,
+                width: 60,
+                height: 60,
+                colorBlendMode: BlendMode.overlay,
+                color: Colors.white,
+              ),
+            ),
           ),
-        ),
+          // Pip number - dark for contrast
+          Center(
+            child: Text(
+              '$value',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: GameTheme.tableBackgroundColor, // Dark pips
+                shadows: [
+                  Shadow(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    blurRadius: 1,
+                    offset: const Offset(0.5, 0.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Build the stylized roll button
+  /// Build the stylized roll button - V2.5 Tactile Rebellion
   Widget _buildRollButton() {
-    return ElevatedButton.icon(
-      onPressed: () {
-        SoundManager.instance.playDice();
-        ref.read(gameProvider.notifier).rollDice();
-      },
-      icon: const Icon(Icons.casino, size: 24),
-      label: Text(
-        "ZAR AT",
-        style: GoogleFonts.playfairDisplay(
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
+    return Container(
+      decoration: BoxDecoration(
+        // Copper to Gold gradient
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [GameTheme.copperAccent, GameTheme.goldAccent],
         ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: GameTheme.goldAccent.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
+        // Heavy 3D shadow for raised effect
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 10,
+            offset: const Offset(4, 4),
+          ),
+          BoxShadow(
+            color: GameTheme.goldAccent.withValues(alpha: 0.3),
+            blurRadius: 6,
+            spreadRadius: -2,
+            offset: const Offset(-2, -2),
+          ),
+        ],
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: GameTheme.goldAccent,
-        foregroundColor: GameTheme.textDark,
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-        elevation: 8,
-        shadowColor: Colors.black.withValues(alpha: 0.4),
-        shape: RoundedRectangleBorder(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            SoundManager.instance.playDice();
+            ref.read(gameProvider.notifier).rollDice();
+          },
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: Colors.white.withValues(alpha: 0.3),
-            width: 1,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.casino,
+                  size: 24,
+                  color: GameTheme.tableBackgroundColor, // Dark icon
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "ZAR AT",
+                  style: GoogleFonts.playfairDisplay(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: GameTheme.tableBackgroundColor, // Dark text
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

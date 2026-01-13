@@ -51,15 +51,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D2818), // Darker green variant
+      backgroundColor: GameTheme.tableBackgroundColor,
       body: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
             colors: [
-              const Color(0xFF1B4721), // Table green at center
-              const Color(0xFF0D2818), // Darker at edges
+              GameTheme.tableHighlightColor,
+              GameTheme.tableBackgroundColor,
             ],
           ),
         ),
@@ -149,7 +149,7 @@ class _SplashScreenState extends State<SplashScreen> {
       "Bilginizi Test Edin",
       style: GoogleFonts.poppins(
         fontSize: 16,
-        color: Colors.white.withValues(alpha: 0.7),
+        color: GameTheme.textDark.withValues(alpha: 0.7),
         letterSpacing: 1,
       ),
     ).animate().fadeIn(delay: 800.ms, duration: 600.ms);
@@ -174,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen> {
           "Yükleniyor...",
           style: GoogleFonts.poppins(
             fontSize: 12,
-            color: Colors.white.withValues(alpha: 0.5),
+            color: GameTheme.textDark.withValues(alpha: 0.5),
           ),
         ),
       ],

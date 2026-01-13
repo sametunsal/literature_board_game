@@ -50,18 +50,15 @@ class GameLog extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 320),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                // Semi-transparent white for glass effect
-                color: Colors.white.withValues(alpha: 0.1),
+                // V2.5 Dark Academia glassmorphism
+                color: GameTheme.tableBackgroundColor.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(16),
-                // Thin white border for glass edge
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-                // Subtle inner shadow for depth
+                // Copper accent border for V2.5 theme
+                border: Border.all(color: GameTheme.copperAccent, width: 1.5),
+                // Subtle shadow for depth
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 20,
                     spreadRadius: -5,
                   ),
@@ -114,7 +111,7 @@ class GameLog extends StatelessWidget {
                       "Henüz olay yok...",
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: GameTheme.textDark.withValues(alpha: 0.5),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -175,7 +172,7 @@ class GameLog extends StatelessWidget {
         Icon(
           Icons.history,
           size: 14,
-          color: Colors.white.withValues(alpha: 0.7),
+          color: GameTheme.textDark.withValues(alpha: 0.7),
         ),
         const SizedBox(width: 6),
         Text(
@@ -183,7 +180,7 @@ class GameLog extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.8),
+            color: GameTheme.textDark.withValues(alpha: 0.8),
             letterSpacing: 0.5,
           ),
         ),
@@ -197,9 +194,9 @@ class GameLog extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.white.withValues(alpha: 0.0),
-            Colors.white.withValues(alpha: 0.2),
-            Colors.white.withValues(alpha: 0.0),
+            GameTheme.copperAccent.withValues(alpha: 0.0),
+            GameTheme.copperAccent.withValues(alpha: 0.4),
+            GameTheme.copperAccent.withValues(alpha: 0.0),
           ],
         ),
       ),
@@ -252,7 +249,7 @@ class _PlayerScoreRow extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: rank == 1
                     ? GameTheme.goldAccent
-                    : Colors.white.withValues(alpha: 0.5),
+                    : GameTheme.textDark.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -284,8 +281,8 @@ class _PlayerScoreRow extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: isCurrentTurn ? FontWeight.w600 : FontWeight.w500,
                 color: isCurrentTurn
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.85),
+                    ? GameTheme.textDark
+                    : GameTheme.textDark.withValues(alpha: 0.85),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -297,7 +294,7 @@ class _PlayerScoreRow extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: rank == 1 ? GameTheme.goldAccent : Colors.white,
+              color: rank == 1 ? GameTheme.goldAccent : GameTheme.textDark,
               shadows: [
                 Shadow(
                   color: Colors.black.withValues(alpha: 0.5),
@@ -345,7 +342,7 @@ class _LogEntry extends StatelessWidget {
             decoration: BoxDecoration(
               color: isLatest
                   ? GameTheme.goldAccent
-                  : Colors.white.withValues(alpha: 0.5),
+                  : GameTheme.textDark.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
           ),
@@ -359,8 +356,8 @@ class _LogEntry extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: isLatest ? FontWeight.w500 : FontWeight.normal,
                 color: isLatest
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.7),
+                    ? GameTheme.textDark
+                    : GameTheme.textDark.withValues(alpha: 0.7),
                 height: 1.3,
               ),
             ),

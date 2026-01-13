@@ -300,7 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: GameTheme.tableBackgroundColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -377,10 +377,10 @@ class _SettingsTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: GameTheme.tableBackgroundColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: GameTheme.goldAccent.withValues(alpha: 0.1),
+          color: GameTheme.copperAccent.withValues(alpha: 0.2),
           width: 1,
         ),
       ),

@@ -23,6 +23,7 @@ dependencies:
   confetti: ^0.7.0
   audioplayers: ^6.1.0
   lottie: ^3.1.0
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
@@ -33,8 +34,13 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # Image assets (Modern Dark Academia V2.5)
+    - assets/images/
+    # Data assets
     - assets/data/questions.json
+    # Sound assets
     - assets/sounds/click.mp3
     - assets/sounds/dice.mp3
     - assets/sounds/victory.mp3
+    # Animation assets
     - assets/animations/dice.json
