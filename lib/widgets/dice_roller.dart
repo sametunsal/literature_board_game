@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -23,6 +25,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   int _dice1 = 0;
   int _dice2 = 0;
   final _random = math.Random();
+  Timer? _hapticTimer; // For haptic feedback during dice roll
 
   @override
   void initState() {
@@ -34,6 +37,11 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
     _lottieController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
+        // Stop haptic timer and deliver heavy "thud" on landing
+        _hapticTimer?.cancel();
+        HapticFeedback.heavyImpact();
+        SoundManager.instance.playDiceLand(); // Dice landing sound
+
         setState(() {
           _isAnimating = false;
           _showResult = true;
@@ -44,6 +52,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
   @override
   void dispose() {
+    _hapticTimer?.cancel();
     _lottieController.dispose();
     super.dispose();
   }
@@ -100,6 +109,16 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
       _isAnimating = true;
       _showResult = false;
     });
+
+    // Start haptic feedback during animation - random light taps
+    _hapticTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
+      if (_isAnimating) {
+        HapticFeedback.lightImpact();
+      } else {
+        timer.cancel();
+      }
+    });
+
     _lottieController.forward(from: 0);
   }
 
@@ -373,7 +392,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            SoundManager.instance.playDice();
+            SoundManager.instance.playDiceRoll(); // Start roll sound
             ref.read(gameProvider.notifier).rollDice();
           },
           borderRadius: BorderRadius.circular(14),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/game_notifier.dart';
+import 'providers/theme_notifier.dart';
 import 'models/game_enums.dart';
 import 'widgets/splash_screen.dart';
 import 'widgets/board_view.dart';
@@ -16,32 +17,12 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(gameProvider);
+    final themeState = ref.watch(themeProvider);
 
     return MaterialApp(
       title: 'EDEBİNA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: GameTheme.tableBackgroundColor,
-        colorScheme: ColorScheme.dark(
-          surface: GameTheme.parchmentColor,
-          primary: GameTheme.copperAccent,
-          secondary: GameTheme.goldAccent,
-          error: GameTheme.errorColor,
-          onSurface: GameTheme.textDark,
-          onPrimary: GameTheme.textDark,
-        ),
-        cardColor: GameTheme.parchmentColor,
-        appBarTheme: AppBarTheme(
-          backgroundColor: GameTheme.tableBackgroundColor,
-          foregroundColor: GameTheme.textDark,
-          elevation: 0,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: GameTheme.elevatedButtonStyle,
-        ),
-      ),
+      theme: GameTheme.buildThemeData(themeState.isDarkMode),
       home: _getHome(state.phase),
     );
   }

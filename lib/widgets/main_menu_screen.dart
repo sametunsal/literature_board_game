@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
+import '../providers/theme_notifier.dart';
 import '../services/streak_service.dart';
 import 'setup_screen.dart';
 import 'settings_screen.dart';
 import 'streak_candle_widget.dart';
 
-/// Main menu screen with EDEBİNA branding - Modern Dark Academia V2.5
+/// Main menu screen with EDEBİNA branding - V2.6 with Theme Toggle
 /// Provides navigation to Play, Settings, and About
-class MainMenuScreen extends StatefulWidget {
+class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
 
   @override
-  State<MainMenuScreen> createState() => _MainMenuScreenState();
+  ConsumerState<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends State<MainMenuScreen> {
+class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   int _streakDays = 0;
   bool _isLoading = true;
 
@@ -109,31 +111,36 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ),
 
           // ═══════════════════════════════════════════════════════════════
-          // GAMIFICATION: Streak Candle (Top-Right)
+          // TOP-RIGHT: Theme Toggle + Streak Candle
           // ═══════════════════════════════════════════════════════════════
-          if (!_isLoading)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
-              right: 16,
-              child:
-                  Column(
-                        children: [
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child:
+                Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // THEME TOGGLE BUTTON
+                        _buildThemeToggle(),
+                        const SizedBox(height: 12),
+                        // STREAK CANDLE
+                        if (!_isLoading)
                           StreakCandleWidget(
                             streakDays: _streakDays,
                             size: 50,
-                            isLit: _streakDays > 0, // Lit if streak active
+                            isLit: _streakDays > 0,
                           ),
-                        ],
-                      )
-                      .animate()
-                      .fadeIn(delay: 800.ms, duration: 600.ms)
-                      .slideY(
-                        begin: -0.3,
-                        end: 0,
-                        delay: 800.ms,
-                        duration: 500.ms,
-                      ),
-            ),
+                      ],
+                    )
+                    .animate()
+                    .fadeIn(delay: 800.ms, duration: 600.ms)
+                    .slideY(
+                      begin: -0.3,
+                      end: 0,
+                      delay: 800.ms,
+                      duration: 500.ms,
+                    ),
+          ),
         ],
       ),
     );
@@ -206,6 +213,53 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         letterSpacing: 2,
       ),
     ).animate().fadeIn(delay: 400.ms, duration: 500.ms);
+  }
+
+  /// Build theme toggle button (Sun/Moon icons)
+  Widget _buildThemeToggle() {
+    final themeState = ref.watch(themeProvider);
+    final isDark = themeState.isDarkMode;
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(themeProvider.notifier).toggleTheme();
+      },
+      child:
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark
+                    ? GameTheme.goldAccent.withValues(alpha: 0.4)
+                    : GameTheme.copperAccent.withValues(alpha: 0.4),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? GameTheme.goldAccent.withValues(alpha: 0.2)
+                      : GameTheme.copperAccent.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Icon(
+              isDark ? Icons.dark_mode : Icons.light_mode,
+              size: 26,
+              color: isDark ? GameTheme.goldAccent : GameTheme.copperAccent,
+            ),
+          ).animate().scale(
+            begin: const Offset(0.9, 0.9),
+            end: const Offset(1.0, 1.0),
+            duration: 200.ms,
+          ),
+    );
   }
 
   Widget _buildMenuButtons(BuildContext context) {

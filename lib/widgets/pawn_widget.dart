@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
+import 'game_log.dart' show literatureIcons;
 
 /// Animated pawn widget with premium 3D appearance
 /// Features improved hopping animation with parabolic arc and pulsating glow
@@ -255,12 +256,11 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              // Player icon
+              // Player icon - use const icons for tree-shaking
               Icon(
-                IconData(
-                  0xe000 + widget.player.iconIndex,
-                  fontFamily: 'MaterialIcons',
-                ),
+                widget.player.iconIndex < literatureIcons.length
+                    ? literatureIcons[widget.player.iconIndex]
+                    : Icons.person,
                 size: size * 0.52,
                 color: Colors.white,
                 shadows: [

@@ -35,6 +35,58 @@ class GameTheme {
   static const Color dialogOverlayColor = Color(0xCC000000);
 
   // ════════════════════════════════════════════════════════════════════════════
+  // COLOR PALETTE - CLASSIC LIBRARY (V2.6 - LIGHT MODE)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Primary background / Canvas - Parchment/Cream
+  static const Color lightBackgroundColor = Color(0xFFF5F5DC);
+
+  /// Slightly darker shade for gradient spotlight effect
+  static const Color lightHighlightColor = Color(0xFFEBE8D0);
+
+  /// Panel/Surface color - Paper White
+  static const Color lightSurfaceColor = Color(0xFFE8E0D6);
+
+  /// Accent color - Deep Red (for highlights)
+  static const Color lightAccentRed = Color(0xFFC41E3A);
+
+  /// Primary text color - Dark Brown (for contrast)
+  static const Color lightTextColor = Color(0xFF2C241B);
+
+  /// Error color - Muted Red
+  static const Color lightErrorColor = Color(0xFFB71C1C);
+
+  /// Dialog overlay color (lighter for light theme)
+  static const Color lightDialogOverlay = Color(0x99000000);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // DYNAMIC COLOR GETTERS (based on theme mode)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  static Color backgroundColor(bool isDarkMode) =>
+      isDarkMode ? tableBackgroundColor : lightBackgroundColor;
+
+  static Color highlightColor(bool isDarkMode) =>
+      isDarkMode ? tableHighlightColor : lightHighlightColor;
+
+  static Color surfaceColor(bool isDarkMode) =>
+      isDarkMode ? parchmentColor : lightSurfaceColor;
+
+  static Color primaryTextColor(bool isDarkMode) =>
+      isDarkMode ? textDark : lightTextColor;
+
+  static Color accentColor(bool isDarkMode) =>
+      isDarkMode ? goldAccent : lightAccentRed;
+
+  static Color primaryAccent(bool isDarkMode) => copperAccent; // Keep same
+
+  static Color errorAccent(bool isDarkMode) =>
+      isDarkMode ? errorColor : lightErrorColor;
+
+  static Color overlayColor(bool isDarkMode) =>
+      isDarkMode ? dialogOverlayColor : lightDialogOverlay;
+
+  // ════════════════════════════════════════════════════════════════════════════
   // GROUP COLORS (Property color strips by tile ID range)
   // ════════════════════════════════════════════════════════════════════════════
 
@@ -336,6 +388,65 @@ class GameTheme {
 
   /// Alias for propertyTitleStyle (backward compatibility)
   static TextStyle get propertyTitleStyle => tileTitleStyle;
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // THEME DATA BUILDER
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Build complete ThemeData based on current mode
+  static ThemeData buildThemeData(bool isDarkMode) {
+    final bgColor = backgroundColor(isDarkMode);
+    final surfColor = surfaceColor(isDarkMode);
+    final textColor = primaryTextColor(isDarkMode);
+    final accent = accentColor(isDarkMode);
+    final primary = primaryAccent(isDarkMode);
+    final error = errorAccent(isDarkMode);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      scaffoldBackgroundColor: bgColor,
+      colorScheme: isDarkMode
+          ? ColorScheme.dark(
+              surface: surfColor,
+              primary: primary,
+              secondary: accent,
+              error: error,
+              onSurface: textColor,
+              onPrimary: textColor,
+            )
+          : ColorScheme.light(
+              surface: surfColor,
+              primary: primary,
+              secondary: accent,
+              error: error,
+              onSurface: textColor,
+              onPrimary: lightBackgroundColor,
+            ),
+      cardColor: surfColor,
+      appBarTheme: AppBarTheme(
+        backgroundColor: bgColor,
+        foregroundColor: textColor,
+        elevation: 0,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: textColor,
+          shadowColor: Colors.black.withValues(alpha: 0.5),
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          textStyle: GoogleFonts.playfairDisplay(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: textColor,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Configuration data for corner tiles

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/board_tile.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../utils/sound_manager.dart';
 
 class CopyrightPurchaseDialog extends ConsumerWidget {
   final BoardTile tile;
@@ -132,8 +134,16 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
                     // PURCHASE BUTTON
                     _ActionButton(
                       text: "SATIN AL",
-                      onPressed: () =>
-                          ref.read(gameProvider.notifier).purchaseProperty(),
+                      onPressed: () {
+                        // Haptic feedback: Heavy + Light for satisfying "tok"
+                        HapticFeedback.heavyImpact();
+                        Future.delayed(const Duration(milliseconds: 80), () {
+                          HapticFeedback.lightImpact();
+                        });
+                        // Purchase sound effect
+                        SoundManager.instance.playPurchase();
+                        ref.read(gameProvider.notifier).purchaseProperty();
+                      },
                       color: const Color(0xFF388E3C),
                       icon: Icons.check,
                     ),

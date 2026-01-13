@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +9,7 @@ import '../models/question.dart';
 import '../models/game_enums.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../utils/sound_manager.dart';
 import 'reward_particles_widget.dart';
 
 /// Question dialog with 45-second timer and CEVAPLA -> BİLDİN/BİLEMEDİN flow
@@ -36,8 +38,15 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       if (mounted) {
         setState(() {
           _remainingSeconds--;
+
+          // Haptic heartbeat effect in last 10 seconds
+          if (_remainingSeconds <= 10 && _remainingSeconds > 0) {
+            HapticFeedback.lightImpact();
+          }
+
           if (_remainingSeconds <= 0) {
             _timer?.cancel();
+            HapticFeedback.heavyImpact(); // Final thud when time's up
             _showAnswerButtons = true;
           }
         });
@@ -377,8 +386,10 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
             // BİLEMEDİN (Wrong)
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () =>
-                    ref.read(gameProvider.notifier).answerQuestion(false),
+                onPressed: () {
+                  SoundManager.instance.playWrongAnswer(); // Wrong answer sound
+                  ref.read(gameProvider.notifier).answerQuestion(false);
+                },
                 icon: const Icon(Icons.close, size: 20),
                 label: Text(
                   "BİLEMEDİN",
@@ -404,6 +415,8 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () {
+                  // Sound effect for correct answer
+                  SoundManager.instance.playCorrectAnswer();
                   // Show celebratory particle effect
                   RewardParticlesOverlay.show(context);
                   // Process correct answer

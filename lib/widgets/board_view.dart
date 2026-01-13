@@ -21,6 +21,7 @@ import 'pause_dialog.dart';
 import 'settings_screen.dart';
 import 'main_menu_screen.dart';
 import 'game_over_dialog.dart';
+import 'card_deck_widget.dart';
 import '../utils/sound_manager.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -323,6 +324,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   Widget _buildCenterArea(BoardLayoutConfig layout) {
     final state = ref.watch(gameProvider);
+    final centerSize = layout.boardSize - (layout.cornerSize * 2);
+    final deckSize = centerSize * 0.18; // Card deck size relative to center
 
     return Positioned(
       top: layout.cornerSize,
@@ -355,7 +358,34 @@ class _BoardViewState extends ConsumerState<BoardView> {
                 ),
               ),
             ),
-            // HUD content
+
+            // ═══════════════════════════════════════════════════════════════
+            // ŞANS CARD DECK (Top-Left, rotated 45°)
+            // ═══════════════════════════════════════════════════════════════
+            Positioned(
+              top: centerSize * 0.08,
+              left: centerSize * 0.08,
+              child: CardDeckWidget(
+                type: CardType.sans,
+                size: deckSize,
+                rotation: 0.35, // ~20 degrees
+              ),
+            ),
+
+            // ═══════════════════════════════════════════════════════════════
+            // KADER CARD DECK (Bottom-Right, rotated -45°)
+            // ═══════════════════════════════════════════════════════════════
+            Positioned(
+              bottom: centerSize * 0.08,
+              right: centerSize * 0.08,
+              child: CardDeckWidget(
+                type: CardType.kader,
+                size: deckSize,
+                rotation: -0.35, // ~-20 degrees
+              ),
+            ),
+
+            // HUD content (center)
             Center(child: _buildHUD(state)),
           ],
         ),
@@ -623,6 +653,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
       if (lastPos != null && lastPos != currentPos) {
         // Only pulse if not already pulsing another tile
         if (_pulsingTileId == null) {
+          // Haptic feedback for tile landing
+          HapticFeedback.mediumImpact();
+          SoundManager.instance.playTileLanding(); // Tile landing sound
+
           // Schedule pulse on next frame to avoid setState during build
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
