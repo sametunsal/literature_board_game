@@ -22,17 +22,37 @@ class _SplashScreenState extends State<SplashScreen> {
 
   /// Wait for fonts to load and minimum display time, then navigate
   Future<void> _initializeAndNavigate() async {
-    // Start both the font loading and minimum timer simultaneously
-    await Future.wait([
-      // Preload the fonts we use
-      GoogleFonts.pendingFonts([
-        GoogleFonts.playfairDisplay(),
-        GoogleFonts.poppins(),
-      ]),
-      // Minimum splash display time
-      Future.delayed(const Duration(milliseconds: 3000)),
-    ]);
+    try {
+      // Preload the fonts we use with a timeout
+      // Note: We use a separate variable to avoid inference issues
+      final fontFuture =
+          GoogleFonts.pendingFonts([
+            GoogleFonts.playfairDisplay(),
+            GoogleFonts.poppins(),
+          ]).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('Font loading timed out - proceeding with fallback');
+              return [];
+            },
+          );
 
+      // Start both the font loading and minimum timer simultaneously
+      await Future.wait([
+        fontFuture,
+        // Minimum splash display time
+        Future.delayed(const Duration(milliseconds: 3000)),
+      ]);
+    } catch (e) {
+      debugPrint('Error during splash initialization: $e');
+      // If error occurs, wait a bit to ensure 3s minimum then proceed
+      await Future.delayed(const Duration(milliseconds: 3000));
+    } finally {
+      _navigateToMenu();
+    }
+  }
+
+  void _navigateToMenu() {
     // Navigate to setup screen and remove splash from stack
     if (mounted) {
       Navigator.of(context).pushReplacement(

@@ -707,7 +707,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     for (int i = 0; i < playerCount; i++) {
       players.add(
         Player(
-          id: DateTime.now().millisecondsSinceEpoch.toString() + "$i",
+          id: '${DateTime.now().millisecondsSinceEpoch}$i',
           name: _controllers[i].text.trim().isEmpty
               ? "Oyuncu ${i + 1}"
               : _controllers[i].text.trim(),

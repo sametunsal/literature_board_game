@@ -147,18 +147,19 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(logs: newLogs, lastAction: message);
 
     // Ses Efektleri
-    if (type == 'dice')
+    if (type == 'dice') {
       AudioManager.instance.playDiceRoll();
-    else if (type == 'success')
+    } else if (type == 'success') {
       AudioManager.instance.playSuccess();
-    else if (type == 'error')
+    } else if (type == 'error') {
       AudioManager.instance.playError();
-    else if (type == 'purchase')
+    } else if (type == 'purchase') {
       AudioManager.instance.playPurchase();
-    else if (type == 'gameover')
+    } else if (type == 'gameover') {
       AudioManager.instance.playGameOver();
-    else if (type == 'turn')
+    } else if (type == 'turn') {
       AudioManager.instance.playTurnChange();
+    }
   }
 
   // --- 1. SETUP ve SIRALAMA ---
@@ -188,7 +189,7 @@ class GameNotifier extends StateNotifier<GameState> {
         .toList();
 
     String orderMsg =
-        "Sıralama: " + sortedPlayers.map((p) => "${p.name}").join(", ");
+        "Sıralama: ${sortedPlayers.map((p) => p.name).join(", ")}";
 
     state = state.copyWith(
       players: sortedPlayers,
@@ -359,7 +360,7 @@ class GameNotifier extends StateNotifier<GameState> {
       // Payer goes bankrupt - pay what they can
       rent = payer.balance > 0 ? payer.balance : 0;
       _addLog(
-        "${payer.name} kira ödeyemiyor! Tüm parasını (${rent}) kaybetti.",
+        "${payer.name} kira ödeyemiyor! Tüm parasını ($rent) kaybetti.",
         type: 'error',
       );
     }
@@ -583,7 +584,7 @@ class GameNotifier extends StateNotifier<GameState> {
             balance: newBalance,
           );
           state = state.copyWith(players: newPlayers);
-          _addLog("🎯 ${player.name} ${targetPos}. kareye taşındı!");
+          _addLog("🎯 ${player.name} $targetPos. kareye taşındı!");
           break;
 
         case CardEffectType.jail:

@@ -169,7 +169,12 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
-              ..scale(_scaleAnimation.value, 1.0 / _scaleAnimation.value * 1.0)
+              ..scaleByDouble(
+                _scaleAnimation.value,
+                1.0 / _scaleAnimation.value * 1.0,
+                1.0,
+                1.0,
+              )
               ..rotateZ(_rotationAnimation.value),
             child: child,
           ),

@@ -84,7 +84,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   // Landing pulse effect state
   int? _pulsingTileId;
-  Map<String, int> _lastPlayerPositions = {};
+  final Map<String, int> _lastPlayerPositions = {};
 
   @override
   void initState() {
