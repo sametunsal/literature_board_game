@@ -1,10 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
 
-/// Settings screen with premium Literature theme styling
-/// Provides options for sound, music, and language preferences
+/// Settings screen with premium Dark Academia theme styling
+/// Matches the main menu aesthetic with animated gradient and glassmorphism
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -12,422 +13,548 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  // Local state for toggles (not persisted yet)
+class _SettingsScreenState extends State<SettingsScreen>
+    with SingleTickerProviderStateMixin {
+  // Local state for toggles
   bool _soundEnabled = true;
   bool _musicEnabled = true;
+
+  // Animated gradient background
+  late AnimationController _gradientController;
+  late Animation<Color?> _backgroundColor;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Breathing gradient animation (8 second loop) - matches main menu
+    _gradientController = AnimationController(
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _backgroundColor =
+        ColorTween(
+          begin: const Color(0xFF1B2A1E), // Deep Forest Green
+          end: const Color(0xFF2C241B), // Antique Brown
+        ).animate(
+          CurvedAnimation(parent: _gradientController, curve: Curves.easeInOut),
+        );
+  }
+
+  @override
+  void dispose() {
+    _gradientController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: GameTheme.tableDecoration,
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: _buildMainCard(),
-            ),
-          ),
+      body: AnimatedBuilder(
+        animation: _backgroundColor,
+        builder: (context, child) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // ANIMATED GRADIENT BACKGROUND
+              _buildAnimatedBackground(),
+
+              // MAIN CONTENT
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 20,
+                    ),
+                    child: _buildContent(),
+                  ),
+                ),
+              ),
+
+              // BACK BUTTON (top-left)
+              _buildBackButton(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Animated breathing gradient background
+  Widget _buildAnimatedBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: 1.2,
+          colors: [
+            _backgroundColor.value ?? const Color(0xFF1B2A1E),
+            const Color(0xFF0F0E0D), // Very dark edge
+          ],
         ),
       ),
     );
   }
 
-  /// Main parchment-styled card container
-  Widget _buildMainCard() {
-    return Container(
-          constraints: const BoxConstraints(maxWidth: 450),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: GameTheme.parchmentColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 25,
-                offset: const Offset(0, 12),
+  /// Back button with glassmorphism
+  Widget _buildBackButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 16,
+      left: 16,
+      child:
+          GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: GameTheme.goldAccent,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .animate()
+              .fadeIn(delay: 200.ms, duration: 400.ms)
+              .slideX(begin: -0.3, end: 0),
+    );
+  }
+
+  /// Main content area
+  Widget _buildContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // TITLE
+        _buildTitle(),
+        const SizedBox(height: 32),
+
+        // SETTINGS CARDS
+        _buildSettingsCards(),
+        const SizedBox(height: 24),
+
+        // ABOUT SECTION
+        _buildAboutCard(),
+      ],
+    );
+  }
+
+  /// Screen title with glow effect
+  Widget _buildTitle() {
+    return Text(
+          "AYARLAR",
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 42,
+            fontWeight: FontWeight.bold,
+            color: GameTheme.goldAccent,
+            letterSpacing: 6,
+            shadows: [
+              Shadow(
+                color: GameTheme.goldAccent.withValues(alpha: 0.6),
+                blurRadius: 30,
               ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 50,
-                spreadRadius: 5,
+              Shadow(
+                color: GameTheme.goldAccent.withValues(alpha: 0.4),
+                blurRadius: 20,
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // HEADER with back button
-              _buildHeader(),
-              const SizedBox(height: 24),
-
-              // SETTINGS OPTIONS
-              _buildSettingsSection(),
-              const SizedBox(height: 24),
-
-              // DIVIDER
-              _buildDivider(),
-              const SizedBox(height: 20),
-
-              // ABOUT SECTION
-              _buildAboutSection(),
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.8),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
         )
         .animate()
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.15, end: 0, duration: 500.ms, curve: Curves.easeOut);
+        .fadeIn(duration: 600.ms)
+        .slideY(begin: -0.3, end: 0, duration: 600.ms)
+        .then()
+        .shimmer(
+          duration: 2500.ms,
+          color: GameTheme.goldAccent.withValues(alpha: 0.3),
+        );
   }
 
-  /// Header with back button and title
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        // BACK BUTTON
-        GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: GameTheme.goldAccent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: GameTheme.goldAccent.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              Icons.arrow_back,
-              color: GameTheme.goldAccent,
-              size: 22,
-            ),
+  /// Settings section with glassmorphism cards
+  Widget _buildSettingsCards() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 500),
+      child: Column(
+        children: [
+          // SOUND EFFECTS
+          _GlassmorphicSettingCard(
+            icon: Icons.volume_up_rounded,
+            label: "Ses Efektleri",
+            subtitle: "Oyun içi ses efektleri",
+            trailing: _buildGoldSwitch(_soundEnabled, (val) {
+              setState(() => _soundEnabled = val);
+            }),
+            delay: 0,
           ),
-        ),
 
-        const SizedBox(width: 16),
+          const SizedBox(height: 14),
 
-        // TITLE
-        Expanded(
-          child: Text(
-            "AYARLAR",
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: GameTheme.textDark,
-              letterSpacing: 1.5,
-            ),
+          // BACKGROUND MUSIC
+          _GlassmorphicSettingCard(
+            icon: Icons.music_note_rounded,
+            label: "Arka Plan Müziği",
+            subtitle: "Oyun müziği",
+            trailing: _buildGoldSwitch(_musicEnabled, (val) {
+              setState(() => _musicEnabled = val);
+            }),
+            delay: 100,
           ),
-        ),
 
-        // SETTINGS ICON
-        Icon(Icons.settings, color: GameTheme.goldAccent, size: 32),
-      ],
+          const SizedBox(height: 14),
+
+          // LANGUAGE (locked)
+          _GlassmorphicSettingCard(
+            icon: Icons.language_rounded,
+            label: "Dil",
+            subtitle: "Uygulama dili",
+            trailing: _buildLanguageBadge(),
+            delay: 200,
+          ),
+        ],
+      ),
     );
   }
 
-  /// Settings options section
-  Widget _buildSettingsSection() {
-    return Column(
-      children: [
-        // SOUND EFFECTS
-        _SettingsTile(
-          icon: Icons.volume_up,
-          label: "Ses Efektleri",
-          subtitle: "Oyun içi ses efektleri",
-          trailing: _buildSwitch(_soundEnabled, (val) {
-            setState(() => _soundEnabled = val);
-          }),
-        ),
-
-        const SizedBox(height: 12),
-
-        // BACKGROUND MUSIC
-        _SettingsTile(
-          icon: Icons.music_note,
-          label: "Arka Plan Müziği",
-          subtitle: "Oyun müziği",
-          trailing: _buildSwitch(_musicEnabled, (val) {
-            setState(() => _musicEnabled = val);
-          }),
-        ),
-
-        const SizedBox(height: 12),
-
-        // LANGUAGE
-        _SettingsTile(
-          icon: Icons.language,
-          label: "Dil",
-          subtitle: "Uygulama dili",
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: GameTheme.goldAccent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "🇹🇷 Türkçe",
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: GameTheme.textDark,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.lock,
-                  size: 14,
-                  color: GameTheme.textDark.withValues(alpha: 0.4),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Styled switch widget
-  Widget _buildSwitch(bool value, ValueChanged<bool> onChanged) {
+  /// Premium gold toggle switch
+  Widget _buildGoldSwitch(bool value, ValueChanged<bool> onChanged) {
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 56,
-        height: 30,
+        duration: const Duration(milliseconds: 250),
+        width: 60,
+        height: 32,
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           color: value
               ? GameTheme.goldAccent
-              : GameTheme.textDark.withValues(alpha: 0.2),
-          boxShadow: [
-            BoxShadow(
-              color: value
-                  ? GameTheme.goldAccent.withValues(alpha: 0.3)
-                  : Colors.transparent,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+              : Colors.white.withValues(alpha: 0.15),
+          border: Border.all(
+            color: value
+                ? GameTheme.goldAccent
+                : Colors.white.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+          boxShadow: value
+              ? [
+                  BoxShadow(
+                    color: GameTheme.goldAccent.withValues(alpha: 0.5),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
         ),
         child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutBack,
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            width: 24,
-            height: 24,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
+            child: value
+                ? Icon(Icons.check, size: 16, color: GameTheme.goldAccent)
+                : null,
           ),
         ),
       ),
     );
   }
 
-  /// Decorative divider
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  GameTheme.goldAccent.withValues(alpha: 0.5),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Icon(
-            Icons.info_outline,
-            size: 18,
-            color: GameTheme.goldAccent.withValues(alpha: 0.7),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  GameTheme.goldAccent.withValues(alpha: 0.5),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// About section with version info
-  Widget _buildAboutSection() {
-    return Column(
-      children: [
-        Text(
-          "HAKKINDA",
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: GameTheme.textDark.withValues(alpha: 0.7),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // App info
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: GameTheme.tableBackgroundColor.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              // App icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: GameTheme.goldAccent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.menu_book,
-                  size: 32,
-                  color: GameTheme.goldAccent,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // App name
-              Text(
-                "Edebiyat Oyunu",
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: GameTheme.textDark,
-                ),
-              ),
-              const SizedBox(height: 4),
-
-              // Version
-              Text(
-                "Versiyon 1.0.0",
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: GameTheme.textDark.withValues(alpha: 0.6),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Developer
-              Text(
-                "Geliştirici: Samet Ünsal",
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: GameTheme.textDark.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Individual settings tile widget
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Widget trailing;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  /// Language badge (locked)
+  Widget _buildLanguageBadge() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: GameTheme.tableBackgroundColor.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(14),
+        color: GameTheme.goldAccent.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: GameTheme.copperAccent.withValues(alpha: 0.2),
+          color: GameTheme.goldAccent.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // ICON
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: GameTheme.goldAccent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: GameTheme.goldAccent, size: 22),
-          ),
-
-          const SizedBox(width: 14),
-
-          // LABEL & SUBTITLE
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: GameTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: GameTheme.textDark.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
+          Text(
+            "🇹🇷 Türkçe",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
-
-          // TRAILING WIDGET
-          trailing,
+          const SizedBox(width: 6),
+          Icon(
+            Icons.lock_rounded,
+            size: 14,
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
         ],
       ),
     );
+  }
+
+  /// About section glassmorphism card
+  Widget _buildAboutCard() {
+    return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: GameTheme.goldAccent.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Section title
+                    Text(
+                      "HAKKINDA",
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: GameTheme.goldAccent.withValues(alpha: 0.8),
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // App icon
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            GameTheme.goldAccent.withValues(alpha: 0.3),
+                            GameTheme.goldAccent.withValues(alpha: 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: GameTheme.goldAccent.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.menu_book_rounded,
+                        size: 32,
+                        color: GameTheme.goldAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // App name
+                    Text(
+                      "EDEBİNA",
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Subtitle
+                    Text(
+                      "Edebiyat Macerası",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.6),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Divider
+                    Container(
+                      width: 60,
+                      height: 1,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            GameTheme.goldAccent.withValues(alpha: 0.5),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Version
+                    Text(
+                      "Versiyon 1.0.0",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Developer
+                    Text(
+                      "Geliştirici: Samet Ünsal",
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(delay: 400.ms, duration: 500.ms)
+        .slideY(begin: 0.2, end: 0, duration: 500.ms);
+  }
+}
+
+/// Glassmorphic settings tile widget
+class _GlassmorphicSettingCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Widget trailing;
+  final int delay;
+
+  const _GlassmorphicSettingCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.trailing,
+    required this.delay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // ICON
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          GameTheme.goldAccent.withValues(alpha: 0.25),
+                          GameTheme.goldAccent.withValues(alpha: 0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(icon, color: GameTheme.goldAccent, size: 24),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // LABEL & SUBTITLE
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // TRAILING WIDGET
+                  trailing,
+                ],
+              ),
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(
+          delay: Duration(milliseconds: 200 + delay),
+          duration: 400.ms,
+        )
+        .slideY(begin: 0.15, end: 0, duration: 400.ms, curve: Curves.easeOut);
   }
 }

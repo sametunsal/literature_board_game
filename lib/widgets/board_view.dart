@@ -12,7 +12,7 @@ import '../core/theme/game_theme.dart';
 import 'enhanced_tile_widget.dart';
 import 'game_log.dart';
 import 'dice_roller.dart';
-import 'question_dialog.dart';
+import 'modern_question_dialog.dart';
 import 'card_dialog.dart';
 import 'copyright_purchase_dialog.dart';
 import 'notification_dialogs.dart';
@@ -22,6 +22,7 @@ import 'settings_screen.dart';
 import 'main_menu_screen.dart';
 import 'game_over_dialog.dart';
 import 'card_deck_widget.dart';
+import 'floating_score.dart';
 import '../utils/sound_manager.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -287,35 +288,59 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   /// Main board container with all layers
   Widget _buildBoard(GameState state, BoardLayoutConfig layout) {
-    return Container(
-          width: layout.boardSize,
-          height: layout.boardSize,
-          decoration: GameTheme.boardDecoration,
-          child: Stack(
-            children: [
-              // Layer 1: Center area background
-              _buildCenterArea(layout),
+    // Check if current player is in jail (Library Watch)
+    final bool isInJail =
+        state.currentPlayer.inJail || state.currentPlayer.turnsToSkip > 0;
 
-              // Layer 2: All tiles (corners + edges)
-              ..._buildAllTiles(layout),
+    Widget boardContainer =
+        Container(
+              width: layout.boardSize,
+              height: layout.boardSize,
+              decoration: GameTheme.boardDecoration,
+              child: Stack(
+                children: [
+                  // Layer 1: Center area background
+                  _buildCenterArea(layout),
 
-              // Layer 3: Player pawns
-              ..._buildPlayers(state.players, layout),
+                  // Layer 2: All tiles (corners + edges)
+                  ..._buildAllTiles(layout),
 
-              // Layer 4: Effects and dialogs
-              ..._buildEffectsAndDialogs(state, layout),
-            ],
-          ),
-        )
-        // Entrance animation chain
-        .animate()
-        .fadeIn(duration: 800.ms)
-        .scale(
-          begin: const Offset(1.05, 1.05),
-          end: const Offset(1.0, 1.0),
-          duration: 800.ms,
-          curve: Curves.easeOutCubic,
-        );
+                  // Layer 3: Player pawns
+                  ..._buildPlayers(state.players, layout),
+
+                  // Layer 4: Effects and dialogs
+                  ..._buildEffectsAndDialogs(state, layout),
+                ],
+              ),
+            )
+            // Entrance animation chain
+            .animate()
+            .fadeIn(duration: 800.ms)
+            .scale(
+              begin: const Offset(1.05, 1.05),
+              end: const Offset(1.0, 1.0),
+              duration: 800.ms,
+              curve: Curves.easeOutCubic,
+            );
+
+    // Apply Jail Mode visual effect (Sepia filter) when in jail
+    if (isInJail) {
+      // Sepia color matrix for vintage/old-paper look
+      const sepiaMatrix = ColorFilter.matrix([
+        0.393, 0.769, 0.189, 0, 0, // Red
+        0.349, 0.686, 0.168, 0, 0, // Green
+        0.272, 0.534, 0.131, 0, 0, // Blue
+        0, 0, 0, 1, 0, // Alpha
+      ]);
+
+      boardContainer =
+          ColorFiltered(colorFilter: sepiaMatrix, child: boardContainer)
+              .animate(key: ValueKey('jail_${state.currentPlayer.id}'))
+              // Smooth fade in of sepia effect
+              .fadeIn(duration: 1200.ms, curve: Curves.easeInOut);
+    }
+
+    return boardContainer;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -801,7 +826,18 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
       // Modal dialogs
       if (state.showQuestionDialog && state.currentQuestion != null)
-        _buildDialogOverlay(QuestionDialog(question: state.currentQuestion!)),
+        _buildDialogOverlay(
+          ModernQuestionDialog(
+            question: state.currentQuestion!.text,
+            category: _getCategoryString(state.currentQuestion!.category),
+            onConfirm: () {
+              ref.read(gameProvider.notifier).answerQuestion(true);
+            },
+            onCancel: () {
+              ref.read(gameProvider.notifier).answerQuestion(false);
+            },
+          ),
+        ),
 
       if (state.showPurchaseDialog && state.currentTile != null)
         _buildDialogOverlay(CopyrightPurchaseDialog(tile: state.currentTile!)),
@@ -824,6 +860,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
         _buildDialogOverlay(const LibraryPenaltyDialog()),
 
       if (state.showImzaGunuDialog) _buildDialogOverlay(const ImzaGunuDialog()),
+
+      // Floating Score Effect (money changes)
+      if (state.floatingEffect != null) _buildFloatingScore(state, layout),
     ];
   }
 
@@ -841,6 +880,44 @@ class _BoardViewState extends ConsumerState<BoardView> {
             .fadeIn(),
       ),
     );
+  }
+
+  /// Build floating score effect positioned over current player's pawn
+  Widget _buildFloatingScore(GameState state, BoardLayoutConfig layout) {
+    final effect = state.floatingEffect!;
+    final playerPosition = state.currentPlayer.position;
+    final pawnCenter = _getTileCenter(playerPosition, layout);
+
+    // Determine if score is positive based on text (starts with +)
+    final isPositive = effect.text.startsWith('+');
+
+    return Positioned(
+      left: pawnCenter.dx - 60, // Center horizontally (approx text width/2)
+      top: pawnCenter.dy - 80, // Position above pawn
+      child: FloatingScore(
+        key: ValueKey(
+          'score_${effect.text}_${DateTime.now().millisecondsSinceEpoch}',
+        ),
+        text: effect.text,
+        color: effect.color,
+        isPositive: isPositive,
+        onComplete: () {
+          // Effect is auto-cleared by game_notifier after delay
+          // No action needed here
+        },
+      ),
+    );
+  }
+
+  /// Convert QuestionCategory enum to display string
+  String _getCategoryString(QuestionCategory category) {
+    return switch (category) {
+      QuestionCategory.benKimim => 'Ben Kimim',
+      QuestionCategory.turkEdebiyatindaIlkler => 'Türk Edebiyatında İlkler',
+      QuestionCategory.edebiyatAkimlari => 'Edebiyat Akımları',
+      QuestionCategory.edebiSanatlar => 'Edebi Sanatlar',
+      QuestionCategory.eserKarakter => 'Eser-Karakter',
+    };
   }
 
   /// Custom star-shaped particle path for confetti

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../models/player.dart';
 import 'game_log.dart' show literatureIcons;
 
@@ -285,8 +286,8 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
 }
 
 /// Container that smoothly moves pawn groups across the board
-/// Uses a bounce curve for natural hopping feel
-class AnimatedPawnContainer extends StatelessWidget {
+/// Uses flutter_animate for natural sliding and bouncing feel
+class AnimatedPawnContainer extends StatefulWidget {
   final Offset center;
   final double areaSize;
   final List<Player> players;
@@ -303,28 +304,57 @@ class AnimatedPawnContainer extends StatelessWidget {
   });
 
   @override
+  State<AnimatedPawnContainer> createState() => _AnimatedPawnContainerState();
+}
+
+class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
+  Offset? _previousCenter;
+  bool _justMoved = false;
+
+  @override
+  void didUpdateWidget(AnimatedPawnContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Detect position change
+    if (oldWidget.center != widget.center) {
+      _previousCenter = oldWidget.center;
+      _justMoved = true;
+
+      // Reset the "just moved" flag after animation completes
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          setState(() {
+            _justMoved = false;
+          });
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutBack, // Slight overshoot for energy
-      left: center.dx - (areaSize / 2),
-      top: center.dy - (areaSize / 2),
+    final left = widget.center.dx - (widget.areaSize / 2);
+    final top = widget.center.dy - (widget.areaSize / 2);
+
+    Widget pawnContainer = Positioned(
+      left: left,
+      top: top,
       child: SizedBox(
-        width: areaSize,
-        height: areaSize,
+        width: widget.areaSize,
+        height: widget.areaSize,
         child: Center(
           child: Wrap(
             alignment: WrapAlignment.center,
             spacing: 4,
             runSpacing: 4,
-            children: players
+            children: widget.players
                 .map(
                   (p) => PawnWidget(
                     key: ValueKey(p.id),
                     player: p,
-                    size: pawnSize,
-                    isActive: p.id == currentPlayerId,
-                    isCurrentTurn: p.id == currentPlayerId,
+                    size: widget.pawnSize,
+                    isActive: p.id == widget.currentPlayerId,
+                    isCurrentTurn: p.id == widget.currentPlayerId,
                   ),
                 )
                 .toList(),
@@ -332,5 +362,40 @@ class AnimatedPawnContainer extends StatelessWidget {
         ),
       ),
     );
+
+    // Apply flutter_animate effects when position changes
+    if (_justMoved && _previousCenter != null) {
+      // Calculate offset from previous to current position
+      final dx = left - (_previousCenter!.dx - (widget.areaSize / 2));
+      final dy = top - (_previousCenter!.dy - (widget.areaSize / 2));
+
+      return pawnContainer
+          .animate(key: ValueKey('${widget.center.dx}_${widget.center.dy}'))
+          // Smooth slide from previous position
+          .move(
+            begin: Offset(-dx, -dy),
+            end: Offset.zero,
+            duration: 500.ms,
+            curve: Curves.easeOutCubic,
+          )
+          // Bounce effect on landing
+          .scale(
+            begin: const Offset(1.0, 1.0),
+            end: const Offset(1.15, 1.15),
+            duration: 250.ms,
+            delay: 500.ms,
+            curve: Curves.easeOut,
+          )
+          .then()
+          .scale(
+            begin: const Offset(1.15, 1.15),
+            end: const Offset(1.0, 1.0),
+            duration: 250.ms,
+            curve: Curves.easeInOut,
+          );
+    }
+
+    // No animation on first render or when position hasn't changed
+    return pawnContainer;
   }
 }

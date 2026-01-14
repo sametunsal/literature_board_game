@@ -30,6 +30,24 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   mocktail: ^1.0.0
+  flutter_launcher_icons: ^0.14.3
+
+# ============================================================================
+# APP ICON CONFIGURATION
+# ============================================================================
+# Instructions:
+#   1. Place a square PNG image (1024x1024 recommended) named 'icon.png' 
+#      in the 'assets/' folder
+#   2. Run: dart run flutter_launcher_icons
+# ============================================================================
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true  # Required for App Store - removes alpha channel
+  image_path: "assets/images/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#1B2A1E"  # Dark Academia Green
+  adaptive_icon_foreground: "assets/images/icon.png"
 
 flutter:
   uses-material-design: true

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,8 +11,7 @@ import 'setup_screen.dart';
 import 'settings_screen.dart';
 import 'streak_candle_widget.dart';
 
-/// Main menu screen with EDEBİNA branding - V2.6 with Theme Toggle
-/// Provides navigation to Play, Settings, and About
+/// Main menu screen with EDEBİNA branding - Dark Academia Aesthetic
 class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
 
@@ -19,14 +19,39 @@ class MainMenuScreen extends ConsumerStatefulWidget {
   ConsumerState<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
+class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
+    with SingleTickerProviderStateMixin {
   int _streakDays = 0;
   bool _isLoading = true;
+
+  // Animated gradient background
+  late AnimationController _gradientController;
+  late Animation<Color?> _backgroundColor;
 
   @override
   void initState() {
     super.initState();
     _initStreak();
+
+    // Breathing gradient animation (8 second loop)
+    _gradientController = AnimationController(
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _backgroundColor =
+        ColorTween(
+          begin: const Color(0xFF1B2A1E), // Deep Forest Green
+          end: const Color(0xFF2C241B), // Antique Brown
+        ).animate(
+          CurvedAnimation(parent: _gradientController, curve: Curves.easeInOut),
+        );
+  }
+
+  @override
+  void dispose() {
+    _gradientController.dispose();
+    super.dispose();
   }
 
   Future<void> _initStreak() async {
@@ -41,235 +66,236 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Force landscape orientation
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // ═══════════════════════════════════════════════════════════════
-          // LAYER 1 (Bottom): Library Room Background Image
-          // ═══════════════════════════════════════════════════════════════
-          Image.asset(
-            'assets/images/library_room.png',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-
-          // ═══════════════════════════════════════════════════════════════
-          // LAYER 2 (Middle): Dark Color Overlay for Contrast
-          // ═══════════════════════════════════════════════════════════════
-          Container(
-            color: GameTheme.tableBackgroundColor.withValues(alpha: 0.85),
-          ),
-
-          // ═══════════════════════════════════════════════════════════════
-          // LAYER 3 (Top): Paper Noise Texture - Tactile Rebellion Effect
-          // ═══════════════════════════════════════════════════════════════
-          Opacity(
-            opacity: 0.15,
-            child: Image.asset(
-              'assets/images/paper_noise.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              colorBlendMode: BlendMode.multiply,
-              color: Colors.white,
-            ),
-          ),
-
-          // ═══════════════════════════════════════════════════════════════
-          // CONTENT LAYER: Menu UI
-          // ═══════════════════════════════════════════════════════════════
-          SafeArea(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // LOGO
-                  _buildLogo(),
-                  const SizedBox(height: 24),
-
-                  // TITLE
-                  _buildTitle(),
-                  const SizedBox(height: 8),
-
-                  // SUBTITLE
-                  _buildSubtitle(),
-                  const SizedBox(height: 48),
-
-                  // MENU BUTTONS
-                  _buildMenuButtons(context),
-                ],
+      body: AnimatedBuilder(
+        animation: _backgroundColor,
+        builder: (context, child) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Animated gradient background
+              Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.2,
+                    colors: [
+                      _backgroundColor.value!.withValues(alpha: 0.9),
+                      _backgroundColor.value!,
+                      const Color(0xFF0F0E0D), // Very dark edges
+                    ],
+                    stops: const [0.0, 0.6, 1.0],
+                  ),
+                ),
               ),
-            ),
-          ),
 
-          // ═══════════════════════════════════════════════════════════════
-          // TOP-RIGHT: Theme Toggle + Streak Candle
-          // ═══════════════════════════════════════════════════════════════
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            right: 16,
-            child:
-                Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // THEME TOGGLE BUTTON
-                        _buildThemeToggle(),
-                        const SizedBox(height: 12),
-                        // STREAK CANDLE
-                        if (!_isLoading)
-                          StreakCandleWidget(
-                            streakDays: _streakDays,
-                            size: 50,
-                            isLit: _streakDays > 0,
-                          ),
-                      ],
-                    )
-                    .animate()
-                    .fadeIn(delay: 800.ms, duration: 600.ms)
-                    .slideY(
-                      begin: -0.3,
-                      end: 0,
-                      delay: 800.ms,
-                      duration: 500.ms,
-                    ),
-          ),
-        ],
+              // Paper noise texture
+              Opacity(
+                opacity: 0.12,
+                child: Image.asset(
+                  'assets/images/paper_noise.png',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  colorBlendMode: BlendMode.multiply,
+                  color: Colors.white,
+                ),
+              ),
+
+              // Content
+              SafeArea(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo
+                      _buildLogo(),
+                      const SizedBox(height: 24),
+
+                      // Title with enhanced glow
+                      _buildTitle(),
+                      const SizedBox(height: 8),
+
+                      // Subtitle
+                      _buildSubtitle(),
+                      const SizedBox(height: 48),
+
+                      // Glassmorphism menu buttons
+                      _buildMenuButtons(context),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Top-right: Theme toggle + Streak candle
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                right: 16,
+                child:
+                    Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _buildThemeToggle(),
+                            const SizedBox(height: 20),
+                            if (!_isLoading)
+                              StreakCandleWidget(
+                                streakDays: _streakDays,
+                                size: 55,
+                                isLit: _streakDays > 0,
+                              ),
+                          ],
+                        )
+                        .animate()
+                        .fadeIn(delay: 800.ms, duration: 600.ms)
+                        .slideY(
+                          begin: -0.3,
+                          end: 0,
+                          delay: 800.ms,
+                          duration: 500.ms,
+                        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildLogo() {
     return Container(
-          width: 90,
-          height: 90,
+          width: 95,
+          height: 95,
           decoration: BoxDecoration(
-            color: GameTheme.goldAccent.withValues(alpha: 0.1),
+            gradient: RadialGradient(
+              colors: [
+                GameTheme.goldAccent.withValues(alpha: 0.15),
+                GameTheme.goldAccent.withValues(alpha: 0.05),
+              ],
+            ),
             shape: BoxShape.circle,
             border: Border.all(
-              color: GameTheme.goldAccent.withValues(alpha: 0.4),
+              color: GameTheme.goldAccent.withValues(alpha: 0.5),
               width: 3,
             ),
             boxShadow: [
               BoxShadow(
-                color: GameTheme.goldAccent.withValues(alpha: 0.25),
-                blurRadius: 30,
-                spreadRadius: 5,
+                color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                blurRadius: 35,
+                spreadRadius: 8,
               ),
             ],
           ),
-          child: Icon(Icons.menu_book, size: 45, color: GameTheme.goldAccent),
+          child: Icon(Icons.menu_book, size: 50, color: GameTheme.goldAccent),
         )
-        .animate()
+        .animate(onPlay: (c) => c.repeat(reverse: true))
         .fadeIn(duration: 600.ms)
         .scale(
           begin: const Offset(0.8, 0.8),
           end: const Offset(1.0, 1.0),
           duration: 800.ms,
           curve: Curves.elasticOut,
+        )
+        .then()
+        .shimmer(
+          duration: 3000.ms,
+          color: GameTheme.goldAccent.withValues(alpha: 0.2),
         );
   }
 
   Widget _buildTitle() {
     return Text(
           "EDEBİNA",
-          style: GoogleFonts.cinzel(
-            fontSize: 52,
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 56,
             fontWeight: FontWeight.bold,
-            color: GameTheme.textDark, // Antique Lace - premium readability
-            letterSpacing: 10,
+            color: GameTheme.goldAccent,
+            letterSpacing: 12,
             shadows: [
-              // Glow effect for depth
+              // Multi-layer glow
               Shadow(
-                color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                color: GameTheme.goldAccent.withValues(alpha: 0.6),
+                blurRadius: 30,
+              ),
+              Shadow(
+                color: GameTheme.goldAccent.withValues(alpha: 0.4),
                 blurRadius: 20,
               ),
               Shadow(
-                color: Colors.black.withValues(alpha: 0.7),
-                blurRadius: 12,
-                offset: const Offset(2, 4),
+                color: Colors.black.withValues(alpha: 0.8),
+                blurRadius: 15,
+                offset: const Offset(3, 5),
               ),
             ],
           ),
         )
         .animate()
-        .fadeIn(delay: 200.ms, duration: 600.ms)
-        .slideY(begin: 0.2, end: 0, delay: 200.ms, duration: 600.ms);
+        .fadeIn(delay: 200.ms, duration: 700.ms)
+        .slideY(begin: 0.2, end: 0, delay: 200.ms, duration: 700.ms)
+        .then(delay: 500.ms)
+        .shimmer(
+          duration: 2500.ms,
+          color: GameTheme.goldAccent.withValues(alpha: 0.3),
+        );
   }
 
   Widget _buildSubtitle() {
     return Text(
       "Türk Edebiyatı Masa Oyunu",
       style: GoogleFonts.poppins(
-        fontSize: 14,
-        color: GameTheme.textDark.withValues(alpha: 0.6),
-        letterSpacing: 2,
+        fontSize: 15,
+        color: GameTheme.textDark.withValues(alpha: 0.7),
+        letterSpacing: 2.5,
+        fontWeight: FontWeight.w300,
       ),
-    ).animate().fadeIn(delay: 400.ms, duration: 500.ms);
+    ).animate().fadeIn(delay: 400.ms, duration: 600.ms);
   }
 
-  /// Build theme toggle button (Sun/Moon icons)
   Widget _buildThemeToggle() {
     final themeState = ref.watch(themeProvider);
     final isDark = themeState.isDarkMode;
 
     return GestureDetector(
-      onTap: () {
-        ref.read(themeProvider.notifier).toggleTheme();
-      },
-      child:
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isDark
-                    ? GameTheme.goldAccent.withValues(alpha: 0.4)
-                    : GameTheme.copperAccent.withValues(alpha: 0.4),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? GameTheme.goldAccent.withValues(alpha: 0.2)
-                      : GameTheme.copperAccent.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Icon(
-              isDark ? Icons.dark_mode : Icons.light_mode,
-              size: 26,
-              color: isDark ? GameTheme.goldAccent : GameTheme.copperAccent,
-            ),
-          ).animate().scale(
-            begin: const Offset(0.9, 0.9),
-            end: const Offset(1.0, 1.0),
-            duration: 200.ms,
+      onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: GameTheme.goldAccent.withValues(alpha: 0.4),
+            width: 2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: GameTheme.goldAccent.withValues(alpha: 0.25),
+              blurRadius: 15,
+              spreadRadius: 3,
+            ),
+          ],
+        ),
+        child: Icon(
+          isDark ? Icons.dark_mode : Icons.light_mode,
+          size: 28,
+          color: GameTheme.goldAccent,
+        ),
+      ),
     );
   }
 
   Widget _buildMenuButtons(BuildContext context) {
     return Column(
       children: [
-        // OYNA (Play) Button - Burnished Copper CTA
-        _MenuButton(
+        // Play button
+        _GlassmorphicButton(
               label: "OYNA",
               icon: Icons.play_arrow,
-              color: GameTheme.copperAccent, // Burnished Copper for primary CTA
+              isPrimary: true,
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   PageRouteBuilder(
@@ -289,16 +315,14 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
             )
             .animate()
             .fadeIn(delay: 500.ms)
-            .slideX(begin: -0.2, end: 0, delay: 500.ms),
+            .slideX(begin: -0.2, end: 0, delay: 500.ms, duration: 600.ms),
 
         const SizedBox(height: 16),
 
-        // AYARLAR (Settings) Button
-        _MenuButton(
+        // Settings button
+        _GlassmorphicButton(
               label: "AYARLAR",
               icon: Icons.settings,
-              color: GameTheme.textDark.withValues(alpha: 0.8),
-              isSecondary: true,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -307,21 +331,19 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
             )
             .animate()
             .fadeIn(delay: 600.ms)
-            .slideX(begin: -0.2, end: 0, delay: 600.ms),
+            .slideX(begin: -0.2, end: 0, delay: 600.ms, duration: 600.ms),
 
         const SizedBox(height: 16),
 
-        // HAKKINDA (About) Button
-        _MenuButton(
+        // About button
+        _GlassmorphicButton(
               label: "HAKKINDA",
               icon: Icons.info_outline,
-              color: GameTheme.textDark.withValues(alpha: 0.8),
-              isSecondary: true,
               onPressed: () => _showAboutDialog(context),
             )
             .animate()
             .fadeIn(delay: 700.ms)
-            .slideX(begin: -0.2, end: 0, delay: 700.ms),
+            .slideX(begin: -0.2, end: 0, delay: 700.ms, duration: 600.ms),
       ],
     );
   }
@@ -330,13 +352,21 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: GameTheme.parchmentColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: const Color(0xFF2C241B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: GameTheme.goldAccent.withValues(alpha: 0.4),
+            width: 2,
+          ),
+        ),
         title: Text(
           "EDEBİNA",
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.bold,
+            fontSize: 24,
             color: GameTheme.goldAccent,
+            letterSpacing: 2,
           ),
           textAlign: TextAlign.center,
         ),
@@ -372,7 +402,13 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text("KAPAT", style: TextStyle(color: GameTheme.goldAccent)),
+            child: Text(
+              "KAPAT",
+              style: GoogleFonts.poppins(
+                color: GameTheme.goldAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -380,50 +416,106 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 }
 
-/// Styled menu button widget
-class _MenuButton extends StatelessWidget {
+/// True glassmorphic button with BackdropFilter
+class _GlassmorphicButton extends StatefulWidget {
   final String label;
   final IconData icon;
-  final Color color;
   final VoidCallback onPressed;
-  final bool isSecondary;
+  final bool isPrimary;
 
-  const _MenuButton({
+  const _GlassmorphicButton({
     required this.label,
     required this.icon,
-    required this.color,
     required this.onPressed,
-    this.isSecondary = false,
+    this.isPrimary = false,
   });
 
   @override
+  State<_GlassmorphicButton> createState() => _GlassmorphicButtonState();
+}
+
+class _GlassmorphicButtonState extends State<_GlassmorphicButton> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      height: 50,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 22),
-        label: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            letterSpacing: 1,
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onPressed();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: 240,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.isPrimary
+                  ? GameTheme.goldAccent.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.2),
+              width: widget.isPrimary ? 2 : 1.5,
+            ),
+            boxShadow: widget.isPrimary
+                ? [
+                    BoxShadow(
+                      color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : [],
           ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSecondary
-              ? Colors.white.withValues(alpha: 0.1)
-              : color,
-          foregroundColor: isSecondary ? color : GameTheme.textDark,
-          elevation: isSecondary ? 0 : 6,
-          shadowColor: isSecondary ? Colors.transparent : Colors.black45,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: isSecondary
-                ? BorderSide(color: color.withValues(alpha: 0.4), width: 1)
-                : BorderSide.none,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: widget.isPrimary
+                        ? [
+                            GameTheme.goldAccent.withValues(alpha: 0.15),
+                            GameTheme.goldAccent.withValues(alpha: 0.08),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.1),
+                            Colors.white.withValues(alpha: 0.05),
+                          ],
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      widget.icon,
+                      size: 24,
+                      color: widget.isPrimary
+                          ? GameTheme.goldAccent
+                          : GameTheme.textDark,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        letterSpacing: 2,
+                        color: widget.isPrimary
+                            ? GameTheme.goldAccent
+                            : GameTheme.textDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

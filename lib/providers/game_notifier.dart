@@ -52,6 +52,9 @@ class GameState {
   final Player? winner;
   final String? setupMessage;
 
+  // Turn Order Determination - stores dice rolls for each player
+  final Map<String, int> orderRolls;
+
   GameState({
     required this.players,
     this.tiles = const [],
@@ -76,6 +79,7 @@ class GameState {
     this.currentCard,
     this.winner,
     this.setupMessage,
+    this.orderRolls = const {},
   });
 
   Player get currentPlayer => players.isNotEmpty
@@ -106,6 +110,7 @@ class GameState {
     GameCard? currentCard,
     Player? winner,
     String? setupMessage,
+    Map<String, int>? orderRolls,
   }) {
     return GameState(
       players: players ?? this.players,
@@ -132,6 +137,7 @@ class GameState {
       currentCard: currentCard ?? this.currentCard,
       winner: winner ?? this.winner,
       setupMessage: setupMessage ?? this.setupMessage,
+      orderRolls: orderRolls ?? this.orderRolls,
     );
   }
 }
@@ -163,40 +169,76 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   // --- 1. SETUP ve SIRALAMA ---
-  void initializeGame(List<Player> setupPlayers) async {
+  /// Initialize game and enter turn order determination phase
+  /// Players will roll one by one using rollForTurnOrder()
+  void initializeGame(List<Player> setupPlayers) {
     state = state.copyWith(
       players: setupPlayers,
+      currentPlayerIndex: 0,
       phase: GamePhase.rollingForOrder,
-      lastAction: "Sıralama için zar atılıyor...",
+      orderRolls: {}, // Reset order rolls
+      lastAction: "${setupPlayers[0].name} sıra için zar atacak...",
     );
-    _addLog("Oyun Kuruluyor...", type: 'info');
-
-    await Future.delayed(const Duration(seconds: 1));
-    _determineOrder(setupPlayers);
+    _addLog("Oyun Kuruluyor - Sıralama belirleniyor...", type: 'info');
   }
 
-  void _determineOrder(List<Player> players) async {
-    List<Map<String, dynamic>> rolls = [];
-    for (var p in players) {
-      int roll = _random.nextInt(11) + 2;
-      rolls.add({'player': p, 'roll': roll});
+  /// Roll dice for current player during turn order determination
+  /// Returns the dice result for UI animation purposes
+  int rollForTurnOrder() {
+    if (state.phase != GamePhase.rollingForOrder) return 0;
+
+    final currentPlayer = state.currentPlayer;
+    final roll = _random.nextInt(11) + 2; // 2-12 (simulating 2 dice)
+
+    // Store the roll
+    final newOrderRolls = Map<String, int>.from(state.orderRolls);
+    newOrderRolls[currentPlayer.id] = roll;
+
+    _addLog("${currentPlayer.name} zar attı: $roll", type: 'info');
+
+    final nextPlayerIndex = state.currentPlayerIndex + 1;
+
+    // Check if all players have rolled
+    if (nextPlayerIndex >= state.players.length) {
+      // All players rolled - determine final order
+      _finalizeOrder(newOrderRolls);
+    } else {
+      // Move to next player
+      state = state.copyWith(
+        orderRolls: newOrderRolls,
+        currentPlayerIndex: nextPlayerIndex,
+        diceTotal: roll,
+        lastAction:
+            "${state.players[nextPlayerIndex].name} sıra için zar atacak...",
+      );
     }
 
-    rolls.sort((a, b) => (b['roll'] as int).compareTo(a['roll'] as int));
+    return roll;
+  }
 
-    List<Player> sortedPlayers = rolls
-        .map((r) => r['player'] as Player)
-        .toList();
+  /// Finalize turn order based on collected rolls
+  void _finalizeOrder(Map<String, int> rolls) {
+    // Sort players by their rolls (highest first)
+    List<Player> sortedPlayers = List.from(state.players);
+    sortedPlayers.sort((a, b) {
+      final rollA = rolls[a.id] ?? 0;
+      final rollB = rolls[b.id] ?? 0;
+      return rollB.compareTo(rollA); // Descending order
+    });
 
     String orderMsg =
-        "Sıralama: ${sortedPlayers.map((p) => p.name).join(", ")}";
+        "Sıralama: ${sortedPlayers.map((p) => '${p.name} (${rolls[p.id]})').join(', ')}";
 
     state = state.copyWith(
       players: sortedPlayers,
       currentPlayerIndex: 0,
       phase: GamePhase.playing,
+      orderRolls: {}, // Clear rolls after use
+      lastAction: "${sortedPlayers[0].name} başlıyor!",
     );
+
     _addLog(orderMsg, type: 'success');
+    _addLog("Oyun Başladı! ${sortedPlayers[0].name} oynuyor.", type: 'success');
   }
 
   // --- 2. OYUN DÖNGÜSÜ ---
@@ -476,12 +518,17 @@ class GameNotifier extends StateNotifier<GameState> {
     if (tile.category == null) {
       state = state.copyWith(
         showPurchaseDialog: true,
+        currentTile: tile,
         lastAction: "Satın alınabilir özel mülk.",
       );
       return;
     }
     final q = mockQuestions[_random.nextInt(mockQuestions.length)];
-    state = state.copyWith(showQuestionDialog: true, currentQuestion: q);
+    state = state.copyWith(
+      showQuestionDialog: true,
+      currentQuestion: q,
+      currentTile: tile, // Store tile for purchase after question
+    );
   }
 
   /// Answer question with open-ended format (Bildin/Bilemedin)
@@ -493,7 +540,15 @@ class GameNotifier extends StateNotifier<GameState> {
       _addLog("Doğru cevap! Ödül: 50 Puan.", type: 'success');
       _updateBalance(state.currentPlayer, state.currentPlayer.balance + 50);
       await Future.delayed(const Duration(milliseconds: 500));
-      state = state.copyWith(showPurchaseDialog: true);
+
+      // Safety check: ensure currentTile exists before showing purchase dialog
+      if (state.currentTile != null) {
+        state = state.copyWith(showPurchaseDialog: true);
+      } else {
+        // Fallback: If tile was lost, just end turn
+        _addLog("Mülk bulunamadı, tur sonlandırılıyor.", type: 'error');
+        endTurn();
+      }
     } else {
       _addLog("Yanlış cevap.", type: 'error');
       endTurn();
