@@ -41,21 +41,6 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
       duration: MotionDurations.dice.safe,
     );
 
-    ref.listen<GameState>(gameProvider, (previous, next) {
-      if (next.isDiceRolled &&
-          next.diceTotal > 0 &&
-          !_isAnimating &&
-          !_showResult) {
-        _dice1 = next.dice1;
-        _dice2 = next.dice2;
-        _startAnimation();
-      }
-
-      if (!next.isDiceRolled && _showResult) {
-        _resetState();
-      }
-    });
-
     _lottieController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         // Stop haptic timer and deliver heavy "thud" on landing
@@ -93,6 +78,25 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     final state = ref.watch(gameProvider);
     final themeState = ref.watch(themeProvider);
     final tokens = themeState.tokens;
+
+    // Listen to dice state changes
+    ref.listen<GameState>(gameProvider, (previous, next) {
+      if (next.isDiceRolled &&
+          next.diceTotal > 0 &&
+          !_isAnimating &&
+          !_showResult) {
+        // Use setState to trigger animation safely
+        setState(() {
+          _dice1 = next.dice1;
+          _dice2 = next.dice2;
+        });
+        _startAnimation();
+      }
+
+      if (!next.isDiceRolled && _showResult) {
+        _resetState();
+      }
+    });
 
     // Show dice result after roll
     if (state.isDiceRolled && state.diceTotal > 0) {

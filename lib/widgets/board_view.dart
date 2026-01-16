@@ -105,16 +105,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
-
-    ref.listen<GameState>(gameProvider, (previous, next) {
-      _handleLandingPulse(next);
-
-      if (previous?.phase != GamePhase.gameOver &&
-          next.phase == GamePhase.gameOver) {
-        _confettiController.play();
-        SoundManager.instance.playVictory();
-      }
-    });
   }
 
   @override
@@ -136,6 +126,17 @@ class _BoardViewState extends ConsumerState<BoardView> {
     final themeState = ref.watch(themeProvider);
     final isDarkMode = themeState.isDarkMode;
     final tokens = themeState.tokens;
+
+    // Listen to game state changes
+    ref.listen<GameState>(gameProvider, (previous, next) {
+      _handleLandingPulse(next);
+
+      if (previous?.phase != GamePhase.gameOver &&
+          next.phase == GamePhase.gameOver) {
+        _confettiController.play();
+        SoundManager.instance.playVictory();
+      }
+    });
 
     // Calculate layout dimensions (use full screen size for landscape optimization)
     final screenSize = MediaQuery.of(context).size;
