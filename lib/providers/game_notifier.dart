@@ -24,6 +24,9 @@ class GameState {
   final List<BoardTile> tiles;
   final int currentPlayerIndex;
   final int diceTotal;
+  final int dice1;
+  final int dice2;
+  final int consecutiveDoubles;
   final String lastAction;
   final bool isDiceRolled;
   final GamePhase phase;
@@ -43,6 +46,7 @@ class GameState {
   final bool showRentDialog;
   final bool showLibraryPenaltyDialog;
   final bool showImzaGunuDialog;
+  final bool showTurnSkippedDialog;
 
   // Rent notification info
   final String? rentOwnerName;
@@ -61,6 +65,9 @@ class GameState {
     this.tiles = const [],
     this.currentPlayerIndex = 0,
     this.diceTotal = 0,
+    this.dice1 = 0,
+    this.dice2 = 0,
+    this.consecutiveDoubles = 0,
     this.lastAction = 'Oyun Kurulumu Bekleniyor...',
     this.isDiceRolled = false,
     this.phase = GamePhase.setup,
@@ -74,6 +81,7 @@ class GameState {
     this.showRentDialog = false,
     this.showLibraryPenaltyDialog = false,
     this.showImzaGunuDialog = false,
+    this.showTurnSkippedDialog = false,
     this.rentOwnerName,
     this.rentAmount,
     this.currentTile,
@@ -92,6 +100,9 @@ class GameState {
     List<BoardTile>? tiles,
     int? currentPlayerIndex,
     int? diceTotal,
+    int? dice1,
+    int? dice2,
+    int? consecutiveDoubles,
     String? lastAction,
     bool? isDiceRolled,
     GamePhase? phase,
@@ -105,6 +116,7 @@ class GameState {
     bool? showRentDialog,
     bool? showLibraryPenaltyDialog,
     bool? showImzaGunuDialog,
+    bool? showTurnSkippedDialog,
     String? rentOwnerName,
     int? rentAmount,
     BoardTile? currentTile,
@@ -118,6 +130,9 @@ class GameState {
       tiles: tiles ?? this.tiles,
       currentPlayerIndex: currentPlayerIndex ?? this.currentPlayerIndex,
       diceTotal: diceTotal ?? this.diceTotal,
+      dice1: dice1 ?? this.dice1,
+      dice2: dice2 ?? this.dice2,
+      consecutiveDoubles: consecutiveDoubles ?? this.consecutiveDoubles,
       lastAction: lastAction ?? this.lastAction,
       isDiceRolled: isDiceRolled ?? this.isDiceRolled,
       phase: phase ?? this.phase,
@@ -132,6 +147,8 @@ class GameState {
       showLibraryPenaltyDialog:
           showLibraryPenaltyDialog ?? this.showLibraryPenaltyDialog,
       showImzaGunuDialog: showImzaGunuDialog ?? this.showImzaGunuDialog,
+      showTurnSkippedDialog:
+          showTurnSkippedDialog ?? this.showTurnSkippedDialog,
       rentOwnerName: rentOwnerName ?? this.rentOwnerName,
       rentAmount: rentAmount ?? this.rentAmount,
       currentTile: currentTile ?? this.currentTile,
@@ -170,8 +187,6 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   // --- 1. SETUP ve SIRALAMA ---
-  /// Initialize game and enter turn order determination phase
-  /// Players will roll one by one using rollForTurnOrder()
   void initializeGame(List<Player> setupPlayers) {
     state = state.copyWith(
       players: setupPlayers,
@@ -179,6 +194,23 @@ class GameNotifier extends StateNotifier<GameState> {
       phase: GamePhase.rollingForOrder,
       orderRolls: {}, // Reset order rolls
       lastAction: "${setupPlayers[0].name} sıra için zar atacak...",
+      // Reset match state
+      diceTotal: 0,
+      isDiceRolled: false,
+      currentTile: null,
+      currentCard: null,
+      currentQuestion: null,
+      winner: null,
+      floatingEffect: null,
+      // Reset all dialog flags
+      showQuestionDialog: false,
+      showPurchaseDialog: false,
+      showCardDialog: false,
+      showUpgradeDialog: false,
+      showRentDialog: false,
+      showLibraryPenaltyDialog: false,
+      showImzaGunuDialog: false,
+      showTurnSkippedDialog: false,
     );
     _addLog("Oyun Kuruluyor - Sıralama belirleniyor...", type: 'info');
   }
@@ -290,10 +322,56 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    int roll = _random.nextInt(11) + 2;
-    state = state.copyWith(isDiceRolled: true, diceTotal: roll);
+    // Generate two independent dice
+    int d1 = _random.nextInt(6) + 1;
+    int d2 = _random.nextInt(6) + 1;
+    int roll = d1 + d2;
+    bool isDouble = d1 == d2;
 
-    _addLog("${state.currentPlayer.name} $roll attı.", type: 'dice');
+    int newConsecutive = isDouble ? state.consecutiveDoubles + 1 : 0;
+
+    // Check for 3 consecutive doubles -> Jail
+    if (newConsecutive >= 3) {
+      state = state.copyWith(
+        dice1: d1,
+        dice2: d2,
+        diceTotal: roll,
+        isDiceRolled: true,
+        consecutiveDoubles: 0, // Reset
+      );
+      _addLog("3. Çift Zar ($d1-$d2)! Kütüphaneye gidiyorsun.", type: 'error');
+
+      // Send to jail immediately
+      await Future.delayed(const Duration(milliseconds: 1500));
+      List<Player> temp = List.from(state.players);
+      temp[state.currentPlayerIndex] = state.currentPlayer.copyWith(
+        position: 10,
+        turnsToSkip: 2,
+      );
+      state = state.copyWith(players: temp);
+      endTurn();
+      return;
+    }
+
+    state = state.copyWith(
+      isDiceRolled: true,
+      diceTotal: roll,
+      dice1: d1,
+      dice2: d2,
+      consecutiveDoubles: newConsecutive,
+    );
+
+    if (isDouble) {
+      _addLog(
+        "${state.currentPlayer.name} $roll ($d1-$d2) attı. Çift! Tekrar oynayacak.",
+        type: 'dice',
+      );
+    } else {
+      _addLog(
+        "${state.currentPlayer.name} $roll ($d1-$d2) attı.",
+        type: 'dice',
+      );
+    }
 
     // Wait for dice animation to settle before moving
     await Future.delayed(const Duration(milliseconds: 1500));
@@ -381,6 +459,16 @@ class GameNotifier extends StateNotifier<GameState> {
       // Show İmza Günü dialog - informative only
       state = state.copyWith(showImzaGunuDialog: true);
       _addLog("✍️ İmza Günü! Okurlarınla buluştun.", type: 'success');
+    } else if (tile.type == TileType.incomeTax) {
+      // GELİR VERGİSİ: 200 TL
+      _updateBalance(state.currentPlayer, state.currentPlayer.balance - 200);
+      _addLog("Gelir Vergisi ödendi (-200 Puan).", type: 'error');
+      endTurn();
+    } else if (tile.type == TileType.writingTax) {
+      // YAZARLIK VERGİSİ: 150 TL
+      _updateBalance(state.currentPlayer, state.currentPlayer.balance - 150);
+      _addLog("Yazarlık Vergisi ödendi (-150 Puan).", type: 'error');
+      endTurn();
     } else {
       endTurn();
     }
@@ -784,6 +872,20 @@ class GameNotifier extends StateNotifier<GameState> {
   void endTurn() async {
     if (state.phase == GamePhase.gameOver) return;
 
+    // Check for re-roll on doubles (if not in jail/penalty)
+    if (state.phase == GamePhase.playing &&
+        state.dice1 == state.dice2 &&
+        state.dice1 != 0 &&
+        state.currentPlayer.turnsToSkip == 0 &&
+        !state.currentPlayer.inJail) {
+      _addLog("Çift olduğu için tekrar zar at!", type: 'info');
+      state = state.copyWith(
+        isDiceRolled: false,
+        lastAction: "${state.currentPlayer.name} tekrar zar atacak...",
+      );
+      return;
+    }
+
     if (state.currentPlayer.balance < 0) {
       _addLog("${state.currentPlayer.name} iflas etti!", type: 'gameover');
       await Future.delayed(const Duration(seconds: 2));
@@ -819,15 +921,43 @@ class GameNotifier extends StateNotifier<GameState> {
     await Future.delayed(const Duration(milliseconds: 1200));
     int next = (state.currentPlayerIndex + 1) % state.players.length;
 
+    // Switch to next player
+    final nextPlayer = state.players[next];
+
+    // Check if next player is in penalty
+    bool isSkipped = false;
+    List<Player> updatedPlayers = List.from(state.players);
+
+    if (nextPlayer.turnsToSkip > 0) {
+      isSkipped = true;
+      // Decrement penalty
+      updatedPlayers[next] = nextPlayer.copyWith(
+        turnsToSkip: nextPlayer.turnsToSkip - 1,
+      );
+    }
+
     state = state.copyWith(
+      players: updatedPlayers,
       currentPlayerIndex: next,
       isDiceRolled: false,
       showPurchaseDialog: false,
       showQuestionDialog: false,
       showUpgradeDialog: false,
       showCardDialog: false,
+      showTurnSkippedDialog: isSkipped, // Show dialog if skipped
     );
-    _addLog("Sıra ${state.players[next].name} oyuncusunda.", type: 'turn');
+
+    if (isSkipped) {
+      _addLog("${nextPlayer.name} cezalı! Tur atlanıyor.", type: 'error');
+      // Turn will be auto-ended when dialog is closed
+    } else {
+      _addLog("Sıra ${state.players[next].name} oyuncusunda.", type: 'turn');
+    }
+  }
+
+  void closeTurnSkippedDialog() {
+    state = state.copyWith(showTurnSkippedDialog: false);
+    endTurn(); // Loop to next player
   }
 
   void _updateBalance(Player p, int bal) async {

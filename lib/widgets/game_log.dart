@@ -67,8 +67,9 @@ class GameLog extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
                 children: [
                   // SCORE PANEL
                   if (players.isNotEmpty) ...[
@@ -90,26 +91,23 @@ class GameLog extends StatelessWidget {
 
                   // LOG ENTRIES (scrollable)
                   if (displayLogs.isNotEmpty)
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: false,
-                        itemCount: displayLogs.length,
-                        itemBuilder: (context, index) {
-                          return _LogEntry(
-                            text: displayLogs[index],
-                            isLatest: index == displayLogs.length - 1,
-                          );
-                        },
-                      ),
-                    )
+                    ...displayLogs.asMap().entries.map((entry) {
+                      return _LogEntry(
+                        text: entry.value,
+                        isLatest: entry.key == displayLogs.length - 1,
+                      );
+                    })
                   else
-                    Center(
-                      child: Text(
-                        "Henüz olay yok...",
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: GameTheme.textDark.withValues(alpha: 0.5),
-                          fontStyle: FontStyle.italic,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text(
+                          "Henüz olay yok...",
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: GameTheme.textDark.withValues(alpha: 0.5),
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ),
@@ -309,7 +307,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
       curve: MotionCurves.emphasized,
       child: AnimatedContainer(
         duration: MotionDurations.fast.safe,
-        curve: MotionCurves.emphasized,
+        curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(vertical: 2),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
@@ -337,7 +335,18 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
                     spreadRadius: 4,
                   ),
                 ]
-              : null,
+              : [
+                  const BoxShadow(
+                    color: Colors.transparent,
+                    blurRadius: 0,
+                    spreadRadius: 0,
+                  ),
+                  const BoxShadow(
+                    color: Colors.transparent,
+                    blurRadius: 0,
+                    spreadRadius: 0,
+                  ),
+                ],
         ),
         child: Row(
           children: [

@@ -75,26 +75,6 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     super.dispose();
   }
 
-  /// Split total (2-12) into two valid dice values
-  void _splitDiceValues(int total) {
-    // Generate valid dice combinations
-    _dice1 = _random.nextInt(6) + 1; // 1-6
-    _dice2 = total - _dice1;
-
-    // Ensure dice2 is valid (1-6)
-    if (_dice2 < 1) {
-      _dice2 = 1;
-      _dice1 = total - 1;
-    } else if (_dice2 > 6) {
-      _dice2 = 6;
-      _dice1 = total - 6;
-    }
-
-    // Clamp to valid range
-    _dice1 = _dice1.clamp(1, 6);
-    _dice2 = _dice2.clamp(1, 6);
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
@@ -106,7 +86,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
         state.diceTotal > 0 &&
         !_isAnimating &&
         !_showResult) {
-      _splitDiceValues(state.diceTotal);
+      _dice1 = state.dice1;
+      _dice2 = state.dice2;
       _startAnimation();
     }
 

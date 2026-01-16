@@ -19,7 +19,7 @@ class RentNotificationDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 300),
+          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: GameTheme.cardDecoration.copyWith(
@@ -135,7 +135,7 @@ class LibraryPenaltyDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 300),
+          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: GameTheme.cardDecoration.copyWith(
@@ -235,7 +235,7 @@ class ImzaGunuDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 300),
+          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: GameTheme.cardDecoration.copyWith(
@@ -305,6 +305,107 @@ class ImzaGunuDialog extends ConsumerWidget {
                   ),
                   child: Text(
                     "TAMAM",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 300.ms)
+        .scale(
+          begin: const Offset(0.9, 0.9),
+          end: const Offset(1.0, 1.0),
+          duration: 400.ms,
+          curve: Curves.elasticOut,
+        );
+  }
+}
+
+/// Turn Skipped notification dialog
+class TurnSkippedDialog extends ConsumerWidget {
+  const TurnSkippedDialog({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Current player is ALREADY updated to the one who is skipping
+    // Turns to skip already decremented by 1 before showing this
+    final turnsToSkip = ref.watch(
+      gameProvider.select((s) => s.currentPlayer.turnsToSkip),
+    );
+
+    return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: GameTheme.cardDecoration.copyWith(
+              color: GameTheme.parchmentColor,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ICON
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.block, size: 40, color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+
+                // TITLE
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    "SIRA ATLANDI",
+                    style: GoogleFonts.playfairDisplay(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // MESSAGE
+                Text(
+                  "Cezalı olduğun için bu turu oynayamıyorsun.\nKalan Ceza: $turnsToSkip Tur",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: GameTheme.textDark,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // BUTTON
+                ElevatedButton(
+                  onPressed: () =>
+                      ref.read(gameProvider.notifier).closeTurnSkippedDialog(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GameTheme.goldAccent,
+                    foregroundColor: GameTheme.textDark,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    "DEVAM ET",
                     style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                   ),
                 ),

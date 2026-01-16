@@ -18,6 +18,7 @@ import 'modern_question_dialog.dart';
 import 'card_dialog.dart';
 import 'copyright_purchase_dialog.dart';
 import 'notification_dialogs.dart';
+import 'upgrade_dialog.dart';
 import 'pawn_widget.dart';
 import 'pause_dialog.dart';
 import 'settings_screen.dart';
@@ -84,6 +85,7 @@ class BoardView extends ConsumerStatefulWidget {
 class _BoardViewState extends ConsumerState<BoardView> {
   late ConfettiController _confettiController;
   bool _showPauseMenu = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Landing pulse effect state
   int? _pulsingTileId;
@@ -135,9 +137,27 @@ class _BoardViewState extends ConsumerState<BoardView> {
     // Calculate layout dimensions (use full screen size for landscape optimization)
     final screenSize = MediaQuery.of(context).size;
     final layout = BoardLayoutConfig.fromScreen(screenSize);
+    final isMobile = screenSize.width < 900;
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: tokens.background,
+      drawer: isMobile
+          ? Drawer(
+              width: 300,
+              backgroundColor: Colors.transparent,
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: GameLog(
+                    logs: state.logs,
+                    players: state.players,
+                    currentPlayerIndex: state.currentPlayerIndex,
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
           // ═══════════════════════════════════════════════════════════════
@@ -165,23 +185,40 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // ═══════════════════════════════════════════════════════════════
           Center(child: _buildBoard(state, layout, isDarkMode)),
 
-          // LEFT SIDEBAR - GAME LOG / SCORE PANEL
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: SafeArea(
-              child: Container(
-                width: 280,
-                margin: const EdgeInsets.all(16),
-                child: GameLog(
-                  logs: state.logs,
-                  players: state.players,
-                  currentPlayerIndex: state.currentPlayerIndex,
+          // LEFT SIDEBAR - GAME LOG / SCORE PANEL (DESKTOP ONLY)
+          if (!isMobile)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: SafeArea(
+                child: Container(
+                  width: 280,
+                  margin: const EdgeInsets.all(16),
+                  child: GameLog(
+                    logs: state.logs,
+                    players: state.players,
+                    currentPlayerIndex: state.currentPlayerIndex,
+                  ),
                 ),
               ),
             ),
-          ),
+
+          // MOBILE MENU BUTTON (Opens Drawer)
+          if (isMobile)
+            Positioned(
+              left: 16,
+              top: 16,
+              child: SafeArea(
+                child: FloatingActionButton(
+                  mini: true,
+                  backgroundColor: GameTheme.goldAccent,
+                  foregroundColor: GameTheme.tableBackgroundColor,
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  child: const Icon(Icons.bar_chart_rounded),
+                ),
+              ),
+            ),
 
           // PAUSE BUTTON (top-right)
           Positioned(
@@ -312,61 +349,34 @@ class _BoardViewState extends ConsumerState<BoardView> {
     BoardLayoutConfig layout,
     bool isDarkMode,
   ) {
-    // Check if current player is in jail (Library Watch)
-    final bool isInJail =
-        state.currentPlayer.inJail || state.currentPlayer.turnsToSkip > 0;
+    return Container(
+          width: layout.boardSize,
+          height: layout.boardSize,
+          decoration: GameTheme.boardDecorationFor(isDarkMode),
+          child: Stack(
+            children: [
+              // Layer 1: Center area background
+              _buildCenterArea(layout),
 
-    Widget boardContainer =
-        Container(
-              width: layout.boardSize,
-              height: layout.boardSize,
-              decoration: GameTheme.boardDecorationFor(isDarkMode),
-              child: Stack(
-                children: [
-                  // Layer 1: Center area background
-                  _buildCenterArea(layout),
+              // Layer 2: All tiles (corners + edges)
+              ..._buildAllTiles(layout),
 
-                  // Layer 2: All tiles (corners + edges)
-                  ..._buildAllTiles(layout),
+              // Layer 3: Player pawns
+              ..._buildPlayers(state.players, layout),
 
-                  // Layer 3: Player pawns
-                  ..._buildPlayers(state.players, layout),
-
-                  // Layer 4: Effects and dialogs
-                  ..._buildEffectsAndDialogs(state, layout),
-                ],
-              ),
-            )
-            .animate()
-            .fadeIn(duration: MotionDurations.slow.safe)
-            .scale(
-              begin: const Offset(1.05, 1.05),
-              end: const Offset(1.0, 1.0),
-              duration: MotionDurations.slow.safe,
-              curve: MotionCurves.standard,
-            );
-
-    // Apply Jail Mode visual effect (Sepia filter) when in jail
-    if (isInJail) {
-      // Sepia color matrix for vintage/old-paper look
-      const sepiaMatrix = ColorFilter.matrix([
-        0.393, 0.769, 0.189, 0, 0, // Red
-        0.349, 0.686, 0.168, 0, 0, // Green
-        0.272, 0.534, 0.131, 0, 0, // Blue
-        0, 0, 0, 1, 0, // Alpha
-      ]);
-
-      boardContainer =
-          ColorFiltered(colorFilter: sepiaMatrix, child: boardContainer)
-              .animate(key: ValueKey('jail_${state.currentPlayer.id}'))
-              // Smooth fade in of sepia effect
-              .fadeIn(
-                duration: MotionDurations.slowDouble.safe,
-                curve: MotionCurves.standard,
-              );
-    }
-
-    return boardContainer;
+              // Layer 4: Effects and dialogs
+              ..._buildEffectsAndDialogs(state, layout),
+            ],
+          ),
+        )
+        .animate()
+        .fadeIn(duration: MotionDurations.slow.safe)
+        .scale(
+          begin: const Offset(1.05, 1.05),
+          end: const Offset(1.0, 1.0),
+          duration: MotionDurations.slow.safe,
+          curve: MotionCurves.standard,
+        );
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -898,6 +908,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
       if (state.showCardDialog && state.currentCard != null)
         _buildDialogOverlay(CardDialog(card: state.currentCard!)),
 
+      if (state.showUpgradeDialog && state.currentTile != null)
+        _buildDialogOverlay(UpgradeDialog(tile: state.currentTile!)),
+
       // Notification dialogs
       if (state.showRentDialog &&
           state.rentOwnerName != null &&
@@ -911,6 +924,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
       if (state.showLibraryPenaltyDialog)
         _buildDialogOverlay(const LibraryPenaltyDialog()),
+
+      if (state.showTurnSkippedDialog)
+        _buildDialogOverlay(const TurnSkippedDialog()),
 
       if (state.showImzaGunuDialog) _buildDialogOverlay(const ImzaGunuDialog()),
 
