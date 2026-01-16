@@ -110,8 +110,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   void dispose() {
     _confettiController.dispose();
-    // Reset to portrait when leaving board view
+    // Reset to allow any orientation when leaving board view
     SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);

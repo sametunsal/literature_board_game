@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +26,6 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   bool _showResult = false;
   int _dice1 = 0;
   int _dice2 = 0;
-  final _random = math.Random();
   Timer? _hapticTimer; // For haptic feedback during dice roll
 
   // Dice Juice animation states
