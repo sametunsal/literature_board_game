@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
+import '../utils/sound_manager.dart';
 
 /// Settings screen with premium Dark Academia theme styling
 /// Matches the main menu aesthetic with animated gradient and glassmorphism
@@ -26,6 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
+    _soundEnabled = SoundManager.instance.isSoundEnabled;
+    _musicEnabled = SoundManager.instance.isMusicEnabled;
 
     // Breathing gradient animation (8 second loop) - matches main menu
     _gradientController = AnimationController(
@@ -204,6 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             subtitle: "Oyun içi ses efektleri",
             trailing: _buildGoldSwitch(_soundEnabled, (val) {
               setState(() => _soundEnabled = val);
+              SoundManager.instance.setSoundEnabled(val);
             }),
             delay: 0,
           ),
@@ -217,6 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             subtitle: "Oyun müziği",
             trailing: _buildGoldSwitch(_musicEnabled, (val) {
               setState(() => _musicEnabled = val);
+              SoundManager.instance.setMusicEnabled(val);
             }),
             delay: 100,
           ),

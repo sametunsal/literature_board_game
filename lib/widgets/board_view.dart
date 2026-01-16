@@ -105,6 +105,16 @@ class _BoardViewState extends ConsumerState<BoardView> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
+
+    ref.listen<GameState>(gameProvider, (previous, next) {
+      _handleLandingPulse(next);
+
+      if (previous?.phase != GamePhase.gameOver &&
+          next.phase == GamePhase.gameOver) {
+        _confettiController.play();
+        SoundManager.instance.playVictory();
+      }
+    });
   }
 
   @override
@@ -126,15 +136,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
     final themeState = ref.watch(themeProvider);
     final isDarkMode = themeState.isDarkMode;
     final tokens = themeState.tokens;
-
-    // Check for player position changes to trigger landing pulse
-    _checkForLandingPulse(state);
-
-    // Trigger confetti and victory sound on game over
-    if (state.phase == GamePhase.gameOver) {
-      _confettiController.play();
-      SoundManager.instance.playVictory();
-    }
 
     // Calculate layout dimensions (use full screen size for landscape optimization)
     final screenSize = MediaQuery.of(context).size;
@@ -734,7 +735,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   /// Check for player position changes and trigger landing pulse
-  void _checkForLandingPulse(GameState state) {
+  void _handleLandingPulse(GameState state) {
     for (final player in state.players) {
       final lastPos = _lastPlayerPositions[player.id];
       final currentPos = player.position;

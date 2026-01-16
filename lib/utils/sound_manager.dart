@@ -12,6 +12,20 @@ class SoundManager {
   // Audio player instance
   final AudioPlayer _player = AudioPlayer();
 
+  bool _soundEnabled = true;
+  bool _musicEnabled = true;
+
+  bool get isSoundEnabled => _soundEnabled;
+  bool get isMusicEnabled => _musicEnabled;
+
+  void setSoundEnabled(bool enabled) {
+    _soundEnabled = enabled;
+  }
+
+  void setMusicEnabled(bool enabled) {
+    _musicEnabled = enabled;
+  }
+
   // Sound file paths (assets/sounds/)
   // NOTE: Using existing assets - add custom sounds later for better experience
   static const String _clickSound = 'sounds/click.mp3';
@@ -34,6 +48,9 @@ class SoundManager {
 
   /// Helper method to play sound with error handling
   Future<void> _playSound(String path) async {
+    if (!_soundEnabled) {
+      return;
+    }
     try {
       await _player.stop(); // Prevent overlap
       await _player.play(AssetSource(path));
