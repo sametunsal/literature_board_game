@@ -10,6 +10,7 @@ import '../data/board_config.dart';
 import '../data/mock_questions.dart';
 import '../data/game_cards.dart';
 import '../core/audio_manager.dart'; // Audio Import
+import '../core/motion/motion_constants.dart';
 
 // Floating Effect Data Model
 class FloatingEffect {
@@ -183,14 +184,14 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Roll dice for current player during turn order determination
-  /// Returns the dice result for UI animation purposes
+  /// Returns dice result for UI animation purposes
   int rollForTurnOrder() {
     if (state.phase != GamePhase.rollingForOrder) return 0;
 
     final currentPlayer = state.currentPlayer;
     final roll = _random.nextInt(11) + 2; // 2-12 (simulating 2 dice)
 
-    // Store the roll
+    // Store roll
     final newOrderRolls = Map<String, int>.from(state.orderRolls);
     newOrderRolls[currentPlayer.id] = roll;
 
@@ -208,8 +209,19 @@ class GameNotifier extends StateNotifier<GameState> {
         orderRolls: newOrderRolls,
         currentPlayerIndex: nextPlayerIndex,
         diceTotal: roll,
+        isDiceRolled: true, // Trigger dice animation
         lastAction:
             "${state.players[nextPlayerIndex].name} sıra için zar atacak...",
+      );
+
+      // Reset isDiceRolled after animation completes (only for rollingForOrder phase)
+      Future.delayed(
+        MotionDurations.dice.safe + const Duration(milliseconds: 150),
+        () {
+          if (state.phase == GamePhase.rollingForOrder) {
+            state = state.copyWith(isDiceRolled: false);
+          }
+        },
       );
     }
 
@@ -736,7 +748,7 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  /// Calculate player's net worth: cash + (property values × 1.5)
+  /// Calculate player's net worth: cash + (property values ×1.5)
   int calculateNetWorth(Player player) {
     int assetValue = 0;
 

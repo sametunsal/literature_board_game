@@ -23,11 +23,13 @@ class MyApp extends ConsumerWidget {
       title: 'EDEBİNA',
       debugShowCheckedModeBanner: false,
       theme: GameTheme.buildThemeData(themeState.isDarkMode),
-      home: _getHome(state.phase),
+      home: _getHome(state.phase, themeState),
     );
   }
 
-  Widget _getHome(GamePhase phase) {
+  Widget _getHome(GamePhase phase, ThemeState themeState) {
+    final tokens = themeState.tokens;
+
     switch (phase) {
       case GamePhase.setup:
         // Show splash first, it will navigate to SetupScreen
@@ -39,21 +41,18 @@ class MyApp extends ConsumerWidget {
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 1.2,
-                colors: [
-                  GameTheme.tableHighlightColor,
-                  GameTheme.tableBackgroundColor,
-                ],
+                colors: [tokens.backgroundHighlight, tokens.background],
               ),
             ),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: GameTheme.goldAccent),
+                  CircularProgressIndicator(color: tokens.accent),
                   const SizedBox(height: 16),
                   Text(
                     "Sıra belirleniyor...",
-                    style: TextStyle(color: GameTheme.textDark, fontSize: 16),
+                    style: TextStyle(color: tokens.textPrimary, fontSize: 16),
                   ),
                 ],
               ),

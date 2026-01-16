@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
 
 /// Modern Question Dialog Widget
 /// A standalone UI component with modern card design, animations, and dynamic category-based colors.
@@ -33,7 +34,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(
-      duration: const Duration(seconds: 2),
+      duration: MotionDurations.confetti,
     );
   }
 
@@ -49,7 +50,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
     _confettiController.play();
 
     // Wait for confetti to start before calling callback
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(MotionDurations.dice, () {
       if (mounted) {
         widget.onConfirm();
       }
@@ -63,7 +64,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
     });
 
     // Reset shake state and call callback after animation
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(MotionDurations.slow, () {
       if (mounted) {
         setState(() {
           _isShaking = false;
@@ -142,18 +143,21 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
               ),
             )
             .animate()
-            .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+            .fadeIn(
+              duration: MotionDurations.dialog.safe,
+              curve: MotionCurves.standard,
+            )
             .slideY(
               begin: 0.3,
               end: 0,
-              duration: 500.ms,
-              curve: Curves.easeOutCubic,
+              duration: MotionDurations.dialog.safe,
+              curve: MotionCurves.standard,
             )
             .scale(
               begin: const Offset(0.92, 0.92),
               end: const Offset(1.0, 1.0),
-              duration: 450.ms,
-              curve: Curves.easeOutBack,
+              duration: MotionDurations.dialog.safe,
+              curve: MotionCurves.emphasized,
             );
 
     // Apply shake animation when wrong answer
@@ -161,7 +165,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
       dialogContainer = dialogContainer
           .animate(key: const ValueKey('shake'))
           .shake(
-            duration: 600.ms,
+            duration: MotionDurations.slow,
             hz: 5,
             curve: Curves.easeInOut,
             offset: const Offset(10, 0), // Horizontal shake

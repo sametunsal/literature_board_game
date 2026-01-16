@@ -2,7 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
+import '../providers/theme_notifier.dart';
 import '../models/player.dart';
 
 /// Literature-themed icons for player avatars (same as setup screen)
@@ -65,54 +68,49 @@ class GameLog extends StatelessWidget {
                 ],
               ),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // SCORE PANEL
                   if (players.isNotEmpty) ...[
                     _buildScoreHeader(),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     _buildScoreList(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     _buildDivider(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                   ],
 
                   // GAME LOG HEADER
                   _buildLogHeader(),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
 
                   // DIVIDER
                   _buildDivider(),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
 
                   // LOG ENTRIES (scrollable)
                   if (displayLogs.isNotEmpty)
                     Flexible(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: displayLogs
-                              .asMap()
-                              .entries
-                              .map(
-                                (entry) => _LogEntry(
-                                  text: entry.value,
-                                  isLatest: entry.key == displayLogs.length - 1,
-                                ),
-                              )
-                              .toList(),
-                        ),
+                      child: ListView.builder(
+                        shrinkWrap: false,
+                        itemCount: displayLogs.length,
+                        itemBuilder: (context, index) {
+                          return _LogEntry(
+                            text: displayLogs[index],
+                            isLatest: index == displayLogs.length - 1,
+                          );
+                        },
                       ),
                     )
                   else
-                    Text(
-                      "Henüz olay yok...",
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: GameTheme.textDark.withValues(alpha: 0.5),
-                        fontStyle: FontStyle.italic,
+                    Center(
+                      child: Text(
+                        "Henüz olay yok...",
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: GameTheme.textDark.withValues(alpha: 0.5),
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
                 ],
@@ -132,14 +130,8 @@ class GameLog extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           "PUAN DURUMU",
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: GameTheme.goldAccent,
-            letterSpacing: 0.5,
-            shadows: [
-              Shadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4),
-            ],
+          style: GameTheme.hudSectionLabel.copyWith(
+            shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
           ),
         ),
       ],
@@ -158,6 +150,7 @@ class GameLog extends StatelessWidget {
         final isCurrentTurn = players.indexOf(player) == currentPlayerIndex;
 
         return _PlayerScoreRow(
+          key: ValueKey('score_${player.id}'),
           player: player,
           isCurrentTurn: isCurrentTurn,
           rank: entry.key + 1,
@@ -177,11 +170,9 @@ class GameLog extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           "OYUN GEÇMİŞİ",
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+          style: GameTheme.hudSectionLabel.copyWith(
             color: GameTheme.textDark.withValues(alpha: 0.8),
-            letterSpacing: 0.5,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -204,117 +195,224 @@ class GameLog extends StatelessWidget {
   }
 }
 
-/// Player score row with icon, name, and balance
-class _PlayerScoreRow extends StatelessWidget {
+/// Player score row with icon, name, and animated balance
+class _PlayerScoreRow extends ConsumerStatefulWidget {
   final Player player;
   final bool isCurrentTurn;
   final int rank;
 
   const _PlayerScoreRow({
+    super.key,
     required this.player,
     this.isCurrentTurn = false,
     this.rank = 0,
   });
 
   @override
+  ConsumerState<_PlayerScoreRow> createState() => _PlayerScoreRowState();
+}
+
+class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
+    with SingleTickerProviderStateMixin {
+  int _previousBalance = 0;
+  int _displayedBalance = 0;
+  bool _isAnimating = false;
+  bool _isIncrease = false;
+  double _scale = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _previousBalance = widget.player.balance;
+    _displayedBalance = widget.player.balance;
+  }
+
+  @override
+  void didUpdateWidget(_PlayerScoreRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Detect balance change
+    if (oldWidget.player.balance != widget.player.balance) {
+      _previousBalance = oldWidget.player.balance;
+      final newBalance = widget.player.balance;
+      _isIncrease = newBalance > _previousBalance;
+
+      // Start animation
+      setState(() {
+        _isAnimating = true;
+        _scale = 1.08;
+      });
+
+      // Animate number counting
+      _animateNumber(_previousBalance, newBalance);
+
+      // Reset scale after animation
+      Future.delayed(MotionDurations.fast, () {
+        if (mounted) {
+          setState(() => _scale = 1.0);
+        }
+      });
+
+      // Clear glow after animation
+      Future.delayed(MotionDurations.fast * 2, () {
+        if (mounted) {
+          setState(() => _isAnimating = false);
+        }
+      });
+    }
+  }
+
+  void _animateNumber(int from, int to) {
+    final diff = (to - from).abs();
+    final steps = diff.clamp(1, 10);
+    final stepDuration = MotionDurations.fast.inMilliseconds ~/ steps;
+    final increment = (to - from) ~/ steps;
+
+    int current = from;
+    for (int i = 0; i < steps; i++) {
+      Future.delayed(Duration(milliseconds: stepDuration * i), () {
+        if (mounted) {
+          setState(() {
+            current += increment;
+            _displayedBalance = current;
+          });
+        }
+      });
+    }
+
+    // Ensure final value is exact
+    Future.delayed(MotionDurations.fast, () {
+      if (mounted) {
+        setState(() => _displayedBalance = to);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final player = widget.player;
+    final isCurrentTurn = widget.isCurrentTurn;
+    final rank = widget.rank;
+    final themeState = ref.watch(themeProvider);
+    final tokens = themeState.tokens;
+
     final iconData = player.iconIndex < literatureIcons.length
         ? literatureIcons[player.iconIndex]
         : Icons.person;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: isCurrentTurn
-            ? GameTheme.goldAccent.withValues(alpha: 0.2)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-        border: isCurrentTurn
-            ? Border.all(
-                color: GameTheme.goldAccent.withValues(alpha: 0.4),
-                width: 1,
-              )
-            : null,
-      ),
-      child: Row(
-        children: [
-          // Rank indicator
-          SizedBox(
-            width: 14,
-            child: Text(
-              "$rank.",
-              style: GoogleFonts.poppins(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: rank == 1
-                    ? GameTheme.goldAccent
-                    : GameTheme.textDark.withValues(alpha: 0.5),
-              ),
-            ),
-          ),
+    // Determine glow color based on increase/decrease
+    final glowColor = _isIncrease ? tokens.accent : tokens.danger;
 
-          // Player icon
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: player.color,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: player.color.withValues(alpha: 0.4),
-                  blurRadius: 4,
+    return AnimatedScale(
+      scale: _scale,
+      duration: MotionDurations.fast.safe,
+      curve: MotionCurves.emphasized,
+      child: AnimatedContainer(
+        duration: MotionDurations.fast.safe,
+        curve: MotionCurves.emphasized,
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: isCurrentTurn
+              ? GameTheme.goldAccent.withValues(alpha: 0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: isCurrentTurn
+              ? Border.all(
+                  color: GameTheme.goldAccent.withValues(alpha: 0.4),
+                  width: 1,
+                )
+              : null,
+          // Money change glow
+          boxShadow: _isAnimating
+              ? [
+                  BoxShadow(
+                    color: glowColor.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                  BoxShadow(
+                    color: glowColor.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 4,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            // Rank indicator
+            SizedBox(
+              width: 14,
+              child: Text(
+                "$rank.",
+                style: GoogleFonts.poppins(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: rank == 1
+                      ? GameTheme.goldAccent
+                      : GameTheme.textDark.withValues(alpha: 0.5),
                 ),
-              ],
-            ),
-            child: Icon(iconData, size: 12, color: Colors.white),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Player name
-          Expanded(
-            child: Text(
-              player.name,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: isCurrentTurn ? FontWeight.w600 : FontWeight.w500,
-                color: isCurrentTurn
-                    ? GameTheme.textDark
-                    : GameTheme.textDark.withValues(alpha: 0.85),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
 
-          // Balance
-          Text(
-            "₺${player.balance}",
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: rank == 1 ? GameTheme.goldAccent : GameTheme.textDark,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 2,
+            // Player icon
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: player.color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: player.color.withValues(alpha: 0.4),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Icon(iconData, size: 12, color: Colors.white),
+            ),
+
+            const SizedBox(width: 8),
+
+            // Player name
+            Expanded(
+              child: Text(
+                player.name,
+                style: GameTheme.hudPlayerName.copyWith(
+                  fontWeight: isCurrentTurn ? FontWeight.w600 : FontWeight.w500,
+                  color: isCurrentTurn
+                      ? GameTheme.textDark
+                      : GameTheme.textDark.withValues(alpha: 0.85),
                 ),
-              ],
-            ),
-          ),
-
-          // Current turn indicator
-          if (isCurrentTurn)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Icon(
-                Icons.play_arrow,
-                size: 12,
-                color: GameTheme.goldAccent,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-        ],
+
+            // Animated Balance
+            AnimatedDefaultTextStyle(
+              duration: MotionDurations.fast.safe,
+              style: GameTheme.hudBalance.copyWith(
+                color: _isAnimating
+                    ? glowColor
+                    : (rank == 1 ? GameTheme.goldAccent : GameTheme.textDark),
+                shadows: const [Shadow(color: Colors.black54, blurRadius: 2)],
+              ),
+              child: Text("₺$_displayedBalance"),
+            ),
+
+            // Current turn indicator
+            if (isCurrentTurn)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.play_arrow,
+                  size: 12,
+                  color: GameTheme.goldAccent,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -352,13 +450,11 @@ class _LogEntry extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
+              style: GameTheme.hudLogEntry.copyWith(
                 fontWeight: isLatest ? FontWeight.w500 : FontWeight.normal,
                 color: isLatest
                     ? GameTheme.textDark
                     : GameTheme.textDark.withValues(alpha: 0.7),
-                height: 1.3,
               ),
             ),
           ),

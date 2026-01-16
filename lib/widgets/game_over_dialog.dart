@@ -8,6 +8,7 @@ import 'package:confetti/confetti.dart';
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
 import '../utils/sound_manager.dart';
 import 'main_menu_screen.dart';
 import 'game_log.dart' show literatureIcons;
@@ -34,13 +35,13 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
 
     // Continuous confetti
     _confettiController = ConfettiController(
-      duration: const Duration(seconds: 20),
+      duration: MotionDurations.confetti * 10, // 20 seconds
     );
     _confettiController.play();
 
     // Money counter animation
     _counterController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: MotionDurations.confetti,
       vsync: this,
     );
 
@@ -61,7 +62,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
         .animate(
           CurvedAnimation(
             parent: _counterController,
-            curve: Curves.easeOutCubic,
+            curve: MotionCurves.standard,
           ),
         );
 
@@ -72,7 +73,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
     });
 
     // Start counter after a short delay
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(MotionDurations.slow, () {
       if (mounted) {
         _counterController.forward();
       }
@@ -90,6 +91,10 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
     final notifier = ref.read(gameProvider.notifier);
+
+    // Theme-aware tokens
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final tokens = GameTheme.getTokens(isDarkMode);
 
     // Sort players by net worth (descending)
     final rankedPlayers = List<Player>.from(state.players);
@@ -140,25 +145,31 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                     constraints: const BoxConstraints(maxHeight: 600),
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
-                      // Premium dark background
+                      // Theme-aware gradient background
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF1A1A2E),
-                          const Color(0xFF16213E),
-                        ],
+                        colors: isDarkMode
+                            ? [const Color(0xFF1A1A2E), const Color(0xFF16213E)]
+                            : [tokens.surface, tokens.surfaceAlt],
                       ),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: GameTheme.goldAccent, width: 3),
+                      border: Border.all(
+                        color: isDarkMode ? tokens.accent : tokens.border,
+                        width: isDarkMode ? 3 : 2,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                          color: tokens.accent.withValues(
+                            alpha: isDarkMode ? 0.3 : 0.15,
+                          ),
                           blurRadius: 40,
-                          spreadRadius: 10,
+                          spreadRadius: isDarkMode ? 10 : 5,
                         ),
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.8),
+                          color: tokens.shadow.withValues(
+                            alpha: isDarkMode ? 0.8 : 0.2,
+                          ),
                           blurRadius: 50,
                           offset: const Offset(0, 25),
                         ),
@@ -170,19 +181,17 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Trophy icon with pulsating glow
-                          _buildTrophy()
+                          _buildTrophy(tokens, isDarkMode)
                               .animate(onPlay: (c) => c.repeat(reverse: true))
                               .scale(
                                 begin: const Offset(1, 1),
                                 end: const Offset(1.08, 1.08),
-                                duration: 1200.ms,
+                                duration: MotionDurations.slow * 2,
                               )
                               .then()
                               .shimmer(
-                                duration: 2000.ms,
-                                color: GameTheme.goldAccent.withValues(
-                                  alpha: 0.3,
-                                ),
+                                duration: MotionDurations.confetti,
+                                color: tokens.accent.withValues(alpha: 0.3),
                               ),
 
                           const SizedBox(height: 24),
@@ -193,12 +202,12 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                                 style: GoogleFonts.playfairDisplay(
                                   fontSize: 38,
                                   fontWeight: FontWeight.bold,
-                                  color: GameTheme.goldAccent,
+                                  color: tokens.accent,
                                   letterSpacing: 3,
                                   shadows: [
                                     Shadow(
-                                      color: GameTheme.goldAccent.withValues(
-                                        alpha: 0.5,
+                                      color: tokens.accent.withValues(
+                                        alpha: isDarkMode ? 0.5 : 0.3,
                                       ),
                                       blurRadius: 20,
                                     ),
@@ -206,66 +215,91 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                                 ),
                               )
                               .animate()
-                              .fadeIn(delay: 200.ms, duration: 600.ms)
-                              .slideY(begin: -0.3, end: 0, duration: 600.ms),
+                              .fadeIn(
+                                delay: MotionDurations.fast,
+                                duration: MotionDurations.slow,
+                              )
+                              .slideY(
+                                begin: -0.3,
+                                end: 0,
+                                duration: MotionDurations.slow,
+                                curve: MotionCurves.standard,
+                              ),
 
                           const SizedBox(height: 20),
 
                           // Winner card
                           if (winner != null)
-                            _buildWinnerCard(winner, notifier),
+                            _buildWinnerCard(
+                              winner,
+                              notifier,
+                              tokens,
+                              isDarkMode,
+                            ),
 
                           const SizedBox(height: 28),
 
                           // Stats section
-                          _buildStats(winner, rankedPlayers, notifier),
+                          _buildStats(
+                            winner,
+                            rankedPlayers,
+                            notifier,
+                            tokens,
+                            isDarkMode,
+                          ),
 
                           const SizedBox(height: 28),
 
                           // Menu button
-                          _buildMenuButton(context),
+                          _buildMenuButton(context, tokens, isDarkMode),
                         ],
                       ),
                     ),
                   )
                   .animate()
-                  .fadeIn(duration: 500.ms)
+                  .fadeIn(duration: MotionDurations.dialog.safe)
                   .scale(
                     begin: const Offset(0.85, 0.85),
                     end: const Offset(1, 1),
-                    duration: 700.ms,
-                    curve: Curves.easeOutBack,
+                    duration: MotionDurations.slow.safe,
+                    curve: MotionCurves.emphasized,
                   ),
         ),
       ],
     );
   }
 
-  Widget _buildTrophy() {
+  Widget _buildTrophy(ThemeTokens tokens, bool isDarkMode) {
     return Container(
       width: 100,
       height: 100,
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          colors: [
-            GameTheme.goldAccent,
-            GameTheme.goldAccent.withValues(alpha: 0.6),
-          ],
+          colors: [tokens.accent, tokens.accent.withValues(alpha: 0.6)],
         ),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: GameTheme.goldAccent.withValues(alpha: 0.6),
+            color: tokens.accent.withValues(alpha: isDarkMode ? 0.6 : 0.4),
             blurRadius: 30,
-            spreadRadius: 10,
+            spreadRadius: isDarkMode ? 10 : 5,
           ),
         ],
       ),
-      child: const Icon(Icons.emoji_events, size: 60, color: Colors.white),
+      child: Icon(
+        Icons.emoji_events,
+        size: 60,
+        color: isDarkMode ? Colors.white : tokens.textOnAccent,
+      ),
     );
   }
 
-  Widget _buildWinnerCard(Player winner, GameNotifier notifier) {
+  Widget _buildWinnerCard(
+    Player winner,
+    GameNotifier notifier,
+    ThemeTokens tokens,
+    bool isDarkMode,
+  ) {
     final winnerIcon = winner.iconIndex < literatureIcons.length
         ? literatureIcons[winner.iconIndex]
         : Icons.person;
@@ -275,15 +309,20 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                winner.color.withValues(alpha: 0.25),
-                winner.color.withValues(alpha: 0.15),
+                winner.color.withValues(alpha: isDarkMode ? 0.25 : 0.15),
+                winner.color.withValues(alpha: isDarkMode ? 0.15 : 0.08),
               ],
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: GameTheme.goldAccent, width: 2.5),
+            border: Border.all(
+              color: isDarkMode
+                  ? tokens.accent
+                  : winner.color.withValues(alpha: 0.5),
+              width: isDarkMode ? 2.5 : 2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: winner.color.withValues(alpha: 0.3),
+                color: winner.color.withValues(alpha: isDarkMode ? 0.3 : 0.15),
                 blurRadius: 15,
                 spreadRadius: 2,
               ),
@@ -306,16 +345,19 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                         ],
                       ),
                       shape: BoxShape.circle,
-                      border: Border.all(color: GameTheme.goldAccent, width: 3),
+                      border: Border.all(
+                        color: isDarkMode ? tokens.accent : winner.color,
+                        width: 3,
+                      ),
                     ),
                     child: Icon(winnerIcon, size: 36, color: Colors.white),
                   )
-                  .animate(delay: 300.ms)
+                  .animate(delay: MotionDurations.medium)
                   .scale(
                     begin: const Offset(0, 0),
                     end: const Offset(1, 1),
-                    duration: 500.ms,
-                    curve: Curves.elasticOut,
+                    duration: MotionDurations.dialog,
+                    curve: MotionCurves.spring,
                   )
                   .fadeIn(),
 
@@ -327,13 +369,13 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: isDarkMode ? Colors.white : tokens.textPrimary,
                       letterSpacing: 1.5,
                     ),
                   )
-                  .animate(delay: 500.ms)
-                  .fadeIn(duration: 400.ms)
-                  .slideX(begin: -0.2, end: 0),
+                  .animate(delay: MotionDurations.dialog)
+                  .fadeIn(duration: MotionDurations.medium)
+                  .slideX(begin: -0.2, end: 0, curve: MotionCurves.standard),
 
               const SizedBox(height: 16),
 
@@ -343,7 +385,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                     children: [
                       Icon(
                         Icons.monetization_on,
-                        color: GameTheme.goldAccent,
+                        color: tokens.accent,
                         size: 28,
                       ),
                       const SizedBox(width: 10),
@@ -352,11 +394,11 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: GameTheme.goldAccent,
+                          color: tokens.accent,
                           shadows: [
                             Shadow(
-                              color: GameTheme.goldAccent.withValues(
-                                alpha: 0.5,
+                              color: tokens.accent.withValues(
+                                alpha: isDarkMode ? 0.5 : 0.3,
                               ),
                               blurRadius: 10,
                             ),
@@ -365,25 +407,27 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                       ),
                     ],
                   )
-                  .animate(delay: 700.ms)
-                  .fadeIn(duration: 300.ms)
+                  .animate(delay: MotionDurations.slow)
+                  .fadeIn(duration: MotionDurations.medium)
                   .scale(
                     begin: const Offset(0.8, 0.8),
                     end: const Offset(1, 1),
-                    curve: Curves.easeOut,
+                    curve: MotionCurves.standard,
                   ),
             ],
           ),
         )
-        .animate(delay: 400.ms)
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.2, end: 0);
+        .animate(delay: MotionDurations.medium)
+        .fadeIn(duration: MotionDurations.dialog)
+        .slideY(begin: 0.2, end: 0, curve: MotionCurves.standard);
   }
 
   Widget _buildStats(
     Player? winner,
     List<Player> rankedPlayers,
     GameNotifier notifier,
+    ThemeTokens tokens,
+    bool isDarkMode,
   ) {
     if (winner == null) return const SizedBox.shrink();
 
@@ -394,14 +438,18 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
           Icons.account_balance_wallet,
           "Nakit",
           "₺${winner.balance}",
-          delay: 900,
+          delay: MotionDurations.dice,
+          tokens: tokens,
+          isDarkMode: isDarkMode,
         ),
         const SizedBox(height: 12),
         _buildStatItem(
           Icons.business,
           "Mülkler",
           "${winner.ownedTiles.length} Adet",
-          delay: 1100,
+          delay: MotionDurations.dice + MotionDurations.fast,
+          tokens: tokens,
+          isDarkMode: isDarkMode,
         ),
         const SizedBox(height: 12),
         _buildStatItem(
@@ -410,7 +458,9 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
           rankedPlayers.length > 1
               ? "1 / ${rankedPlayers.length}"
               : "Tek Oyuncu",
-          delay: 1300,
+          delay: MotionDurations.dice + MotionDurations.medium,
+          tokens: tokens,
+          isDarkMode: isDarkMode,
         ),
       ],
     );
@@ -420,24 +470,32 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
     IconData icon,
     String label,
     String value, {
-    required int delay,
+    required Duration delay,
+    required ThemeTokens tokens,
+    required bool isDarkMode,
   }) {
     return Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.08)
+                : tokens.surfaceAlt,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : tokens.border,
+            ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: GameTheme.goldAccent, size: 24),
+              Icon(icon, color: tokens.accent, size: 24),
               const SizedBox(width: 14),
               Text(
                 label,
                 style: GoogleFonts.poppins(
                   fontSize: 15,
-                  color: Colors.white70,
+                  color: isDarkMode ? Colors.white70 : tokens.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -447,18 +505,22 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: isDarkMode ? Colors.white : tokens.textPrimary,
                 ),
               ),
             ],
           ),
         )
-        .animate(delay: delay.ms)
-        .fadeIn(duration: 400.ms)
-        .slideX(begin: 0.3, end: 0, curve: Curves.easeOut);
+        .animate(delay: delay)
+        .fadeIn(duration: MotionDurations.medium)
+        .slideX(begin: 0.3, end: 0, curve: MotionCurves.standard);
   }
 
-  Widget _buildMenuButton(BuildContext context) {
+  Widget _buildMenuButton(
+    BuildContext context,
+    ThemeTokens tokens,
+    bool isDarkMode,
+  ) {
     return SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -473,30 +535,31 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                 (route) => false,
               );
             },
-            icon: const Icon(Icons.home, size: 24),
+            icon: Icon(Icons.home, size: 24, color: tokens.textOnAccent),
             label: Text(
               "ANA MENÜYE DÖN",
               style: GoogleFonts.poppins(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
+                color: tokens.textOnAccent,
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: GameTheme.goldAccent,
-              foregroundColor: const Color(0xFF1A1A2E),
+              backgroundColor: tokens.accent,
+              foregroundColor: tokens.textOnAccent,
               padding: const EdgeInsets.symmetric(vertical: 18),
               elevation: 8,
-              shadowColor: GameTheme.goldAccent.withValues(alpha: 0.5),
+              shadowColor: tokens.accent.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
         )
-        .animate(delay: 1500.ms)
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.2, end: 0);
+        .animate(delay: MotionDurations.confetti * 0.75)
+        .fadeIn(duration: MotionDurations.dialog)
+        .slideY(begin: 0.2, end: 0, curve: MotionCurves.standard);
   }
 
   /// Custom star-shaped particle path for confetti

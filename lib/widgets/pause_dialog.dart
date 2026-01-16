@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
+import '../providers/theme_notifier.dart';
 import '../utils/sound_manager.dart';
 
 /// Pause menu dialog with resume, settings, end game, and exit options
-/// Styled to match the premium Literature Board Game theme
-class PauseDialog extends StatelessWidget {
+/// Styled to match the premium Literature Board Game theme - now theme-aware
+class PauseDialog extends ConsumerWidget {
   final VoidCallback onResume;
   final VoidCallback onSettings;
   final VoidCallback onEndGame;
@@ -21,22 +24,36 @@ class PauseDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Theme-aware tokens
+    final themeState = ref.watch(themeProvider);
+    final isDarkMode = themeState.isDarkMode;
+    final tokens = themeState.tokens;
+    final currentPreset = themeState.preset;
+
     return Center(
           child: Container(
-            width: 320,
+            width: 340,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: GameTheme.parchmentColor,
+              color: tokens.surface,
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: tokens.border.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: tokens.shadow.withValues(
+                    alpha: isDarkMode ? 0.4 : 0.15,
+                  ),
                   blurRadius: 30,
                   offset: const Offset(0, 15),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: tokens.shadow.withValues(
+                    alpha: isDarkMode ? 0.2 : 0.08,
+                  ),
                   blurRadius: 60,
                   spreadRadius: 10,
                 ),
@@ -50,13 +67,13 @@ class PauseDialog extends StatelessWidget {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: GameTheme.goldAccent.withValues(alpha: 0.15),
+                    color: tokens.accent.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.pause_circle_filled,
                     size: 40,
-                    color: GameTheme.goldAccent,
+                    color: tokens.accent,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -67,7 +84,7 @@ class PauseDialog extends StatelessWidget {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: GameTheme.textDark,
+                    color: tokens.textPrimary,
                     letterSpacing: 1,
                   ),
                 ),
@@ -78,47 +95,61 @@ class PauseDialog extends StatelessWidget {
                   "Ne yapmak istersiniz?",
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: GameTheme.textDark.withValues(alpha: 0.6),
+                    color: tokens.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
+
+                // THEME SELECTOR
+                _buildThemeSelector(
+                  context,
+                  ref,
+                  tokens,
+                  isDarkMode,
+                  currentPreset,
+                ),
+                const SizedBox(height: 20),
 
                 // DIVIDER
-                _buildDivider(),
-                const SizedBox(height: 24),
+                _buildDivider(tokens),
+                const SizedBox(height: 20),
 
                 // RESUME BUTTON
                 _MenuButton(
                   label: "OYUNA DÖN",
                   icon: Icons.play_arrow,
-                  color: const Color(0xFF388E3C),
+                  buttonColor: tokens.success,
+                  tokens: tokens,
                   onPressed: onResume,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // SETTINGS BUTTON
                 _MenuButton(
                   label: "AYARLAR",
                   icon: Icons.settings,
-                  color: const Color(0xFF546E7A),
+                  buttonColor: tokens.secondary,
+                  tokens: tokens,
                   onPressed: onSettings,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // END GAME BUTTON
                 _MenuButton(
                   label: "OYUNU BİTİR",
                   icon: Icons.flag,
-                  color: const Color(0xFFFF8C00),
+                  buttonColor: tokens.warning,
+                  tokens: tokens,
                   onPressed: onEndGame,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // EXIT BUTTON
                 _MenuButton(
                   label: "ANA MENÜ",
                   icon: Icons.exit_to_app,
-                  color: const Color(0xFFD32F2F),
+                  buttonColor: tokens.danger,
+                  tokens: tokens,
                   onPressed: onExit,
                 ),
               ],
@@ -126,16 +157,139 @@ class PauseDialog extends StatelessWidget {
           ),
         )
         .animate()
-        .fadeIn(duration: 300.ms)
+        .fadeIn(duration: MotionDurations.dialog.safe)
         .scale(
           begin: const Offset(0.85, 0.85),
           end: const Offset(1.0, 1.0),
-          duration: 400.ms,
-          curve: Curves.elasticOut,
+          duration: MotionDurations.dialog.safe,
+          curve: MotionCurves.emphasized,
         );
   }
 
-  Widget _buildDivider() {
+  Widget _buildThemeSelector(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeTokens tokens,
+    bool isDarkMode,
+    ThemePreset currentPreset,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tokens.border.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          Text(
+            "TEMA",
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: tokens.textSecondary,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Options row
+          Row(
+            children: [
+              Expanded(
+                child: _buildThemeOption(
+                  label: "Sıcak Kütüphane",
+                  icon: Icons.light_mode,
+                  isSelected: currentPreset == ThemePreset.warmLibraryLight,
+                  tokens: tokens,
+                  isDarkMode: isDarkMode,
+                  onTap: () => ref
+                      .read(themeProvider.notifier)
+                      .setPreset(ThemePreset.warmLibraryLight),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildThemeOption(
+                  label: "Karanlık Akademi",
+                  icon: Icons.dark_mode,
+                  isSelected: currentPreset == ThemePreset.darkAcademia,
+                  tokens: tokens,
+                  isDarkMode: isDarkMode,
+                  onTap: () => ref
+                      .read(themeProvider.notifier)
+                      .setPreset(ThemePreset.darkAcademia),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required ThemeTokens tokens,
+    required bool isDarkMode,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        SoundManager.instance.playClick();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: MotionDurations.fast.safe,
+        curve: MotionCurves.standard,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? tokens.primary.withValues(alpha: isDarkMode ? 0.25 : 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? tokens.primary
+                : tokens.border.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? tokens.primary : tokens.textSecondary,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? tokens.primary : tokens.textSecondary,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Icon(Icons.check_circle, size: 14, color: tokens.primary),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider(ThemeTokens tokens) {
     return Row(
       children: [
         Expanded(
@@ -145,7 +299,7 @@ class PauseDialog extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  GameTheme.goldAccent.withValues(alpha: 0.4),
+                  tokens.border.withValues(alpha: 0.5),
                 ],
               ),
             ),
@@ -156,7 +310,7 @@ class PauseDialog extends StatelessWidget {
           child: Icon(
             Icons.menu_book,
             size: 16,
-            color: GameTheme.goldAccent.withValues(alpha: 0.6),
+            color: tokens.accent.withValues(alpha: 0.6),
           ),
         ),
         Expanded(
@@ -165,7 +319,7 @@ class PauseDialog extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  GameTheme.goldAccent.withValues(alpha: 0.4),
+                  tokens.border.withValues(alpha: 0.5),
                   Colors.transparent,
                 ],
               ),
@@ -177,17 +331,19 @@ class PauseDialog extends StatelessWidget {
   }
 }
 
-/// Styled menu button with icon, label, and color
+/// Styled menu button with icon, label, and color - theme-aware
 class _MenuButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final Color color;
+  final Color buttonColor;
+  final ThemeTokens tokens;
   final VoidCallback onPressed;
 
   const _MenuButton({
     required this.label,
     required this.icon,
-    required this.color,
+    required this.buttonColor,
+    required this.tokens,
     required this.onPressed,
   });
 
@@ -201,11 +357,11 @@ class _MenuButton extends StatelessWidget {
           onPressed();
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
+          backgroundColor: buttonColor,
+          foregroundColor: tokens.textOnAccent,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
-          shadowColor: color.withValues(alpha: 0.4),
+          shadowColor: buttonColor.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -213,7 +369,7 @@ class _MenuButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22),
+            Icon(icon, size: 22, color: tokens.textOnAccent),
             const SizedBox(width: 10),
             Text(
               label,
@@ -221,6 +377,7 @@ class _MenuButton extends StatelessWidget {
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
+                color: tokens.textOnAccent,
               ),
             ),
           ],

@@ -6,7 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
+import '../models/game_enums.dart';
 import '../providers/game_notifier.dart';
+import '../providers/theme_notifier.dart';
 import '../utils/sound_manager.dart';
 
 /// Premium dice roller with TWO separate Lottie dice animations
@@ -27,12 +30,17 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   final _random = math.Random();
   Timer? _hapticTimer; // For haptic feedback during dice roll
 
+  // Dice Juice animation states
+  double _diceScale = 1.0;
+  bool _showGlow = false;
+  bool _resultBounce = false;
+
   @override
   void initState() {
     super.initState();
     _lottieController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: MotionDurations.dice.safe,
     );
 
     _lottieController.addStatusListener((status) {
@@ -45,6 +53,16 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
         setState(() {
           _isAnimating = false;
           _showResult = true;
+          _diceScale = 1.0; // Reset scale
+          _showGlow = false; // Remove glow
+          _resultBounce = true; // Trigger result bounce
+        });
+
+        // Reset bounce state after animation
+        Future.delayed(MotionDurations.fast, () {
+          if (mounted) {
+            setState(() => _resultBounce = false);
+          }
         });
       }
     });
@@ -80,6 +98,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
+    final themeState = ref.watch(themeProvider);
+    final tokens = themeState.tokens;
 
     // When dice is rolled, start animation
     if (state.isDiceRolled &&
@@ -97,21 +117,23 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
     // Show dice result after roll
     if (state.isDiceRolled && state.diceTotal > 0) {
-      return _buildDiceDisplay(state.diceTotal);
+      return _buildDiceDisplay(state.diceTotal, tokens);
     }
 
     // Show roll button
-    return _buildRollButton();
+    return _buildRollButton(state.phase);
   }
 
   void _startAnimation() {
     setState(() {
       _isAnimating = true;
       _showResult = false;
+      _diceScale = 1.1; // Scale up for "juice"
+      _showGlow = true; // Enable glow
     });
 
     // Start haptic feedback during animation - random light taps
-    _hapticTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
+    _hapticTimer = Timer.periodic(MotionDurations.fast, (timer) {
       if (_isAnimating) {
         HapticFeedback.lightImpact();
       } else {
@@ -126,68 +148,102 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     setState(() {
       _showResult = false;
       _isAnimating = false;
+      _diceScale = 1.0;
+      _showGlow = false;
+      _resultBounce = false;
     });
     _lottieController.reset();
   }
 
-  /// Build the TWO dice side by side with individual numbers below
-  Widget _buildDiceDisplay(int total) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // TWO DICE - Spaced evenly
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // DICE 1
-            _buildSingleDie(_dice1),
-            const SizedBox(width: 16),
-            // DICE 2
-            _buildSingleDie(_dice2),
-          ],
+  /// Build TWO dice side by side with individual numbers below
+  Widget _buildDiceDisplay(int total, ThemeTokens tokens) {
+    // Calculate bounce scale for result appearance
+    final displayScale = _resultBounce ? 1.12 : 1.0;
+
+    return AnimatedScale(
+      scale: _diceScale * displayScale,
+      duration: MotionDurations.fast.safe,
+      curve: MotionCurves.standard,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _showGlow
+              ? [
+                  BoxShadow(
+                    color: tokens.primary.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    spreadRadius: 4,
+                  ),
+                  BoxShadow(
+                    color: tokens.primary.withValues(alpha: 0.2),
+                    blurRadius: 40,
+                    spreadRadius: 8,
+                  ),
+                ]
+              : [],
         ),
-
-        const SizedBox(height: 12),
-
-        // TOTAL display below both dice - V2.5 styled
-        if (_showResult)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [GameTheme.copperAccent, GameTheme.goldAccent],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: GameTheme.goldAccent.withValues(alpha: 0.6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 10,
-                  offset: const Offset(3, 4),
-                ),
-                BoxShadow(
-                  color: GameTheme.goldAccent.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  spreadRadius: -2,
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // TWO DICE - Spaced evenly
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // DICE 1
+                _buildSingleDie(_dice1),
+                const SizedBox(width: 16),
+                // DICE 2
+                _buildSingleDie(_dice2),
               ],
             ),
-            child: Text(
-              "TOPLAM: $total",
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: GameTheme.tableBackgroundColor, // Dark text for contrast
+
+            const SizedBox(height: 12),
+
+            // TOTAL display below both dice - V2.5 styled
+            if (_showResult)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [GameTheme.copperAccent, GameTheme.goldAccent],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: GameTheme.goldAccent.withValues(alpha: 0.6),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 10,
+                      offset: const Offset(3, 4),
+                    ),
+                    BoxShadow(
+                      color: GameTheme.goldAccent.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      spreadRadius: -2,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  "TOPLAM: $total",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: GameTheme
+                        .tableBackgroundColor, // Dark text for contrast
+                  ),
+                ),
               ),
-            ),
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -358,8 +414,13 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     );
   }
 
-  /// Build the stylized roll button - V2.5 Tactile Rebellion
-  Widget _buildRollButton() {
+  /// Build stylized roll button - V2.5 Tactile Rebellion
+  Widget _buildRollButton(GamePhase phase) {
+    // Determine button label based on phase
+    final String buttonLabel = phase == GamePhase.rollingForOrder
+        ? "SIRA İÇİN ZAR AT"
+        : "ZAR AT";
+
     return Container(
       decoration: BoxDecoration(
         // Copper to Gold gradient
@@ -393,7 +454,12 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
         child: InkWell(
           onTap: () {
             SoundManager.instance.playDiceRoll(); // Start roll sound
-            ref.read(gameProvider.notifier).rollDice();
+            // Route based on phase
+            if (phase == GamePhase.rollingForOrder) {
+              ref.read(gameProvider.notifier).rollForTurnOrder();
+            } else {
+              ref.read(gameProvider.notifier).rollDice();
+            }
           },
           borderRadius: BorderRadius.circular(14),
           child: Padding(
@@ -408,7 +474,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  "ZAR AT",
+                  buttonLabel,
                   style: GoogleFonts.playfairDisplay(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,

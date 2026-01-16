@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../core/motion/motion_constants.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/player.dart';
@@ -14,7 +15,7 @@ import '../../core/theme/game_theme.dart';
 /// - Left (3): Row [Strip(left), Text] - RotatedBox(quarterTurns: 1) = top→bottom reading
 ///
 /// No parent RotatedBox wrapper - widget handles all orientation internally
-class EnhancedTileWidget extends StatelessWidget {
+class EnhancedTileWidget extends StatefulWidget {
   final BoardTile tile;
   final double width;
   final double height;
@@ -23,6 +24,8 @@ class EnhancedTileWidget extends StatelessWidget {
   final int quarterTurns;
   final Player? owner;
   final int? calculatedRent;
+  final bool isSelected;
+  final bool isHovered;
 
   const EnhancedTileWidget({
     super.key,
@@ -32,76 +35,140 @@ class EnhancedTileWidget extends StatelessWidget {
     this.quarterTurns = 0,
     this.owner,
     this.calculatedRent,
+    this.isSelected = false,
+    this.isHovered = false,
   });
 
-  bool get _isCorner => tile.id % 10 == 0;
+  @override
+  State<EnhancedTileWidget> createState() => _EnhancedTileWidgetState();
+}
+
+class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
+  bool _isPressed = false;
+
+  bool get _isCorner => widget.tile.id % 10 == 0;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: GameTheme.parchmentColor, // Worn Leather background
-        border: Border.all(
-          color: GameTheme.copperAccent.withValues(
-            alpha: 0.4,
-          ), // Copper border for visibility
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 2,
-            offset: const Offset(1, 1),
+    // Get theme tokens based on current brightness
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final tokens = GameTheme.getTokens(isDarkMode);
+
+    // Calculate scale based on press, hover, and selection state
+    // Press takes priority, then selection, then hover
+    final scale = _isPressed
+        ? 0.96
+        : (widget.isHovered ? 1.05 : (widget.isSelected ? 1.08 : 1.0));
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: scale,
+        duration: MotionDurations.fast.safe,
+        curve: MotionCurves.emphasized,
+        child: AnimatedContainer(
+          duration: MotionDurations.fast.safe,
+          curve: MotionCurves.emphasized,
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: _isCorner
+                ? (widget.isSelected
+                      ? tokens.primary.withValues(alpha: 0.15)
+                      : (widget.isHovered
+                            ? tokens.primary.withValues(alpha: 0.08)
+                            : tokens.tileBase))
+                : tokens.tileBase,
+            border: Border.all(
+              color: _isPressed
+                  ? tokens.primary
+                  : (widget.isSelected
+                        ? tokens.primary
+                        : (widget.isHovered
+                              ? tokens.primary.withValues(alpha: 0.5)
+                              : tokens.border.withValues(alpha: 0.5))),
+              width: _isPressed
+                  ? 2.0
+                  : (widget.isSelected ? 2.0 : (widget.isHovered ? 1.5 : 0.5)),
+            ),
+            boxShadow: [
+              // Press glow effect
+              if (_isPressed)
+                BoxShadow(
+                  color: tokens.primary.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              // Existing selection/hover shadows
+              BoxShadow(
+                color: widget.isSelected
+                    ? tokens.primary.withValues(alpha: 0.3)
+                    : (widget.isHovered
+                          ? tokens.shadow.withValues(alpha: 0.25)
+                          : tokens.shadow.withValues(alpha: 0.15)),
+                blurRadius: widget.isSelected ? 6 : (widget.isHovered ? 4 : 2),
+                spreadRadius: widget.isSelected ? 1 : 0,
+                offset: const Offset(1, 1),
+              ),
+            ],
           ),
-        ],
+          clipBehavior: Clip.antiAlias,
+          child: _isCorner
+              ? _buildCornerContent(tokens, isDarkMode)
+              : _buildPropertyContent(tokens, isDarkMode),
+        ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: _isCorner ? _buildCornerContent() : _buildPropertyContent(),
     );
   }
 
   /// Build property tile with edge-specific layout
-  Widget _buildPropertyContent() {
+  Widget _buildPropertyContent(ThemeTokens tokens, bool isDarkMode) {
     // Check for special tiles that use custom images
     if (_isLibraryTile()) {
       return _buildSpecialTileContent(
         imagePath: 'assets/images/library.png',
-        backgroundColor: const Color(0xFFFFF8E1), // Warm amber tint
+        backgroundColor: isDarkMode
+            ? const Color(0xFFFFF8E1)
+            : const Color(0xFFFFFBF0), // Lighter for light theme
+        tokens: tokens,
       );
     }
 
     if (_isChanceOrFateTile()) {
       return _buildSpecialTileContent(
         imagePath: 'assets/images/old_shop.png',
-        backgroundColor: const Color(0xFFF3E5F5), // Light purple tint
+        backgroundColor: isDarkMode
+            ? const Color(0xFFF3E5F5)
+            : const Color(0xFFFAF5FC), // Lighter for light theme
+        tokens: tokens,
       );
     }
 
-    final groupColor = tile.groupColor;
-    final isOwned = owner != null;
+    final groupColor = widget.tile.groupColor;
+    final isOwned = widget.owner != null;
 
     // Color strip widget with improved border
     Widget colorStrip = Container(
       decoration: BoxDecoration(
         color: groupColor,
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.3),
+          color: tokens.shadow.withValues(alpha: 0.3),
           width: 0.5,
         ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 1),
+          BoxShadow(color: tokens.shadow.withValues(alpha: 0.2), blurRadius: 1),
         ],
       ),
       child: _buildUpgradeIcons(),
     );
 
     // Text content widget (title + price)
-    Widget textContent = _buildTextContent(isOwned);
+    Widget textContent = _buildTextContent(isOwned, tokens, isDarkMode);
 
     // STRICT SWITCH BY EDGE POSITION
-    switch (quarterTurns) {
+    switch (widget.quarterTurns) {
       case 0:
         // BOTTOM EDGE: Strip TOP, Text 0° (upright)
         return Column(
@@ -116,7 +183,7 @@ class EnhancedTileWidget extends StatelessWidget {
         );
 
       case 1:
-        // RIGHT EDGE (physical right side of board): Strip on LEFT faces center
+        // Right EDGE (physical right side of board): Strip on LEFT faces center
         // Layout: [Color Strip | Text (RotatedBox quarterTurns: 3)]
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -166,26 +233,27 @@ class EnhancedTileWidget extends StatelessWidget {
 
   /// Check if this is a Library/Question tile
   bool _isLibraryTile() {
-    final titleLower = tile.title.toLowerCase();
+    final titleLower = widget.tile.title.toLowerCase();
     return titleLower.contains('kütüphane') ||
-        tile.type == TileType.libraryWatch ||
-        tile.type == TileType.writingSchool ||
-        tile.type == TileType.educationFoundation;
+        widget.tile.type == TileType.libraryWatch ||
+        widget.tile.type == TileType.writingSchool ||
+        widget.tile.type == TileType.educationFoundation;
   }
 
   /// Check if this is a Chance or Fate tile
   bool _isChanceOrFateTile() {
-    final titleLower = tile.title.toLowerCase();
+    final titleLower = widget.tile.title.toLowerCase();
     return titleLower.contains('şans') ||
         titleLower.contains('kader') ||
-        tile.type == TileType.chance ||
-        tile.type == TileType.fate;
+        widget.tile.type == TileType.chance ||
+        widget.tile.type == TileType.fate;
   }
 
   /// Build special tile with custom image (Pop-Up Book style)
   Widget _buildSpecialTileContent({
     required String imagePath,
     required Color backgroundColor,
+    required ThemeTokens tokens,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -205,7 +273,7 @@ class EnhancedTileWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
+                      color: tokens.shadow.withValues(alpha: 0.25),
                       blurRadius: 4,
                       spreadRadius: 0.5,
                       offset: const Offset(1, 2),
@@ -224,11 +292,11 @@ class EnhancedTileWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: tokens.shadow.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Text(
-                tile.title,
+                widget.tile.title,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -253,7 +321,7 @@ class EnhancedTileWidget extends StatelessWidget {
   }
 
   /// Build the text content (title + price/rent + owner indicator)
-  Widget _buildTextContent(bool isOwned) {
+  Widget _buildTextContent(bool isOwned, ThemeTokens tokens, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(2.0),
       child: Stack(
@@ -267,11 +335,12 @@ class EnhancedTileWidget extends StatelessWidget {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      tile.title,
+                      widget.tile.title,
                       textAlign: TextAlign.center,
                       style: GameTheme.tileTitleStyle.copyWith(
                         fontSize: 8,
                         height: 1.1,
+                        color: tokens.textPrimary, // Theme-aware text
                       ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
@@ -280,8 +349,8 @@ class EnhancedTileWidget extends StatelessWidget {
                 ),
               ),
               // PRICE or RENT
-              if (tile.price != null && !tile.isUtility)
-                _buildPriceRentBadge(isOwned),
+              if (widget.tile.price != null && !widget.tile.isUtility)
+                _buildPriceRentBadge(isOwned, tokens),
             ],
           ),
           // Owner icon
@@ -293,12 +362,15 @@ class EnhancedTileWidget extends StatelessWidget {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: owner!.color,
+                  color: widget.owner!.color,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1),
+                  border: Border.all(
+                    color: isDarkMode ? Colors.white : Colors.white,
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: tokens.shadow.withValues(alpha: 0.3),
                       blurRadius: 2,
                     ),
                   ],
@@ -312,21 +384,21 @@ class EnhancedTileWidget extends StatelessWidget {
 
   /// Build upgrade icons (houses/hotel)
   Widget _buildUpgradeIcons() {
-    if (tile.upgradeLevel == 0) return const SizedBox.shrink();
+    if (widget.tile.upgradeLevel == 0) return const SizedBox.shrink();
 
-    if (tile.upgradeLevel == 4) {
+    if (widget.tile.upgradeLevel == 4) {
       return const Center(child: Icon(Icons.home, size: 7, color: Colors.red));
     }
 
     // Vertical for left/right edges, horizontal for top/bottom
-    bool isVertical = quarterTurns == 1 || quarterTurns == 3;
+    bool isVertical = widget.quarterTurns == 1 || widget.quarterTurns == 3;
 
     if (isVertical) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            tile.upgradeLevel,
+            widget.tile.upgradeLevel,
             (i) => const Icon(Icons.home, size: 5, color: Colors.green),
           ),
         ),
@@ -337,7 +409,7 @@ class EnhancedTileWidget extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
-          tile.upgradeLevel,
+          widget.tile.upgradeLevel,
           (i) => const Icon(Icons.home, size: 5, color: Colors.green),
         ),
       ),
@@ -345,10 +417,10 @@ class EnhancedTileWidget extends StatelessWidget {
   }
 
   /// Build price/rent badge
-  Widget _buildPriceRentBadge(bool isOwned) {
+  Widget _buildPriceRentBadge(bool isOwned, ThemeTokens tokens) {
     final displayValue = isOwned
-        ? (calculatedRent ?? tile.price!)
-        : tile.price!;
+        ? (widget.calculatedRent ?? widget.tile.price!)
+        : widget.tile.price!;
     final label = isOwned ? 'K' : '₺';
 
     return Container(
@@ -357,33 +429,35 @@ class EnhancedTileWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(2),
         color: isOwned
             ? Colors.orange.withValues(alpha: 0.2)
-            : Colors.black.withValues(alpha: 0.08),
+            : tokens.shadow.withValues(alpha: 0.08),
       ),
       child: Text(
         '$label$displayValue',
         style: GameTheme.tilePriceStyle.copyWith(
           fontSize: 7,
           fontWeight: FontWeight.bold,
-          color: isOwned ? Colors.deepOrange : GameTheme.textDark,
+          color: isOwned ? Colors.deepOrange : tokens.textPrimary,
         ),
       ),
     );
   }
 
   /// Build corner tile content
-  Widget _buildCornerContent() {
+  Widget _buildCornerContent(ThemeTokens tokens, bool isDarkMode) {
     // Check if this is the Start Tile - use custom image
-    if (tile.id == 0 || tile.type == TileType.start) {
-      return _buildStartTileContent();
+    if (widget.tile.id == 0 || widget.tile.type == TileType.start) {
+      return _buildStartTileContent(tokens);
     }
 
     final config = _getCornerConfig();
-    final minDimension = width < height ? width : height;
+    final minDimension = widget.width < widget.height
+        ? widget.width
+        : widget.height;
     final iconSize = minDimension * 0.28;
 
     // Corner text rotation based on position
     // Top corners (quarterTurns 1 and 2) should be readable (0°)
-    double rotation = switch (quarterTurns) {
+    double rotation = switch (widget.quarterTurns) {
       0 => 0, // Bottom-left: normal
       1 => 0, // Top-left: readable (was -90°)
       2 => 0, // Top-right: readable (was 180°)
@@ -414,6 +488,7 @@ class EnhancedTileWidget extends StatelessWidget {
                       style: GameTheme.cornerLabelStyle.copyWith(
                         fontSize: 7,
                         fontWeight: FontWeight.bold,
+                        color: Colors.black87, // Always dark on colored corners
                       ),
                     ),
                   ),
@@ -427,8 +502,10 @@ class EnhancedTileWidget extends StatelessWidget {
   }
 
   /// Build Start Tile with custom gate.png image
-  Widget _buildStartTileContent() {
-    final minDimension = width < height ? width : height;
+  Widget _buildStartTileContent(ThemeTokens tokens) {
+    final minDimension = widget.width < widget.height
+        ? widget.width
+        : widget.height;
 
     return Container(
       decoration: BoxDecoration(
@@ -456,7 +533,7 @@ class EnhancedTileWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
+                        color: tokens.shadow.withValues(alpha: 0.25),
                         blurRadius: 6,
                         spreadRadius: 1,
                         offset: const Offset(2, 3),
@@ -494,10 +571,10 @@ class EnhancedTileWidget extends StatelessWidget {
   }
 
   CornerTileConfig _getCornerConfig() {
-    final predefined = GameTheme.cornerConfigs[tile.id];
+    final predefined = GameTheme.cornerConfigs[widget.tile.id];
     if (predefined != null) return predefined;
 
-    return switch (tile.type) {
+    return switch (widget.tile.type) {
       TileType.start => const CornerTileConfig(
         icon: Icons.arrow_forward,
         label: 'BAŞLANGIÇ',

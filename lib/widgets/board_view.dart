@@ -8,7 +8,9 @@ import '../data/board_config.dart';
 import '../models/game_enums.dart';
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
+import '../providers/theme_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
 import 'enhanced_tile_widget.dart';
 import 'game_log.dart';
 import 'dice_roller.dart';
@@ -87,6 +89,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
   int? _pulsingTileId;
   final Map<String, int> _lastPlayerPositions = {};
 
+  // Hover state for tiles (UI-only, no rebuilds)
+  int? _hoveredTileId;
+
   @override
   void initState() {
     super.initState();
@@ -114,6 +119,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
+    final themeState = ref.watch(themeProvider);
+    final isDarkMode = themeState.isDarkMode;
+    final tokens = themeState.tokens;
 
     // Check for player position changes to trigger landing pulse
     _checkForLandingPulse(state);
@@ -129,13 +137,13 @@ class _BoardViewState extends ConsumerState<BoardView> {
     final layout = BoardLayoutConfig.fromScreen(screenSize);
 
     return Scaffold(
-      backgroundColor: GameTheme.tableBackgroundColor,
+      backgroundColor: tokens.background,
       body: Stack(
         children: [
           // ═══════════════════════════════════════════════════════════════
           // LAYER 1: Base Background Color
           // ═══════════════════════════════════════════════════════════════
-          Container(decoration: GameTheme.tableDecoration),
+          Container(decoration: GameTheme.tableDecorationFor(isDarkMode)),
 
           // ═══════════════════════════════════════════════════════════════
           // LAYER 2: Paper Noise Texture - Tactile Paper Effect
@@ -155,7 +163,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // ═══════════════════════════════════════════════════════════════
           // LAYER 3: Game Board Content
           // ═══════════════════════════════════════════════════════════════
-          Center(child: _buildBoard(state, layout)),
+          Center(child: _buildBoard(state, layout, isDarkMode)),
 
           // LEFT SIDEBAR - GAME LOG / SCORE PANEL
           Positioned(
@@ -165,7 +173,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
             child: SafeArea(
               child: Container(
                 width: 280,
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                margin: const EdgeInsets.all(16),
                 child: GameLog(
                   logs: state.logs,
                   players: state.players,
@@ -177,9 +185,14 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
           // PAUSE BUTTON (top-right)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 12,
-            right: 16,
-            child: _buildPauseButton(),
+            top: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildPauseButton(),
+              ),
+            ),
           ),
 
           // PAUSE MENU OVERLAY
@@ -226,16 +239,20 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   /// Build the pause button with glass decoration
   Widget _buildPauseButton() {
+    final themeState = ref.watch(themeProvider);
+    final isDarkMode = themeState.isDarkMode;
+    final tokens = themeState.tokens;
+
     return GestureDetector(
           onTap: () => setState(() => _showPauseMenu = true),
           child: Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: tokens.surface.withValues(alpha: isDarkMode ? 0.15 : 0.85),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: tokens.surface.withValues(alpha: isDarkMode ? 0.2 : 0.5),
                 width: 1,
               ),
               boxShadow: [
@@ -246,11 +263,14 @@ class _BoardViewState extends ConsumerState<BoardView> {
                 ),
               ],
             ),
-            child: Icon(Icons.pause, color: GameTheme.goldAccent, size: 28),
+            child: Icon(Icons.pause, color: tokens.accent, size: 28),
           ),
         )
         .animate()
-        .fadeIn(delay: 500.ms, duration: 400.ms)
+        .fadeIn(
+          delay: MotionDurations.slow.safe,
+          duration: MotionDurations.pulse.safe,
+        )
         .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 
@@ -287,7 +307,11 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   /// Main board container with all layers
-  Widget _buildBoard(GameState state, BoardLayoutConfig layout) {
+  Widget _buildBoard(
+    GameState state,
+    BoardLayoutConfig layout,
+    bool isDarkMode,
+  ) {
     // Check if current player is in jail (Library Watch)
     final bool isInJail =
         state.currentPlayer.inJail || state.currentPlayer.turnsToSkip > 0;
@@ -296,7 +320,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
         Container(
               width: layout.boardSize,
               height: layout.boardSize,
-              decoration: GameTheme.boardDecoration,
+              decoration: GameTheme.boardDecorationFor(isDarkMode),
               child: Stack(
                 children: [
                   // Layer 1: Center area background
@@ -313,14 +337,13 @@ class _BoardViewState extends ConsumerState<BoardView> {
                 ],
               ),
             )
-            // Entrance animation chain
             .animate()
-            .fadeIn(duration: 800.ms)
+            .fadeIn(duration: MotionDurations.slow.safe)
             .scale(
               begin: const Offset(1.05, 1.05),
               end: const Offset(1.0, 1.0),
-              duration: 800.ms,
-              curve: Curves.easeOutCubic,
+              duration: MotionDurations.slow.safe,
+              curve: MotionCurves.standard,
             );
 
     // Apply Jail Mode visual effect (Sepia filter) when in jail
@@ -337,7 +360,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
           ColorFiltered(colorFilter: sepiaMatrix, child: boardContainer)
               .animate(key: ValueKey('jail_${state.currentPlayer.id}'))
               // Smooth fade in of sepia effect
-              .fadeIn(duration: 1200.ms, curve: Curves.easeInOut);
+              .fadeIn(
+                duration: MotionDurations.slowDouble.safe,
+                curve: MotionCurves.standard,
+              );
     }
 
     return boardContainer;
@@ -597,14 +623,41 @@ class _BoardViewState extends ConsumerState<BoardView> {
     // Check if this tile should pulse (landing effect)
     final isPulsing = _pulsingTileId == id;
 
-    // Tile widget
-    Widget tileWidget = EnhancedTileWidget(
-      tile: tile,
-      width: width,
-      height: height,
-      quarterTurns: rotation,
-      owner: owner,
-      calculatedRent: calculatedRent,
+    // Determine selection state: tile where current player's pawn is located
+    final isSelected = id == state.currentPlayer.position;
+
+    // Determine hover state: tile currently being hovered
+    final isHovered = id == _hoveredTileId;
+
+    // Tile widget wrapped in MouseRegion for hover tracking (Desktop/Web only)
+    Widget tileWidget = MouseRegion(
+      onEnter: (event) {
+        // Only track hover on Desktop/Web (mobile has no hover)
+        final isDesktopOrWeb =
+            Theme.of(context).platform != TargetPlatform.android &&
+            Theme.of(context).platform != TargetPlatform.iOS;
+        if (isDesktopOrWeb) {
+          setState(() => _hoveredTileId = id);
+        }
+      },
+      onExit: (event) {
+        final isDesktopOrWeb =
+            Theme.of(context).platform != TargetPlatform.android &&
+            Theme.of(context).platform != TargetPlatform.iOS;
+        if (isDesktopOrWeb) {
+          setState(() => _hoveredTileId = null);
+        }
+      },
+      child: EnhancedTileWidget(
+        tile: tile,
+        width: width,
+        height: height,
+        quarterTurns: rotation,
+        owner: owner,
+        calculatedRent: calculatedRent,
+        isSelected: isSelected,
+        isHovered: isHovered,
+      ),
     );
 
     // Apply landing pulse animation if active
@@ -612,8 +665,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
       tileWidget = TweenAnimationBuilder<double>(
         key: ValueKey('pulse_$id'),
         tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutBack,
+        duration: MotionDurations.pulse.safe,
+        curve: MotionCurves.emphasized,
         onEnd: () {
           // Clear pulse state after animation
           if (mounted && _pulsingTileId == id) {
@@ -874,8 +927,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
         child: dialog
             .animate()
             .scale(
-              duration: GameTheme.dialogEntryDuration,
-              curve: Curves.easeOutBack,
+              duration: MotionDurations.dialog.safe,
+              curve: MotionCurves.emphasized,
             )
             .fadeIn(),
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/motion/motion_constants.dart';
 import '../core/theme/game_theme.dart';
 import '../providers/theme_notifier.dart';
 import '../services/streak_service.dart';
@@ -11,7 +12,7 @@ import 'setup_screen.dart';
 import 'settings_screen.dart';
 import 'streak_candle_widget.dart';
 
-/// Main menu screen with EDEBİNA branding - Dark Academia Aesthetic
+/// Main menu screen with EDEBİNA branding - Theme-aware design
 class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
 
@@ -26,7 +27,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   // Animated gradient background
   late AnimationController _gradientController;
-  late Animation<Color?> _backgroundColor;
+  late Animation<double> _gradientAnimation;
 
   @override
   void initState() {
@@ -35,17 +36,16 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
     // Breathing gradient animation (8 second loop)
     _gradientController = AnimationController(
-      duration: const Duration(seconds: 8),
+      duration: MotionDurations.ambientGradient.safe,
       vsync: this,
     )..repeat(reverse: true);
 
-    _backgroundColor =
-        ColorTween(
-          begin: const Color(0xFF1B2A1E), // Deep Forest Green
-          end: const Color(0xFF2C241B), // Antique Brown
-        ).animate(
-          CurvedAnimation(parent: _gradientController, curve: Curves.easeInOut),
-        );
+    _gradientAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _gradientController,
+        curve: MotionCurves.standard,
+      ),
+    );
   }
 
   @override
@@ -66,6 +66,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   @override
   Widget build(BuildContext context) {
+    final themeState = ref.watch(themeProvider);
+    final tokens = themeState.tokens;
+    final isDark = themeState.isDarkMode;
+
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -73,8 +77,15 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
     return Scaffold(
       body: AnimatedBuilder(
-        animation: _backgroundColor,
+        animation: _gradientAnimation,
         builder: (context, child) {
+          // Use tokens for animated colors
+          final animatedColor = Color.lerp(
+            tokens.background,
+            tokens.surfaceAlt,
+            _gradientAnimation.value,
+          )!;
+
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -85,9 +96,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
                     center: Alignment.center,
                     radius: 1.2,
                     colors: [
-                      _backgroundColor.value!.withValues(alpha: 0.9),
-                      _backgroundColor.value!,
-                      const Color(0xFF0F0E0D), // Very dark edges
+                      animatedColor.withValues(alpha: 0.9),
+                      animatedColor,
+                      isDark
+                          ? tokens.surfaceAlt
+                          : tokens.background.withValues(alpha: 0.95),
                     ],
                     stops: const [0.0, 0.6, 1.0],
                   ),
@@ -96,39 +109,49 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
               // Paper noise texture
               Opacity(
-                opacity: 0.12,
+                opacity: isDark ? 0.12 : 0.06,
                 child: Image.asset(
                   'assets/images/paper_noise.png',
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
                   colorBlendMode: BlendMode.multiply,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
 
               // Content
               SafeArea(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo
-                      _buildLogo(),
-                      const SizedBox(height: 24),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Logo
+                            _buildLogo(tokens),
+                            const SizedBox(height: 24),
 
-                      // Title with enhanced glow
-                      _buildTitle(),
-                      const SizedBox(height: 8),
+                            // Title with enhanced glow
+                            _buildTitle(tokens),
+                            const SizedBox(height: 8),
 
-                      // Subtitle
-                      _buildSubtitle(),
-                      const SizedBox(height: 48),
+                            // Subtitle
+                            _buildSubtitle(tokens),
+                            const SizedBox(height: 48),
 
-                      // Glassmorphism menu buttons
-                      _buildMenuButtons(context),
-                    ],
-                  ),
+                            // Glassmorphism menu buttons
+                            _buildMenuButtons(context, tokens, isDark),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -140,7 +163,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
                     Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _buildThemeToggle(),
+                            _buildThemeSelector(
+                              tokens,
+                              isDark,
+                              themeState.preset,
+                            ),
                             const SizedBox(height: 20),
                             if (!_isLoading)
                               StreakCandleWidget(
@@ -151,12 +178,15 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
                           ],
                         )
                         .animate()
-                        .fadeIn(delay: 800.ms, duration: 600.ms)
+                        .fadeIn(
+                          delay: MotionDurations.medium.safe * 2,
+                          duration: MotionDurations.medium.safe * 2,
+                        )
                         .slideY(
                           begin: -0.3,
                           end: 0,
-                          delay: 800.ms,
-                          duration: 500.ms,
+                          delay: MotionDurations.medium.safe * 2,
+                          duration: MotionDurations.medium.safe * 1.5,
                         ),
               ),
             ],
@@ -166,63 +196,66 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildLogo(ThemeTokens tokens) {
     return Container(
           width: 95,
           height: 95,
           decoration: BoxDecoration(
             gradient: RadialGradient(
               colors: [
-                GameTheme.goldAccent.withValues(alpha: 0.15),
-                GameTheme.goldAccent.withValues(alpha: 0.05),
+                tokens.accent.withValues(alpha: 0.15),
+                tokens.accent.withValues(alpha: 0.05),
               ],
             ),
             shape: BoxShape.circle,
             border: Border.all(
-              color: GameTheme.goldAccent.withValues(alpha: 0.5),
+              color: tokens.accent.withValues(alpha: 0.5),
               width: 3,
             ),
             boxShadow: [
               BoxShadow(
-                color: GameTheme.goldAccent.withValues(alpha: 0.3),
+                color: tokens.accent.withValues(alpha: 0.3),
                 blurRadius: 35,
                 spreadRadius: 8,
               ),
             ],
           ),
-          child: Icon(Icons.menu_book, size: 50, color: GameTheme.goldAccent),
+          child: Icon(Icons.menu_book, size: 50, color: tokens.accent),
         )
         .animate(onPlay: (c) => c.repeat(reverse: true))
-        .fadeIn(duration: 600.ms)
+        .fadeIn(duration: MotionDurations.medium.safe * 2)
         .scale(
           begin: const Offset(0.8, 0.8),
           end: const Offset(1.0, 1.0),
-          duration: 800.ms,
-          curve: Curves.elasticOut,
+          duration: MotionDurations.medium.safe * 2,
+          curve: MotionCurves.spring,
         )
         .then()
         .shimmer(
-          duration: 3000.ms,
-          color: GameTheme.goldAccent.withValues(alpha: 0.2),
+          duration: MotionDurations.slow.safe * 6,
+          color: tokens.accent.withValues(alpha: 0.2),
         );
   }
 
-  Widget _buildTitle() {
-    return Text(
+  Widget _buildTitle(ThemeTokens tokens) {
+    return Stack(
+      children: [
+        // Bottom Text: has glow shadows, NOT animated
+        Text(
           "EDEBİNA",
           style: GoogleFonts.playfairDisplay(
             fontSize: 56,
             fontWeight: FontWeight.bold,
-            color: GameTheme.goldAccent,
+            color: tokens.accent,
             letterSpacing: 12,
             shadows: [
               // Multi-layer glow
               Shadow(
-                color: GameTheme.goldAccent.withValues(alpha: 0.6),
+                color: tokens.accent.withValues(alpha: 0.6),
                 blurRadius: 30,
               ),
               Shadow(
-                color: GameTheme.goldAccent.withValues(alpha: 0.4),
+                color: tokens.accent.withValues(alpha: 0.4),
                 blurRadius: 20,
               ),
               Shadow(
@@ -232,63 +265,177 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               ),
             ],
           ),
-        )
-        .animate()
-        .fadeIn(delay: 200.ms, duration: 700.ms)
-        .slideY(begin: 0.2, end: 0, delay: 200.ms, duration: 700.ms)
-        .then(delay: 500.ms)
-        .shimmer(
-          duration: 2500.ms,
-          color: GameTheme.goldAccent.withValues(alpha: 0.3),
-        );
+        ),
+        // Top Text: animated, NO shadows
+        Text(
+              "EDEBİNA",
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 56,
+                fontWeight: FontWeight.bold,
+                color: tokens.accent,
+                letterSpacing: 12,
+              ),
+            )
+            .animate()
+            .fadeIn(
+              delay: MotionDurations.fast.safe,
+              duration: MotionDurations.medium.safe * 2,
+            )
+            .slideY(
+              begin: 0.2,
+              end: 0,
+              delay: MotionDurations.fast.safe,
+              duration: MotionDurations.medium.safe * 2,
+            )
+            .then(delay: MotionDurations.medium.safe)
+            .shimmer(
+              duration: MotionDurations.slow.safe * 5,
+              color: tokens.accent.withValues(alpha: 0.3),
+            ),
+      ],
+    );
   }
 
-  Widget _buildSubtitle() {
+  Widget _buildSubtitle(ThemeTokens tokens) {
     return Text(
       "Türk Edebiyatı Masa Oyunu",
       style: GoogleFonts.poppins(
         fontSize: 15,
-        color: GameTheme.textDark.withValues(alpha: 0.7),
+        color: tokens.textSecondary,
         letterSpacing: 2.5,
         fontWeight: FontWeight.w300,
       ),
-    ).animate().fadeIn(delay: 400.ms, duration: 600.ms);
+    ).animate().fadeIn(
+      delay: MotionDurations.fast.safe * 2,
+      duration: MotionDurations.medium.safe * 2,
+    );
   }
 
-  Widget _buildThemeToggle() {
-    final themeState = ref.watch(themeProvider);
-    final isDark = themeState.isDarkMode;
-
-    return GestureDetector(
-      onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: GameTheme.goldAccent.withValues(alpha: 0.4),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: GameTheme.goldAccent.withValues(alpha: 0.25),
-              blurRadius: 15,
-              spreadRadius: 3,
-            ),
-          ],
+  Widget _buildThemeSelector(
+    ThemeTokens tokens,
+    bool isDark,
+    ThemePreset currentPreset,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: tokens.surface.withValues(alpha: isDark ? 0.2 : 0.9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.border.withValues(alpha: 0.5),
+          width: 1.5,
         ),
-        child: Icon(
-          isDark ? Icons.dark_mode : Icons.light_mode,
-          size: 28,
-          color: GameTheme.goldAccent,
+        boxShadow: [
+          BoxShadow(
+            color: tokens.shadow.withValues(alpha: isDark ? 0.3 : 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Label
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6, right: 4),
+            child: Text(
+              "TEMA",
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: tokens.textSecondary,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          // Light theme option
+          _buildThemeOption(
+            label: "Sıcak Kütüphane",
+            icon: Icons.light_mode,
+            isSelected: currentPreset == ThemePreset.warmLibraryLight,
+            tokens: tokens,
+            isDark: isDark,
+            onTap: () => ref
+                .read(themeProvider.notifier)
+                .setPreset(ThemePreset.warmLibraryLight),
+          ),
+          const SizedBox(height: 6),
+          // Dark theme option
+          _buildThemeOption(
+            label: "Karanlık Akademi",
+            icon: Icons.dark_mode,
+            isSelected: currentPreset == ThemePreset.darkAcademia,
+            tokens: tokens,
+            isDark: isDark,
+            onTap: () => ref
+                .read(themeProvider.notifier)
+                .setPreset(ThemePreset.darkAcademia),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required ThemeTokens tokens,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: MotionDurations.fast.safe,
+        curve: MotionCurves.standard,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? tokens.primary.withValues(alpha: isDark ? 0.3 : 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? tokens.primary
+                : tokens.border.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? tokens.primary : tokens.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? tokens.primary : tokens.textSecondary,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.check_circle, size: 14, color: tokens.primary),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMenuButtons(BuildContext context) {
+  Widget _buildMenuButtons(
+    BuildContext context,
+    ThemeTokens tokens,
+    bool isDark,
+  ) {
     return Column(
       children: [
         // Play button
@@ -296,6 +443,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               label: "OYNA",
               icon: Icons.play_arrow,
               isPrimary: true,
+              tokens: tokens,
+              isDark: isDark,
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   PageRouteBuilder(
@@ -308,14 +457,19 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
                             child: child,
                           );
                         },
-                    transitionDuration: const Duration(milliseconds: 500),
+                    transitionDuration: MotionDurations.medium.safe * 1.5,
                   ),
                 );
               },
             )
             .animate()
-            .fadeIn(delay: 500.ms)
-            .slideX(begin: -0.2, end: 0, delay: 500.ms, duration: 600.ms),
+            .fadeIn(delay: MotionDurations.medium.safe)
+            .slideX(
+              begin: -0.2,
+              end: 0,
+              delay: MotionDurations.medium.safe,
+              duration: MotionDurations.medium.safe * 2,
+            ),
 
         const SizedBox(height: 16),
 
@@ -323,6 +477,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
         _GlassmorphicButton(
               label: "AYARLAR",
               icon: Icons.settings,
+              tokens: tokens,
+              isDark: isDark,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -330,8 +486,15 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               },
             )
             .animate()
-            .fadeIn(delay: 600.ms)
-            .slideX(begin: -0.2, end: 0, delay: 600.ms, duration: 600.ms),
+            .fadeIn(
+              delay: MotionDurations.medium.safe + MotionDurations.fast.safe,
+            )
+            .slideX(
+              begin: -0.2,
+              end: 0,
+              delay: MotionDurations.medium.safe + MotionDurations.fast.safe,
+              duration: MotionDurations.medium.safe * 2,
+            ),
 
         const SizedBox(height: 16),
 
@@ -339,24 +502,35 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
         _GlassmorphicButton(
               label: "HAKKINDA",
               icon: Icons.info_outline,
-              onPressed: () => _showAboutDialog(context),
+              tokens: tokens,
+              isDark: isDark,
+              onPressed: () => _showAboutDialog(context, tokens, isDark),
             )
             .animate()
-            .fadeIn(delay: 700.ms)
-            .slideX(begin: -0.2, end: 0, delay: 700.ms, duration: 600.ms),
+            .fadeIn(
+              delay:
+                  MotionDurations.medium.safe + MotionDurations.fast.safe * 2,
+            )
+            .slideX(
+              begin: -0.2,
+              end: 0,
+              delay:
+                  MotionDurations.medium.safe + MotionDurations.fast.safe * 2,
+              duration: MotionDurations.medium.safe * 2,
+            ),
       ],
     );
   }
 
-  void _showAboutDialog(BuildContext context) {
+  void _showAboutDialog(BuildContext context, ThemeTokens tokens, bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2C241B),
+        backgroundColor: tokens.dialogBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: GameTheme.goldAccent.withValues(alpha: 0.4),
+            color: tokens.accent.withValues(alpha: 0.4),
             width: 2,
           ),
         ),
@@ -365,7 +539,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.bold,
             fontSize: 24,
-            color: GameTheme.goldAccent,
+            color: tokens.accent,
             letterSpacing: 2,
           ),
           textAlign: TextAlign.center,
@@ -377,7 +551,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               "Türk Edebiyatı Temalı Masa Oyunu",
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: GameTheme.textDark,
+                color: tokens.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -386,7 +560,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               "Versiyon 1.0.0",
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: GameTheme.textDark.withValues(alpha: 0.6),
+                color: tokens.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -394,7 +568,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               "© 2026 EDEBİNA",
               style: GoogleFonts.poppins(
                 fontSize: 11,
-                color: GameTheme.textDark.withValues(alpha: 0.5),
+                color: tokens.textSecondary.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -405,7 +579,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
             child: Text(
               "KAPAT",
               style: GoogleFonts.poppins(
-                color: GameTheme.goldAccent,
+                color: tokens.accent,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -416,17 +590,21 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   }
 }
 
-/// True glassmorphic button with BackdropFilter
+/// True glassmorphic button with BackdropFilter - theme-aware
 class _GlassmorphicButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
   final bool isPrimary;
+  final ThemeTokens tokens;
+  final bool isDark;
 
   const _GlassmorphicButton({
     required this.label,
     required this.icon,
     required this.onPressed,
+    required this.tokens,
+    required this.isDark,
     this.isPrimary = false,
   });
 
@@ -434,85 +612,175 @@ class _GlassmorphicButton extends StatefulWidget {
   State<_GlassmorphicButton> createState() => _GlassmorphicButtonState();
 }
 
-class _GlassmorphicButtonState extends State<_GlassmorphicButton> {
+class _GlassmorphicButtonState extends State<_GlassmorphicButton>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
+  bool _isHovered = false;
+  bool _isFocused = false;
+
+  // Separate animation controller for shadow values
+  late AnimationController _shadowController;
+  late Animation<double> _shadowIntensity;
+
+  @override
+  void initState() {
+    super.initState();
+    _shadowController = AnimationController(
+      duration: MotionDurations.fast.safe,
+      vsync: this,
+    );
+    _shadowIntensity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _shadowController,
+        curve: MotionCurves.emphasized,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shadowController.dispose();
+    super.dispose();
+  }
+
+  void _updateShadowAnimation() {
+    final targetIntensity = widget.isPrimary || _isHovered ? 1.0 : 0.0;
+    if (_shadowController.status != AnimationStatus.forward &&
+        _shadowController.status != AnimationStatus.reverse) {
+      _shadowController.forward(from: 0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onPressed();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: 240,
-          height: 56,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: widget.isPrimary
-                  ? GameTheme.goldAccent.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.2),
-              width: widget.isPrimary ? 2 : 1.5,
-            ),
-            boxShadow: widget.isPrimary
-                ? [
+    final tokens = widget.tokens;
+    final isDark = widget.isDark;
+
+    // Calculate scale based on state priority: press > hover > normal
+    final scale = _isPressed ? 0.96 : (_isHovered ? 1.02 : 1.0);
+
+    // Shadow target values (constant, not animated by AnimatedContainer)
+    final shadowOpacity = widget.isPrimary ? 0.3 : 0.0;
+    final shadowBlur = widget.isPrimary ? 20.0 : 0.0;
+    final shadowSpread = widget.isPrimary ? 2.0 : 0.0;
+
+    return Focus(
+      onFocusChange: (focused) => setState(() => _isFocused = focused),
+      child: MouseRegion(
+        onEnter: (_) {
+          setState(() {
+            _isHovered = true;
+            _updateShadowAnimation();
+          });
+        },
+        onExit: (_) {
+          setState(() {
+            _isHovered = false;
+            _updateShadowAnimation();
+          });
+        },
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) {
+            setState(() => _isPressed = false);
+            widget.onPressed();
+          },
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: AnimatedScale(
+            scale: scale,
+            duration: MotionDurations.fast.safe,
+            curve: MotionCurves.emphasized,
+            child: Container(
+              width: 240,
+              height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isFocused
+                      ? tokens.accent
+                      : (widget.isPrimary
+                            ? tokens.accent.withValues(alpha: 0.5)
+                            : (isDark
+                                  ? tokens.surface.withValues(alpha: 0.2)
+                                  : tokens.border)),
+                  width: _isFocused ? 3 : (widget.isPrimary ? 2 : 1.5),
+                ),
+                // Use AnimatedBuilder for shadow control instead of AnimatedContainer
+                boxShadow: [
+                  if (widget.isPrimary || _isHovered)
                     BoxShadow(
-                      color: GameTheme.goldAccent.withValues(alpha: 0.3),
-                      blurRadius: 20,
+                      color: tokens.accent.withValues(alpha: shadowOpacity),
+                      blurRadius: shadowBlur,
+                      spreadRadius: shadowSpread,
+                    ),
+                  if (_isFocused)
+                    BoxShadow(
+                      color: tokens.accent.withValues(alpha: 0.5),
+                      blurRadius: 12,
                       spreadRadius: 2,
                     ),
-                  ]
-                : [],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: widget.isPrimary
-                        ? [
-                            GameTheme.goldAccent.withValues(alpha: 0.15),
-                            GameTheme.goldAccent.withValues(alpha: 0.08),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.1),
-                            Colors.white.withValues(alpha: 0.05),
-                          ],
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      widget.icon,
-                      size: 24,
-                      color: widget.isPrimary
-                          ? GameTheme.goldAccent
-                          : GameTheme.textDark,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      widget.label,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        letterSpacing: 2,
-                        color: widget.isPrimary
-                            ? GameTheme.goldAccent
-                            : GameTheme.textDark,
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: AnimatedContainer(
+                    duration: MotionDurations.fast.safe,
+                    curve: MotionCurves.emphasized,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: widget.isPrimary
+                            ? [
+                                tokens.accent.withValues(
+                                  alpha: _isHovered ? 0.25 : 0.15,
+                                ),
+                                tokens.accent.withValues(
+                                  alpha: _isHovered ? 0.15 : 0.08,
+                                ),
+                              ]
+                            : [
+                                tokens.surface.withValues(
+                                  alpha: isDark
+                                      ? (_isHovered ? 0.15 : 0.1)
+                                      : (_isHovered ? 0.95 : 0.9),
+                                ),
+                                tokens.surface.withValues(
+                                  alpha: isDark
+                                      ? (_isHovered ? 0.1 : 0.05)
+                                      : (_isHovered ? 0.8 : 0.7),
+                                ),
+                              ],
                       ),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          widget.icon,
+                          size: 24,
+                          color: widget.isPrimary
+                              ? tokens.accent
+                              : tokens.textPrimary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          widget.label,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            letterSpacing: 2,
+                            color: widget.isPrimary
+                                ? tokens.accent
+                                : tokens.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

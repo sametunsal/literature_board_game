@@ -11,23 +11,32 @@ class GameTileWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get theme tokens based on current brightness
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final tokens = GameTheme.getTokens(isDarkMode);
+
     bool isCorner = tile.id % 10 == 0;
 
     return Container(
       width: isCorner ? size * 1.5 : size,
       height: isCorner ? size * 1.5 : size,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: GameTheme.tileBorder, width: 0.8),
+        color: tokens.surface, // Theme-aware surface
+        border: Border.all(color: tokens.border, width: 0.8),
         boxShadow: isCorner
             ? []
-            : [BoxShadow(color: Colors.black12, offset: Offset(1, 1))],
+            : [
+                BoxShadow(
+                  color: tokens.shadow.withValues(alpha: 0.12),
+                  offset: Offset(1, 1),
+                ),
+              ],
       ),
-      child: isCorner ? _buildCorner() : _buildStandard(),
+      child: isCorner ? _buildCorner(tokens) : _buildStandard(tokens),
     );
   }
 
-  Widget _buildStandard() {
+  Widget _buildStandard(ThemeTokens tokens) {
     return Column(
       children: [
         // Renk Şeridi (Üst %20)
@@ -47,13 +56,21 @@ class GameTileWidget extends StatelessWidget {
                 Text(
                   tile.title,
                   textAlign: TextAlign.center,
-                  style: GameTheme.tileTitle.copyWith(fontSize: size * 0.13),
+                  style: GameTheme.tileTitle.copyWith(
+                    fontSize: size * 0.13,
+                    color: tokens.textPrimary, // Theme-aware text
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Spacer(),
                 if (tile.price != null)
-                  Text("${tile.price} Y", style: GameTheme.tilePrice),
+                  Text(
+                    "${tile.price} Y",
+                    style: GameTheme.tilePrice.copyWith(
+                      color: tokens.textSecondary, // Theme-aware secondary text
+                    ),
+                  ),
                 SizedBox(height: 2),
               ],
             ),
@@ -63,7 +80,7 @@ class GameTileWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildCorner() {
+  Widget _buildCorner(ThemeTokens tokens) {
     IconData icon;
     Color bg;
     String label = "";
@@ -91,7 +108,7 @@ class GameTileWidget extends StatelessWidget {
         break;
       default:
         icon = Icons.help;
-        bg = Colors.white;
+        bg = tokens.surface; // Theme-aware fallback
     }
 
     return Container(
@@ -104,7 +121,11 @@ class GameTileWidget extends StatelessWidget {
             bottom: 4,
             child: Text(
               label,
-              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87, // Always dark on colored corners
+              ),
             ),
           ),
         ],
