@@ -34,6 +34,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     super.initState();
     _initStreak();
 
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
     // Breathing gradient animation (8 second loop)
     _gradientController = AnimationController(
       duration: MotionDurations.ambientGradient.safe,
@@ -51,6 +56,12 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   @override
   void dispose() {
     _gradientController.dispose();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     super.dispose();
   }
 
@@ -69,11 +80,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     final themeState = ref.watch(themeProvider);
     final tokens = themeState.tokens;
     final isDark = themeState.isDarkMode;
-
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
 
     return Scaffold(
       body: AnimatedBuilder(
@@ -618,39 +624,6 @@ class _GlassmorphicButtonState extends State<_GlassmorphicButton>
   bool _isHovered = false;
   bool _isFocused = false;
 
-  // Separate animation controller for shadow values
-  late AnimationController _shadowController;
-  late Animation<double> _shadowIntensity;
-
-  @override
-  void initState() {
-    super.initState();
-    _shadowController = AnimationController(
-      duration: MotionDurations.fast.safe,
-      vsync: this,
-    );
-    _shadowIntensity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _shadowController,
-        curve: MotionCurves.emphasized,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _shadowController.dispose();
-    super.dispose();
-  }
-
-  void _updateShadowAnimation() {
-    final targetIntensity = widget.isPrimary || _isHovered ? 1.0 : 0.0;
-    if (_shadowController.status != AnimationStatus.forward &&
-        _shadowController.status != AnimationStatus.reverse) {
-      _shadowController.forward(from: 0);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = widget.tokens;
@@ -670,13 +643,11 @@ class _GlassmorphicButtonState extends State<_GlassmorphicButton>
         onEnter: (_) {
           setState(() {
             _isHovered = true;
-            _updateShadowAnimation();
           });
         },
         onExit: (_) {
           setState(() {
             _isHovered = false;
-            _updateShadowAnimation();
           });
         },
         cursor: SystemMouseCursors.click,

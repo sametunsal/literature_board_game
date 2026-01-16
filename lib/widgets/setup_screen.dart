@@ -65,6 +65,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   }
 
   void _updateControllers() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
     _controllers.clear();
     _selectedIcons.clear();
     _selectedColors.clear();
