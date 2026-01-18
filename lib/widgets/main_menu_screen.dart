@@ -12,6 +12,8 @@ import 'setup_screen.dart';
 import 'settings_screen.dart';
 import 'streak_candle_widget.dart';
 
+import 'rules_dialog.dart';
+
 /// Main menu screen with EDEBİNA branding - Theme-aware design
 class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
@@ -479,6 +481,32 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
         const SizedBox(height: 16),
 
+        // Rules button
+        _GlassmorphicButton(
+              label: "KURALLAR",
+              icon: Icons.menu_book,
+              tokens: tokens,
+              isDark: isDark,
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const RulesDialog(),
+                );
+              },
+            )
+            .animate()
+            .fadeIn(
+              delay: MotionDurations.medium.safe + MotionDurations.fast.safe,
+            )
+            .slideX(
+              begin: -0.2,
+              end: 0,
+              delay: MotionDurations.medium.safe + MotionDurations.fast.safe,
+              duration: MotionDurations.medium.safe * 2,
+            ),
+
+        const SizedBox(height: 16),
+
         // Settings button
         _GlassmorphicButton(
               label: "AYARLAR",
@@ -510,7 +538,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               icon: Icons.info_outline,
               tokens: tokens,
               isDark: isDark,
-              onPressed: () => _showAboutDialog(context, tokens, isDark),
+              onPressed: () =>
+                  _showEnhancedAboutDialog(context, tokens, isDark),
             )
             .animate()
             .fadeIn(
@@ -528,69 +557,102 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     );
   }
 
-  void _showAboutDialog(BuildContext context, ThemeTokens tokens, bool isDark) {
+  void _showEnhancedAboutDialog(
+    BuildContext context,
+    ThemeTokens tokens,
+    bool isDark,
+  ) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: tokens.dialogBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: tokens.accent.withValues(alpha: 0.4),
-            width: 2,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: tokens.dialogBackground.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: tokens.accent.withValues(alpha: 0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.menu_book, size: 64, color: tokens.accent),
+              const SizedBox(height: 16),
+              Text(
+                "EDEBİNA",
+                style: GoogleFonts.playfairDisplay(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 32,
+                  color: tokens.accent,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Türk Edebiyatı Masa Oyunu",
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: tokens.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                width: 50,
+                height: 2,
+                color: tokens.accent.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "Bu oyun, Türk Edebiyatı'nın zengin dünyasını eğlenceli bir masa oyunu formatında keşfetmeniz için tasarlandı.\n\n"
+                "Keyifli oyunlar!",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: tokens.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: tokens.accent,
+                    foregroundColor: tokens.surface,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    "KAPAT",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "v1.0.0 • © 2026 EDEBİNA",
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: tokens.textSecondary.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
           ),
         ),
-        title: Text(
-          "EDEBİNA",
-          style: GoogleFonts.playfairDisplay(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: tokens.accent,
-            letterSpacing: 2,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Türk Edebiyatı Temalı Masa Oyunu",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: tokens.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Versiyon 1.0.0",
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: tokens.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "© 2026 EDEBİNA",
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                color: tokens.textSecondary.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              "KAPAT",
-              style: GoogleFonts.poppins(
-                color: tokens.accent,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

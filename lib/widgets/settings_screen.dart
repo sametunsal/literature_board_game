@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
 import '../utils/sound_manager.dart';
 
 /// Settings screen with premium Dark Academia theme styling
@@ -32,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     // Breathing gradient animation (8 second loop) - matches main menu
     _gradientController = AnimationController(
-      duration: const Duration(seconds: 8),
+      duration: MotionDurations.ambientGradient.safe,
       vsync: this,
     )..repeat(reverse: true);
 
@@ -41,7 +42,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           begin: const Color(0xFF1B2A1E), // Deep Forest Green
           end: const Color(0xFF2C241B), // Antique Brown
         ).animate(
-          CurvedAnimation(parent: _gradientController, curve: Curves.easeInOut),
+          CurvedAnimation(
+            parent: _gradientController,
+            curve: MotionCurves.standard,
+          ),
         );
   }
 
@@ -246,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: MotionDurations.fast.safe,
         width: 60,
         height: 32,
         padding: const EdgeInsets.all(3),
@@ -272,8 +276,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               : [],
         ),
         child: AnimatedAlign(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutBack,
+          duration: MotionDurations.fast.safe,
+          curve: MotionCurves.emphasized,
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: 26,
@@ -557,9 +561,14 @@ class _GlassmorphicSettingCard extends StatelessWidget {
         )
         .animate()
         .fadeIn(
-          delay: Duration(milliseconds: 200 + delay),
-          duration: 400.ms,
+          delay: MotionDurations.fast.safe + Duration(milliseconds: delay),
+          duration: MotionDurations.medium.safe,
         )
-        .slideY(begin: 0.15, end: 0, duration: 400.ms, curve: Curves.easeOut);
+        .slideY(
+          begin: 0.15,
+          end: 0,
+          duration: MotionDurations.medium.safe,
+          curve: MotionCurves.standard,
+        );
   }
 }

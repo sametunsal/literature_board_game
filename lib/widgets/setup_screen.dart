@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/motion/motion_constants.dart';
+import '../core/constants/game_constants.dart';
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
@@ -44,13 +45,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   /// Selected icon index for each player (now references avatar images)
   final List<int> _selectedIcons = [];
 
-  /// Custom avatar image paths (20 avatars)
-  static final List<String> _avatarPaths = List.generate(
-    20,
-    (index) =>
-        'assets/images/avatar_${(index + 1).toString().padLeft(2, '0')}.png',
-  );
-
   @override
   void initState() {
     super.initState();
@@ -73,7 +67,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     _selectedColors.clear();
     for (int i = 0; i < playerCount; i++) {
       _controllers.add(TextEditingController(text: "Oyuncu ${i + 1}"));
-      _selectedIcons.add(i % _avatarPaths.length);
+      _selectedIcons.add(i % GameConstants.totalAvatars);
       _selectedColors.add(i % _colorPalette.length);
     }
   }
@@ -396,8 +390,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(3),
                     child: Image.asset(
-                      _avatarPaths[_selectedIcons[index]],
+                      GameConstants.getAvatarPath(_selectedIcons[index]),
                       fit: BoxFit.contain,
+                      color: playerColor,
+                      colorBlendMode: BlendMode.srcIn,
                       errorBuilder: (context, error, stackTrace) {
                         // Fallback to icon if image fails
                         return Icon(Icons.person, color: playerColor, size: 24);
@@ -452,7 +448,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: List.generate(
-                      _avatarPaths.length,
+                      GameConstants.totalAvatars,
                       (iconIndex) => _buildIconOption(
                         index,
                         iconIndex,
@@ -549,8 +545,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           child: Padding(
             padding: const EdgeInsets.all(2),
             child: Image.asset(
-              _avatarPaths[iconIndex],
+              GameConstants.getAvatarPath(iconIndex),
               fit: BoxFit.contain,
+              color: _colorPalette[_selectedColors[playerIndex]],
+              colorBlendMode: BlendMode.srcIn,
               errorBuilder: (context, error, stackTrace) {
                 return Icon(
                   Icons.person,

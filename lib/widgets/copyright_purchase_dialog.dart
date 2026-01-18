@@ -7,6 +7,7 @@ import '../models/board_tile.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
 import '../utils/sound_manager.dart';
+import '../presentation/widgets/common/game_button.dart';
 
 class CopyrightPurchaseDialog extends ConsumerWidget {
   final BoardTile tile;
@@ -123,29 +124,40 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // DECLINE BUTTON
-                    _ActionButton(
-                      text: "PAS GEÇ",
-                      onPressed: () =>
-                          ref.read(gameProvider.notifier).declinePurchase(),
-                      color: const Color(0xFFD32F2F),
-                      icon: Icons.close,
+                    Expanded(
+                      child: GameButton(
+                        label: "PAS\nGEÇ", // Split into two lines
+                        icon: Icons.close,
+                        variant: GameButtonVariant.danger,
+                        customColor: const Color(0xFFD32F2F),
+                        customTextColor: Colors.white,
+                        maxLines: 2, // Allow 2 lines
+                        onPressed: () =>
+                            ref.read(gameProvider.notifier).declinePurchase(),
+                      ),
                     ),
 
+                    const SizedBox(width: 12), // Add spacing
                     // PURCHASE BUTTON
-                    _ActionButton(
-                      text: "SATIN AL",
-                      onPressed: () {
-                        // Haptic feedback: Heavy + Light for satisfying "tok"
-                        HapticFeedback.heavyImpact();
-                        Future.delayed(const Duration(milliseconds: 80), () {
-                          HapticFeedback.lightImpact();
-                        });
-                        // Purchase sound effect
-                        SoundManager.instance.playPurchase();
-                        ref.read(gameProvider.notifier).purchaseProperty();
-                      },
-                      color: const Color(0xFF388E3C),
-                      icon: Icons.check,
+                    Expanded(
+                      child: GameButton(
+                        label: "SATIN AL",
+                        icon: Icons.check,
+                        variant: GameButtonVariant.success,
+                        customColor: const Color(0xFF388E3C),
+                        customTextColor: Colors.white,
+                        maxLines: 2, // Consistency
+                        onPressed: () {
+                          // Haptic feedback: Heavy + Light for satisfying "tok"
+                          HapticFeedback.heavyImpact();
+                          Future.delayed(const Duration(milliseconds: 80), () {
+                            HapticFeedback.lightImpact();
+                          });
+                          // Purchase sound effect
+                          SoundManager.instance.playPurchase();
+                          ref.read(gameProvider.notifier).purchaseProperty();
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -161,40 +173,5 @@ class CopyrightPurchaseDialog extends ConsumerWidget {
           duration: 400.ms,
           curve: Curves.elasticOut,
         );
-  }
-}
-
-/// Styled action button with icon
-class _ActionButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onPressed;
-  final Color color;
-  final IconData icon;
-
-  const _ActionButton({
-    required this.text,
-    required this.onPressed,
-    required this.color,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(
-        text,
-        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
   }
 }

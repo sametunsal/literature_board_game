@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
+import '../presentation/widgets/common/game_button.dart';
 
 /// Modern Question Dialog Widget
 /// A standalone UI component with modern card design, animations, and dynamic category-based colors.
@@ -274,53 +275,30 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
         children: [
           // Cancel Button (Wrong Answer)
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _isShaking ? null : _handleWrongAnswer,
-              icon: const Icon(Icons.close, size: 20),
-              label: Text(
-                'BİLMEDİM',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: GameTheme.parchmentColor,
-                foregroundColor: GameTheme.textDark,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 4,
-              ),
+            child: GameButton(
+              label: 'BİLMEDİM',
+              icon: Icons.close,
+              variant: GameButtonVariant.secondary,
+              isFullWidth: true,
+              isDisabled: _isShaking,
+              customColor: GameTheme.parchmentColor,
+              customTextColor: GameTheme.textDark,
+              onPressed: _handleWrongAnswer,
             ),
           ),
           const SizedBox(width: 12),
 
           // Confirm Button (Correct Answer)
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _isShaking ? null : _handleCorrectAnswer,
-              icon: const Icon(Icons.check, size: 20),
-              label: Text(
-                'BİLDİM!',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: categoryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 6,
-                shadowColor: categoryColor.withValues(alpha: 0.5),
-              ),
+            child: GameButton(
+              label: 'BİLDİM!',
+              icon: Icons.check,
+              variant: GameButtonVariant.primary,
+              isFullWidth: true,
+              isDisabled: _isShaking,
+              customColor: categoryColor,
+              customTextColor: Colors.white,
+              onPressed: _handleCorrectAnswer,
             ),
           ),
         ],

@@ -6,6 +6,7 @@ import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
 import '../providers/theme_notifier.dart';
 import '../utils/sound_manager.dart';
+import '../presentation/widgets/common/game_button.dart';
 
 /// Pause menu dialog with resume, settings, end game, and exit options
 /// Styled to match the premium Literature Board Game theme - now theme-aware
@@ -115,42 +116,54 @@ class PauseDialog extends ConsumerWidget {
                 const SizedBox(height: 20),
 
                 // RESUME BUTTON
-                _MenuButton(
+                GameButton(
                   label: "OYUNA DÖN",
                   icon: Icons.play_arrow,
-                  buttonColor: tokens.success,
-                  tokens: tokens,
-                  onPressed: onResume,
+                  variant: GameButtonVariant.success,
+                  isFullWidth: true,
+                  onPressed: () {
+                    SoundManager.instance.playClick();
+                    onResume();
+                  },
                 ),
                 const SizedBox(height: 10),
 
                 // SETTINGS BUTTON
-                _MenuButton(
+                GameButton(
                   label: "AYARLAR",
                   icon: Icons.settings,
-                  buttonColor: tokens.secondary,
-                  tokens: tokens,
-                  onPressed: onSettings,
+                  variant: GameButtonVariant.secondary,
+                  isFullWidth: true,
+                  onPressed: () {
+                    SoundManager.instance.playClick();
+                    onSettings();
+                  },
                 ),
                 const SizedBox(height: 10),
 
                 // END GAME BUTTON
-                _MenuButton(
+                GameButton(
                   label: "OYUNU BİTİR",
                   icon: Icons.flag,
-                  buttonColor: tokens.warning,
-                  tokens: tokens,
-                  onPressed: onEndGame,
+                  variant: GameButtonVariant.primary,
+                  isFullWidth: true,
+                  onPressed: () {
+                    SoundManager.instance.playClick();
+                    onEndGame();
+                  },
                 ),
                 const SizedBox(height: 10),
 
                 // EXIT BUTTON
-                _MenuButton(
+                GameButton(
                   label: "ANA MENÜ",
                   icon: Icons.exit_to_app,
-                  buttonColor: tokens.danger,
-                  tokens: tokens,
-                  onPressed: onExit,
+                  variant: GameButtonVariant.danger,
+                  isFullWidth: true,
+                  onPressed: () {
+                    SoundManager.instance.playClick();
+                    onExit();
+                  },
                 ),
               ],
             ),
@@ -327,62 +340,6 @@ class PauseDialog extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Styled menu button with icon, label, and color - theme-aware
-class _MenuButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color buttonColor;
-  final ThemeTokens tokens;
-  final VoidCallback onPressed;
-
-  const _MenuButton({
-    required this.label,
-    required this.icon,
-    required this.buttonColor,
-    required this.tokens,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          SoundManager.instance.playClick();
-          onPressed();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: buttonColor,
-          foregroundColor: tokens.textOnAccent,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          elevation: 4,
-          shadowColor: buttonColor.withValues(alpha: 0.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 22, color: tokens.textOnAccent),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-                color: tokens.textOnAccent,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -60,6 +60,12 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         ? 0.96
         : (widget.isHovered ? 1.05 : (widget.isSelected ? 1.08 : 1.0));
 
+    // DEBUG: Log shadow values to diagnose negative blur radius issue
+    final blurRadius = widget.isSelected ? 6 : (widget.isHovered ? 4 : 2);
+    print(
+      'DEBUG EnhancedTileWidget: tile=${widget.tile.id}, isSelected=${widget.isSelected}, isHovered=${widget.isHovered}, _isPressed=${_isPressed}, blurRadius=$blurRadius',
+    );
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
@@ -70,7 +76,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         curve: MotionCurves.emphasized,
         child: AnimatedContainer(
           duration: MotionDurations.fast.safe,
-          curve: MotionCurves.emphasized,
+          curve: MotionCurves.standard,
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
@@ -94,13 +100,14 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   : (widget.isSelected ? 2.0 : (widget.isHovered ? 1.5 : 0.5)),
             ),
             boxShadow: [
-              // Press glow effect
-              if (_isPressed)
-                BoxShadow(
-                  color: tokens.primary.withValues(alpha: 0.15),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
+              // Press glow effect - always present but hidden when not pressed
+              BoxShadow(
+                color: _isPressed
+                    ? tokens.primary.withValues(alpha: 0.15)
+                    : Colors.transparent, // Transparent instead of removing
+                blurRadius: _isPressed ? 8 : 0,
+                spreadRadius: _isPressed ? 2 : 0,
+              ),
               // Existing selection/hover shadows
               BoxShadow(
                 color: widget.isSelected
@@ -108,7 +115,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                     : (widget.isHovered
                           ? tokens.shadow.withValues(alpha: 0.25)
                           : tokens.shadow.withValues(alpha: 0.15)),
-                blurRadius: widget.isSelected ? 6 : (widget.isHovered ? 4 : 2),
+                blurRadius:
+                    (widget.isSelected ? 6.0 : (widget.isHovered ? 4.0 : 2.0))
+                        .clamp(0.0, double.infinity),
                 spreadRadius: widget.isSelected ? 1 : 0,
                 offset: const Offset(1, 1),
               ),
@@ -158,7 +167,10 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           width: 0.5,
         ),
         boxShadow: [
-          BoxShadow(color: tokens.shadow.withValues(alpha: 0.2), blurRadius: 1),
+          BoxShadow(
+            color: tokens.shadow.withValues(alpha: 0.2),
+            blurRadius: 1.0.clamp(0.0, double.infinity),
+          ),
         ],
       ),
       child: _buildUpgradeIcons(),
@@ -274,7 +286,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   boxShadow: [
                     BoxShadow(
                       color: tokens.shadow.withValues(alpha: 0.25),
-                      blurRadius: 4,
+                      blurRadius: 4.0.clamp(0.0, double.infinity),
                       spreadRadius: 0.5,
                       offset: const Offset(1, 2),
                     ),
@@ -371,7 +383,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   boxShadow: [
                     BoxShadow(
                       color: tokens.shadow.withValues(alpha: 0.3),
-                      blurRadius: 2,
+                      blurRadius: 2.0.clamp(0.0, double.infinity),
                     ),
                   ],
                 ),
@@ -534,7 +546,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                     boxShadow: [
                       BoxShadow(
                         color: tokens.shadow.withValues(alpha: 0.25),
-                        blurRadius: 6,
+                        blurRadius: 6.0.clamp(0.0, double.infinity),
                         spreadRadius: 1,
                         offset: const Offset(2, 3),
                       ),

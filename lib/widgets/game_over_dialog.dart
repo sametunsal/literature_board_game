@@ -10,6 +10,7 @@ import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
 import '../utils/sound_manager.dart';
+import '../presentation/widgets/common/game_button.dart';
 import 'main_menu_screen.dart';
 import 'game_log.dart' show literatureIcons;
 
@@ -521,41 +522,24 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
     ThemeTokens tokens,
     bool isDarkMode,
   ) {
-    return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              SoundManager.instance.playClick();
-              SystemChrome.setPreferredOrientations([
-                DeviceOrientation.portraitUp,
-                DeviceOrientation.portraitDown,
-              ]);
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-                (route) => false,
-              );
-            },
-            icon: Icon(Icons.home, size: 24, color: tokens.textOnAccent),
-            label: Text(
-              "ANA MENÜYE DÖN",
-              style: GoogleFonts.poppins(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-                color: tokens.textOnAccent,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: tokens.accent,
-              foregroundColor: tokens.textOnAccent,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              elevation: 8,
-              shadowColor: tokens.accent.withValues(alpha: 0.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
+    return GameButton(
+          label: "ANA MENÜYE DÖN",
+          icon: Icons.home,
+          variant: GameButtonVariant.primary,
+          isFullWidth: true,
+          customColor: tokens.accent,
+          customTextColor: tokens.textOnAccent,
+          onPressed: () {
+            SoundManager.instance.playClick();
+            SystemChrome.setPreferredOrientations([
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.portraitDown,
+            ]);
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+              (route) => false,
+            );
+          },
         )
         .animate(delay: MotionDurations.confetti * 0.75)
         .fadeIn(duration: MotionDurations.dialog)

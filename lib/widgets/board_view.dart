@@ -11,6 +11,7 @@ import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
+import '../core/assets/asset_cache.dart';
 import 'enhanced_tile_widget.dart';
 import 'game_log.dart';
 import 'dice_roller.dart';
@@ -105,6 +106,11 @@ class _BoardViewState extends ConsumerState<BoardView> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
+
+    // Preload assets
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AssetCache.preload(context);
+    });
   }
 
   @override
@@ -174,8 +180,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // ═══════════════════════════════════════════════════════════════
           Opacity(
             opacity: 0.1,
-            child: Image.asset(
-              'assets/images/paper_noise.png',
+            child: Image(
+              image: AssetCache.instance.paperNoiseImage,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
@@ -446,7 +452,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
               child: CardDeckWidget(
                 type: CardType.kader,
                 size: deckSize,
-                rotation: -0.35, // ~-20 degrees
+                rotation: 0.35, // Same angle as Sans deck
               ),
             ),
 
@@ -768,10 +774,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   /// Build positioned pawns for all players using AnimatedPawnContainer
   List<Widget> _buildPlayers(List<Player> players, BoardLayoutConfig layout) {
-    // Group players by position
-    final Map<int, List<Player>> groups = {};
+    // Group players by position ONLY to calculate overlap offsets
+    final Map<int, List<Player>> groupMap = {};
     for (final player in players) {
-      groups.putIfAbsent(player.position, () => []).add(player);
+      groupMap.putIfAbsent(player.position, () => []).add(player);
     }
 
     final currentPlayerId = ref.watch(
@@ -780,22 +786,54 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
     final List<Widget> widgets = [];
 
-    groups.forEach((position, group) {
-      final center = _getTileCenter(position, layout);
-      final pawnAreaSize = layout.cornerSize;
-      final pawnSize = layout.normalSize * 0.45;
+    // Render each player individually to ensure stable identity (Key) for movement animation
+    for (final player in players) {
+      final position = player.position;
+      final group = groupMap[position] ?? [player];
+      final indexInGroup = group.indexOf(player);
+      final count = group.length;
+
+      var center = _getTileCenter(position, layout);
+
+      // Apply offset if multiple players on same tile to prevent exact overlap
+      if (count > 1) {
+        final offsetAmount = layout.normalSize * 0.15;
+        double dx = 0;
+        double dy = 0;
+
+        if (count == 2) {
+          dx = (indexInGroup == 0 ? -1 : 1) * offsetAmount * 0.7;
+          dy = (indexInGroup == 0 ? -1 : 1) * offsetAmount * 0.7;
+        } else if (count == 3) {
+          if (indexInGroup == 0) dy = -offsetAmount;
+          if (indexInGroup == 1) {
+            dx = -offsetAmount;
+            dy = offsetAmount * 0.5;
+          }
+          if (indexInGroup == 2) {
+            dx = offsetAmount;
+            dy = offsetAmount * 0.5;
+          }
+        } else {
+          // 4+ players: 2x2 grid approx
+          dx = ((indexInGroup % 2) == 0 ? -1 : 1) * offsetAmount * 0.7;
+          dy = (indexInGroup < 2 ? -1 : 1) * offsetAmount * 0.7;
+        }
+        center = center.translate(dx, dy);
+      }
 
       widgets.add(
         AnimatedPawnContainer(
-          key: ValueKey('pawn_group_$position'),
+          // STABLE KEY based on ID allows AnimatedPawnContainer to track movement
+          key: ValueKey('pawn_${player.id}'),
           center: center,
-          areaSize: pawnAreaSize,
-          players: group,
+          areaSize: layout.cornerSize,
+          players: [player], // Pass single player to container
           currentPlayerId: currentPlayerId,
-          pawnSize: pawnSize,
+          pawnSize: layout.normalSize * 0.45,
         ),
       );
-    });
+    }
 
     return widgets;
   }

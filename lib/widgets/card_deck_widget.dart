@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../models/game_enums.dart';
 
 /// Visual representation of a card deck (Şans or Kader)
@@ -21,9 +20,7 @@ class CardDeckWidget extends StatelessWidget {
     final isSans = type == CardType.sans;
 
     // Theme colors
-    final primaryColor = isSans
-        ? const Color(0xFF1976D2) // Blue for Şans
-        : const Color(0xFF7B1FA2); // Purple for Kader
+    // primaryColor is now determined inside the loop for depth effect
 
     final accentColor = isSans
         ? const Color(0xFF64B5F6) // Light blue
@@ -34,39 +31,37 @@ class CardDeckWidget extends StatelessWidget {
 
     return Transform.rotate(
       angle: rotation,
-      child:
-          SizedBox(
-                width: size,
-                height: size * 1.4, // Card aspect ratio
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Bottom cards (stack effect)
-                    for (int i = 2; i >= 0; i--)
-                      Positioned(
-                        left: i * 2.0,
-                        top: i * 2.0,
-                        child: _buildCardBack(
-                          size: size,
-                          primaryColor: primaryColor.withValues(
-                            alpha: 0.6 + (i * 0.15),
-                          ),
-                          accentColor: accentColor,
-                          iconData: iconData,
-                          label: label,
-                          isTop: i == 0,
-                        ),
-                      ),
-                  ],
+      child: SizedBox(
+        width: size,
+        height: size * 1.4, // Card aspect ratio
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none, // Allow stack to overflow container
+          children: [
+            // Bottom cards (stack effect) - Enhanced for depth
+            for (int i = 4; i >= 0; i--)
+              Positioned(
+                left: i * 4.0, // Significant offset for 3D look
+                top: i * 4.0,
+                child: _buildCardBack(
+                  size: size,
+                  // Darker sides, lighter top
+                  primaryColor: isSans
+                      ? (i == 0
+                            ? const Color(0xFF1976D2)
+                            : const Color(0xFF0D47A1))
+                      : (i == 0
+                            ? const Color(0xFF7B1FA2)
+                            : const Color(0xFF4A148C)),
+                  accentColor: accentColor,
+                  iconData: iconData,
+                  label: label,
+                  isTop: i == 0,
                 ),
-              )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .scale(
-                begin: const Offset(1.0, 1.0),
-                end: const Offset(1.03, 1.03),
-                duration: 2000.ms,
-                curve: Curves.easeInOut,
               ),
+          ],
+        ),
+      ),
     );
   }
 

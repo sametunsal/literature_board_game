@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
 
 /// Streak Candle Widget - "Sönmeyen Mum" (Eternal Candle)
 /// Represents user's daily play streak with a physical candle appearance
@@ -37,11 +38,11 @@ class _StreakCandleWidgetState extends State<StreakCandleWidget>
     // Subtle breathing animation for candle body
     _breatheController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: MotionDurations.shimmerMedium.safe,
     );
 
     _breatheAnimation = Tween<double>(begin: 0.97, end: 1.0).animate(
-      CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _breatheController, curve: MotionCurves.standard),
     );
 
     _breatheController.repeat(reverse: true);
@@ -49,11 +50,11 @@ class _StreakCandleWidgetState extends State<StreakCandleWidget>
     // Flame flicker animation (faster for realistic flame movement)
     _flameController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
+      duration: MotionDurations.fast.safe,
     );
 
     _flameAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _flameController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _flameController, curve: MotionCurves.standard),
     );
 
     _flameController.repeat(reverse: true);

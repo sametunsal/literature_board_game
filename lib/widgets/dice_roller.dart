@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
+import '../core/assets/asset_cache.dart';
 import '../models/game_enums.dart';
 import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
@@ -27,6 +29,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   int _dice1 = 0;
   int _dice2 = 0;
   Timer? _hapticTimer; // For haptic feedback during dice roll
+  Timer? _bounceTimer; // For bounce reset after animation
 
   // Dice Juice animation states
   double _diceScale = 1.0;
@@ -57,7 +60,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
         });
 
         // Reset bounce state after animation
-        Future.delayed(MotionDurations.fast, () {
+        _bounceTimer?.cancel();
+        _bounceTimer = Timer(MotionDurations.fast, () {
           if (mounted) {
             setState(() => _resultBounce = false);
           }
@@ -69,6 +73,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   @override
   void dispose() {
     _hapticTimer?.cancel();
+    _bounceTimer?.cancel();
     _lottieController.dispose();
     super.dispose();
   }
@@ -290,8 +295,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
                   borderRadius: BorderRadius.circular(6),
                   child: Opacity(
                     opacity: 0.05,
-                    child: Image.asset(
-                      'assets/images/paper_noise.png',
+                    child: Image(
+                      image: AssetCache.instance.paperNoiseImage,
                       fit: BoxFit.cover,
                       width: 40,
                       height: 40,
@@ -364,8 +369,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
             borderRadius: BorderRadius.circular(8),
             child: Opacity(
               opacity: 0.05,
-              child: Image.asset(
-                'assets/images/paper_noise.png',
+              child: Image(
+                image: AssetCache.instance.paperNoiseImage,
                 fit: BoxFit.cover,
                 width: 60,
                 height: 60,
@@ -456,12 +461,17 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
                   color: GameTheme.tableBackgroundColor, // Dark icon
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  buttonLabel,
-                  style: GoogleFonts.playfairDisplay(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: GameTheme.tableBackgroundColor, // Dark text
+                Shimmer.fromColors(
+                  baseColor: GameTheme.tableBackgroundColor,
+                  highlightColor: Colors.white,
+                  period: const Duration(seconds: 3),
+                  child: Text(
+                    buttonLabel,
+                    style: GoogleFonts.playfairDisplay(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: GameTheme.tableBackgroundColor, // Fallback color
+                    ),
                   ),
                 ),
               ],

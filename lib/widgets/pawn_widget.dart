@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/player.dart';
+import '../core/constants/game_constants.dart';
 import '../core/motion/motion_constants.dart';
-import 'game_log.dart' show literatureIcons;
+// import 'game_log.dart' show literatureIcons; // Removed unused import
 
 /// Animated pawn widget with premium 3D appearance
 /// Features improved hopping animation with parabolic arc and pulsating glow
@@ -37,6 +39,7 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
   // Movement juice states
   bool _isMoving = false;
   bool _showImpactFlash = false;
+  Timer? _impactFlashTimer;
 
   @override
   void initState() {
@@ -145,7 +148,8 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
         });
 
         // Reset impact flash after brief display
-        Future.delayed(MotionDurations.fast, () {
+        _impactFlashTimer?.cancel();
+        _impactFlashTimer = Timer(MotionDurations.fast, () {
           if (mounted) {
             setState(() => _showImpactFlash = false);
           }
@@ -182,6 +186,7 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _impactFlashTimer?.cancel();
     _hopController.dispose();
     _glowController.dispose();
     super.dispose();
@@ -309,20 +314,23 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              // Player icon - use const icons for tree-shaking
-              Icon(
-                widget.player.iconIndex < literatureIcons.length
-                    ? literatureIcons[widget.player.iconIndex]
-                    : Icons.person,
-                size: size * 0.52,
-                color: Colors.white,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 3,
-                    offset: const Offset(1, 1),
-                  ),
-                ],
+              // Player icon - using custom avatar images
+              ClipOval(
+                child: Image.asset(
+                  GameConstants.getAvatarPath(widget.player.iconIndex),
+                  width: size * 0.6,
+                  height: size * 0.6,
+                  fit: BoxFit.contain,
+                  color: widget.player.color,
+                  colorBlendMode: BlendMode.srcIn,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.person,
+                      size: size * 0.52,
+                      color: Colors.white,
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -357,6 +365,7 @@ class AnimatedPawnContainer extends StatefulWidget {
 class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
   Offset? _previousCenter;
   bool _justMoved = false;
+  Timer? _moveResetTimer;
 
   @override
   void didUpdateWidget(AnimatedPawnContainer oldWidget) {
@@ -369,13 +378,17 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
 
       // Reset "just moved" flag after animation completes
       // Uses pawn + medium durations for full settle time
-      Future.delayed(MotionDurations.pawn + MotionDurations.medium, () {
-        if (mounted) {
-          setState(() {
-            _justMoved = false;
-          });
-        }
-      });
+      _moveResetTimer?.cancel();
+      _moveResetTimer = Timer(
+        MotionDurations.pawn + MotionDurations.medium,
+        () {
+          if (mounted) {
+            setState(() {
+              _justMoved = false;
+            });
+          }
+        },
+      );
     }
   }
 
@@ -445,5 +458,11 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
 
     // No animation on first render or when position hasn't changed
     return pawnContainer;
+  }
+
+  @override
+  void dispose() {
+    _moveResetTimer?.cancel();
+    super.dispose();
   }
 }

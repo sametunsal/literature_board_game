@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/game_theme.dart';
+import '../core/motion/motion_constants.dart';
 
 /// Reward Particles Widget - Celebratory explosion effect for correct answers
 /// Uses physics-based animation with gravity and fade out
@@ -30,7 +31,7 @@ class _RewardParticlesWidgetState extends State<RewardParticlesWidget>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: MotionDurations.confetti.safe,
     );
 
     _particles = List.generate(widget.particleCount, (_) => _createParticle());
