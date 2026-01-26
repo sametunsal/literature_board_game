@@ -836,6 +836,9 @@ class GameNotifier extends StateNotifier<GameState> {
     if (_isProcessing || state.currentQuestion == null) return;
 
     _isProcessing = true;
+    bool shouldEndTurn =
+        false; // Flag to defer endTurn until after lock release
+
     try {
       final tile = state.currentTile;
       final category = tile?.category;
@@ -912,16 +915,21 @@ class GameNotifier extends StateNotifier<GameState> {
         // Check win condition
         _checkWinCondition();
 
-        // RPG MODE: No purchase dialog - just end turn
+        // RPG MODE: No purchase dialog - just end turn (deferred)
         if (state.phase != GamePhase.gameOver) {
-          endTurn();
+          shouldEndTurn = true; // Defer to after lock release
         }
       } else {
         _addLog("Yanlış cevap.", type: 'error');
-        endTurn();
+        shouldEndTurn = true; // Defer to after lock release
       }
     } finally {
-      _isProcessing = false;
+      _isProcessing = false; // CRITICAL: Release lock BEFORE endTurn
+    }
+
+    // Call endTurn AFTER releasing the lock to prevent deadlock
+    if (shouldEndTurn) {
+      endTurn();
     }
   }
 
