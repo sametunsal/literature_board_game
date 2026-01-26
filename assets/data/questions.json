@@ -2,6 +2,71 @@
   {
     "id": "bk_001",
     "category": "benKimim",
+    "difficulty": "easy",
+    "question": "Milli Marşımız İstiklal Marşı'nın şairiyim. 'Safahat' adlı eserim vardır.",
+    "answer": "Mehmet Akif Ersoy",
+    "options": [
+      "Yahya Kemal Beyatlı",
+      "Mehmet Akif Ersoy",
+      "Ziya Gökalp",
+      "Tevfik Fikret"
+    ]
+  },
+  {
+    "id": "bk_002",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "Çalıkuşu romanının yazarıyım. Feride karakterini ben yarattım.",
+    "answer": "Reşat Nuri Güntekin",
+    "options": [
+      "Halide Edip Adıvar",
+      "Yakup Kadri Karaosmanoğlu",
+      "Reşat Nuri Güntekin",
+      "Peyami Safa"
+    ]
+  },
+  {
+    "id": "bk_003",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "'İstanbul'u Dinliyorum' şiirimin yazarıyım. Garip akımının kurucularındanım.",
+    "answer": "Orhan Veli Kanık",
+    "options": [
+      "Melih Cevdet Anday",
+      "Orhan Veli Kanık",
+      "Oktay Rifat",
+      "Cemal Süreya"
+    ]
+  },
+  {
+    "id": "bk_004",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "Nobel Edebiyat Ödülü alan ilk Türk yazarım. 'Kar' ve 'Benim Adım Kırmızı' romanlarımla tanınırım.",
+    "answer": "Orhan Pamuk",
+    "options": [
+      "Yaşar Kemal",
+      "Orhan Pamuk",
+      "Ahmet Hamdi Tanpınar",
+      "Oğuz Atay"
+    ]
+  },
+  {
+    "id": "bk_005",
+    "category": "benKimim",
+    "difficulty": "easy",
+    "question": "'Vatan yahut Silistre' oyunuyla tanınırım. Vatan şairi olarak biliniyorum.",
+    "answer": "Namık Kemal",
+    "options": [
+      "Şinasi",
+      "Ziya Paşa",
+      "Namık Kemal",
+      "Abdülhak Hamit Tarhan"
+    ]
+  },
+  {
+    "id": "bk_006",
+    "category": "benKimim",
     "difficulty": "medium",
     "question": "Tanzimat edebiyatının öncüsüdür. İlk özel gazeteyi (Tercüman-ı Ahval) çıkardı, ilk makaleyi yazdı.",
     "answer": "Şinasi",
@@ -13,81 +78,16 @@
     ]
   },
   {
-    "id": "bk_002",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Vatan şairidir. İntibah ve Cezmi romanlarını yazdı. Tiyatroyu 'eğlencelerin en faydalısı' olarak görür.",
-    "answer": "Namık Kemal",
-    "options": [
-      "Abdülhak Hamit",
-      "Namık Kemal",
-      "Recaizade Mahmut Ekrem",
-      "Muallim Naci"
-    ]
-  },
-  {
-    "id": "bk_003",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Halk yazarı, yazı makinesi olarak bilinir. Letaif-i Rivayat serisini yazmıştır.",
-    "answer": "Ahmet Mithat Efendi",
-    "options": [
-      "Ahmet Vefik Paşa",
-      "Şemsettin Sami",
-      "Ahmet Mithat Efendi",
-      "Nabizade Nazım"
-    ]
-  },
-  {
-    "id": "bk_004",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Servetifünun şiirinin en önemli ismidir. Sis, Tarih-i Kadim şiirlerini yazmıştır.",
-    "answer": "Tevfik Fikret",
-    "options": [
-      "Cenap Şahabettin",
-      "Tevfik Fikret",
-      "Halit Ziya",
-      "Mehmet Rauf"
-    ]
-  },
-  {
-    "id": "bk_005",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Milli Marşımızın şairidir. Safahat en önemli eseridir.",
-    "answer": "Mehmet Akif Ersoy",
-    "options": [
-      "Yahya Kemal",
-      "Ziya Gökalp",
-      "Mehmet Akif Ersoy",
-      "Mehmet Emin Yurdakul"
-    ]
-  },
-  {
-    "id": "bk_006",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Adalar şairi olarak bilinir. Şiirlerini 'Ruh-ı Bikayd' adlı kitapta toplamıştır.",
-    "answer": "Tahsin Nahit",
-    "options": [
-      "Emin Bülent",
-      "Tahsin Nahit",
-      "Celal Sahir",
-      "Hamdullah Suphi"
-    ]
-  },
-  {
     "id": "bk_007",
     "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Türk edebiyatını bilimsel yöntemlerle inceleyen ilk bilim adamıdır. Türk Edebiyatı Tarihi'ni yazmıştır.",
-    "answer": "Mehmet Fuat Köprülü",
+    "difficulty": "medium",
+    "question": "Şair-i Azam olarak tanınırım. Makber şiirini eşinin ölümü üzerine yazmıştır.",
+    "answer": "Abdülhak Hamit Tarhan",
     "options": [
-      "Ziya Gökalp",
-      "Ömer Seyfettin",
-      "Mehmet Fuat Köprülü",
-      "Ali Canip Yöntem"
+      "Recaizade Mahmut Ekrem",
+      "Abdülhak Hamit Tarhan",
+      "Muallim Naci",
+      "Samipaşazade Sezai"
     ]
   },
   {
@@ -106,14 +106,14 @@
   {
     "id": "bk_009",
     "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Cumhuriyet dönemi fıkra ve gezi yazısı ustasıdır. 'Zeytindağı', 'Çankaya' önemli eserleridir.",
-    "answer": "Falih Rıfkı Atay",
+    "difficulty": "medium",
+    "question": "İstanbul şairi olarak bilinir. 'Kendi Gök Kubbemiz' en ünlü eseridir.",
+    "answer": "Yahya Kemal Beyatlı",
     "options": [
-      "Ruşen Eşref Ünaydın",
-      "Falih Rıfkı Atay",
-      "Yakup Kadri Karaosmanoğlu",
-      "Memduh Şevket Esendal"
+      "Mehmet Akif Ersoy",
+      "Yahya Kemal Beyatlı",
+      "Faruk Nafiz Çamlıbel",
+      "Orhan Veli Kanık"
     ]
   },
   {
@@ -132,57 +132,44 @@
   {
     "id": "bk_011",
     "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Şair-i Azam olarak tanınır. Makber şiirini eşinin ölümü üzerine yazmıştır.",
-    "answer": "Abdülhak Hamit Tarhan",
+    "difficulty": "hard",
+    "question": "Halk yazarı, yazı makinesi olarak bilinir. Letaif-i Rivayat serisini yazmıştır.",
+    "answer": "Ahmet Mithat Efendi",
     "options": [
-      "Recaizade Mahmut Ekrem",
-      "Abdülhak Hamit Tarhan",
-      "Muallim Naci",
-      "Samipaşazade Sezai"
+      "Ahmet Vefik Paşa",
+      "Şemsettin Sami",
+      "Ahmet Mithat Efendi",
+      "Nabizade Nazım"
     ]
   },
   {
     "id": "bk_012",
     "category": "benKimim",
     "difficulty": "hard",
-    "question": "Sembolizmin öncüsüdür. 'Elhan-ı Şita' şiiriyle kışı anlatmıştır.",
-    "answer": "Cenap Şahabettin",
+    "question": "Servetifünun şiirinin en önemli ismidir. Sis, Tarih-i Kadim şiirlerini yazmıştır.",
+    "answer": "Tevfik Fikret",
     "options": [
-      "Ahmet Haşim",
       "Cenap Şahabettin",
       "Tevfik Fikret",
-      "Yahya Kemal"
+      "Halit Ziya",
+      "Mehmet Rauf"
     ]
   },
   {
     "id": "bk_013",
     "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Modern Türk hikayeciliğinin ilk büyük ismidir. Halit Ziya ile birlikte 'Mai ve Siyah' döneminde eser vermiştir.",
-    "answer": "Halit Ziya Uşaklıgil",
+    "difficulty": "hard",
+    "question": "Türk edebiyatını bilimsel yöntemlerle inceleyen ilk bilim adamıdır. Türk Edebiyatı Tarihi'ni yazmıştır.",
+    "answer": "Mehmet Fuat Köprülü",
     "options": [
-      "Mehmet Rauf",
-      "Halit Ziya Uşaklıgil",
-      "Hüseyin Cahit Yalçın",
-      "Ahmet Rasim"
+      "Ziya Gökalp",
+      "Ömer Seyfettin",
+      "Mehmet Fuat Köprülü",
+      "Ali Canip Yöntem"
     ]
   },
   {
     "id": "bk_014",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Sokağı edebiyata taşıyan yazar olarak bilinir. Gürpınar soyadını almıştır.",
-    "answer": "Hüseyin Rahmi Gürpınar",
-    "options": [
-      "Ahmet Rasim",
-      "Hüseyin Rahmi Gürpınar",
-      "Refik Halit Karay",
-      "Sait Faik Abasıyanık"
-    ]
-  },
-  {
-    "id": "bk_015",
     "category": "benKimim",
     "difficulty": "hard",
     "question": "Akşam şairi olarak bilinir. 'Piyale' ve 'Göl Saatleri' şiir kitapları vardır.",
@@ -195,137 +182,85 @@
     ]
   },
   {
-    "id": "bk_016",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "İstanbul şairi olarak bilinir. 'Kendi Gök Kubbemiz' en ünlü eseridir.",
-    "answer": "Yahya Kemal Beyatlı",
-    "options": [
-      "Mehmet Akif Ersoy",
-      "Yahya Kemal Beyatlı",
-      "Faruk Nafiz Çamlıbel",
-      "Orhan Veli Kanık"
-    ]
-  },
-  {
-    "id": "bk_017",
+    "id": "bk_015",
     "category": "benKimim",
     "difficulty": "hard",
-    "question": "Yedi Meşalecilerdendir. 'Sebil ve Güvercinler' şiiriyle tanınır.",
-    "answer": "Ziya Osman Saba",
+    "question": "Adalar şairi olarak bilinir. Şiirlerini 'Ruh-ı Bikayd' adlı kitapta toplamıştır.",
+    "answer": "Tahsin Nahit",
     "options": [
-      "Yaşar Nabi Nayır",
-      "Ziya Osman Saba",
-      "Sabri Esat Siyavuşgil",
-      "Cevdet Kudret Solok"
-    ]
-  },
-  {
-    "id": "bk_018",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Kaldırımlar şairi olarak bilinir. 'Çile' adlı şiir kitabı vardır.",
-    "answer": "Necip Fazıl Kısakürek",
-    "options": [
-      "Sezai Karakoç",
-      "Necip Fazıl Kısakürek",
-      "Asaf Halet Çelebi",
-      "Cahit Zarifoğlu"
-    ]
-  },
-  {
-    "id": "bk_019",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "'Otuz Beş Yaş' şiiriyle tanınır. Ölüm korkusu ve yaşama sevinci şiirlerinin ana temasıdır.",
-    "answer": "Cahit Sıtkı Tarancı",
-    "options": [
-      "Ahmet Muhip Dıranas",
-      "Cahit Sıtkı Tarancı",
-      "Ziya Osman Saba",
-      "Orhan Veli Kanık"
-    ]
-  },
-  {
-    "id": "bk_020",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "Garip akımının öncüsüdür. 'İstanbul'u Dinliyorum' şiiri çok meşhurdur.",
-    "answer": "Orhan Veli Kanık",
-    "options": [
-      "Oktay Rifat",
-      "Orhan Veli Kanık",
-      "Melih Cevdet Anday",
-      "Cemal Süreya"
-    ]
-  },
-  {
-    "id": "bk_021",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "İkinci Yeni'nin en kapalı şairidir. 'Ece Ayhan' takma adını kullanmıştır.",
-    "answer": "Ece Ayhan",
-    "options": [
-      "Turgut Uyar",
-      "Edip Cansever",
-      "Ece Ayhan",
-      "İlhan Berk"
-    ]
-  },
-  {
-    "id": "bk_022",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Türk edebiyatının 'Koca Çınarı'dır. Hababam Sınıfı'nın yazarıdır.",
-    "answer": "Rıfat Ilgaz",
-    "options": [
-      "Aziz Nesin",
-      "Rıfat Ilgaz",
-      "Orhan Kemal",
-      "Muzaffer İzgü"
-    ]
-  },
-  {
-    "id": "bk_023",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "'Gurbet Şairi' olarak tanınır. 'Bingöl Çobanları' şiiri meşhurdur.",
-    "answer": "Kemalettin Kamu",
-    "options": [
-      "Faruk Nafiz Çamlıbel",
-      "Kemalettin Kamu",
-      "Ömer Bedrettin Uşaklı",
-      "Ahmet Kutsi Tecer"
-    ]
-  },
-  {
-    "id": "bk_024",
-    "category": "benKimim",
-    "difficulty": "medium",
-    "question": "'Âşık Veysel'i Türkiye'ye tanıtan isimdir. 'Nerdesin' şiiriyle bilinir.",
-    "answer": "Ahmet Kutsi Tecer",
-    "options": [
-      "Bedri Rahmi Eyüboğlu",
-      "Ahmet Kutsi Tecer",
-      "Cahit Külebi",
-      "Behçet Necatigil"
-    ]
-  },
-  {
-    "id": "bk_025",
-    "category": "benKimim",
-    "difficulty": "hard",
-    "question": "Evler Şairi olarak bilinir. Kapalıçarşı, Çevre şiir kitapları vardır.",
-    "answer": "Behçet Necatigil",
-    "options": [
-      "Fazıl Hüsnü Dağlarca",
-      "Behçet Necatigil",
-      "Sedat Umran",
-      "Salah Birsel"
+      "Emin Bülent",
+      "Tahsin Nahit",
+      "Celal Sahir",
+      "Hamdullah Suphi"
     ]
   },
   {
     "id": "ilk_001",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "Edebiyatımızdaki ilk roman hangisidir?",
+    "answer": "Taaşşuk-ı Talat ve Fitnat",
+    "options": [
+      "İntibah",
+      "Taaşşuk-ı Talat ve Fitnat",
+      "Cezmi",
+      "Araba Sevdası"
+    ]
+  },
+  {
+    "id": "ilk_002",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "İlk resmi gazete hangisidir?",
+    "answer": "Takvim-i Vakayi",
+    "options": [
+      "Takvim-i Vakayi",
+      "Ceride-i Havadis",
+      "Tercüman-ı Ahval",
+      "Tasvir-i Efkâr"
+    ]
+  },
+  {
+    "id": "ilk_003",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "İlk Türkçe sözlük hangisidir?",
+    "answer": "Divan-ı Lügati't Türk",
+    "options": [
+      "Kutadgu Bilig",
+      "Divan-ı Lügati't Türk",
+      "Muhakemetü'l Lügateyn",
+      "Lehçe-i Osmani"
+    ]
+  },
+  {
+    "id": "ilk_004",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "İlk kadın romancımız kimdir?",
+    "answer": "Fatma Aliye",
+    "options": [
+      "Halide Edip Adıvar",
+      "Fatma Aliye",
+      "Şükufe Nihal",
+      "Suat Derviş"
+    ]
+  },
+  {
+    "id": "ilk_005",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "easy",
+    "question": "İlk mizah dergisi hangisidir?",
+    "answer": "Diyojen",
+    "options": [
+      "Kalem",
+      "Diyojen",
+      "Aydede",
+      "Markopaşa"
+    ]
+  },
+  {
+    "id": "ilk_006",
     "category": "turkEdebiyatindaIlkler",
     "difficulty": "medium",
     "question": "Batılı anlamda ilk realist romanımız hangisidir?",
@@ -338,7 +273,7 @@
     ]
   },
   {
-    "id": "ilk_002",
+    "id": "ilk_007",
     "category": "turkEdebiyatindaIlkler",
     "difficulty": "medium",
     "question": "Edebiyatımızdaki ilk psikolojik roman hangisidir?",
@@ -351,7 +286,7 @@
     ]
   },
   {
-    "id": "ilk_003",
+    "id": "ilk_008",
     "category": "turkEdebiyatindaIlkler",
     "difficulty": "medium",
     "question": "Sahnelenen ilk yerli tiyatro eseri hangisidir?",
@@ -364,111 +299,7 @@
     ]
   },
   {
-    "id": "ilk_004",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "İlk yerli romanımız hangisidir?",
-    "answer": "Taaşşuk-ı Talat ve Fitnat",
-    "options": [
-      "İntibah",
-      "Taaşşuk-ı Talat ve Fitnat",
-      "Araba Sevdası",
-      "Karabibik"
-    ]
-  },
-  {
-    "id": "ilk_005",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "İlk özel gazete hangisidir?",
-    "answer": "Tercüman-ı Ahval",
-    "options": [
-      "Takvim-i Vakayi",
-      "Ceride-i Havadis",
-      "Tercüman-ı Ahval",
-      "Tasvir-i Efkâr"
-    ]
-  },
-  {
-    "id": "ilk_006",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "İlk köy romanı hangisidir?",
-    "answer": "Karabibik",
-    "options": [
-      "Yaban",
-      "Karabibik",
-      "Çalıkuşu",
-      "Küçük Paşa"
-    ]
-  },
-  {
-    "id": "ilk_007",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "Batılı anlamda ilk hikaye örneğimiz hangisidir?",
-    "answer": "Küçük Şeyler",
-    "options": [
-      "Letaif-i Rivayat",
-      "Küçük Şeyler",
-      "Müsameretname",
-      "Kıssadan Hisse"
-    ]
-  },
-  {
-    "id": "ilk_008",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "Edebiyatımızdaki ilk makale hangisidir?",
-    "answer": "Tercüman-ı Ahval Mukaddimesi",
-    "options": [
-      "Şiir ve İnşa",
-      "Tercüman-ı Ahval Mukaddimesi",
-      "Lisan-ı Osmani",
-      "Dekadanlar"
-    ]
-  },
-  {
     "id": "ilk_009",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "medium",
-    "question": "İlk resmi gazete hangisidir?",
-    "answer": "Takvim-i Vakayi",
-    "options": [
-      "Takvim-i Vakayi",
-      "Ceride-i Havadis",
-      "Tercüman-ı Ahval",
-      "Tasvir-i Efkâr"
-    ]
-  },
-  {
-    "id": "ilk_010",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "Aruzla yazılan ilk tiyatro eseri hangisidir?",
-    "answer": "Eşber",
-    "options": [
-      "Nesteren",
-      "Eşber",
-      "Validem",
-      "Sahra"
-    ]
-  },
-  {
-    "id": "ilk_011",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "Heceyle yazılan ilk tiyatro eseri hangisidir?",
-    "answer": "Nesteren",
-    "options": [
-      "Eşber",
-      "Nesteren",
-      "Validem",
-      "Macera-yı Aşk"
-    ]
-  },
-  {
-    "id": "ilk_012",
     "category": "turkEdebiyatindaIlkler",
     "difficulty": "medium",
     "question": "İlk şiir antolojisi hangisidir?",
@@ -481,22 +312,9 @@
     ]
   },
   {
-    "id": "ilk_013",
+    "id": "ilk_010",
     "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "İlk pastoral şiirimiz hangisidir?",
-    "answer": "Sahra",
-    "options": [
-      "Validem",
-      "Sahra",
-      "Belde",
-      "Elhan-ı Şita"
-    ]
-  },
-  {
-    "id": "ilk_014",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
+    "difficulty": "medium",
     "question": "İlk edebi romanımız hangisidir?",
     "answer": "İntibah",
     "options": [
@@ -507,582 +325,114 @@
     ]
   },
   {
+    "id": "ilk_011",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "hard",
+    "question": "İlk özel gazete hangisidir?",
+    "answer": "Tercüman-ı Ahval",
+    "options": [
+      "Takvim-i Vakayi",
+      "Ceride-i Havadis",
+      "Tercüman-ı Ahval",
+      "Tasvir-i Efkâr"
+    ]
+  },
+  {
+    "id": "ilk_012",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "hard",
+    "question": "İlk köy romanı hangisidir?",
+    "answer": "Karabibik",
+    "options": [
+      "Yaban",
+      "Karabibik",
+      "Çalıkuşu",
+      "Küçük Paşa"
+    ]
+  },
+  {
+    "id": "ilk_013",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "hard",
+    "question": "Batılı anlamda ilk hikaye örneğimiz hangisidir?",
+    "answer": "Küçük Şeyler",
+    "options": [
+      "Letaif-i Rivayat",
+      "Küçük Şeyler",
+      "Müsameretname",
+      "Kıssadan Hisse"
+    ]
+  },
+  {
+    "id": "ilk_014",
+    "category": "turkEdebiyatindaIlkler",
+    "difficulty": "hard",
+    "question": "Aruzla yazılan ilk tiyatro eseri hangisidir?",
+    "answer": "Eşber",
+    "options": [
+      "Nesteren",
+      "Eşber",
+      "Validem",
+      "Sahra"
+    ]
+  },
+  {
     "id": "ilk_015",
     "category": "turkEdebiyatindaIlkler",
     "difficulty": "hard",
-    "question": "İlk tarihi romanımız hangisidir?",
-    "answer": "Cezmi",
+    "question": "Edebiyatımızdaki ilk makale hangisidir?",
+    "answer": "Tercüman-ı Ahval Mukaddimesi",
     "options": [
-      "Yeniçeriler",
-      "Cezmi",
-      "Devlet Ana",
-      "Küçük Ağa"
-    ]
-  },
-  {
-    "id": "ilk_016",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "medium",
-    "question": "İlk kadın romancımız kimdir?",
-    "answer": "Fatma Aliye",
-    "options": [
-      "Halide Edip Adıvar",
-      "Fatma Aliye",
-      "Şükufe Nihal",
-      "Suat Derviş"
-    ]
-  },
-  {
-    "id": "ilk_017",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "Dünyanın yaşayan en büyük ve ilk Müslüman Türk destanı hangisidir?",
-    "answer": "Manas Destanı",
-    "options": [
-      "Oğuz Kağan",
-      "Ergenekon",
-      "Manas Destanı",
-      "Türeyiş"
-    ]
-  },
-  {
-    "id": "ilk_018",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "İlk Türkçe sözlük hangisidir?",
-    "answer": "Divan-ı Lügati't Türk",
-    "options": [
-      "Kutadgu Bilig",
-      "Divan-ı Lügati't Türk",
-      "Muhakemetü'l Lügateyn",
-      "Lehçe-i Osmani"
-    ]
-  },
-  {
-    "id": "ilk_019",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "hard",
-    "question": "İlk tezkire (şairler hayatı kitabı) hangisidir?",
-    "answer": "Mecalisü'n Nefais",
-    "options": [
-      "Heşt Behişt",
-      "Mecalisü'n Nefais",
-      "Tezkiretü'l Şuara",
-      "Gülşen-i Şuara"
-    ]
-  },
-  {
-    "id": "ilk_020",
-    "category": "turkEdebiyatindaIlkler",
-    "difficulty": "medium",
-    "question": "İlk mizah dergisi hangisidir?",
-    "answer": "Diyojen",
-    "options": [
-      "Kalem",
-      "Diyojen",
-      "Aydede",
-      "Markopaşa"
-    ]
-  },
-  {
-    "id": "ek_001",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Feride, Kâmran, Munise karakterleri hangi romanın kahramanlarıdır?",
-    "answer": "Çalıkuşu",
-    "options": [
-      "Dudaktan Kalbe",
-      "Akşam Güneşi",
-      "Çalıkuşu",
-      "Yaprak Dökümü"
-    ]
-  },
-  {
-    "id": "ek_002",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Bihter, Behlül, Adnan Bey karakterleri hangi eserde yer alır?",
-    "answer": "Aşk-ı Memnu",
-    "options": [
-      "Eylül",
-      "Mai ve Siyah",
-      "Aşk-ı Memnu",
-      "Kırık Hayatlar"
-    ]
-  },
-  {
-    "id": "ek_003",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "İnce Memed, Hatçe, Abdi Ağa karakterleri hangi yazarın eseridir?",
-    "answer": "Yaşar Kemal",
-    "options": [
-      "Orhan Kemal",
-      "Kemal Tahir",
-      "Yaşar Kemal",
-      "Fakir Baykurt"
-    ]
-  },
-  {
-    "id": "ek_004",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Rabia, Peregrini, Kız Tevfik karakterleri hangi romanda bulunur?",
-    "answer": "Sinekli Bakkal",
-    "options": [
-      "Tatarcık",
-      "Sinekli Bakkal",
-      "Handan",
-      "Vurun Kahpeye"
-    ]
-  },
-  {
-    "id": "ek_005",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Zehra, Suphi, Sırrıcemal karakterleri hangi romanda yer alır?",
-    "answer": "Zehra",
-    "options": [
-      "İntibah",
-      "Sergüzeşt",
-      "Zehra",
-      "Karabibik"
-    ]
-  },
-  {
-    "id": "ek_006",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "İstanbullu Hoca, Çolak Salih karakterleri hangi eserde geçer?",
-    "answer": "Küçük Ağa",
-    "options": [
-      "Yaban",
-      "Küçük Ağa",
-      "Osmancık",
-      "Ateşten Gömlek"
-    ]
-  },
-  {
-    "id": "ek_007",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Mümtaz, Nuran, Suat karakterleri hangi romanda yer alır?",
-    "answer": "Huzur",
-    "options": [
-      "Saatleri Ayarlama Enstitüsü",
-      "Huzur",
-      "Mahur Beste",
-      "Sahnenin Dışındakiler"
-    ]
-  },
-  {
-    "id": "ek_008",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Bihruz Bey, Periveş karakterleri hangi eserde yer alır?",
-    "answer": "Araba Sevdası",
-    "options": [
-      "Felatun Bey ile Rakım Efendi",
-      "Araba Sevdası",
-      "Şık",
-      "Mürebbiye"
-    ]
-  },
-  {
-    "id": "ek_009",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Ahmet Celal, Emine karakterleri hangi romanda bulunur?",
-    "answer": "Yaban",
-    "options": [
-      "Kiralık Konak",
-      "Sodom ve Gomore",
-      "Yaban",
-      "Ankara"
-    ]
-  },
-  {
-    "id": "ek_010",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Selim Işık, Turgut Özben karakterleri hangi postmodern eserin kahramanıdır?",
-    "answer": "Tutunamayanlar",
-    "options": [
-      "Tehlikeli Oyunlar",
-      "Tutunamayanlar",
-      "Aylak Adam",
-      "Bir Düğün Gecesi"
-    ]
-  },
-  {
-    "id": "ek_011",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Hayri İrdal, Halit Ayarcı karakterleri hangi romanda yer alır?",
-    "answer": "Saatleri Ayarlama Enstitüsü",
-    "options": [
-      "Huzur",
-      "Saatleri Ayarlama Enstitüsü",
-      "Aydaki Kadın",
-      "Mahur Beste"
-    ]
-  },
-  {
-    "id": "ek_012",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Ali Rıza Bey, Fikret, Necla, Leyla karakterleri hangi romandadır?",
-    "answer": "Yaprak Dökümü",
-    "options": [
-      "Çalıkuşu",
-      "Yaprak Dökümü",
-      "Acımak",
-      "Dudaktan Kalbe"
-    ]
-  },
-  {
-    "id": "ek_013",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "C, Zebercet karakteri hangi romanda yer alır?",
-    "answer": "Anayurt Oteli",
-    "options": [
-      "Aylak Adam",
-      "Anayurt Oteli",
-      "Canistan",
-      "Kılavuz"
-    ]
-  },
-  {
-    "id": "ek_014",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Naim Efendi, Seniha karakterleri hangi romanda yer alır?",
-    "answer": "Kiralık Konak",
-    "options": [
-      "Nur Baba",
-      "Kiralık Konak",
-      "Hüküm Gecesi",
-      "Sodom ve Gomore"
-    ]
-  },
-  {
-    "id": "ek_015",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Peyami, Ayşe, İhsan karakterleri hangi romanda yer alır?",
-    "answer": "Ateşten Gömlek",
-    "options": [
-      "Vurun Kahpeye",
-      "Ateşten Gömlek",
-      "Türk'ün Ateşle İmtihanı",
-      "Yaban"
-    ]
-  },
-  {
-    "id": "ek_016",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "İflahsızın Yusuf, Köse Hasan karakterleri hangi romanda yer alır?",
-    "answer": "Bereketli Topraklar Üzerinde",
-    "options": [
-      "Murtaza",
-      "Bereketli Topraklar Üzerinde",
-      "Hanımın Çiftliği",
-      "Eskici ve Oğulları"
-    ]
-  },
-  {
-    "id": "ek_017",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Nur Baba, Ziba Hanım karakterleri hangi eserde geçer?",
-    "answer": "Nur Baba",
-    "options": [
-      "Kiralık Konak",
-      "Nur Baba",
-      "Bir Sürgün",
-      "Panorama"
-    ]
-  },
-  {
-    "id": "ek_018",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Meftun, Şeküre Hanım karakterleri hangi romanda yer alır?",
-    "answer": "Şıpsevdi",
-    "options": [
-      "Mürebbiye",
-      "Şık",
-      "Şıpsevdi",
-      "Gulyabani"
-    ]
-  },
-  {
-    "id": "ek_019",
-    "category": "eserKarakter",
-    "difficulty": "hard",
-    "question": "Neriman, Şinasi, Macit karakterleri hangi romanda yer alır?",
-    "answer": "Fatih-Harbiye",
-    "options": [
-      "Sözde Kızlar",
-      "Fatih-Harbiye",
-      "Bir Tereddüdün Romanı",
-      "Matmazel Noraliya'nın Koltuğu"
-    ]
-  },
-  {
-    "id": "ek_020",
-    "category": "eserKarakter",
-    "difficulty": "medium",
-    "question": "Kuyucaklı Yusuf, Muazzez karakterleri hangi eserde yer alır?",
-    "answer": "Kuyucaklı Yusuf",
-    "options": [
-      "İçimizdeki Şeytan",
-      "Kürk Mantolu Madonna",
-      "Kuyucaklı Yusuf",
-      "Değirmen"
-    ]
-  },
-  {
-    "id": "san_001",
-    "category": "edebiSanatlar",
-    "difficulty": "easy",
-    "question": "'Cennet gibi güzel vatan' dizesinde hangi söz sanatı vardır?",
-    "answer": "Teşbih (Benzetme)",
-    "options": [
-      "İstiare",
-      "Teşbih (Benzetme)",
-      "Mecaz-ı Mürsel",
-      "Teşhis"
-    ]
-  },
-  {
-    "id": "san_002",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "İnsan dışı varlıkları konuşturma sanatına ne denir?",
-    "answer": "İntak",
-    "options": [
-      "Teşhis",
-      "İntak",
-      "Telmih",
-      "Mübalağa"
-    ]
-  },
-  {
-    "id": "san_003",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "Bir sözü hem gerçek hem mecaz anlama gelecek şekilde kullanıp mecazı kastetme sanatı nedir?",
-    "answer": "Kinaye",
-    "options": [
-      "Tevriye",
-      "Kinaye",
-      "Tariz",
-      "Hüsn-i Talil"
-    ]
-  },
-  {
-    "id": "san_004",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "Herkesçe bilinen bir olayı hatırlatma sanatına ne denir?",
-    "answer": "Telmih",
-    "options": [
-      "Tenasüp",
-      "Telmih",
-      "İrsal-i Mesel",
-      "Tecahül-i Arif"
-    ]
-  },
-  {
-    "id": "san_005",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "'Gül tenli, kor dudaklı' gibi benzetme yönü söylenmeden yapılan benzetmeye ne denir?",
-    "answer": "Teşbih-i Beliğ",
-    "options": [
-      "Açık İstiare",
-      "Kapalı İstiare",
-      "Teşbih-i Beliğ",
-      "Mübalağa"
-    ]
-  },
-  {
-    "id": "san_006",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "'Haliç'te bir vapuru vurdular dört kişi / Demirlemişti eli kolu bağlıydı ağlıyordu' dizelerinde hangi sanat vardır?",
-    "answer": "Teşhis",
-    "options": [
-      "Teşbih",
-      "Teşhis",
-      "İstiare",
-      "Mübalağa"
-    ]
-  },
-  {
-    "id": "san_007",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "Bir nedeni, başka güzel bir nedene bağlama sanatına ne denir? (Örn: Güzel şeyler düşünelim diye yemyeşil oluvermiş ağaçlar)",
-    "answer": "Hüsn-i Talil",
-    "options": [
-      "Tecahül-i Arif",
-      "Hüsn-i Talil",
-      "Mübalağa",
-      "Tezat"
-    ]
-  },
-  {
-    "id": "san_008",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "Bildigini bilmezlikten gelme sanatına ne denir? (Örn: Şakaklarıma kar mı yağdı ne var?)",
-    "answer": "Tecahül-i Arif",
-    "options": [
-      "İstifham",
-      "Tecahül-i Arif",
-      "Hüsn-i Talil",
-      "Teşbih"
-    ]
-  },
-  {
-    "id": "san_009",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "Birbiriyle ilgili kelimeleri bir arada kullanma sanatına ne denir? (Örn: Arım, balım, peteğim)",
-    "answer": "Tenasüp",
-    "options": [
-      "Leff ü Neşr",
-      "Tenasüp",
-      "Telmih",
-      "Tevriye"
-    ]
-  },
-  {
-    "id": "san_010",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "Bir sözü benzetme amacı gütmeden başka bir söz yerine kullanmaya ne denir? (Örn: Ankara bu karara tepki gösterdi)",
-    "answer": "Mecaz-ı Mürsel",
-    "options": [
-      "İstiare",
-      "Mecaz-ı Mürsel",
-      "Kinaye",
-      "Teşbih"
-    ]
-  },
-  {
-    "id": "san_011",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "Zıt anlamlı kelimeleri bir arada kullanma sanatına ne denir? (Örn: Ağlarım hatıra geldikçe gülüştüklerimiz)",
-    "answer": "Tezat",
-    "options": [
-      "Tenasüp",
-      "Tezat",
-      "Mübalağa",
-      "İstifham"
-    ]
-  },
-  {
-    "id": "san_012",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "'Bir of çeksem karşıki dağlar yıkılır' dizesinde hangi sanat vardır?",
-    "answer": "Mübalağa",
-    "options": [
-      "Teşhis",
-      "Mübalağa",
-      "İntak",
-      "Hüsn-i Talil"
-    ]
-  },
-  {
-    "id": "san_013",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "Atasözü veya özdeyiş kullanma sanatına ne denir?",
-    "answer": "İrsal-i Mesel",
-    "options": [
-      "Telmih",
-      "İrsal-i Mesel",
-      "İktibas",
-      "Tenasüp"
-    ]
-  },
-  {
-    "id": "san_014",
-    "category": "edebiSanatlar",
-    "difficulty": "medium",
-    "question": "Soru sorma yoluyla anlamı güçlendirme sanatına ne denir?",
-    "answer": "İstifham",
-    "options": [
-      "Tecahül-i Arif",
-      "İstifham",
-      "Nida",
-      "Terdit"
-    ]
-  },
-  {
-    "id": "san_015",
-    "category": "edebiSanatlar",
-    "difficulty": "hard",
-    "question": "İki anlama gelen bir kelimeyi uzak anlamıyla kullanma sanatına ne denir? (Örn: Bu kadar letafet çünkü sende var / Beyaz gerdanında bir de ben gerek)",
-    "answer": "Tevriye",
-    "options": [
-      "Kinaye",
-      "Tevriye",
-      "Tariz",
-      "Cinas"
+      "Şiir ve İnşa",
+      "Tercüman-ı Ahval Mukaddimesi",
+      "Lisan-ı Osmani",
+      "Dekadanlar"
     ]
   },
   {
     "id": "akm_001",
     "category": "edebiyatAkimlari",
-    "difficulty": "medium",
-    "question": "Akıl ve sağduyuyu temel alan, kuralcı 17. yy akımı hangisidir?",
-    "answer": "Klasisizm",
+    "difficulty": "easy",
+    "question": "Duyguları ve hayalleri ön plana çıkaran, kuralları reddeden akım hangisidir?",
+    "answer": "Romantizm",
     "options": [
-      "Romantizm",
       "Klasisizm",
+      "Romantizm",
       "Realizm",
-      "Sembolizm"
+      "Natüralizm"
     ]
   },
   {
     "id": "akm_002",
     "category": "edebiyatAkimlari",
-    "difficulty": "medium",
-    "question": "Duyguları ve hayalleri ön plana çıkaran akım hangisidir?",
-    "answer": "Romantizm",
+    "difficulty": "easy",
+    "question": "Gerçekçiliği esas alan, gözleme dayanan akım hangisidir?",
+    "answer": "Realizm",
     "options": [
-      "Realizm",
-      "Natüralizm",
       "Romantizm",
-      "Parnasizm"
+      "Realizm",
+      "Sembolizm",
+      "Sürrealizm"
     ]
   },
   {
     "id": "akm_003",
     "category": "edebiyatAkimlari",
-    "difficulty": "hard",
-    "question": "Şiirde gerçekçilik olarak bilinen akım hangisidir?",
-    "answer": "Parnasizm",
+    "difficulty": "easy",
+    "question": "Akıl ve mantığı, evrensel konuları işleyen 17. yüzyıl akımı hangisidir?",
+    "answer": "Klasisizm",
     "options": [
-      "Sembolizm",
+      "Romantizm",
+      "Klasisizm",
       "Parnasizm",
-      "Sürrealizm",
-      "Fütürizm"
+      "Naturalizm"
     ]
   },
   {
     "id": "akm_004",
     "category": "edebiyatAkimlari",
-    "difficulty": "medium",
-    "question": "Bilinçaltını, rüyayı ve tesadüfleri sanata yansıtan akım hangisidir?",
+    "difficulty": "easy",
+    "question": "Bilinçaltını ve rüyaları sanata yansıtan akım hangisidir?",
     "answer": "Sürrealizm",
     "options": [
       "Dadaizm",
@@ -1094,14 +444,14 @@
   {
     "id": "akm_005",
     "category": "edebiyatAkimlari",
-    "difficulty": "hard",
-    "question": "Gözlem ve deneyi esas alan, soyaçekimi önemseyen akım hangisidir?",
-    "answer": "Natüralizm",
+    "difficulty": "easy",
+    "question": "Şiirde müzikaliteyi ve imgeyi öne çıkaran, anlam kapalılığını savunan akım hangisidir?",
+    "answer": "Sembolizm",
     "options": [
-      "Realizm",
-      "Natüralizm",
-      "Romantizm",
-      "Egzistansiyalizm"
+      "Parnasizm",
+      "Sembolizm",
+      "Empresyonizm",
+      "Romantizm"
     ]
   },
   {
@@ -1120,32 +470,6 @@
   {
     "id": "akm_007",
     "category": "edebiyatAkimlari",
-    "difficulty": "hard",
-    "question": "Sözcüklerin müzikal değerine önem veren, anlam kapalılığını savunan akım hangisidir?",
-    "answer": "Sembolizm",
-    "options": [
-      "Parnasizm",
-      "Sembolizm",
-      "Empresyonizm",
-      "Sürrealizm"
-    ]
-  },
-  {
-    "id": "akm_008",
-    "category": "edebiyatAkimlari",
-    "difficulty": "hard",
-    "question": "Makineleşmeyi, hızı ve dinamizmi sanata taşıyan akım hangisidir?",
-    "answer": "Fütürizm",
-    "options": [
-      "Kübizm",
-      "Fütürizm",
-      "Dadaizm",
-      "Letrizm"
-    ]
-  },
-  {
-    "id": "akm_009",
-    "category": "edebiyatAkimlari",
     "difficulty": "medium",
     "question": "Kuralsızlığı kural edinen, Tristan Tzara öncülüğündeki akım hangisidir?",
     "answer": "Dadaizm",
@@ -1157,20 +481,7 @@
     ]
   },
   {
-    "id": "akm_010",
-    "category": "edebiyatAkimlari",
-    "difficulty": "hard",
-    "question": "İnsanın kendi özünü kendisinin yarattığını savunan, bunalım ve yabancılaşmayı işleyen akım hangisidir?",
-    "answer": "Egzistansiyalizm",
-    "options": [
-      "Entüisyonizm",
-      "Egzistansiyalizm",
-      "Fenomenoloji",
-      "Pragmatizm"
-    ]
-  },
-  {
-    "id": "akm_011",
+    "id": "akm_008",
     "category": "edebiyatAkimlari",
     "difficulty": "medium",
     "question": "Şinasi ve Ahmet Vefik Paşa hangi akımın etkisindedir?",
@@ -1183,7 +494,7 @@
     ]
   },
   {
-    "id": "akm_012",
+    "id": "akm_009",
     "category": "edebiyatAkimlari",
     "difficulty": "medium",
     "question": "Namık Kemal ve Ahmet Mithat Efendi hangi akımın etkisindedir?",
@@ -1196,7 +507,7 @@
     ]
   },
   {
-    "id": "akm_013",
+    "id": "akm_010",
     "category": "edebiyatAkimlari",
     "difficulty": "medium",
     "question": "Recaizade Mahmut Ekrem ve Halit Ziya hangi akımın etkisindedir?",
@@ -1209,7 +520,59 @@
     ]
   },
   {
+    "id": "akm_011",
+    "category": "edebiyatAkimlari",
+    "difficulty": "hard",
+    "question": "Şiirde gerçekçilik olarak bilinen akım hangisidir?",
+    "answer": "Parnasizm",
+    "options": [
+      "Sembolizm",
+      "Parnasizm",
+      "Sürrealizm",
+      "Fütürizm"
+    ]
+  },
+  {
+    "id": "akm_012",
+    "category": "edebiyatAkimlari",
+    "difficulty": "hard",
+    "question": "Gözlem ve deneyi esas alan, soyaçekimi önemseyen akım hangisidir?",
+    "answer": "Natüralizm",
+    "options": [
+      "Realizm",
+      "Natüralizm",
+      "Romantizm",
+      "Egzistansiyalizm"
+    ]
+  },
+  {
+    "id": "akm_013",
+    "category": "edebiyatAkimlari",
+    "difficulty": "hard",
+    "question": "Makineleşmeyi, hızı ve dinamizmi sanata taşıyan akım hangisidir?",
+    "answer": "Fütürizm",
+    "options": [
+      "Kübizm",
+      "Fütürizm",
+      "Dadaizm",
+      "Letrizm"
+    ]
+  },
+  {
     "id": "akm_014",
+    "category": "edebiyatAkimlari",
+    "difficulty": "hard",
+    "question": "İnsanın kendi özünü kendisinin yarattığını savunan, bunalım ve yabancılaşmayı işleyen akım hangisidir?",
+    "answer": "Egzistansiyalizm",
+    "options": [
+      "Entüisyonizm",
+      "Egzistansiyalizm",
+      "Fenomenoloji",
+      "Pragmatizm"
+    ]
+  },
+  {
+    "id": "akm_015",
     "category": "edebiyatAkimlari",
     "difficulty": "hard",
     "question": "Nabizade Nazım ve Hüseyin Rahmi Gürpınar hangi akımın etkisindedir?",
@@ -1222,33 +585,462 @@
     ]
   },
   {
-    "id": "akm_015",
-    "category": "edebiyatAkimlari",
-    "difficulty": "medium",
-    "question": "Tevfik Fikret ve Yahya Kemal hangi şiir akımından etkilenmiştir?",
-    "answer": "Parnasizm",
+    "id": "san_001",
+    "category": "edebiSanatlar",
+    "difficulty": "easy",
+    "question": "'Cennet gibi güzel vatan' dizesinde hangi söz sanatı vardır?",
+    "answer": "Teşbih (Benzetme)",
     "options": [
-      "Sembolizm",
-      "Parnasizm",
-      "Romantizm",
-      "Klasisizm"
+      "İstiare",
+      "Teşbih (Benzetme)",
+      "Mecaz-ı Mürsel",
+      "Teşhis"
+    ]
+  },
+  {
+    "id": "san_002",
+    "category": "edebiSanatlar",
+    "difficulty": "easy",
+    "question": "İnsan olmayan varlıklara insani özellikler verme sanatına ne denir?",
+    "answer": "Teşhis (Kişileştirme)",
+    "options": [
+      "İntak",
+      "Teşhis (Kişileştirme)",
+      "Telmih",
+      "Mübalağa"
+    ]
+  },
+  {
+    "id": "san_003",
+    "category": "edebiSanatlar",
+    "difficulty": "easy",
+    "question": "Zıt anlamlı kelimeleri bir arada kullanma sanatına ne denir?",
+    "answer": "Tezat",
+    "options": [
+      "Tenasüp",
+      "Tezat",
+      "Mübalağa",
+      "İstifham"
+    ]
+  },
+  {
+    "id": "san_004",
+    "category": "edebiSanatlar",
+    "difficulty": "easy",
+    "question": "Abartma sanatına ne denir?",
+    "answer": "Mübalağa",
+    "options": [
+      "Teşhis",
+      "Mübalağa",
+      "İntak",
+      "Hüsn-i Talil"
+    ]
+  },
+  {
+    "id": "san_005",
+    "category": "edebiSanatlar",
+    "difficulty": "easy",
+    "question": "Soru sorma yoluyla anlamı güçlendirme sanatına ne denir?",
+    "answer": "İstifham",
+    "options": [
+      "Tecahül-i Arif",
+      "İstifham",
+      "Nida",
+      "Terdit"
+    ]
+  },
+  {
+    "id": "san_006",
+    "category": "edebiSanatlar",
+    "difficulty": "medium",
+    "question": "İnsan dışı varlıkları konuşturma sanatına ne denir?",
+    "answer": "İntak",
+    "options": [
+      "Teşhis",
+      "İntak",
+      "Telmih",
+      "Mübalağa"
+    ]
+  },
+  {
+    "id": "san_007",
+    "category": "edebiSanatlar",
+    "difficulty": "medium",
+    "question": "Herkesçe bilinen bir olayı hatırlatma sanatına ne denir?",
+    "answer": "Telmih",
+    "options": [
+      "Tenasüp",
+      "Telmih",
+      "İrsal-i Mesel",
+      "Tecahül-i Arif"
+    ]
+  },
+  {
+    "id": "san_008",
+    "category": "edebiSanatlar",
+    "difficulty": "medium",
+    "question": "Bir nedeni, başka güzel bir nedene bağlama sanatına ne denir?",
+    "answer": "Hüsn-i Talil",
+    "options": [
+      "Tecahül-i Arif",
+      "Hüsn-i Talil",
+      "Mübalağa",
+      "Tezat"
+    ]
+  },
+  {
+    "id": "san_009",
+    "category": "edebiSanatlar",
+    "difficulty": "medium",
+    "question": "Bildiğini bilmezlikten gelme sanatına ne denir?",
+    "answer": "Tecahül-i Arif",
+    "options": [
+      "İstifham",
+      "Tecahül-i Arif",
+      "Hüsn-i Talil",
+      "Teşbih"
+    ]
+  },
+  {
+    "id": "san_010",
+    "category": "edebiSanatlar",
+    "difficulty": "medium",
+    "question": "Atasözü veya özdeyiş kullanma sanatına ne denir?",
+    "answer": "İrsal-i Mesel",
+    "options": [
+      "Telmih",
+      "İrsal-i Mesel",
+      "İktibas",
+      "Tenasüp"
+    ]
+  },
+  {
+    "id": "san_011",
+    "category": "edebiSanatlar",
+    "difficulty": "hard",
+    "question": "Bir sözü hem gerçek hem mecaz anlama gelecek şekilde kullanıp mecazı kastetme sanatı nedir?",
+    "answer": "Kinaye",
+    "options": [
+      "Tevriye",
+      "Kinaye",
+      "Tariz",
+      "Hüsn-i Talil"
+    ]
+  },
+  {
+    "id": "san_012",
+    "category": "edebiSanatlar",
+    "difficulty": "hard",
+    "question": "'Gül tenli, kor dudaklı' gibi benzetme yönü söylenmeden yapılan benzetmeye ne denir?",
+    "answer": "Teşbih-i Beliğ",
+    "options": [
+      "Açık İstiare",
+      "Kapalı İstiare",
+      "Teşbih-i Beliğ",
+      "Mübalağa"
+    ]
+  },
+  {
+    "id": "san_013",
+    "category": "edebiSanatlar",
+    "difficulty": "hard",
+    "question": "Birbiriyle ilgili kelimeleri bir arada kullanma sanatına ne denir?",
+    "answer": "Tenasüp",
+    "options": [
+      "Leff ü Neşr",
+      "Tenasüp",
+      "Telmih",
+      "Tevriye"
+    ]
+  },
+  {
+    "id": "san_014",
+    "category": "edebiSanatlar",
+    "difficulty": "hard",
+    "question": "Bir sözü benzetme amacı gütmeden başka bir söz yerine kullanmaya ne denir?",
+    "answer": "Mecaz-ı Mürsel",
+    "options": [
+      "İstiare",
+      "Mecaz-ı Mürsel",
+      "Kinaye",
+      "Teşbih"
+    ]
+  },
+  {
+    "id": "san_015",
+    "category": "edebiSanatlar",
+    "difficulty": "hard",
+    "question": "İki anlama gelen bir kelimeyi uzak anlamıyla kullanma sanatına ne denir?",
+    "answer": "Tevriye",
+    "options": [
+      "Kinaye",
+      "Tevriye",
+      "Tariz",
+      "Cinas"
+    ]
+  },
+  {
+    "id": "ek_001",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "Feride, Kâmran, Munise karakterleri hangi romanın kahramanlarıdır?",
+    "answer": "Çalıkuşu",
+    "options": [
+      "Dudaktan Kalbe",
+      "Akşam Güneşi",
+      "Çalıkuşu",
+      "Yaprak Dökümü"
+    ]
+  },
+  {
+    "id": "ek_002",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "Bihter, Behlül, Adnan Bey karakterleri hangi eserde yer alır?",
+    "answer": "Aşk-ı Memnu",
+    "options": [
+      "Eylül",
+      "Mai ve Siyah",
+      "Aşk-ı Memnu",
+      "Kırık Hayatlar"
+    ]
+  },
+  {
+    "id": "ek_003",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "Ali Rıza Bey, Fikret, Necla, Leyla karakterleri hangi romandadır?",
+    "answer": "Yaprak Dökümü",
+    "options": [
+      "Çalıkuşu",
+      "Yaprak Dökümü",
+      "Acımak",
+      "Dudaktan Kalbe"
+    ]
+  },
+  {
+    "id": "ek_004",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "Bihruz Bey, Periveş karakterleri hangi eserde yer alır?",
+    "answer": "Araba Sevdası",
+    "options": [
+      "Felatun Bey ile Rakım Efendi",
+      "Araba Sevdası",
+      "Şık",
+      "Mürebbiye"
+    ]
+  },
+  {
+    "id": "ek_005",
+    "category": "eserKarakter",
+    "difficulty": "easy",
+    "question": "Hayri İrdal, Halit Ayarcı karakterleri hangi romanda yer alır?",
+    "answer": "Saatleri Ayarlama Enstitüsü",
+    "options": [
+      "Huzur",
+      "Saatleri Ayarlama Enstitüsü",
+      "Aydaki Kadın",
+      "Mahur Beste"
+    ]
+  },
+  {
+    "id": "ek_006",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "İnce Memed, Hatçe, Abdi Ağa karakterleri hangi yazarın eseridir?",
+    "answer": "Yaşar Kemal",
+    "options": [
+      "Orhan Kemal",
+      "Kemal Tahir",
+      "Yaşar Kemal",
+      "Fakir Baykurt"
+    ]
+  },
+  {
+    "id": "ek_007",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "Mümtaz, Nuran, Suat karakterleri hangi romanda yer alır?",
+    "answer": "Huzur",
+    "options": [
+      "Saatleri Ayarlama Enstitüsü",
+      "Huzur",
+      "Mahur Beste",
+      "Sahnenin Dışındakiler"
+    ]
+  },
+  {
+    "id": "ek_008",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "İstanbullu Hoca, Çolak Salih karakterleri hangi eserde geçer?",
+    "answer": "Küçük Ağa",
+    "options": [
+      "Yaban",
+      "Küçük Ağa",
+      "Osmancık",
+      "Ateşten Gömlek"
+    ]
+  },
+  {
+    "id": "ek_009",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "Peyami, Ayşe, İhsan karakterleri hangi romanda yer alır?",
+    "answer": "Ateşten Gömlek",
+    "options": [
+      "Vurun Kahpeye",
+      "Ateşten Gömlek",
+      "Türk'ün Ateşle İmtihanı",
+      "Yaban"
+    ]
+  },
+  {
+    "id": "ek_010",
+    "category": "eserKarakter",
+    "difficulty": "medium",
+    "question": "İflahsızın Yusuf, Köse Hasan karakterleri hangi romanda yer alır?",
+    "answer": "Bereketli Topraklar Üzerinde",
+    "options": [
+      "Murtaza",
+      "Bereketli Topraklar Üzerinde",
+      "Hanımın Çiftliği",
+      "Eskici ve Oğulları"
+    ]
+  },
+  {
+    "id": "ek_011",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "Rabia, Peregrini, Kız Tevfik karakterleri hangi romanda bulunur?",
+    "answer": "Sinekli Bakkal",
+    "options": [
+      "Tatarcık",
+      "Sinekli Bakkal",
+      "Handan",
+      "Vurun Kahpeye"
+    ]
+  },
+  {
+    "id": "ek_012",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "Ahmet Celal, Emine karakterleri hangi romanda bulunur?",
+    "answer": "Yaban",
+    "options": [
+      "Kiralık Konak",
+      "Sodom ve Gomore",
+      "Yaban",
+      "Ankara"
+    ]
+  },
+  {
+    "id": "ek_013",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "Selim Işık, Turgut Özben karakterleri hangi postmodern eserin kahramanıdır?",
+    "answer": "Tutunamayanlar",
+    "options": [
+      "Tehlikeli Oyunlar",
+      "Tutunamayanlar",
+      "Aylak Adam",
+      "Bir Düğün Gecesi"
+    ]
+  },
+  {
+    "id": "ek_014",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "Zebercet karakteri hangi romanda yer alır?",
+    "answer": "Anayurt Oteli",
+    "options": [
+      "Aylak Adam",
+      "Anayurt Oteli",
+      "Canistan",
+      "Kılavuz"
+    ]
+  },
+  {
+    "id": "ek_015",
+    "category": "eserKarakter",
+    "difficulty": "hard",
+    "question": "Neriman, Şinasi, Macit karakterleri hangi romanda yer alır?",
+    "answer": "Fatih-Harbiye",
+    "options": [
+      "Sözde Kızlar",
+      "Fatih-Harbiye",
+      "Bir Tereddüdün Romanı",
+      "Matmazel Noraliya'nın Koltuğu"
     ]
   },
   {
     "id": "bon_001",
     "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "1973 yılında bestelenmiş olan 'Cumhuriyet'in 50. Yılı Marşı'nın söz yazarı kimdir?",
-    "answer": "Bekir Sıtkı Erdoğan",
+    "difficulty": "easy",
+    "question": "Nobel Edebiyat Ödülü'nü alan ilk Türk yazar kimdir?",
+    "answer": "Orhan Pamuk",
     "options": [
-      "Faruk Nafiz Çamlıbel",
-      "Behçet Kemal Çağlar",
-      "Bekir Sıtkı Erdoğan",
-      "Orhan Seyfi Orhon"
+      "Yaşar Kemal",
+      "Orhan Pamuk",
+      "Elif Şafak",
+      "Ahmet Hamdi Tanpınar"
     ]
   },
   {
     "id": "bon_002",
+    "category": "bonusBilgiler",
+    "difficulty": "easy",
+    "question": "'Sessiz Gemi' şiirinin yazarı kimdir?",
+    "answer": "Yahya Kemal Beyatlı",
+    "options": [
+      "Ahmet Haşim",
+      "Yahya Kemal Beyatlı",
+      "Faruk Nafiz Çamlıbel",
+      "Necip Fazıl Kısakürek"
+    ]
+  },
+  {
+    "id": "bon_003",
+    "category": "bonusBilgiler",
+    "difficulty": "easy",
+    "question": "Hangi yazar 'Halikarnas Balıkçısı' olarak bilinir?",
+    "answer": "Cevat Şakir Kabaağaçlı",
+    "options": [
+      "Azra Erhat",
+      "Cevat Şakir Kabaağaçlı",
+      "Sabahattin Eyüboğlu",
+      "Mina Urgan"
+    ]
+  },
+  {
+    "id": "bon_004",
+    "category": "bonusBilgiler",
+    "difficulty": "easy",
+    "question": "'Mona Rosa' şiirinin yazarı kimdir?",
+    "answer": "Sezai Karakoç",
+    "options": [
+      "Cemal Süreya",
+      "Sezai Karakoç",
+      "Erdem Bayazıt",
+      "Cahit Zarifoğlu"
+    ]
+  },
+  {
+    "id": "bon_005",
+    "category": "bonusBilgiler",
+    "difficulty": "easy",
+    "question": "'Fahriye Abla' şiiriyle tanınan şairimiz kimdir?",
+    "answer": "Ahmet Muhip Dıranas",
+    "options": [
+      "Cahit Sıtkı Tarancı",
+      "Ahmet Muhip Dıranas",
+      "Ziya Osman Saba",
+      "Behçet Necatigil"
+    ]
+  },
+  {
+    "id": "bon_006",
     "category": "bonusBilgiler",
     "difficulty": "medium",
     "question": "Zülfü Livaneli'nin besteleyip seslendirdiği 'Güneş Topla Benim İçin' şiirinin yazarı kimdir?",
@@ -1261,46 +1053,7 @@
     ]
   },
   {
-    "id": "bon_003",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Tanpınar'ın 'Sen on tane Sait Faik edersin' dediği yazar kimdir?",
-    "answer": "Oğuz Atay",
-    "options": [
-      "Yusuf Atılgan",
-      "Oğuz Atay",
-      "Bilge Karasu",
-      "Vüs'at O. Bener"
-    ]
-  },
-  {
-    "id": "bon_004",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Sarıklı İhtilalci olarak bilinen, Çırağan Sarayı baskınında ölen yazar kimdir?",
-    "answer": "Ali Suavi",
-    "options": [
-      "Namık Kemal",
-      "Ziya Paşa",
-      "Ali Suavi",
-      "Şinasi"
-    ]
-  },
-  {
-    "id": "bon_005",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Tuyuğ nazım biçimini en çok kullanan şair kimdir?",
-    "answer": "Kadı Burhaneddin",
-    "options": [
-      "Nesimi",
-      "Kadı Burhaneddin",
-      "Ahmedi",
-      "Ali Şir Nevai"
-    ]
-  },
-  {
-    "id": "bon_006",
+    "id": "bon_007",
     "category": "bonusBilgiler",
     "difficulty": "medium",
     "question": "İzmir Atatürk Lisesi'ndeyken Nazım Hikmet şiirleriyle yakalanıp okuldan uzaklaştırılan şair kimdir?",
@@ -1313,7 +1066,85 @@
     ]
   },
   {
-    "id": "bon_007",
+    "id": "bon_008",
+    "category": "bonusBilgiler",
+    "difficulty": "medium",
+    "question": "Hangi şair 'Mistik Şair' olarak bilinir?",
+    "answer": "Necip Fazıl Kısakürek",
+    "options": [
+      "Sezai Karakoç",
+      "Necip Fazıl Kısakürek",
+      "Asaf Halet Çelebi",
+      "Cahit Zarifoğlu"
+    ]
+  },
+  {
+    "id": "bon_009",
+    "category": "bonusBilgiler",
+    "difficulty": "medium",
+    "question": "Hangisi Yedi Meşaleciler topluluğunun tek hikayecisidir?",
+    "answer": "Kenan Hulusi Koray",
+    "options": [
+      "Ziya Osman Saba",
+      "Kenan Hulusi Koray",
+      "Yaşar Nabi Nayır",
+      "Muammer Lütfi"
+    ]
+  },
+  {
+    "id": "bon_010",
+    "category": "bonusBilgiler",
+    "difficulty": "medium",
+    "question": "Tanpınar'ın 'Sen on tane Sait Faik edersin' dediği yazar kimdir?",
+    "answer": "Oğuz Atay",
+    "options": [
+      "Yusuf Atılgan",
+      "Oğuz Atay",
+      "Bilge Karasu",
+      "Vüs'at O. Bener"
+    ]
+  },
+  {
+    "id": "bon_011",
+    "category": "bonusBilgiler",
+    "difficulty": "hard",
+    "question": "1973 yılında bestelenmiş olan 'Cumhuriyet'in 50. Yılı Marşı'nın söz yazarı kimdir?",
+    "answer": "Bekir Sıtkı Erdoğan",
+    "options": [
+      "Faruk Nafiz Çamlıbel",
+      "Behçet Kemal Çağlar",
+      "Bekir Sıtkı Erdoğan",
+      "Orhan Seyfi Orhon"
+    ]
+  },
+  {
+    "id": "bon_012",
+    "category": "bonusBilgiler",
+    "difficulty": "hard",
+    "question": "Sarıklı İhtilalci olarak bilinen, Çırağan Sarayı baskınında ölen yazar kimdir?",
+    "answer": "Ali Suavi",
+    "options": [
+      "Namık Kemal",
+      "Ziya Paşa",
+      "Ali Suavi",
+      "Şinasi"
+    ]
+  },
+  {
+    "id": "bon_013",
+    "category": "bonusBilgiler",
+    "difficulty": "hard",
+    "question": "Tuyuğ nazım biçimini en çok kullanan şair kimdir?",
+    "answer": "Kadı Burhaneddin",
+    "options": [
+      "Nesimi",
+      "Kadı Burhaneddin",
+      "Ahmedi",
+      "Ali Şir Nevai"
+    ]
+  },
+  {
+    "id": "bon_014",
     "category": "bonusBilgiler",
     "difficulty": "hard",
     "question": "'Yazarların Annesi' (Ümmü'l-Muharrirat) olarak ilan edilen yazarımız kimdir?",
@@ -1326,85 +1157,7 @@
     ]
   },
   {
-    "id": "bon_008",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "'Fahriye Abla' şiiriyle tanınan şairimiz kimdir?",
-    "answer": "Ahmet Muhip Dıranas",
-    "options": [
-      "Cahit Sıtkı Tarancı",
-      "Ahmet Muhip Dıranas",
-      "Ziya Osman Saba",
-      "Behçet Necatigil"
-    ]
-  },
-  {
-    "id": "bon_009",
-    "category": "bonusBilgiler",
-    "difficulty": "medium",
-    "question": "'Sessiz Gemi' şiirinin yazarı kimdir?",
-    "answer": "Yahya Kemal Beyatlı",
-    "options": [
-      "Ahmet Haşim",
-      "Yahya Kemal Beyatlı",
-      "Faruk Nafiz Çamlıbel",
-      "Necip Fazıl Kısakürek"
-    ]
-  },
-  {
-    "id": "bon_010",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Nobel Edebiyat Ödülü'nü alan ilk Türk yazar kimdir?",
-    "answer": "Orhan Pamuk",
-    "options": [
-      "Yaşar Kemal",
-      "Orhan Pamuk",
-      "Elif Şafak",
-      "Ahmet Hamdi Tanpınar"
-    ]
-  },
-  {
-    "id": "bon_011",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Hangi şair 'Mistik Şair' olarak bilinir?",
-    "answer": "Necip Fazıl Kısakürek",
-    "options": [
-      "Sezai Karakoç",
-      "Necip Fazıl Kısakürek",
-      "Asaf Halet Çelebi",
-      "Cahit Zarifoğlu"
-    ]
-  },
-  {
-    "id": "bon_012",
-    "category": "bonusBilgiler",
-    "difficulty": "medium",
-    "question": "'Mona Rosa' şiirinin yazarı kimdir?",
-    "answer": "Sezai Karakoç",
-    "options": [
-      "Cemal Süreya",
-      "Sezai Karakoç",
-      "Erdem Bayazıt",
-      "Cahit Zarifoğlu"
-    ]
-  },
-  {
-    "id": "bon_013",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Hangisi Yedi Meşaleciler topluluğunun tek hikayecisidir?",
-    "answer": "Kenan Hulusi Koray",
-    "options": [
-      "Ziya Osman Saba",
-      "Kenan Hulusi Koray",
-      "Yaşar Nabi Nayır",
-      "Muammer Lütfi"
-    ]
-  },
-  {
-    "id": "bon_014",
+    "id": "bon_015",
     "category": "bonusBilgiler",
     "difficulty": "hard",
     "question": "Hangi eser Türk edebiyatının ilk bibliyografyası sayılır?",
@@ -1414,19 +1167,6 @@
       "Keşfü'z Zünun",
       "Cihannüma",
       "Fezleke"
-    ]
-  },
-  {
-    "id": "bon_015",
-    "category": "bonusBilgiler",
-    "difficulty": "hard",
-    "question": "Hangi yazar 'Halikarnas Balıkçısı' olarak bilinir?",
-    "answer": "Cevat Şakir Kabaağaçlı",
-    "options": [
-      "Azra Erhat",
-      "Cevat Şakir Kabaağaçlı",
-      "Sabahattin Eyüboğlu",
-      "Mina Urgan"
     ]
   }
 ]

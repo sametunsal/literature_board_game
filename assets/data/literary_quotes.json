@@ -1,0 +1,178 @@
+[
+    {
+        "id": "quote_001",
+        "text": "Söz ola kese savaşı, söz ola kestire başı.",
+        "author": "Yunus Emre",
+        "period": "Halk Edebiyatı",
+        "starCost": 10
+    },
+    {
+        "id": "quote_002",
+        "text": "İlim ilim bilmektir, ilim kendin bilmektir. Sen kendini bilmezsin, ya nice okumaktır.",
+        "author": "Yunus Emre",
+        "period": "Halk Edebiyatı",
+        "starCost": 10
+    },
+    {
+        "id": "quote_003",
+        "text": "Cümle yaratılmışa bir göz ile bakmayan, halka müderris olsa hakikatte asidir.",
+        "author": "Yunus Emre",
+        "period": "Halk Edebiyatı",
+        "starCost": 10
+    },
+    {
+        "id": "quote_004",
+        "text": "Beni candan usandırdı, cefâdan yâr usanmaz mı? Felekler yandı âhımdan, murâdım şem'i yanmaz mı?",
+        "author": "Fuzuli",
+        "period": "Divan Edebiyatı",
+        "starCost": 15
+    },
+    {
+        "id": "quote_005",
+        "text": "Aşk imiş her ne var âlemde, ilim bir kıyl ü kâl imiş ancak.",
+        "author": "Fuzuli",
+        "period": "Divan Edebiyatı",
+        "starCost": 15
+    },
+    {
+        "id": "quote_006",
+        "text": "Eğer maksûd eserse mısra-ı berceste kâfidir.",
+        "author": "Nabi",
+        "period": "Divan Edebiyatı",
+        "starCost": 15
+    },
+    {
+        "id": "quote_007",
+        "text": "Haddeden geçmiş nezâket yâl ü bâl olmuş sana, mey süzülmüş şîşeden ruhsâr-ı âl olmuş sana.",
+        "author": "Nedim",
+        "period": "Divan Edebiyatı",
+        "starCost": 15
+    },
+    {
+        "id": "quote_008",
+        "text": "Geldi ol şûh hâne-i kalbe, dedi gönlüm hoş geldin.",
+        "author": "Baki",
+        "period": "Divan Edebiyatı",
+        "starCost": 15
+    },
+    {
+        "id": "quote_009",
+        "text": "Vatanın bağrına düşman dayamış hançerini, yok mudur kurtaracak bahtı kara mâderini?",
+        "answer": "Namık Kemal",
+        "author": "Namık Kemal",
+        "period": "Tanzimat Edebiyatı",
+        "starCost": 12
+    },
+    {
+        "id": "quote_010",
+        "text": "Ne efsunkar imişsin ah ey didar-ı hürriyet!",
+        "author": "Namık Kemal",
+        "period": "Tanzimat Edebiyatı",
+        "starCost": 12
+    },
+    {
+        "id": "quote_011",
+        "text": "Sis, yalnız sis, sisler âlemi! / Bu örtünüş, bu karanlık ne güzeldi.",
+        "author": "Tevfik Fikret",
+        "period": "Servetifünun",
+        "starCost": 10
+    },
+    {
+        "id": "quote_012",
+        "text": "Bir gün gelecek, sen de perişan olacaksın!",
+        "author": "Tevfik Fikret",
+        "period": "Servetifünun",
+        "starCost": 10
+    },
+    {
+        "id": "quote_013",
+        "text": "Korkma! Sönmez bu şafaklarda yüzen al sancak, sönmeden yurdumun üstünde tüten en son ocak.",
+        "author": "Mehmet Akif Ersoy",
+        "period": "Milli Edebiyat",
+        "starCost": 8
+    },
+    {
+        "id": "quote_014",
+        "text": "İnmeyeceksin semâdan, inen Allah'tır sana. / Her dileğin verir sana, uman Allah'tır sana.",
+        "author": "Mehmet Akif Ersoy",
+        "period": "Milli Edebiyat",
+        "starCost": 8
+    },
+    {
+        "id": "quote_015",
+        "text": "Sessiz gemi, hangi limandan kalkıyor? / Görenler ağlıyor, kalan dostlar ağlıyor.",
+        "author": "Yahya Kemal Beyatlı",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_016",
+        "text": "İstanbul'u dinliyorum, gözlerim kapalı.",
+        "author": "Orhan Veli Kanık",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_017",
+        "text": "Anladım işi, sanat Allah'ı aramakmış. / Marifet bundadır, gerisi yalan.",
+        "author": "Necip Fazıl Kısakürek",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_018",
+        "text": "Otuz beş yaş, yolun yarısı eder. Dante gibi, ortasındayız ömrün.",
+        "author": "Cahit Sıtkı Tarancı",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_019",
+        "text": "Yaşamak bir ağaç gibi tek ve hür, ve bir orman gibi kardeşçesine.",
+        "author": "Nazım Hikmet",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_020",
+        "text": "Sen sevda mısın, ıstırap mısın, nedir? / Sen rüya mısın, hakikat mısın, nedir?",
+        "author": "Ahmet Haşim",
+        "period": "Fecr-i Ati",
+        "starCost": 10
+    },
+    {
+        "id": "quote_021",
+        "text": "Her şey akar, su, tarih, yıldız, mecra ve kader... Teker döner, pirinç çiçek açar, gülümser çocuklar.",
+        "author": "Attila İlhan",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_022",
+        "text": "Mona Rosa, seni düşünürüm / Durur ve bakarım, bakarım.",
+        "author": "Sezai Karakoç",
+        "period": "İkinci Yeni",
+        "starCost": 8
+    },
+    {
+        "id": "quote_023",
+        "text": "Üzgünüm, ağzımda bir diş kalmadı; / Beni böyle seven de olmadı.",
+        "author": "Cemal Süreya",
+        "period": "İkinci Yeni",
+        "starCost": 8
+    },
+    {
+        "id": "quote_024",
+        "text": "Fahriye Abla, sen bir gülsün ki / Goncaların bile kıskanır yüzünü.",
+        "author": "Ahmet Muhip Dıranas",
+        "period": "Cumhuriyet Dönemi",
+        "starCost": 5
+    },
+    {
+        "id": "quote_025",
+        "text": "Ağlama ey gözlerim, ağla desen ağlayamam, / Keder benim yârim olmuş, ayrı desen duramam.",
+        "author": "Âşık Veysel",
+        "period": "Halk Edebiyatı",
+        "starCost": 10
+    }
+]

@@ -29,6 +29,7 @@ enum TileTypeModel {
   educationFoundation,
   incomeTax,
   writingTax,
+  kiraathane, // Shop corner tile
 }
 
 enum QuestionCategoryModel {

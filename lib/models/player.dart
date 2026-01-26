@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'game_enums.dart';
 
 class Player {
   final String id;
@@ -11,6 +12,13 @@ class Player {
   final int iconIndex;
   final int turnsToSkip; // Library watch penalty turns remaining
 
+  // RPG Progression Fields
+  final int stars; // Currency for shop
+  final List<String> inventory; // Owned quote IDs
+  final Map<String, PlayerRank> categoryProgress; // Rank per category
+  final String mainTitle; // Current title (Çaylak → Ehil)
+  final Map<String, int> correctAnswers; // Correct answers per category
+
   const Player({
     required this.id,
     required this.name,
@@ -21,7 +29,31 @@ class Player {
     this.ownedTiles = const [],
     this.inJail = false,
     this.turnsToSkip = 0,
+    // RPG defaults
+    this.stars = 0,
+    this.inventory = const [],
+    this.categoryProgress = const {},
+    this.mainTitle = 'Çaylak',
+    this.correctAnswers = const {},
   });
+
+  /// Get rank for a specific category (defaults to none)
+  PlayerRank getRankForCategory(QuestionCategory category) {
+    return categoryProgress[category.name] ?? PlayerRank.none;
+  }
+
+  /// Check if player is master (Usta) in all categories
+  bool get isUstaInAllCategories {
+    for (final category in QuestionCategory.values) {
+      if (getRankForCategory(category) != PlayerRank.usta) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// Check if player qualifies for Ehil title
+  bool get isEhil => isUstaInAllCategories && inventory.length >= 50;
 
   Player copyWith({
     String? name,
@@ -32,6 +64,11 @@ class Player {
     List<int>? ownedTiles,
     bool? inJail,
     int? turnsToSkip,
+    int? stars,
+    List<String>? inventory,
+    Map<String, PlayerRank>? categoryProgress,
+    String? mainTitle,
+    Map<String, int>? correctAnswers,
   }) {
     return Player(
       id: id,
@@ -43,6 +80,20 @@ class Player {
       ownedTiles: ownedTiles ?? this.ownedTiles,
       inJail: inJail ?? this.inJail,
       turnsToSkip: turnsToSkip ?? this.turnsToSkip,
+      stars: stars ?? this.stars,
+      inventory: inventory ?? this.inventory,
+      categoryProgress: categoryProgress ?? this.categoryProgress,
+      mainTitle: mainTitle ?? this.mainTitle,
+      correctAnswers: correctAnswers ?? this.correctAnswers,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Player && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

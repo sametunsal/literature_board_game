@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.literature_board_game"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

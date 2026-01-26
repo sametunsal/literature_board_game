@@ -35,6 +35,9 @@ class HandleTileEffectUseCase {
       case TileType.writingTax:
         return TileActions.writingTax(GameConstants.writingTax);
 
+      case TileType.kiraathane:
+        return TileActions.openShop();
+
       case TileType.start:
         return TileActions.none();
     }
@@ -130,6 +133,11 @@ class WritingTaxAction extends TileAction {
   const WritingTaxAction(this.amount);
 }
 
+/// Open shop dialog (Kıraathane).
+class OpenShopAction extends TileAction {
+  const OpenShopAction();
+}
+
 /// Factory for creating tile actions.
 class TileActions {
   TileActions._();
@@ -143,4 +151,5 @@ class TileActions {
   static TileAction bankruptcyRisk() => const BankruptcyRiskAction();
   static TileAction incomeTax(int amount) => IncomeTaxAction(amount);
   static TileAction writingTax(int amount) => WritingTaxAction(amount);
+  static TileAction openShop() => const OpenShopAction();
 }

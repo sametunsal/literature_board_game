@@ -8,12 +8,14 @@ class Question {
   final List<String> options;
   final int correctIndex;
   final QuestionCategory category;
+  final String difficulty; // 'easy', 'medium', 'hard'
 
   const Question({
     required this.text,
     required this.options,
     required this.correctIndex,
     required this.category,
+    this.difficulty = 'medium',
   });
 
   @override
@@ -30,6 +32,6 @@ class Question {
 
   @override
   String toString() {
-    return 'Question(text: $text, options: $options, correctIndex: $correctIndex, category: $category)';
+    return 'Question(text: $text, options: $options, correctIndex: $correctIndex, category: $category, difficulty: $difficulty)';
   }
 }

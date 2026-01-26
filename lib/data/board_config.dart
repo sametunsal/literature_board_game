@@ -1,13 +1,81 @@
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 
-/// Board configuration with Monopoly-style color groups
-/// Colors progress: Brown -> Light Blue -> Pink -> Orange -> Red -> Yellow -> Green -> Blue
-/// Prices increase within each group and across groups
+/// Board configuration with 22 tiles for RPG-style Literature Board Game
+///
+/// 6x7 RECTANGULAR GRID LAYOUT (22 tiles on perimeter):
+///
+///   Width: 6 tiles | Height: 7 tiles
+///
+///   Grid Visual (indices shown):
+///
+///   [11-SHOP] [10-Cat]  [9-Cat]   [8-Cat]   [7-Cat]   [6-Cat]   -- Top row (going right from left corner)
+///   [10-Cat ]                                          [17-Cat]
+///   [9-Cat  ]                                          [18-Cat]
+///   [8-Cat  ]           CENTER AREA                    [19-Cat]
+///   [7-Cat  ]           (empty)                        [20-Cat]
+///   [6-Cat  ]                                          [21-Cat]
+///   [5-ŞANS ] [4-Cat]   [3-Cat]   [2-Cat]   [1-Cat]   [0-START] -- Bottom row (going left from start)
+///
+/// Tile Mapping (Clockwise from Bottom-Right):
+///   - Index 0 (Bottom-Right): START (Başlangıç)
+///   - Indices 1-4 (Bottom row, right to left): 4 Category tiles
+///   - Index 5 (Bottom-Left): ŞANS (Chance)
+///   - Indices 6-10 (Left column, bottom to top): 5 Category tiles
+///   - Index 11 (Top-Left): KIRAATHANe (Shop)
+///   - Indices 12-15 (Top row, left to right): 4 Category tiles
+///   - Index 16 (Top-Right): KADER (Fate)
+///   - Indices 17-21 (Right column, top to bottom): 5 Category tiles
+///
+/// Categories repeat 3 times each (18 category tiles total)
 class BoardConfig {
+  /// The 6 question categories in order
+  static const List<QuestionCategory> _categoryOrder = [
+    QuestionCategory.benKimim,
+    QuestionCategory.turkEdebiyatindaIlkler,
+    QuestionCategory.edebiyatAkimlari,
+    QuestionCategory.edebiSanatlar,
+    QuestionCategory.eserKarakter,
+    QuestionCategory.bonusBilgiler,
+  ];
+
+  /// Get category display name in Turkish
+  static String getCategoryDisplayName(QuestionCategory category) {
+    switch (category) {
+      case QuestionCategory.benKimim:
+        return 'Ben Kimim?';
+      case QuestionCategory.turkEdebiyatindaIlkler:
+        return 'İlkler';
+      case QuestionCategory.edebiyatAkimlari:
+        return 'Akımlar';
+      case QuestionCategory.edebiSanatlar:
+        return 'Edebi Sanatlar';
+      case QuestionCategory.eserKarakter:
+        return 'Eser-Karakter';
+      case QuestionCategory.bonusBilgiler:
+        return 'Bonus';
+    }
+  }
+
+  /// Board geometry
+  static const int boardWidth = 6; // Tiles across
+  static const int boardHeight = 7; // Tiles down
+  static const int boardSize = 22; // Total perimeter tiles
+
+  /// Corner positions
+  static const int startPosition = 0; // Bottom-Right
+  static const int chancePosition = 5; // Bottom-Left (Şans)
+  static const int shopPosition = 11; // Top-Left (Kıraathane)
+  static const int fatePosition = 16; // Top-Right (Kader)
+
+  /// Helper to get category at position (cycles through 6 categories)
+  static QuestionCategory _getCategoryAt(int categoryIndex) {
+    return _categoryOrder[categoryIndex % 6];
+  }
+
   static List<BoardTile> tiles = [
     // ═══════════════════════════════════════════════════════════════════════════
-    // CORNER 0 (BOTTOM-LEFT): START
+    // INDEX 0: START (Bottom-Right Corner)
     // ═══════════════════════════════════════════════════════════════════════════
     const BoardTile(
       id: 0,
@@ -17,367 +85,175 @@ class BoardConfig {
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // LEFT EDGE (IDs 1-9): Going UP
+    // INDICES 1-4: Bottom Row (Right to Left) - 4 Category Tiles
     // ═══════════════════════════════════════════════════════════════════════════
-
-    // GROUP 1: BROWN (2 properties)
-    const BoardTile(
+    BoardTile(
       id: 1,
-      title: 'Çalıkuşu',
+      title: getCategoryDisplayName(_getCategoryAt(0)),
       type: TileType.property,
-      price: 60,
-      baseRent: 2,
-      category: QuestionCategory.eserKarakter,
+      category: _getCategoryAt(0), // benKimim
       colorGroup: PropertyColorGroup.brown,
     ),
-    const BoardTile(
+    BoardTile(
       id: 2,
-      title: 'KADER KARTI',
-      type: TileType.fate,
-      colorGroup: PropertyColorGroup.special,
-    ),
-    const BoardTile(
-      id: 3,
-      title: 'Dudaktan Kalbe',
+      title: getCategoryDisplayName(_getCategoryAt(1)),
       type: TileType.property,
-      price: 80,
-      baseRent: 4,
-      category: QuestionCategory.eserKarakter,
-      colorGroup: PropertyColorGroup.brown,
+      category: _getCategoryAt(1), // turkEdebiyatindaIlkler
+      colorGroup: PropertyColorGroup.lightBlue,
     ),
-    const BoardTile(
+    BoardTile(
+      id: 3,
+      title: getCategoryDisplayName(_getCategoryAt(2)),
+      type: TileType.property,
+      category: _getCategoryAt(2), // edebiyatAkimlari
+      colorGroup: PropertyColorGroup.pink,
+    ),
+    BoardTile(
       id: 4,
-      title: 'GELİR VERGİSİ',
-      type: TileType.incomeTax,
-      colorGroup: PropertyColorGroup.special,
+      title: getCategoryDisplayName(_getCategoryAt(3)),
+      type: TileType.property,
+      category: _getCategoryAt(3), // edebiSanatlar
+      colorGroup: PropertyColorGroup.orange,
     ),
 
-    // UTILITY: Publisher 1
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INDEX 5: ŞANS (Bottom-Left Corner) - Chance
+    // ═══════════════════════════════════════════════════════════════════════════
     const BoardTile(
       id: 5,
-      title: '1. YAYINEVİ',
-      type: TileType.publisher,
-      price: 200,
-      isUtility: true,
-      colorGroup: PropertyColorGroup.utility,
-    ),
-
-    // GROUP 2: LIGHT BLUE (3 properties)
-    const BoardTile(
-      id: 6,
-      title: 'Yaban',
-      type: TileType.property,
-      price: 100,
-      baseRent: 6,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
-      colorGroup: PropertyColorGroup.lightBlue,
-    ),
-    const BoardTile(
-      id: 7,
-      title: 'ŞANS KARTI',
+      title: 'ŞANS',
       type: TileType.chance,
       colorGroup: PropertyColorGroup.special,
     ),
-    const BoardTile(
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INDICES 6-10: Left Column (Bottom to Top) - 5 Category Tiles
+    // ═══════════════════════════════════════════════════════════════════════════
+    BoardTile(
+      id: 6,
+      title: getCategoryDisplayName(_getCategoryAt(4)),
+      type: TileType.property,
+      category: _getCategoryAt(4), // eserKarakter
+      colorGroup: PropertyColorGroup.red,
+    ),
+    BoardTile(
+      id: 7,
+      title: getCategoryDisplayName(_getCategoryAt(5)),
+      type: TileType.property,
+      category: _getCategoryAt(5), // bonusBilgiler
+      colorGroup: PropertyColorGroup.yellow,
+    ),
+    BoardTile(
       id: 8,
-      title: 'Sinekli Bakkal',
+      title: getCategoryDisplayName(_getCategoryAt(0)),
       type: TileType.property,
-      price: 120,
-      baseRent: 6,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
-      colorGroup: PropertyColorGroup.lightBlue,
+      category: _getCategoryAt(0), // benKimim (2nd)
+      colorGroup: PropertyColorGroup.brown,
     ),
-    const BoardTile(
+    BoardTile(
       id: 9,
-      title: 'Kiralık Konak',
+      title: getCategoryDisplayName(_getCategoryAt(1)),
       type: TileType.property,
-      price: 140,
-      baseRent: 8,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
+      category: _getCategoryAt(1), // turkEdebiyatindaIlkler (2nd)
       colorGroup: PropertyColorGroup.lightBlue,
     ),
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CORNER 1 (TOP-LEFT): LIBRARY WATCH
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
+    BoardTile(
       id: 10,
-      title: 'KÜTÜPHANE\nNÖBETİ',
-      type: TileType.libraryWatch,
-      colorGroup: PropertyColorGroup.special,
+      title: getCategoryDisplayName(_getCategoryAt(2)),
+      type: TileType.property,
+      category: _getCategoryAt(2), // edebiyatAkimlari (2nd)
+      colorGroup: PropertyColorGroup.pink,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // TOP EDGE (IDs 11-19): Going RIGHT
+    // INDEX 11: KIRAATHANe (Top-Left Corner) - SHOP
     // ═══════════════════════════════════════════════════════════════════════════
-
-    // GROUP 3: PINK (3 properties)
     const BoardTile(
       id: 11,
-      title: 'Mai ve Siyah',
-      type: TileType.property,
-      price: 140,
-      baseRent: 10,
-      category: QuestionCategory.edebiyatAkimlari,
-      colorGroup: PropertyColorGroup.pink,
+      title: 'KIRAATHANe',
+      type: TileType.kiraathane,
+      colorGroup: PropertyColorGroup.special,
     ),
-    const BoardTile(
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INDICES 12-15: Top Row (Left to Right) - 4 Category Tiles
+    // ═══════════════════════════════════════════════════════════════════════════
+    BoardTile(
       id: 12,
-      title: 'YAZARLIK OKULU',
-      type: TileType.writingSchool,
-      price: 150,
-      isUtility: true,
-      colorGroup: PropertyColorGroup.utility,
+      title: getCategoryDisplayName(_getCategoryAt(3)),
+      type: TileType.property,
+      category: _getCategoryAt(3), // edebiSanatlar (2nd)
+      colorGroup: PropertyColorGroup.orange,
     ),
-    const BoardTile(
+    BoardTile(
       id: 13,
-      title: 'Aşk-ı Memnu',
+      title: getCategoryDisplayName(_getCategoryAt(4)),
       type: TileType.property,
-      price: 160,
-      baseRent: 10,
-      category: QuestionCategory.eserKarakter,
-      colorGroup: PropertyColorGroup.pink,
+      category: _getCategoryAt(4), // eserKarakter (2nd)
+      colorGroup: PropertyColorGroup.red,
     ),
-    const BoardTile(
+    BoardTile(
       id: 14,
-      title: 'Eylül',
+      title: getCategoryDisplayName(_getCategoryAt(5)),
       type: TileType.property,
-      price: 180,
-      baseRent: 12,
-      category: QuestionCategory.edebiSanatlar,
-      colorGroup: PropertyColorGroup.pink,
+      category: _getCategoryAt(5), // bonusBilgiler (2nd)
+      colorGroup: PropertyColorGroup.yellow,
     ),
-
-    // UTILITY: Publisher 2
-    const BoardTile(
+    BoardTile(
       id: 15,
-      title: '2. YAYINEVİ',
-      type: TileType.publisher,
-      price: 200,
-      isUtility: true,
-      colorGroup: PropertyColorGroup.utility,
+      title: getCategoryDisplayName(_getCategoryAt(0)),
+      type: TileType.property,
+      category: _getCategoryAt(0), // benKimim (3rd)
+      colorGroup: PropertyColorGroup.brown,
     ),
 
-    // GROUP 4: ORANGE (3 properties)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INDEX 16: KADER (Top-Right Corner) - Fate
+    // ═══════════════════════════════════════════════════════════════════════════
     const BoardTile(
       id: 16,
-      title: 'İnce Memed',
-      type: TileType.property,
-      price: 180,
-      baseRent: 14,
-      category: QuestionCategory.benKimim,
-      colorGroup: PropertyColorGroup.orange,
+      title: 'KADER',
+      type: TileType.fate,
+      colorGroup: PropertyColorGroup.special,
     ),
-    const BoardTile(
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INDICES 17-21: Right Column (Top to Bottom) - 5 Category Tiles
+    // ═══════════════════════════════════════════════════════════════════════════
+    BoardTile(
       id: 17,
-      title: 'KADER KARTI',
-      type: TileType.fate,
-      colorGroup: PropertyColorGroup.special,
+      title: getCategoryDisplayName(_getCategoryAt(1)),
+      type: TileType.property,
+      category: _getCategoryAt(1), // turkEdebiyatindaIlkler (3rd)
+      colorGroup: PropertyColorGroup.lightBlue,
     ),
-    const BoardTile(
+    BoardTile(
       id: 18,
-      title: 'Yer Demir Gök Bakır',
+      title: getCategoryDisplayName(_getCategoryAt(2)),
       type: TileType.property,
-      price: 200,
-      baseRent: 14,
-      category: QuestionCategory.benKimim,
-      colorGroup: PropertyColorGroup.orange,
+      category: _getCategoryAt(2), // edebiyatAkimlari (3rd)
+      colorGroup: PropertyColorGroup.pink,
     ),
-    const BoardTile(
+    BoardTile(
       id: 19,
-      title: 'Teneke',
+      title: getCategoryDisplayName(_getCategoryAt(3)),
       type: TileType.property,
-      price: 220,
-      baseRent: 16,
-      category: QuestionCategory.benKimim,
+      category: _getCategoryAt(3), // edebiSanatlar (3rd)
       colorGroup: PropertyColorGroup.orange,
     ),
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CORNER 2 (TOP-RIGHT): AUTOGRAPH DAY
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
+    BoardTile(
       id: 20,
-      title: 'İMZA GÜNÜ',
-      type: TileType.autographDay,
-      colorGroup: PropertyColorGroup.special,
+      title: getCategoryDisplayName(_getCategoryAt(4)),
+      type: TileType.property,
+      category: _getCategoryAt(4), // eserKarakter (3rd)
+      colorGroup: PropertyColorGroup.red,
     ),
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RIGHT EDGE (IDs 21-29): Going DOWN
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    // GROUP 5: RED (3 properties)
-    const BoardTile(
+    BoardTile(
       id: 21,
-      title: 'Saatleri Ayarlama',
+      title: getCategoryDisplayName(_getCategoryAt(5)),
       type: TileType.property,
-      price: 220,
-      baseRent: 18,
-      category: QuestionCategory.eserKarakter,
-      colorGroup: PropertyColorGroup.red,
-    ),
-    const BoardTile(
-      id: 22,
-      title: 'ŞANS KARTI',
-      type: TileType.chance,
-      colorGroup: PropertyColorGroup.special,
-    ),
-    const BoardTile(
-      id: 23,
-      title: 'Huzur',
-      type: TileType.property,
-      price: 240,
-      baseRent: 18,
-      category: QuestionCategory.eserKarakter,
-      colorGroup: PropertyColorGroup.red,
-    ),
-    const BoardTile(
-      id: 24,
-      title: 'Beş Şehir',
-      type: TileType.property,
-      price: 260,
-      baseRent: 20,
-      category: QuestionCategory.edebiSanatlar,
-      colorGroup: PropertyColorGroup.red,
-    ),
-
-    // UTILITY: Publisher 3
-    const BoardTile(
-      id: 25,
-      title: '3. YAYINEVİ',
-      type: TileType.publisher,
-      price: 200,
-      isUtility: true,
-      colorGroup: PropertyColorGroup.utility,
-    ),
-
-    // GROUP 6: YELLOW (3 properties)
-    const BoardTile(
-      id: 26,
-      title: 'Devlet Ana',
-      type: TileType.property,
-      price: 260,
-      baseRent: 22,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
+      category: _getCategoryAt(5), // bonusBilgiler (3rd)
       colorGroup: PropertyColorGroup.yellow,
-    ),
-    const BoardTile(
-      id: 27,
-      title: 'Yorgun Savaşçı',
-      type: TileType.property,
-      price: 280,
-      baseRent: 22,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
-      colorGroup: PropertyColorGroup.yellow,
-    ),
-    const BoardTile(
-      id: 28,
-      title: 'EĞİTİM VAKFI',
-      type: TileType.educationFoundation,
-      price: 150,
-      isUtility: true,
-      colorGroup: PropertyColorGroup.utility,
-    ),
-    const BoardTile(
-      id: 29,
-      title: 'Esir Şehrin İnsanları',
-      type: TileType.property,
-      price: 300,
-      baseRent: 24,
-      category: QuestionCategory.turkEdebiyatindaIlkler,
-      colorGroup: PropertyColorGroup.yellow,
-    ),
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CORNER 3 (BOTTOM-RIGHT): BANKRUPTCY RISK
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: 30,
-      title: 'İFLAS RİSKİ',
-      type: TileType.bankruptcyRisk,
-      colorGroup: PropertyColorGroup.special,
-    ),
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // BOTTOM EDGE (IDs 31-39): Going LEFT toward Start
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    // GROUP 7: GREEN (3 properties)
-    const BoardTile(
-      id: 31,
-      title: 'Tutunamayanlar',
-      type: TileType.property,
-      price: 300,
-      baseRent: 26,
-      category: QuestionCategory.edebiyatAkimlari,
-      colorGroup: PropertyColorGroup.green,
-    ),
-    const BoardTile(
-      id: 32,
-      title: 'Tehlikeli Oyunlar',
-      type: TileType.property,
-      price: 320,
-      baseRent: 26,
-      category: QuestionCategory.edebiyatAkimlari,
-      colorGroup: PropertyColorGroup.green,
-    ),
-    const BoardTile(
-      id: 33,
-      title: 'KADER KARTI',
-      type: TileType.fate,
-      colorGroup: PropertyColorGroup.special,
-    ),
-    const BoardTile(
-      id: 34,
-      title: 'Oyunlarla Yaşayanlar',
-      type: TileType.property,
-      price: 340,
-      baseRent: 28,
-      category: QuestionCategory.edebiyatAkimlari,
-      colorGroup: PropertyColorGroup.green,
-    ),
-
-    // UTILITY: Publisher 4
-    const BoardTile(
-      id: 35,
-      title: '4. YAYINEVİ',
-      type: TileType.publisher,
-      price: 200,
-      isUtility: true,
-      colorGroup: PropertyColorGroup.utility,
-    ),
-
-    // GROUP 8: BLUE (2 properties - most expensive)
-    const BoardTile(
-      id: 36,
-      title: 'ŞANS KARTI',
-      type: TileType.chance,
-      colorGroup: PropertyColorGroup.special,
-    ),
-    const BoardTile(
-      id: 37,
-      title: 'Kara Kitap',
-      type: TileType.property,
-      price: 350,
-      baseRent: 35,
-      category: QuestionCategory.edebiSanatlar,
-      colorGroup: PropertyColorGroup.blue,
-    ),
-    const BoardTile(
-      id: 38,
-      title: 'YAZARLIK VERGİSİ',
-      type: TileType.writingTax,
-      colorGroup: PropertyColorGroup.special,
-    ),
-    const BoardTile(
-      id: 39,
-      title: 'Benim Adım Kırmızı',
-      type: TileType.property,
-      price: 400,
-      baseRent: 50,
-      category: QuestionCategory.edebiSanatlar,
-      colorGroup: PropertyColorGroup.blue,
     ),
   ];
 
@@ -387,16 +263,69 @@ class BoardConfig {
     return tiles[id];
   }
 
-  /// Upgrade a tile's level (baskı/cilt)
-  static void upgradeTile(int id) {
-    var old = tiles[id];
-    if (old.upgradeLevel < 4) {
-      tiles[id] = old.copyWith(upgradeLevel: old.upgradeLevel + 1);
-    }
+  /// Get all tiles for a specific category
+  static List<BoardTile> getTilesByCategory(QuestionCategory category) {
+    return tiles.where((t) => t.category == category).toList();
   }
 
-  /// Get all tiles in a specific color group
-  static List<BoardTile> getTilesByGroup(PropertyColorGroup group) {
-    return tiles.where((t) => t.colorGroup == group).toList();
+  /// Get all corner tiles
+  static List<BoardTile> getCornerTiles() {
+    return [tiles[0], tiles[5], tiles[11], tiles[16]];
   }
+
+  /// Check if tile is a corner
+  static bool isCorner(int id) {
+    return id == 0 || id == 5 || id == 11 || id == 16;
+  }
+
+  /// Get position info for a tile (row, column, isCorner)
+  /// Returns null for invalid IDs
+  static TilePosition? getTilePosition(int id) {
+    if (id < 0 || id >= 22) return null;
+
+    // Corners
+    if (id == 0)
+      return TilePosition(row: 6, col: 5, isCorner: true); // Bottom-Right
+    if (id == 5)
+      return TilePosition(row: 6, col: 0, isCorner: true); // Bottom-Left
+    if (id == 11)
+      return TilePosition(row: 0, col: 0, isCorner: true); // Top-Left
+    if (id == 16)
+      return TilePosition(row: 0, col: 5, isCorner: true); // Top-Right
+
+    // Bottom row (indices 1-4, going left from position 0)
+    if (id >= 1 && id <= 4) {
+      return TilePosition(row: 6, col: 5 - id, isCorner: false);
+    }
+
+    // Left column (indices 6-10, going up from position 5)
+    if (id >= 6 && id <= 10) {
+      return TilePosition(row: 6 - (id - 5), col: 0, isCorner: false);
+    }
+
+    // Top row (indices 12-15, going right from position 11)
+    if (id >= 12 && id <= 15) {
+      return TilePosition(row: 0, col: id - 11, isCorner: false);
+    }
+
+    // Right column (indices 17-21, going down from position 16)
+    if (id >= 17 && id <= 21) {
+      return TilePosition(row: id - 16, col: 5, isCorner: false);
+    }
+
+    return null;
+  }
+}
+
+/// Position of a tile in the grid
+class TilePosition {
+  final int row; // 0-6 (top to bottom)
+  final int col; // 0-5 (left to right)
+  final bool isCorner;
+
+  const TilePosition({
+    required this.row,
+    required this.col,
+    required this.isCorner,
+  });
 }

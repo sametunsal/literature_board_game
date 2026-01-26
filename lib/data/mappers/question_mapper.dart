@@ -47,6 +47,7 @@ class QuestionMapper {
       options: model.options,
       correctIndex: model.correctIndex,
       category: _mapQuestionCategory(model.category),
+      difficulty: model.difficulty.name, // Pass difficulty as string
     );
   }
 

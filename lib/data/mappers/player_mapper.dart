@@ -2,10 +2,24 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../domain/entities/player.dart';
+import '../../domain/entities/game_enums.dart';
 import '../models/player_model.dart';
 
 class PlayerMapper {
   PlayerMapper._();
+
+  /// Convert PlayerRank to string for serialization
+  static String _rankToString(PlayerRank rank) {
+    return rank.name;
+  }
+
+  /// Convert string to PlayerRank
+  static PlayerRank _stringToRank(String rankStr) {
+    return PlayerRank.values.firstWhere(
+      (r) => r.name == rankStr,
+      orElse: () => PlayerRank.none,
+    );
+  }
 
   /// Convert PlayerModel to Player domain entity
   static Player toDomain(PlayerModel model) {
@@ -18,6 +32,13 @@ class PlayerMapper {
       ownedTiles: model.ownedTiles,
       inJail: model.inJail,
       turnsToSkip: model.turnsToSkip,
+      stars: model.stars,
+      inventory: model.inventory,
+      categoryProgress: model.categoryProgress.map(
+        (k, v) => MapEntry(k, _stringToRank(v)),
+      ),
+      mainTitle: model.mainTitle,
+      correctAnswers: model.correctAnswers,
     );
   }
 
@@ -32,6 +53,13 @@ class PlayerMapper {
       ownedTiles: entity.ownedTiles,
       inJail: entity.inJail,
       turnsToSkip: entity.turnsToSkip,
+      stars: entity.stars,
+      inventory: entity.inventory,
+      categoryProgress: entity.categoryProgress.map(
+        (k, v) => MapEntry(k, _rankToString(v)),
+      ),
+      mainTitle: entity.mainTitle,
+      correctAnswers: entity.correctAnswers,
     );
   }
 

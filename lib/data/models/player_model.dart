@@ -12,6 +12,15 @@ class PlayerModel {
   final int iconIndex;
   final int turnsToSkip; // Library watch penalty turns remaining
 
+  // RPG Progression Fields
+  final int stars; // Currency for shop
+  final List<String> inventory; // Owned quote IDs
+  final Map<String, String>
+  categoryProgress; // Rank per category (string representation)
+  final String mainTitle; // Current title (Çaylak → Ehil)
+  final Map<String, int>
+  correctAnswers; // Correct answers per category for promotion
+
   PlayerModel({
     required this.id,
     required this.name,
@@ -21,6 +30,12 @@ class PlayerModel {
     this.ownedTiles = const [],
     this.inJail = false,
     this.turnsToSkip = 0,
+    // RPG defaults
+    this.stars = 0,
+    this.inventory = const [],
+    this.categoryProgress = const {},
+    this.mainTitle = 'Çaylak',
+    this.correctAnswers = const {},
   });
 
   factory PlayerModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +52,23 @@ class PlayerModel {
       inJail: json['inJail'] as bool? ?? false,
       iconIndex: json['iconIndex'] as int,
       turnsToSkip: json['turnsToSkip'] as int? ?? 0,
+      stars: json['stars'] as int? ?? 0,
+      inventory:
+          (json['inventory'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      categoryProgress:
+          (json['categoryProgress'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, v as String),
+          ) ??
+          {},
+      mainTitle: json['mainTitle'] as String? ?? 'Çaylak',
+      correctAnswers:
+          (json['correctAnswers'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, v as int),
+          ) ??
+          {},
     );
   }
 
@@ -50,6 +82,11 @@ class PlayerModel {
       'inJail': inJail,
       'iconIndex': iconIndex,
       'turnsToSkip': turnsToSkip,
+      'stars': stars,
+      'inventory': inventory,
+      'categoryProgress': categoryProgress,
+      'mainTitle': mainTitle,
+      'correctAnswers': correctAnswers,
     };
   }
 
@@ -62,6 +99,11 @@ class PlayerModel {
     bool? inJail,
     int? iconIndex,
     int? turnsToSkip,
+    int? stars,
+    List<String>? inventory,
+    Map<String, String>? categoryProgress,
+    String? mainTitle,
+    Map<String, int>? correctAnswers,
   }) {
     return PlayerModel(
       id: id ?? this.id,
@@ -72,6 +114,11 @@ class PlayerModel {
       inJail: inJail ?? this.inJail,
       iconIndex: iconIndex ?? this.iconIndex,
       turnsToSkip: turnsToSkip ?? this.turnsToSkip,
+      stars: stars ?? this.stars,
+      inventory: inventory ?? this.inventory,
+      categoryProgress: categoryProgress ?? this.categoryProgress,
+      mainTitle: mainTitle ?? this.mainTitle,
+      correctAnswers: correctAnswers ?? this.correctAnswers,
     );
   }
 
@@ -87,6 +134,7 @@ class PlayerModel {
   @override
   String toString() {
     return 'PlayerModel(id: $id, name: $name, balance: $balance, position: $position, '
-        'ownedTiles: $ownedTiles, inJail: $inJail, iconIndex: $iconIndex, turnsToSkip: $turnsToSkip)';
+        'ownedTiles: $ownedTiles, inJail: $inJail, iconIndex: $iconIndex, turnsToSkip: $turnsToSkip, '
+        'stars: $stars, mainTitle: $mainTitle)';
   }
 }

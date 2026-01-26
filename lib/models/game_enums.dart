@@ -11,6 +11,7 @@ enum TileType {
   educationFoundation,
   incomeTax,
   writingTax,
+  kiraathane, // Shop corner tile
 }
 
 enum QuestionCategory {
@@ -25,3 +26,9 @@ enum QuestionCategory {
 enum CardType { sans, kader }
 
 enum GamePhase { setup, rollingForOrder, playing, gameOver }
+
+/// Player rank progression: None → Çırak → Kalfa → Usta
+enum PlayerRank { none, cirak, kalfa, usta }
+
+/// Question difficulty levels
+enum Difficulty { easy, medium, hard }

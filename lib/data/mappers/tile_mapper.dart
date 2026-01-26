@@ -23,6 +23,7 @@ class TileMapper {
       TileTypeModel.educationFoundation => TileType.educationFoundation,
       TileTypeModel.incomeTax => TileType.incomeTax,
       TileTypeModel.writingTax => TileType.writingTax,
+      TileTypeModel.kiraathane => TileType.kiraathane,
     };
   }
 
@@ -41,6 +42,7 @@ class TileMapper {
       TileType.educationFoundation => TileTypeModel.educationFoundation,
       TileType.incomeTax => TileTypeModel.incomeTax,
       TileType.writingTax => TileTypeModel.writingTax,
+      TileType.kiraathane => TileTypeModel.kiraathane,
     };
   }
 

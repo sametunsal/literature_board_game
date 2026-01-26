@@ -31,45 +31,73 @@ import 'floating_score.dart';
 import '../utils/sound_manager.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAYOUT CONFIGURATION
+// LAYOUT CONFIGURATION - 6x7 RECTANGULAR GRID (22 tiles)
 // ════════════════════════════════════════════════════════════════════════════
 
-/// Cached layout calculations for the game board
-/// Prevents recalculation on every build
+/// Cached layout calculations for the 6x7 rectangular game board
+///
+/// Board Layout (22 tiles on perimeter):
+///
+///   [11-Shop] [12-Cat] [13-Cat] [14-Cat] [15-Cat] [16-Fate]  -- Top row
+///   [10-Cat ]                                     [17-Cat ]
+///   [9-Cat  ]                                     [18-Cat ]
+///   [8-Cat  ]         CENTER AREA                 [19-Cat ]
+///   [7-Cat  ]         (empty)                     [20-Cat ]
+///   [6-Cat  ]                                     [21-Cat ]
+///   [5-Şans ] [4-Cat ] [3-Cat ] [2-Cat ] [1-Cat ] [0-Start]  -- Bottom row
+///
+/// Corners: 0 (Start), 5 (Şans), 11 (Shop), 16 (Kader)
 class BoardLayoutConfig {
-  final double boardSize;
+  final double boardWidth;
+  final double boardHeight;
 
-  /// Base unit size (1/12 of board)
-  late final double unitSize;
+  /// Number of columns (width in tiles)
+  static const int gridCols = 6;
 
-  /// Corner tile dimension (1.5 units)
-  late final double cornerSize;
+  /// Number of rows (height in tiles)
+  static const int gridRows = 7;
 
-  /// Normal tile dimension (1 unit)
-  late final double normalSize;
+  /// Total perimeter tiles
+  static const int totalTiles = 22;
+
+  /// Size of each tile (uniform)
+  late final double tileSize;
 
   /// Icon size ratio for center decoration
-  static const double centerIconRatio = 0.3;
+  static const double centerIconRatio = 0.25;
 
   /// Board size ratio relative to screen
-  static const double boardToScreenRatio = 0.95;
+  static const double boardToScreenRatio = 0.92;
 
-  /// Grid units: 2 corners (1.5 each) + 9 normal tiles = 12 units total
-  static const double totalGridUnits = 12.0;
-
-  BoardLayoutConfig(this.boardSize) {
-    unitSize = boardSize / totalGridUnits;
-    cornerSize = unitSize * 1.5;
-    normalSize = unitSize;
+  BoardLayoutConfig({required this.boardWidth, required this.boardHeight}) {
+    // Tile size is determined by the shorter dimension / its tile count
+    final tileByWidth = boardWidth / gridCols;
+    final tileByHeight = boardHeight / gridRows;
+    tileSize = (tileByWidth < tileByHeight) ? tileByWidth : tileByHeight;
   }
 
-  /// Factory to create from screen size (uses height in landscape for optimal fit)
+  /// Corner tile size (same as normal for uniform grid)
+  double get cornerSize => tileSize;
+
+  /// Normal tile size (same as corner)
+  double get normalSize => tileSize;
+
+  /// Actual board dimensions based on tile size
+  double get actualWidth => tileSize * gridCols;
+  double get actualHeight => tileSize * gridRows;
+
+  /// Factory to create from screen size (optimized for landscape)
   factory BoardLayoutConfig.fromScreen(Size screenSize) {
-    // In landscape, height is the limiting dimension for the square board
-    final shortestSide = screenSize.shortestSide;
-    // Use slightly less of the screen to leave room for UI elements
-    final availableSize = shortestSide * boardToScreenRatio;
-    return BoardLayoutConfig(availableSize);
+    // Use most of screen height (limiting factor in landscape)
+    final availableHeight = screenSize.height * boardToScreenRatio;
+    // Calculate width maintaining 6:7 aspect ratio
+    final aspectRatio = gridCols / gridRows; // 6/7 ≈ 0.857
+    final availableWidth = availableHeight * aspectRatio;
+
+    return BoardLayoutConfig(
+      boardWidth: availableWidth,
+      boardHeight: availableHeight,
+    );
   }
 }
 
@@ -196,24 +224,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // ═══════════════════════════════════════════════════════════════
           Center(child: _buildBoard(state, layout, isDarkMode)),
 
-          // LEFT SIDEBAR - GAME LOG / SCORE PANEL (DESKTOP ONLY)
-          if (!isMobile)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: SafeArea(
-                child: Container(
-                  width: 280,
-                  margin: const EdgeInsets.all(16),
-                  child: GameLog(
-                    logs: state.logs,
-                    players: state.players,
-                    currentPlayerIndex: state.currentPlayerIndex,
-                  ),
-                ),
-              ),
-            ),
+          // NOTE: Sidebar removed for RPG mode - board takes center stage
+          // Player stats are visible via corner tiles and dialogs
 
           // MOBILE MENU BUTTON (Opens Drawer)
           if (isMobile)
@@ -361,8 +373,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
     bool isDarkMode,
   ) {
     return Container(
-          width: layout.boardSize,
-          height: layout.boardSize,
+          width: layout.actualWidth,
+          height: layout.actualHeight,
           decoration: GameTheme.boardDecorationFor(isDarkMode),
           child: Stack(
             children: [
@@ -396,14 +408,18 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   Widget _buildCenterArea(BoardLayoutConfig layout) {
     final state = ref.watch(gameProvider);
-    final centerSize = layout.boardSize - (layout.cornerSize * 2);
-    final deckSize = centerSize * 0.18; // Card deck size relative to center
+    final T = layout.tileSize;
+    // Center area: inside the perimeter tiles
+    // Width: 4 inner columns, Height: 5 inner rows
+    final centerWidth = T * 4; // 6 - 2 edge tiles
+    final centerHeight = T * 5; // 7 - 2 edge tiles
+    final deckSize = math.min(centerWidth, centerHeight) * 0.20;
 
     return Positioned(
-      top: layout.cornerSize,
-      left: layout.cornerSize,
-      right: layout.cornerSize,
-      bottom: layout.cornerSize,
+      top: T, // Below top edge
+      left: T, // Right of left edge
+      width: centerWidth,
+      height: centerHeight,
       child: Container(
         decoration: BoxDecoration(
           // Parchment color for contrast with green table
@@ -425,35 +441,37 @@ class _BoardViewState extends ConsumerState<BoardView> {
                 opacity: 0.1,
                 child: Icon(
                   Icons.menu_book,
-                  size: layout.boardSize * BoardLayoutConfig.centerIconRatio,
+                  size:
+                      math.min(centerWidth, centerHeight) *
+                      BoardLayoutConfig.centerIconRatio,
                   color: GameTheme.textDark,
                 ),
               ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
-            // ŞANS CARD DECK (Top-Left, rotated 45°)
+            // ŞANS CARD DECK (Top-Left, rotated)
             // ═══════════════════════════════════════════════════════════════
             Positioned(
-              top: centerSize * 0.08,
-              left: centerSize * 0.08,
+              top: centerHeight * 0.08,
+              left: centerWidth * 0.08,
               child: CardDeckWidget(
                 type: CardType.sans,
                 size: deckSize,
-                rotation: 0.35, // ~20 degrees
+                rotation: 0.35,
               ),
             ),
 
             // ═══════════════════════════════════════════════════════════════
-            // KADER CARD DECK (Bottom-Right, rotated -45°)
+            // KADER CARD DECK (Bottom-Right, rotated)
             // ═══════════════════════════════════════════════════════════════
             Positioned(
-              bottom: centerSize * 0.08,
-              right: centerSize * 0.08,
+              bottom: centerHeight * 0.08,
+              right: centerWidth * 0.08,
               child: CardDeckWidget(
                 type: CardType.kader,
                 size: deckSize,
-                rotation: 0.35, // Same angle as Sans deck
+                rotation: 0.35,
               ),
             ),
 
@@ -490,125 +508,171 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TILE GENERATION
+  // TILE GENERATION - 6x7 GRID (22 tiles)
   // ════════════════════════════════════════════════════════════════════════════
+  //
+  // Board Layout (tile IDs):
+  //
+  //   [11] [12] [13] [14] [15] [16]   <- Top row (left to right)
+  //   [10]                     [17]
+  //   [9]                      [18]
+  //   [8]       CENTER         [19]   <- Left/Right columns
+  //   [7]                      [20]
+  //   [6]                      [21]
+  //   [5]  [4]  [3]  [2]  [1]  [0]    <- Bottom row (right to left from Start)
+  //
+  // Movement: Clockwise starting from 0 (bottom-right)
+  // Corners: 0 (Start), 5 (Şans), 11 (Shop), 16 (Kader)
 
-  /// Generate all tiles (4 corners + 36 edge tiles)
+  /// Generate all 22 tiles for 6x7 grid
   List<Widget> _buildAllTiles(BoardLayoutConfig layout) {
-    return [
-      // Corner tiles
-      ..._buildCornerTiles(layout),
-
-      // Edge tiles (4 edges x 9 tiles each)
-      ..._buildLeftEdge(layout),
-      ..._buildTopEdge(layout),
-      ..._buildRightEdge(layout),
-      ..._buildBottomEdge(layout),
-    ];
-  }
-
-  /// Build the 4 corner tiles
-  List<Widget> _buildCornerTiles(BoardLayoutConfig layout) {
-    final L = layout;
-    final S = L.boardSize;
-    final C = L.cornerSize;
+    final T = layout.tileSize;
+    final W = layout.actualWidth;
+    final H = layout.actualHeight;
 
     return [
-      // Bottom-Left (Start) - ID: 0
-      _buildTile(id: 0, left: 0, top: S - C, width: C, height: C, rotation: 0),
-      // Top-Left - ID: 10
-      _buildTile(id: 10, left: 0, top: 0, width: C, height: C, rotation: 1),
-      // Top-Right - ID: 20
-      _buildTile(id: 20, left: S - C, top: 0, width: C, height: C, rotation: 2),
-      // Bottom-Right - ID: 30
+      // ═════════════════════════════════════════════════════════════════════
+      // BOTTOM ROW (IDs 0-5): Right to Left, from Start to Şans
+      // ═════════════════════════════════════════════════════════════════════
+      // 0: Start (Bottom-Right Corner)
       _buildTile(
-        id: 30,
-        left: S - C,
-        top: S - C,
-        width: C,
-        height: C,
+        id: 0,
+        left: W - T,
+        top: H - T,
+        width: T,
+        height: T,
+        rotation: 0,
+      ),
+      // 1-4: Bottom edge tiles (going left)
+      _buildTile(
+        id: 1,
+        left: W - T * 2,
+        top: H - T,
+        width: T,
+        height: T,
+        rotation: 0,
+      ),
+      _buildTile(
+        id: 2,
+        left: W - T * 3,
+        top: H - T,
+        width: T,
+        height: T,
+        rotation: 0,
+      ),
+      _buildTile(
+        id: 3,
+        left: W - T * 4,
+        top: H - T,
+        width: T,
+        height: T,
+        rotation: 0,
+      ),
+      _buildTile(
+        id: 4,
+        left: W - T * 5,
+        top: H - T,
+        width: T,
+        height: T,
+        rotation: 0,
+      ),
+      // 5: Şans (Bottom-Left Corner)
+      _buildTile(id: 5, left: 0, top: H - T, width: T, height: T, rotation: 0),
+
+      // ═════════════════════════════════════════════════════════════════════
+      // LEFT COLUMN (IDs 6-10): Bottom to Top
+      // ═════════════════════════════════════════════════════════════════════
+      _buildTile(
+        id: 6,
+        left: 0,
+        top: H - T * 2,
+        width: T,
+        height: T,
         rotation: 3,
       ),
-    ];
-  }
-
-  /// Left edge tiles (IDs 1-9, going upward)
-  List<Widget> _buildLeftEdge(BoardLayoutConfig layout) {
-    final L = layout;
-    final S = L.boardSize;
-    final C = L.cornerSize;
-    final N = L.normalSize;
-
-    return List.generate(9, (i) {
-      final top = S - C - ((i + 1) * N);
-      return _buildTile(
-        id: 1 + i,
+      _buildTile(
+        id: 7,
         left: 0,
-        top: top,
-        width: C,
-        height: N,
+        top: H - T * 3,
+        width: T,
+        height: T,
         rotation: 3,
-      );
-    });
-  }
+      ),
+      _buildTile(
+        id: 8,
+        left: 0,
+        top: H - T * 4,
+        width: T,
+        height: T,
+        rotation: 3,
+      ),
+      _buildTile(
+        id: 9,
+        left: 0,
+        top: H - T * 5,
+        width: T,
+        height: T,
+        rotation: 3,
+      ),
+      _buildTile(
+        id: 10,
+        left: 0,
+        top: H - T * 6,
+        width: T,
+        height: T,
+        rotation: 3,
+      ),
 
-  /// Top edge tiles (IDs 11-19, going rightward)
-  List<Widget> _buildTopEdge(BoardLayoutConfig layout) {
-    final L = layout;
-    final C = L.cornerSize;
-    final N = L.normalSize;
+      // ═════════════════════════════════════════════════════════════════════
+      // TOP ROW (IDs 11-16): Left to Right, from Shop to Kader
+      // ═════════════════════════════════════════════════════════════════════
+      // 11: Shop/Kıraathane (Top-Left Corner)
+      _buildTile(id: 11, left: 0, top: 0, width: T, height: T, rotation: 2),
+      // 12-15: Top edge tiles (going right)
+      _buildTile(id: 12, left: T, top: 0, width: T, height: T, rotation: 2),
+      _buildTile(id: 13, left: T * 2, top: 0, width: T, height: T, rotation: 2),
+      _buildTile(id: 14, left: T * 3, top: 0, width: T, height: T, rotation: 2),
+      _buildTile(id: 15, left: T * 4, top: 0, width: T, height: T, rotation: 2),
+      // 16: Kader (Top-Right Corner)
+      _buildTile(id: 16, left: W - T, top: 0, width: T, height: T, rotation: 2),
 
-    return List.generate(9, (i) {
-      final left = C + (i * N);
-      return _buildTile(
-        id: 11 + i,
-        left: left,
-        top: 0,
-        width: N,
-        height: C,
-        rotation: 2,
-      );
-    });
-  }
-
-  /// Right edge tiles (IDs 21-29, going downward)
-  List<Widget> _buildRightEdge(BoardLayoutConfig layout) {
-    final L = layout;
-    final S = L.boardSize;
-    final C = L.cornerSize;
-    final N = L.normalSize;
-
-    return List.generate(9, (i) {
-      final top = C + (i * N);
-      return _buildTile(
-        id: 21 + i,
-        left: S - C,
-        top: top,
-        width: C,
-        height: N,
+      // ═════════════════════════════════════════════════════════════════════
+      // RIGHT COLUMN (IDs 17-21): Top to Bottom
+      // ═════════════════════════════════════════════════════════════════════
+      _buildTile(id: 17, left: W - T, top: T, width: T, height: T, rotation: 1),
+      _buildTile(
+        id: 18,
+        left: W - T,
+        top: T * 2,
+        width: T,
+        height: T,
         rotation: 1,
-      );
-    });
-  }
-
-  /// Bottom edge tiles (IDs 31-39, going leftward)
-  List<Widget> _buildBottomEdge(BoardLayoutConfig layout) {
-    final L = layout;
-    final S = L.boardSize;
-    final C = L.cornerSize;
-    final N = L.normalSize;
-
-    return List.generate(9, (i) {
-      final left = S - C - ((i + 1) * N);
-      return _buildTile(
-        id: 31 + i,
-        left: left,
-        top: S - C,
-        width: N,
-        height: C,
-        rotation: 0,
-      );
-    });
+      ),
+      _buildTile(
+        id: 19,
+        left: W - T,
+        top: T * 3,
+        width: T,
+        height: T,
+        rotation: 1,
+      ),
+      _buildTile(
+        id: 20,
+        left: W - T,
+        top: T * 4,
+        width: T,
+        height: T,
+        rotation: 1,
+      ),
+      _buildTile(
+        id: 21,
+        left: W - T,
+        top: T * 5,
+        width: T,
+        height: T,
+        rotation: 1,
+      ),
+    ];
   }
 
   /// Build a single positioned tile using EnhancedTileWidget
@@ -839,39 +903,54 @@ class _BoardViewState extends ConsumerState<BoardView> {
     return widgets;
   }
 
-  /// Calculate the center point of a tile for pawn positioning
+  /// Calculate the center point of a tile for pawn positioning (22-tile grid)
   Offset _getTileCenter(int tileId, BoardLayoutConfig layout) {
-    final S = layout.boardSize;
-    final C = layout.cornerSize;
-    final N = layout.normalSize;
+    final T = layout.tileSize;
+    final W = layout.actualWidth;
+    final H = layout.actualHeight;
+    final halfT = T / 2;
 
-    // Corner tiles
-    if (tileId == 0) return Offset(C / 2, S - C / 2);
-    if (tileId == 10) return Offset(C / 2, C / 2);
-    if (tileId == 20) return Offset(S - C / 2, C / 2);
-    if (tileId == 30) return Offset(S - C / 2, S - C / 2);
+    // Invalid tile ID - default to start
+    if (tileId < 0 || tileId >= 22) return Offset(W - halfT, H - halfT);
 
-    // Left edge (1-9)
-    if (tileId < 10) {
-      final top = S - C - ((tileId) * N);
-      return Offset(C / 2, top + N / 2);
+    // ═════════════════════════════════════════════════════════════════════
+    // BOTTOM ROW (IDs 0-5): Right to Left
+    // ═════════════════════════════════════════════════════════════════════
+    if (tileId <= 5) {
+      // X: Start from right edge, move left by tile index
+      // 0 -> W - T/2, 1 -> W - 1.5T, 2 -> W - 2.5T, etc.
+      final x = W - halfT - (tileId * T);
+      final y = H - halfT;
+      return Offset(x, y);
     }
 
-    // Top edge (11-19)
-    if (tileId < 20) {
-      final left = C + ((tileId - 11) * N);
-      return Offset(left + N / 2, C / 2);
+    // ═════════════════════════════════════════════════════════════════════
+    // LEFT COLUMN (IDs 6-10): Bottom to Top
+    // ═════════════════════════════════════════════════════════════════════
+    if (tileId <= 10) {
+      final x = halfT;
+      // 6 -> H - 1.5T, 7 -> H - 2.5T, etc.
+      final y = H - halfT - ((tileId - 5) * T);
+      return Offset(x, y);
     }
 
-    // Right edge (21-29)
-    if (tileId < 30) {
-      final top = C + ((tileId - 21) * N);
-      return Offset(S - C / 2, top + N / 2);
+    // ═════════════════════════════════════════════════════════════════════
+    // TOP ROW (IDs 11-16): Left to Right
+    // ═════════════════════════════════════════════════════════════════════
+    if (tileId <= 16) {
+      // 11 -> T/2, 12 -> 1.5T, 13 -> 2.5T, etc.
+      final x = halfT + ((tileId - 11) * T);
+      final y = halfT;
+      return Offset(x, y);
     }
 
-    // Bottom edge (31-39)
-    final left = S - C - ((tileId - 30) * N);
-    return Offset(left + N / 2, S - C / 2);
+    // ═════════════════════════════════════════════════════════════════════
+    // RIGHT COLUMN (IDs 17-21): Top to Bottom
+    // ═════════════════════════════════════════════════════════════════════
+    final x = W - halfT;
+    // 17 -> 1.5T, 18 -> 2.5T, etc.
+    final y = halfT + ((tileId - 16) * T);
+    return Offset(x, y);
   }
 
   // ════════════════════════════════════════════════════════════════════════════

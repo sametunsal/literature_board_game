@@ -53,6 +53,7 @@ class GameState {
   final bool showLibraryPenaltyDialog;
   final bool showImzaGunuDialog;
   final bool showTurnSkippedDialog;
+  final bool showShopDialog; // Kıraathane shop dialog
 
   // Rent notification info
   final String? rentOwnerName;
@@ -88,6 +89,7 @@ class GameState {
     this.showLibraryPenaltyDialog = false,
     this.showImzaGunuDialog = false,
     this.showTurnSkippedDialog = false,
+    this.showShopDialog = false,
     this.rentOwnerName,
     this.rentAmount,
     this.currentTile,
@@ -123,6 +125,7 @@ class GameState {
     bool? showLibraryPenaltyDialog,
     bool? showImzaGunuDialog,
     bool? showTurnSkippedDialog,
+    bool? showShopDialog,
     String? rentOwnerName,
     int? rentAmount,
     BoardTile? currentTile,
@@ -155,6 +158,7 @@ class GameState {
       showImzaGunuDialog: showImzaGunuDialog ?? this.showImzaGunuDialog,
       showTurnSkippedDialog:
           showTurnSkippedDialog ?? this.showTurnSkippedDialog,
+      showShopDialog: showShopDialog ?? this.showShopDialog,
       rentOwnerName: rentOwnerName ?? this.rentOwnerName,
       rentAmount: rentAmount ?? this.rentAmount,
       currentTile: currentTile ?? this.currentTile,
@@ -581,59 +585,23 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void _handleTileArrival(BoardTile tile) {
-    if (tile.type == TileType.property ||
-        tile.type == TileType.publisher ||
-        tile.type == TileType.writingSchool ||
-        tile.type == TileType.educationFoundation) {
-      Player? owner = _getTileOwner(tile.id);
-
-      if (owner != null) {
-        if (owner.id == state.currentPlayer.id) {
-          _offerUpgrade(tile);
-        } else {
-          _payRent(tile, owner);
-        }
-      } else {
-        _triggerQuestion(tile);
-      }
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RPG MODE: Category tiles trigger questions directly (no ownership/rent)
+    // ═══════════════════════════════════════════════════════════════════════════
+    if (tile.type == TileType.property && tile.category != null) {
+      // Category tile - trigger question for RPG progression
+      _triggerQuestion(tile);
     } else if (tile.type == TileType.chance || tile.type == TileType.fate) {
       _drawCard(tile.type);
-    } else if (tile.type == TileType.bankruptcyRisk) {
-      int newBalance =
-          (state.currentPlayer.balance * GameConstants.bankruptcyRiskMultiplier)
-              .floor();
-      _updateBalance(state.currentPlayer, newBalance);
-      _addLog("İFLAS RİSKİ! Puan yarıya düştü.", type: 'error');
-      endTurn();
-    } else if (tile.type == TileType.libraryWatch) {
-      // Show library penalty dialog
-      state = state.copyWith(showLibraryPenaltyDialog: true);
-      _addLog("Kütüphane nöbeti cezası!", type: 'error');
-    } else if (tile.type == TileType.autographDay) {
-      // Show İmza Günü dialog - informative only
-      state = state.copyWith(showImzaGunuDialog: true);
-      _addLog("✍️ İmza Günü! Okurlarınla buluştun.", type: 'success');
-    } else if (tile.type == TileType.incomeTax) {
-      _updateBalance(
-        state.currentPlayer,
-        state.currentPlayer.balance - GameConstants.incomeTax,
-      );
-      _addLog(
-        "Gelir Vergisi ödendi (-${GameConstants.incomeTax} Puan).",
-        type: 'error',
-      );
-      endTurn();
-    } else if (tile.type == TileType.writingTax) {
-      _updateBalance(
-        state.currentPlayer,
-        state.currentPlayer.balance - GameConstants.writingTax,
-      );
-      _addLog(
-        "Yazarlık Vergisi ödendi (-${GameConstants.writingTax} Puan).",
-        type: 'error',
-      );
+    } else if (tile.type == TileType.kiraathane) {
+      // Kıraathane - Open the shop dialog
+      handleKiraathaneLanding();
+    } else if (tile.type == TileType.start) {
+      // Start tile - bonus stars for passing
+      _addLog("Başlangıç noktasına geldin!", type: 'success');
       endTurn();
     } else {
+      // Other corner tiles (Şans, Kader handled above)
       endTurn();
     }
   }
@@ -801,53 +769,156 @@ class GameNotifier extends StateNotifier<GameState> {
 
   // --- 4. YARDIMCILAR ---
   void _triggerQuestion(BoardTile tile) {
+    // RPG MODE: Always show question for category tiles
     if (tile.category == null) {
-      state = state.copyWith(
-        showPurchaseDialog: true,
-        currentTile: tile,
-        lastAction: "Satın alınabilir özel mülk.",
-      );
-      return;
-    }
-
-    // Get random question from cached questions
-    if (_cachedQuestions.isEmpty) {
-      _addLog('Soru bulunamadı!', type: 'error');
+      // No category (shouldn't happen with new 22-tile layout)
+      _addLog('Bu karoda soru yok.', type: 'info');
       endTurn();
       return;
     }
-    final q = _cachedQuestions[_random.nextInt(_cachedQuestions.length)];
-    state = state.copyWith(
-      showQuestionDialog: true,
-      currentQuestion: q,
-      currentTile: tile, // Store tile for purchase after question
-    );
+
+    // Get question based on player's current rank in this category
+    final player = state.currentPlayer;
+    final categoryName = tile.category!.name;
+    final currentRank =
+        player.categoryProgress[categoryName] ?? PlayerRank.none;
+
+    // Determine difficulty based on rank
+    String difficultyFilter;
+    switch (currentRank) {
+      case PlayerRank.none:
+        difficultyFilter = 'easy';
+        break;
+      case PlayerRank.cirak:
+        difficultyFilter = 'medium';
+        break;
+      case PlayerRank.kalfa:
+      case PlayerRank.usta:
+        difficultyFilter = 'hard';
+        break;
+    }
+
+    // Filter questions by category and difficulty
+    final filteredQuestions = _cachedQuestions.where((q) {
+      final matchesCategory = q.category.name == categoryName;
+      final matchesDifficulty = q.difficulty == difficultyFilter;
+      return matchesCategory && matchesDifficulty;
+    }).toList();
+
+    if (filteredQuestions.isEmpty) {
+      // Fallback: any question from this category
+      final categoryQuestions = _cachedQuestions
+          .where((q) => q.category.name == categoryName)
+          .toList();
+      if (categoryQuestions.isEmpty) {
+        _addLog('Bu kategoride soru bulunamadı!', type: 'error');
+        endTurn();
+        return;
+      }
+      final q = categoryQuestions[_random.nextInt(categoryQuestions.length)];
+      state = state.copyWith(
+        showQuestionDialog: true,
+        currentQuestion: q,
+        currentTile: tile,
+      );
+      _addLog(
+        '⚠ $difficultyFilter soru bulunamadı, rastgele soru seçildi.',
+        type: 'info',
+      );
+    } else {
+      final q = filteredQuestions[_random.nextInt(filteredQuestions.length)];
+      state = state.copyWith(
+        showQuestionDialog: true,
+        currentQuestion: q,
+        currentTile: tile,
+      );
+    }
   }
 
   /// Answer question with open-ended format (Bildin/Bilemedin)
+  /// RPG Progression: Correct answers promote rank and award stars
   void answerQuestion(bool isCorrect) async {
     if (_isProcessing || state.currentQuestion == null) return;
 
     _isProcessing = true;
     try {
+      final tile = state.currentTile;
+      final category = tile?.category;
+
       state = state.copyWith(showQuestionDialog: false, currentQuestion: null);
 
       if (isCorrect) {
-        _addLog("Doğru cevap! Ödül: 50 Puan.", type: 'success');
+        // RPG PROGRESSION: Award stars and promote rank
+        final player = state.currentPlayer;
+        int starsAwarded = 0;
+        PlayerRank newRank =
+            player.categoryProgress[category?.name] ?? PlayerRank.none;
+        String promotionMessage = '';
+
+        // Check current rank and promote based on user's request:
+        // Correct Easy → Çırak (+10), Correct Medium → Kalfa (+20), Correct Hard → Usta (+50)
+        switch (newRank) {
+          case PlayerRank.none:
+            // Easy question answered correctly → promote to Çırak
+            newRank = PlayerRank.cirak;
+            starsAwarded = GameConstants.cirakPromotionStars;
+            promotionMessage = '🌟 Çırak seviyesine yükseldin!';
+            break;
+          case PlayerRank.cirak:
+            // Medium question → promote to Kalfa
+            newRank = PlayerRank.kalfa;
+            starsAwarded = GameConstants.kalfaPromotionStars;
+            promotionMessage = '⭐ Kalfa seviyesine yükseldin!';
+            break;
+          case PlayerRank.kalfa:
+            // Hard question → promote to Usta
+            newRank = PlayerRank.usta;
+            starsAwarded = GameConstants.ustaPromotionStars;
+            promotionMessage = '🏆 USTA seviyesine ulaştın!';
+            break;
+          case PlayerRank.usta:
+            // Already master - just give base reward
+            starsAwarded = 5;
+            promotionMessage = '';
+            break;
+        }
+
+        // Update player with new rank and stars
+        final newCategoryProgress = Map<String, PlayerRank>.from(
+          player.categoryProgress,
+        );
+        if (category != null) {
+          newCategoryProgress[category.name] = newRank;
+        }
+
+        List<Player> newPlayers = List.from(state.players);
+        newPlayers[state.currentPlayerIndex] = player.copyWith(
+          stars: player.stars + starsAwarded,
+          categoryProgress: newCategoryProgress,
+        );
+        state = state.copyWith(players: newPlayers);
+
+        // Add balance reward too (optional, can be removed if only stars matter)
         _updateBalance(
           state.currentPlayer,
           state.currentPlayer.balance + GameConstants.questionReward,
         );
+
+        // Log messages
+        _addLog('Doğru cevap! +$starsAwarded ⭐', type: 'success');
+        if (promotionMessage.isNotEmpty) {
+          _addLog(promotionMessage, type: 'success');
+        }
+
         await Future.delayed(
           Duration(milliseconds: GameConstants.cardAnimationDelay),
         );
 
-        // Safety check: ensure currentTile exists before showing purchase dialog
-        if (state.currentTile != null) {
-          state = state.copyWith(showPurchaseDialog: true);
-        } else {
-          // Fallback: If tile was lost, just end turn
-          _addLog("Mülk bulunamadı, tur sonlandırılıyor.", type: 'error');
+        // Check win condition
+        _checkWinCondition();
+
+        // RPG MODE: No purchase dialog - just end turn
+        if (state.phase != GamePhase.gameOver) {
           endTurn();
         }
       } else {
@@ -1230,6 +1301,80 @@ class GameNotifier extends StateNotifier<GameState> {
       if (p.ownedTiles.contains(id)) return p;
     }
     return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SHOP (KIRAATHANE) METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Open the shop dialog (called when landing on Kıraathane or manually)
+  void openShopDialog() {
+    state = state.copyWith(showShopDialog: true);
+    _addLog('Kıraathane\'ye hoş geldiniz!', type: 'info');
+  }
+
+  /// Close the shop dialog
+  void closeShopDialog() {
+    state = state.copyWith(showShopDialog: false);
+    endTurn();
+  }
+
+  /// Purchase a quote with stars
+  void purchaseQuote(String quoteId, int cost) {
+    final player = state.currentPlayer;
+
+    // Check if already owned
+    if (player.inventory.contains(quoteId)) {
+      _addLog('Bu söz zaten koleksiyonunda!', type: 'error');
+      return;
+    }
+
+    // Check if enough stars
+    if (player.stars < cost) {
+      _addLog('Yeterli yıldızın yok!', type: 'error');
+      return;
+    }
+
+    // Deduct stars and add to inventory
+    final newInventory = List<String>.from(player.inventory)..add(quoteId);
+    final newStars = player.stars - cost;
+
+    List<Player> newPlayers = List.from(state.players);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(
+      stars: newStars,
+      inventory: newInventory,
+    );
+
+    state = state.copyWith(players: newPlayers);
+    _addLog('Söz satın alındı! (-$cost ⭐)', type: 'purchase');
+
+    // Check win condition after purchase
+    _checkWinCondition();
+  }
+
+  /// Check if current player has won (Ehil)
+  void _checkWinCondition() {
+    final player = state.currentPlayer;
+
+    // Check if Usta in all categories and has 50+ quotes
+    if (player.isEhil) {
+      // Update title and trigger victory
+      List<Player> newPlayers = List.from(state.players);
+      newPlayers[state.currentPlayerIndex] = player.copyWith(mainTitle: 'Ehil');
+
+      state = state.copyWith(
+        players: newPlayers,
+        winner: newPlayers[state.currentPlayerIndex],
+        phase: GamePhase.gameOver,
+      );
+
+      _addLog('🏆 ${player.name} EHİL oldu! Oyun bitti!', type: 'gameover');
+    }
+  }
+
+  /// Handle Kıraathane tile landing - opens shop
+  void handleKiraathaneLanding() {
+    openShopDialog();
   }
 
   @override
