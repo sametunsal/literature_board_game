@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user matches the requested UID
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // User profiles
+    match /users/{uid} {
+      // Anyone can read (needed for leaderboards/display names)
+      // Ideally this should be restricted, but for this game:
+      // - Allow read if authenticated (anonymous included)
+      allow read: if isAuthenticated();
+      
+      // Only the owner can write to their own profile
+      allow write: if isOwner(uid);
+    }
+    
+    // Leaderboard (Future proofing)
+    match /leaderboards/{leaderboardId}/entries/{entryUid} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(entryUid);
+    }
+  }
+}

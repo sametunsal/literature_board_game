@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1004178093819",
+    "project_id": "literature-board-game",
+    "storage_bucket": "literature-board-game.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1004178093819:android:5391d374f771a89f07625e",
+        "android_client_info": {
+          "package_name": "com.example.literature_board_game"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQNvlV73WxQyo4MEnVWFSQ6Vo8ZpTJMZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,6 +7,7 @@ import '../models/game_card.dart';
 import '../models/game_enums.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../providers/theme_notifier.dart';
 
 /// Card dialog with auto-dismiss timer (3 seconds)
 class CardDialog extends ConsumerStatefulWidget {
@@ -85,9 +86,9 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                 ),
                 child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: GameTheme.cardDecoration.copyWith(
-                    color: GameTheme.parchmentColor,
-                  ),
+                  decoration: GameTheme.cardDecorationFor(
+                    ref.watch(themeProvider).isDarkMode,
+                  ).copyWith(color: GameTheme.parchmentColor),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

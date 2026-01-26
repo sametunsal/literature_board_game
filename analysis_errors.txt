@@ -1,0 +1,59 @@
+﻿Analyzing literature_board_game...                              
+
+   info - 'tableDecoration' is deprecated and shouldn't be used. Use tableDecorationFor(isDarkMode) instead for proper theme support - lib\core\theme\game_theme.dart:334:47 - deprecated_member_use_from_same_package
+   info - Dangling library doc comment - lib\data\datasources\board_config_datasource.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\datasources\questions_datasource.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\datasources\theme_datasource.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\mappers\card_mapper.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\mappers\player_mapper.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\mappers\question_mapper.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\mappers\tile_mapper.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\models\board_tile_model.dart:3:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\models\game_card_model.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\models\player_model.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\models\question_model.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\repositories\game_repository_impl.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\repositories\player_repository_impl.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\data\repositories\question_repository_impl.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\domain.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\entities\board_tile.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\entities\game_card.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\entities\game_enums.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\entities\player.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\entities\question.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\repositories\game_repository.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\repositories\player_repository.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\repositories\question_repository.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\services\dice_service.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\draw_card_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\end_turn_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\handle_tile_effect_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\move_player_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\pay_rent_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\purchase_property_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\roll_dice_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\use_cases\upgrade_property_use_case.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\value_objects\dice_roll.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\value_objects\money.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\domain\value_objects\position.dart:1:1 - dangling_library_doc_comments
+warning - The value of the field '_rollDiceUseCase' isn't used - lib\providers\game_notifier.dart:182:25 - unused_field
+warning - The value of the field '_movePlayerUseCase' isn't used - lib\providers\game_notifier.dart:183:27 - unused_field
+warning - The value of the field '_handleTileEffectUseCase' isn't used - lib\providers\game_notifier.dart:184:33 - unused_field
+warning - The value of the field '_payRentUseCase' isn't used - lib\providers\game_notifier.dart:186:24 - unused_field
+warning - The value of the field '_purchasePropertyUseCase' isn't used - lib\providers\game_notifier.dart:187:33 - unused_field
+warning - The value of the field '_upgradePropertyUseCase' isn't used - lib\providers\game_notifier.dart:189:32 - unused_field
+warning - The value of the field '_drawCardUseCase' isn't used - lib\providers\game_notifier.dart:191:25 - unused_field
+warning - The value of the field '_endTurnUseCase' isn't used - lib\providers\game_notifier.dart:192:24 - unused_field
+warning - The value of the field '_diceService' isn't used - lib\providers\game_notifier.dart:193:27 - unused_field
+   info - Dangling library doc comment - lib\providers\repository_providers.dart:1:1 - dangling_library_doc_comments
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\card_dialog.dart:88:41 - deprecated_member_use_from_same_package
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\copyright_purchase_dialog.dart:22:35 - deprecated_member_use_from_same_package
+   info - Don't invoke 'print' in production code - lib\widgets\enhanced_tile_widget.dart:65:5 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\widgets\enhanced_tile_widget.dart:66:133 - unnecessary_brace_in_string_interps
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\notification_dialogs.dart:25:35 - deprecated_member_use_from_same_package
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\notification_dialogs.dart:141:35 - deprecated_member_use_from_same_package
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\notification_dialogs.dart:241:35 - deprecated_member_use_from_same_package
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\notification_dialogs.dart:342:35 - deprecated_member_use_from_same_package
+   info - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\widgets\rules_dialog.dart:1:8 - unnecessary_import
+   info - 'cardDecoration' is deprecated and shouldn't be used. Use cardDecorationFor(isDarkMode) for proper theme support - lib\widgets\upgrade_dialog.dart:29:35 - deprecated_member_use_from_same_package
+

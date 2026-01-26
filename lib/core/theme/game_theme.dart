@@ -331,7 +331,7 @@ class GameTheme {
   }
 
   /// Alias for backward compatibility
-  static BoxDecoration get backgroundTable => tableDecoration;
+  static BoxDecoration get backgroundTable => tableDecorationFor(true);
 
   /// Board container with 3D shadow effect
   /// @deprecated Use boardDecorationFor(isDarkMode) for theme-aware decoration

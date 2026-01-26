@@ -61,10 +61,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         : (widget.isHovered ? 1.05 : (widget.isSelected ? 1.08 : 1.0));
 
     // DEBUG: Log shadow values to diagnose negative blur radius issue
-    final blurRadius = widget.isSelected ? 6 : (widget.isHovered ? 4 : 2);
-    print(
-      'DEBUG EnhancedTileWidget: tile=${widget.tile.id}, isSelected=${widget.isSelected}, isHovered=${widget.isHovered}, _isPressed=${_isPressed}, blurRadius=$blurRadius',
-    );
+    // DEBUG: Log shadow values removed for production
+    // DEBUG: Log shadow values removed for production
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),

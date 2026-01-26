@@ -15,14 +15,7 @@ import '../core/motion/motion_constants.dart';
 import '../core/constants/game_constants.dart';
 
 // Domain layer imports (use cases and services)
-import '../domain/use_cases/roll_dice_use_case.dart';
-import '../domain/use_cases/move_player_use_case.dart';
-import '../domain/use_cases/handle_tile_effect_use_case.dart';
-import '../domain/use_cases/pay_rent_use_case.dart';
-import '../domain/use_cases/purchase_property_use_case.dart';
-import '../domain/use_cases/upgrade_property_use_case.dart';
-import '../domain/use_cases/draw_card_use_case.dart';
-import '../domain/use_cases/end_turn_use_case.dart';
+// Domain layer imports (use cases and services)
 import '../domain/services/dice_service.dart';
 
 // Floating Effect Data Model
@@ -179,17 +172,9 @@ class GameNotifier extends StateNotifier<GameState> {
   Timer? _animationTimer;
 
   // Domain layer use cases and services
-  final RollDiceUseCase _rollDiceUseCase = RollDiceUseCase();
-  final MovePlayerUseCase _movePlayerUseCase = MovePlayerUseCase();
-  final HandleTileEffectUseCase _handleTileEffectUseCase =
-      HandleTileEffectUseCase();
-  final PayRentUseCase _payRentUseCase = PayRentUseCase();
-  final PurchasePropertyUseCase _purchasePropertyUseCase =
-      PurchasePropertyUseCase();
-  final UpgradePropertyUseCase _upgradePropertyUseCase =
-      UpgradePropertyUseCase();
-  final DrawCardUseCase _drawCardUseCase = DrawCardUseCase();
-  final EndTurnUseCase _endTurnUseCase = EndTurnUseCase();
+  // Domain layer use cases and services
+  // TODO: Implement proper Clean Architecture by delegating logic to these use cases
+  // currently logic is embedded in the Notifier for State/UI handling.
   final RandomDiceService _diceService = RandomDiceService();
 
   // List of player IDs involved in a tie-breaker

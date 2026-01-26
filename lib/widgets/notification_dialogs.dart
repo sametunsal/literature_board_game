@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../providers/theme_notifier.dart';
 
 /// Rent notification dialog
 class RentNotificationDialog extends ConsumerWidget {
@@ -22,9 +23,9 @@ class RentNotificationDialog extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: GameTheme.cardDecoration.copyWith(
-              color: GameTheme.parchmentColor,
-            ),
+            decoration: GameTheme.cardDecorationFor(
+              ref.watch(themeProvider).isDarkMode,
+            ).copyWith(color: GameTheme.parchmentColor),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -138,9 +139,9 @@ class LibraryPenaltyDialog extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: GameTheme.cardDecoration.copyWith(
-              color: GameTheme.parchmentColor,
-            ),
+            decoration: GameTheme.cardDecorationFor(
+              ref.watch(themeProvider).isDarkMode,
+            ).copyWith(color: GameTheme.parchmentColor),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -238,9 +239,9 @@ class ImzaGunuDialog extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: GameTheme.cardDecoration.copyWith(
-              color: GameTheme.parchmentColor,
-            ),
+            decoration: GameTheme.cardDecorationFor(
+              ref.watch(themeProvider).isDarkMode,
+            ).copyWith(color: GameTheme.parchmentColor),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -339,9 +340,9 @@ class TurnSkippedDialog extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: GameTheme.cardDecoration.copyWith(
-              color: GameTheme.parchmentColor,
-            ),
+            decoration: GameTheme.cardDecorationFor(
+              ref.watch(themeProvider).isDarkMode,
+            ).copyWith(color: GameTheme.parchmentColor),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,

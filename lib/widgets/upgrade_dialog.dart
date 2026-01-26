@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/board_tile.dart';
 import '../providers/game_notifier.dart';
 import '../core/theme/game_theme.dart';
+import '../providers/theme_notifier.dart';
 import '../utils/sound_manager.dart';
 import '../presentation/widgets/common/game_button.dart';
 
@@ -26,9 +27,9 @@ class UpgradeDialog extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: GameTheme.cardDecoration.copyWith(
-              color: GameTheme.parchmentColor,
-            ),
+            decoration: GameTheme.cardDecorationFor(
+              ref.watch(themeProvider).isDarkMode,
+            ).copyWith(color: GameTheme.parchmentColor),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
