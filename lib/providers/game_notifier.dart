@@ -979,21 +979,17 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void _drawCard(TileType type) async {
-    if (_isProcessing) return;
+    // NOTE: _isProcessing guard removed - rollDice() manages the lock
+    // This method is called from _handleTileArrival which is inside rollDice's lock
 
-    _isProcessing = true;
-    try {
-      await Future.delayed(
-        Duration(milliseconds: GameConstants.cardAnimationDelay),
-      );
-      List<GameCard> deck = type == TileType.chance
-          ? GameCards.sansCards
-          : GameCards.kaderCards;
-      GameCard card = deck[_random.nextInt(deck.length)];
-      state = state.copyWith(showCardDialog: true, currentCard: card);
-    } finally {
-      _isProcessing = false;
-    }
+    await Future.delayed(
+      Duration(milliseconds: GameConstants.cardAnimationDelay),
+    );
+    List<GameCard> deck = type == TileType.chance
+        ? GameCards.sansCards
+        : GameCards.kaderCards;
+    GameCard card = deck[_random.nextInt(deck.length)];
+    state = state.copyWith(showCardDialog: true, currentCard: card);
   }
 
   void closeCardDialog() {
