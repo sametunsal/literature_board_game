@@ -514,74 +514,69 @@ class GameNotifier extends StateNotifier<GameState> {
 
       // Wait for dice animation to settle before moving
       await Future.delayed(const Duration(milliseconds: 1500));
-      _movePlayer(roll);
+      await _movePlayer(roll); // MUST await to keep _isProcessing lock active
     } finally {
       _isProcessing = false;
     }
   }
 
   /// Move player step-by-step with hopping animation
+  /// NOTE: _isProcessing is managed by rollDice(), not here
   Future<void> _movePlayer(int steps) async {
     var player = state.currentPlayer;
 
-    // NOTE: _isProcessing check removed here because rollDice() already sets it to true
-    // before calling this method. Re-checking it caused a deadlock where movement
-    // was effectively cancelled.
+    // _isProcessing handling removed - rollDice() manages the lock
+    // to prevent race conditions with question dialogs
 
-    _isProcessing = true; // Kept to ensure lock logic if called from elsewhere
-    try {
-      if (player.inJail) {
-        if (_random.nextBool()) {
-          List<Player> newPlayers = List.from(state.players);
-          newPlayers[state.currentPlayerIndex] = player.copyWith(inJail: false);
-          state = state.copyWith(players: newPlayers);
-          _addLog("Nöbetten erken çıktın!", type: 'success');
-        } else {
-          _addLog("Hâlâ nöbettesin. Tur geçti.", type: 'error');
-          endTurn();
-          return;
-        }
+    if (player.inJail) {
+      if (_random.nextBool()) {
+        List<Player> newPlayers = List.from(state.players);
+        newPlayers[state.currentPlayerIndex] = player.copyWith(inJail: false);
+        state = state.copyWith(players: newPlayers);
+        _addLog("Nöbetten erken çıktın!", type: 'success');
+      } else {
+        _addLog("Hâlâ nöbettesin. Tur geçti.", type: 'error');
+        endTurn();
+        return;
       }
-
-      // Step-by-step hopping movement
-      int currentPos = player.position;
-      int newBalance = player.balance;
-
-      for (int i = 0; i < steps; i++) {
-        currentPos = (currentPos + 1) % GameConstants.boardSize;
-
-        // Check if passed start
-        if (currentPos == GameConstants.startPosition) {
-          newBalance += GameConstants.passingStartBonus;
-          _addLog(
-            "Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Puan",
-            type: 'purchase',
-          );
-        }
-
-        // Update position for each step (triggers hop animation in UI)
-        List<Player> stepPlayers = List.from(state.players);
-        stepPlayers[state.currentPlayerIndex] = state.currentPlayer.copyWith(
-          position: currentPos,
-          balance: newBalance,
-        );
-        state = state.copyWith(players: stepPlayers);
-
-        // Wait for hop animation
-        await Future.delayed(
-          Duration(milliseconds: GameConstants.hopAnimationDelay),
-        );
-      }
-
-      final tile = state.tiles[currentPos];
-
-      state = state.copyWith(currentTile: tile);
-      _addLog("${tile.title} karesine gelindi.");
-
-      _handleTileArrival(tile);
-    } finally {
-      _isProcessing = false;
     }
+
+    // Step-by-step hopping movement
+    int currentPos = player.position;
+    int newBalance = player.balance;
+
+    for (int i = 0; i < steps; i++) {
+      currentPos = (currentPos + 1) % GameConstants.boardSize;
+
+      // Check if passed start
+      if (currentPos == GameConstants.startPosition) {
+        newBalance += GameConstants.passingStartBonus;
+        _addLog(
+          "Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Puan",
+          type: 'purchase',
+        );
+      }
+
+      // Update position for each step (triggers hop animation in UI)
+      List<Player> stepPlayers = List.from(state.players);
+      stepPlayers[state.currentPlayerIndex] = state.currentPlayer.copyWith(
+        position: currentPos,
+        balance: newBalance,
+      );
+      state = state.copyWith(players: stepPlayers);
+
+      // Wait for hop animation
+      await Future.delayed(
+        Duration(milliseconds: GameConstants.hopAnimationDelay),
+      );
+    }
+
+    final tile = state.tiles[currentPos];
+
+    state = state.copyWith(currentTile: tile);
+    _addLog("${tile.title} karesine gelindi.");
+
+    _handleTileArrival(tile);
   }
 
   void _handleTileArrival(BoardTile tile) {
