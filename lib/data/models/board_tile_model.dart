@@ -35,8 +35,9 @@ enum QuestionCategoryModel {
   benKimim,
   turkEdebiyatindaIlkler,
   edebiyatAkimlari,
-  edebiyatSanatlari,
+  edebiSanatlar,
   eserKarakter,
+  bonusBilgiler,
 }
 
 class BoardTileModel {

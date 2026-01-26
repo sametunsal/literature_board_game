@@ -6,6 +6,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../data/board_config.dart';
 import '../models/game_enums.dart';
+import '../domain/entities/game_enums.dart' as domain;
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
@@ -934,6 +935,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
         _buildDialogOverlay(
           ModernQuestionDialog(
             question: state.currentQuestion!.text,
+            answer: state
+                .currentQuestion!
+                .options[state.currentQuestion!.correctIndex],
             category: _getCategoryString(state.currentQuestion!.category),
             onConfirm: () {
               ref.read(gameProvider.notifier).answerQuestion(true);
@@ -1021,14 +1025,23 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   /// Convert QuestionCategory enum to display string
-  String _getCategoryString(QuestionCategory category) {
-    return switch (category) {
-      QuestionCategory.benKimim => 'Ben Kimim',
-      QuestionCategory.turkEdebiyatindaIlkler => 'Türk Edebiyatında İlkler',
-      QuestionCategory.edebiyatAkimlari => 'Edebiyat Akımları',
-      QuestionCategory.edebiSanatlar => 'Edebi Sanatlar',
-      QuestionCategory.eserKarakter => 'Eser-Karakter',
-    };
+  String _getCategoryString(domain.QuestionCategory category) {
+    switch (category) {
+      case domain.QuestionCategory.benKimim:
+        return 'Ben Kimim?';
+      case domain.QuestionCategory.turkEdebiyatindaIlkler:
+        return 'İlkler';
+      case domain.QuestionCategory.edebiyatAkimlari:
+        return 'Edebi Akımlar';
+      case domain.QuestionCategory.edebiSanatlar:
+        return 'Edebi Sanatlar';
+      case domain.QuestionCategory.eserKarakter:
+        return 'Eser & Karakter';
+      case domain.QuestionCategory.bonusBilgiler:
+        return 'Bonus Bilgiler';
+      default:
+        return 'Genel Kültür';
+    }
   }
 
   /// Custom star-shaped particle path for confetti

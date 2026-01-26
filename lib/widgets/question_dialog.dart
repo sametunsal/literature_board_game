@@ -25,7 +25,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
   static const int _totalSeconds = 45;
   int _remainingSeconds = _totalSeconds;
   Timer? _timer;
-  bool _showAnswerButtons = false;
+  bool _isAnswerRevealed = false;
 
   @override
   void initState() {
@@ -47,18 +47,18 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
           if (_remainingSeconds <= 0) {
             _timer?.cancel();
             HapticFeedback.heavyImpact(); // Final thud when time's up
-            _showAnswerButtons = true;
+            _isAnswerRevealed = true;
           }
         });
       }
     });
   }
 
-  void _onCevapla() {
-    _timer?.cancel();
+  void _onRevealAnswer() {
     setState(() {
-      _showAnswerButtons = true;
+      _isAnswerRevealed = true;
     });
+    // Timer keeps running until Bildin/Bilemedin is pressed
   }
 
   @override
@@ -75,6 +75,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       QuestionCategory.edebiyatAkimlari => "EDEBİYAT AKIMLARI",
       QuestionCategory.edebiSanatlar => "EDEBİ SANATLAR",
       QuestionCategory.eserKarakter => "ESER-KARAKTER",
+      QuestionCategory.bonusBilgiler => "BONUS BİLGİLER",
       null => "GENEL",
     };
   }
@@ -87,6 +88,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       QuestionCategory.edebiyatAkimlari => const Color(0xFFD32F2F),
       QuestionCategory.edebiSanatlar => const Color(0xFF388E3C),
       QuestionCategory.eserKarakter => const Color(0xFFFF8C00),
+      QuestionCategory.bonusBilgiler => const Color(0xFF9C27B0),
       null => GameTheme.goldAccent,
     };
   }
@@ -99,6 +101,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       QuestionCategory.edebiyatAkimlari => Icons.auto_stories,
       QuestionCategory.edebiSanatlar => Icons.brush,
       QuestionCategory.eserKarakter => Icons.menu_book,
+      QuestionCategory.bonusBilgiler => Icons.lightbulb,
       null => Icons.help_outline,
     };
   }
@@ -299,11 +302,11 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
                               ),
                               const SizedBox(height: 18),
 
-                              // BUTTONS
-                              if (!_showAnswerButtons)
-                                _buildCevaplaButton()
+                              // BUTTONS - Flashcard Style
+                              if (!_isAnswerRevealed)
+                                _buildRevealButton()
                               else
-                                _buildAnswerButtons(),
+                                _buildAnswerRevealedSection(),
                             ],
                           ),
                         ),
@@ -329,11 +332,11 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
     );
   }
 
-  Widget _buildCevaplaButton() {
+  Widget _buildRevealButton() {
     return Column(
       children: [
         Text(
-          "Soruyu sesli oku ve cevapla:",
+          "Cevabı düşün, hazır olunca aç:",
           style: GoogleFonts.poppins(
             fontSize: 11,
             color: GameTheme.textDark.withValues(alpha: 0.6),
@@ -344,20 +347,20 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _onCevapla,
-            icon: const Icon(Icons.mic, size: 22),
+            onPressed: _onRevealAnswer,
+            icon: const Icon(Icons.visibility, size: 24),
             label: Text(
-              "CEVAPLA",
+              "CEVABI GÖSTER",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: 16,
                 letterSpacing: 1,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: GameTheme.goldAccent,
               foregroundColor: GameTheme.textDark,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -369,81 +372,166 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
     );
   }
 
-  Widget _buildAnswerButtons() {
+  Widget _buildAnswerRevealedSection() {
+    final question = widget.question;
+    // Get the correct answer text from options
+    final correctAnswer = question.options[question.correctIndex];
+
     return Column(
       children: [
+        // CORRECT ANSWER DISPLAY - Prominent!
+        Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF388E3C).withValues(alpha: 0.9),
+                    const Color(0xFF2E7D32).withValues(alpha: 0.9),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF388E3C).withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "DOĞRU CEVAP",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    correctAnswer,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cinzel(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            )
+            .animate()
+            .fadeIn(duration: 300.ms)
+            .scale(
+              begin: const Offset(0.9, 0.9),
+              end: const Offset(1.0, 1.0),
+              duration: 300.ms,
+              curve: Curves.easeOut,
+            ),
+        const SizedBox(height: 16),
+
+        // SELF-ASSESSMENT PROMPT
         Text(
-          "Cevap doğru muydu?",
+          "Doğru bildin mi?",
           style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: GameTheme.textDark.withValues(alpha: 0.6),
-            fontStyle: FontStyle.italic,
+            fontSize: 13,
+            color: GameTheme.textDark.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            // BİLEMEDİN (Wrong)
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  SoundManager.instance.playWrongAnswer(); // Wrong answer sound
-                  ref.read(gameProvider.notifier).answerQuestion(false);
-                },
-                icon: const Icon(Icons.close, size: 20),
-                label: Text(
-                  "BİLEMEDİN",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD32F2F),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  elevation: 4,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
+        const SizedBox(height: 12),
 
-            // BİLDİN (Correct) - With Particle Celebration
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Sound effect for correct answer
-                  SoundManager.instance.playCorrectAnswer();
-                  // Show celebratory particle effect
-                  RewardParticlesOverlay.show(context);
-                  // Process correct answer
-                  ref.read(gameProvider.notifier).answerQuestion(true);
-                },
-                icon: const Icon(Icons.check, size: 20),
-                label: Text(
-                  "BİLDİN",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+        // BİLDİN / BİLEMEDİN BUTTONS
+        Row(
+              children: [
+                // BİLEMEDİN (Wrong) - Red
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _timer?.cancel(); // Stop timer when answered
+                        SoundManager.instance.playWrongAnswer();
+                        ref.read(gameProvider.notifier).answerQuestion(false);
+                      },
+                      icon: const Icon(Icons.close, size: 24),
+                      label: Text(
+                        "BİLEMEDİN",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD32F2F),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                      ),
+                    ),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF388E3C),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                const SizedBox(width: 12),
+
+                // BİLDİN (Correct) - Green
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _timer?.cancel(); // Stop timer when answered
+                        SoundManager.instance.playCorrectAnswer();
+                        RewardParticlesOverlay.show(context);
+                        ref.read(gameProvider.notifier).answerQuestion(true);
+                      },
+                      icon: const Icon(Icons.check, size: 24),
+                      label: Text(
+                        "BİLDİN",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF388E3C),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                      ),
+                    ),
                   ),
-                  elevation: 4,
                 ),
-              ),
-            ),
-          ],
-        ),
+              ],
+            )
+            .animate()
+            .fadeIn(duration: 300.ms, delay: 150.ms)
+            .slideY(begin: 0.2, end: 0),
       ],
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0);
+    );
   }
 }

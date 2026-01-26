@@ -20,8 +20,9 @@ enum QuestionCategory {
   benKimim,
   turkEdebiyatindaIlkler,
   edebiyatAkimlari,
-  edebiyatSanatlari,
+  edebiSanatlar,
   eserKarakter,
+  bonusBilgiler,
 }
 
 enum CardType { sans, kader }

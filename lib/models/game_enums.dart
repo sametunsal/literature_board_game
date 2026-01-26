@@ -19,6 +19,7 @@ enum QuestionCategory {
   edebiyatAkimlari,
   edebiSanatlar,
   eserKarakter,
+  bonusBilgiler,
 }
 
 enum CardType { sans, kader }

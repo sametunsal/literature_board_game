@@ -6,8 +6,9 @@ enum QuestionCategoryModel {
   benKimim,
   turkEdebiyatindaIlkler,
   edebiyatAkimlari,
-  edebiyatSanatlari,
+  edebiSanatlar,
   eserKarakter,
+  bonusBilgiler,
 }
 
 enum QuestionDifficultyModel { easy, medium, hard }

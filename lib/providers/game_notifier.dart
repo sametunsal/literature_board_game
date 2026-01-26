@@ -6,10 +6,10 @@ import '../models/player.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/game_card.dart';
-import '../models/question.dart';
+import '../domain/entities/question.dart';
 import '../data/board_config.dart';
-import '../data/mock_questions.dart';
 import '../data/game_cards.dart';
+import '../data/repositories/question_repository_impl.dart';
 import '../core/audio_manager.dart'; // Audio Import
 import '../core/motion/motion_constants.dart';
 import '../core/constants/game_constants.dart';
@@ -180,7 +180,23 @@ class GameNotifier extends StateNotifier<GameState> {
   // List of player IDs involved in a tie-breaker
   List<String> _tieBreakerIds = [];
 
-  GameNotifier() : super(GameState(players: [], tiles: BoardConfig.tiles));
+  // Question repository and cached questions
+  final QuestionRepositoryImpl _questionRepository = QuestionRepositoryImpl();
+  List<Question> _cachedQuestions = [];
+
+  GameNotifier() : super(GameState(players: [], tiles: BoardConfig.tiles)) {
+    _loadQuestions();
+  }
+
+  /// Load questions from repository
+  Future<void> _loadQuestions() async {
+    try {
+      _cachedQuestions = await _questionRepository.getAllQuestions();
+      _addLog('${_cachedQuestions.length} soru yüklendi.', type: 'info');
+    } catch (e) {
+      _addLog('Soru yükleme hatası: $e', type: 'error');
+    }
+  }
 
   // --- LOG & AUDIO HELPER ---
   void _addLog(String message, {String type = 'info'}) {
@@ -793,7 +809,14 @@ class GameNotifier extends StateNotifier<GameState> {
       );
       return;
     }
-    final q = mockQuestions[_random.nextInt(mockQuestions.length)];
+
+    // Get random question from cached questions
+    if (_cachedQuestions.isEmpty) {
+      _addLog('Soru bulunamadı!', type: 'error');
+      endTurn();
+      return;
+    }
+    final q = _cachedQuestions[_random.nextInt(_cachedQuestions.length)];
     state = state.copyWith(
       showQuestionDialog: true,
       currentQuestion: q,
