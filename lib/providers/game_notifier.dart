@@ -98,7 +98,7 @@ class GameState {
   });
 
   Player get currentPlayer => players.isNotEmpty
-      ? players[currentPlayerIndex]
+      ? players[currentPlayerIndex % players.length]
       : const Player(id: '0', name: '?', color: Colors.grey, iconIndex: 0);
 
   GameState copyWith({

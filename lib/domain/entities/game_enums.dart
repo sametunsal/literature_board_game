@@ -20,7 +20,7 @@ enum QuestionCategory {
   benKimim,
   turkEdebiyatindaIlkler,
   edebiyatAkimlari,
-  edebiSanatlar,
+  edebiyatSanatlari,
   eserKarakter,
 }
 

@@ -18,7 +18,8 @@ class QuestionMapper {
         QuestionCategory.turkEdebiyatindaIlkler,
       QuestionCategoryModel.edebiyatAkimlari =>
         QuestionCategory.edebiyatAkimlari,
-      QuestionCategoryModel.edebiSanatlar => QuestionCategory.edebiSanatlar,
+      QuestionCategoryModel.edebiyatSanatlari =>
+        QuestionCategory.edebiyatSanatlari,
       QuestionCategoryModel.eserKarakter => QuestionCategory.eserKarakter,
     };
   }
@@ -33,7 +34,8 @@ class QuestionMapper {
         QuestionCategoryModel.turkEdebiyatindaIlkler,
       QuestionCategory.edebiyatAkimlari =>
         QuestionCategoryModel.edebiyatAkimlari,
-      QuestionCategory.edebiSanatlar => QuestionCategoryModel.edebiSanatlar,
+      QuestionCategory.edebiyatSanatlari =>
+        QuestionCategoryModel.edebiyatSanatlari,
       QuestionCategory.eserKarakter => QuestionCategoryModel.eserKarakter,
     };
   }
@@ -41,7 +43,7 @@ class QuestionMapper {
   /// Convert QuestionModel to Question domain entity
   static Question toDomain(QuestionModel model) {
     return Question(
-      text: model.text,
+      text: model.question,
       options: model.options,
       correctIndex: model.correctIndex,
       category: _mapQuestionCategory(model.category),
@@ -49,12 +51,14 @@ class QuestionMapper {
   }
 
   /// Convert Question domain entity to QuestionModel
-  static QuestionModel toData(Question entity) {
+  static QuestionModel toData(Question entity, {String? id}) {
     return QuestionModel(
-      text: entity.text,
+      id: id ?? '',
+      question: entity.text,
+      answer: entity.options[entity.correctIndex],
       options: entity.options,
-      correctIndex: entity.correctIndex,
       category: _mapQuestionCategoryModel(entity.category),
+      difficulty: QuestionDifficultyModel.medium,
     );
   }
 

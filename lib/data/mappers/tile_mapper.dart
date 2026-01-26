@@ -55,7 +55,8 @@ class TileMapper {
         QuestionCategory.turkEdebiyatindaIlkler,
       QuestionCategoryModel.edebiyatAkimlari =>
         QuestionCategory.edebiyatAkimlari,
-      QuestionCategoryModel.edebiSanatlar => QuestionCategory.edebiSanatlar,
+      QuestionCategoryModel.edebiyatSanatlari =>
+        QuestionCategory.edebiyatSanatlari,
       QuestionCategoryModel.eserKarakter => QuestionCategory.eserKarakter,
     };
   }
@@ -71,7 +72,8 @@ class TileMapper {
         QuestionCategoryModel.turkEdebiyatindaIlkler,
       QuestionCategory.edebiyatAkimlari =>
         QuestionCategoryModel.edebiyatAkimlari,
-      QuestionCategory.edebiSanatlar => QuestionCategoryModel.edebiSanatlar,
+      QuestionCategory.edebiyatSanatlari =>
+        QuestionCategoryModel.edebiyatSanatlari,
       QuestionCategory.eserKarakter => QuestionCategoryModel.eserKarakter,
     };
   }

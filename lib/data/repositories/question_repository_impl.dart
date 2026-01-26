@@ -1,12 +1,12 @@
 /// Implementation of QuestionRepository.
-/// Uses QuestionsDataSource for loading questions.
-/// Pure Dart - no Flutter dependencies (except Flutter services).
+/// Uses QuestionsDataSource for loading questions from Firestore.
 
 import 'dart:math';
 import '../../domain/entities/question.dart';
 import '../../domain/entities/game_enums.dart';
 import '../../domain/repositories/question_repository.dart';
 import '../datasources/questions_datasource.dart';
+import '../mappers/question_mapper.dart';
 
 class QuestionRepositoryImpl implements QuestionRepository {
   final QuestionsDataSource _dataSource;
@@ -57,10 +57,11 @@ class QuestionRepositoryImpl implements QuestionRepository {
 
   @override
   Future<void> loadQuestions() async {
-    // Load from data source
-    // For now, use the data source's getQuestions method
-    // In production, this would load from JSON file
-    _cachedQuestions = _dataSource.getQuestions();
+    // Fetch from Firestore (with auto-seed on first run)
+    final models = await _dataSource.fetchQuestionsFromFirestore();
+
+    // Convert to domain entities using mapper
+    _cachedQuestions = QuestionMapper.toDomainList(models);
     _isLoaded = true;
   }
 

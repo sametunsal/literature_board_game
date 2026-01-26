@@ -10,6 +10,10 @@ set(BINARY_NAME "literature_board_game")
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)
 
+# Workaround for Firebase C++ SDK using outdated cmake_minimum_required.
+# This allows the build to proceed with newer CMake versions.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
+
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTICONFIG)
