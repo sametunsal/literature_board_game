@@ -28,6 +28,7 @@ import 'main_menu_screen.dart';
 import 'game_over_dialog.dart';
 import 'card_deck_widget.dart';
 import 'floating_score.dart';
+import 'shop_dialog.dart';
 import '../utils/sound_manager.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1054,6 +1055,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
         _buildDialogOverlay(const TurnSkippedDialog()),
 
       if (state.showImzaGunuDialog) _buildDialogOverlay(const ImzaGunuDialog()),
+
+      // Shop Dialog (Kıraathane)
+      if (state.showShopDialog) _buildDialogOverlay(const ShopDialog()),
 
       // Floating Score Effect (money changes)
       if (state.floatingEffect != null) _buildFloatingScore(state, layout),
