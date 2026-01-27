@@ -3,9 +3,10 @@
 
 import 'dart:math';
 import '../../core/constants/game_constants.dart';
-import '../entities/game_card.dart';
-import '../entities/game_enums.dart';
-import '../entities/player.dart';
+import '../../models/game_card.dart';
+import '../../models/game_enums.dart';
+import '../../models/player.dart';
+import '../../models/tile_type.dart';
 
 class DrawCardUseCase {
   final Random _random = Random();

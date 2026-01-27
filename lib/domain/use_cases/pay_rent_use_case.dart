@@ -1,9 +1,10 @@
 /// Use case for rent calculation and payment.
 /// Pure Dart - no Flutter dependencies.
 
-import '../entities/board_tile.dart';
-import '../entities/player.dart';
-import '../entities/game_enums.dart';
+import '../../models/board_tile.dart';
+import '../../models/player.dart';
+import '../../models/game_enums.dart';
+import '../../models/difficulty.dart';
 
 class PayRentUseCase {
   /// Calculates the star cost/gain for a given tile.

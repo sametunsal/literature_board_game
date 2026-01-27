@@ -1,12 +1,14 @@
 /// Domain layer exports.
 /// Pure Dart - no Flutter dependencies.
 
-// Entities
-export 'entities/player.dart';
-export 'entities/board_tile.dart';
-export 'entities/game_card.dart';
-export 'entities/question.dart';
-export 'entities/game_enums.dart';
+// Entities (located in lib/models/)
+export '../models/player.dart';
+export '../models/board_tile.dart';
+export '../models/game_card.dart';
+export '../models/question.dart';
+export '../models/game_enums.dart';
+export '../models/difficulty.dart';
+export '../models/tile_type.dart';
 
 // Value Objects (to be created in Step 2)
 // export 'value_objects/money.dart';

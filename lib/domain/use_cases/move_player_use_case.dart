@@ -2,7 +2,7 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../core/constants/game_constants.dart';
-import '../entities/player.dart';
+import '../../models/player.dart';
 import '../value_objects/position.dart';
 
 class MovePlayerUseCase {

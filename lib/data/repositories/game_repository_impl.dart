@@ -8,8 +8,6 @@ import '../../models/player.dart';
 import '../../models/board_tile.dart';
 import '../../models/game_enums.dart';
 import '../../domain/repositories/game_repository.dart';
-import '../models/player_model.dart';
-import '../models/board_tile_model.dart';
 import '../mappers/player_mapper.dart';
 import '../mappers/tile_mapper.dart';
 
@@ -28,13 +26,13 @@ class GameRepositoryImpl implements GameRepository {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Convert domain entities to data models
-      final playerModels = PlayerMapper.toDataList(players);
-      final tileModels = TileMapper.toDataList(tiles);
+      // Convert domain entities to JSON
+      final playerJson = PlayerMapper.toDataList(players);
+      final tileJson = TileMapper.toDataList(tiles);
 
       final gameState = {
-        'players': playerModels.map((p) => p.toJson()).toList(),
-        'tiles': tileModels.map((t) => t.toJson()).toList(),
+        'players': playerJson,
+        'tiles': tileJson,
         'currentPlayerIndex': currentPlayerIndex,
         'phase': phase.name,
       };
@@ -56,16 +54,14 @@ class GameRepositoryImpl implements GameRepository {
 
       final decodedJson = json.decode(jsonString) as Map<String, dynamic>;
 
-      // Convert data models to domain entities
-      final playerModels = (decodedJson['players'] as List<dynamic>)
-          .map((e) => PlayerModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      final tileModels = (decodedJson['tiles'] as List<dynamic>)
-          .map((e) => BoardTileModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      // Convert JSON to domain entities using mappers
+      final playerJson = (decodedJson['players'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      final tileJson = (decodedJson['tiles'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
 
-      final players = PlayerMapper.toDomainList(playerModels);
-      final tiles = TileMapper.toDomainList(tileModels);
+      final players = PlayerMapper.toDomainList(playerJson);
+      final tiles = TileMapper.toDomainList(tileJson);
 
       final phase = GamePhase.values.firstWhere(
         (e) => e.name == decodedJson['phase'],

@@ -6,8 +6,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/player.dart';
 import '../../domain/repositories/player_repository.dart';
-
-import '../models/player_model.dart';
 import '../mappers/player_mapper.dart';
 
 class PlayerRepositoryImpl implements PlayerRepository {
@@ -24,11 +22,9 @@ class PlayerRepositoryImpl implements PlayerRepository {
       if (jsonString == null) return [];
 
       final jsonList = json.decode(jsonString) as List<dynamic>;
-      final playerModels = jsonList
-          .map((e) => PlayerModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final playerJson = jsonList.cast<Map<String, dynamic>>();
 
-      return PlayerMapper.toDomainList(playerModels);
+      return PlayerMapper.toDomainList(playerJson);
     } catch (e) {
       return [];
     }
@@ -81,10 +77,8 @@ class PlayerRepositoryImpl implements PlayerRepository {
   Future<void> _savePlayers(List<Player> players) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final playerModels = PlayerMapper.toDataList(players);
-      final jsonString = json.encode(
-        playerModels.map((p) => p.toJson()).toList(),
-      );
+      final playerJson = PlayerMapper.toDataList(players);
+      final jsonString = json.encode(playerJson);
       await prefs.setString(_playersKey, jsonString);
     } catch (e) {
       rethrow;

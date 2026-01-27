@@ -2,28 +2,29 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../core/constants/game_constants.dart';
-import '../entities/board_tile.dart';
-import '../entities/player.dart';
-import '../entities/game_enums.dart';
+import '../../models/board_tile.dart';
+import '../../models/player.dart';
+import '../../models/game_enums.dart';
+import '../../models/tile_type.dart';
+import '../../models/difficulty.dart';
 
 class HandleTileEffectUseCase {
   TileAction determineTileAction(BoardTile tile, Player player) {
     return switch (tile.type) {
-      TileType.property => TileActions.propertyInteraction(tile),
-      TileType.chance || TileType.fate => TileActions.drawCard(tile.type),
-      TileType.kiraathane => TileActions.openShop(),
+      TileType.category => TileActions.propertyInteraction(tile),
+      TileType.shop => TileActions.openShop(),
       _ => TileActions.none(),
     };
   }
 
   /// Calculates the bankruptcy risk penalty (Stars).
   int calculateBankruptcyPenalty(Player player) {
-    return (player.stars * GameConstants.bankruptcyRiskMultiplier).floor();
+    return 0; // Not used in current RPG design
   }
 
   /// Checks if a tile is purchasable (Question interaction).
   bool isPurchasable(BoardTile tile) {
-    return tile.type == TileType.property;
+    return tile.type == TileType.category;
   }
 
   /// Checks if a tile requires a question before purchase.
@@ -33,12 +34,12 @@ class HandleTileEffectUseCase {
 
   /// Checks if a tile is special (non-question).
   bool isUtility(BoardTile tile) {
-    return tile.type != TileType.property;
+    return tile.type != TileType.category;
   }
 
   /// Checks if a tile is upgradeable (Difficulty level).
   bool isUpgradeable(BoardTile tile) {
-    return tile.type == TileType.property && tile.difficulty != Difficulty.hard;
+    return tile.type == TileType.category && tile.difficulty != Difficulty.hard;
   }
 
   /// Gets the tax amount for a tile (Not used in current RPG).
@@ -75,7 +76,8 @@ class TileActions {
   static TileAction none() => const NoneAction();
   static TileAction propertyInteraction(BoardTile tile) =>
       PropertyInteractionAction(tile);
-  static TileAction drawCard(TileType cardType) => DrawCardAction(cardType);
+  static TileAction drawCard(TileType cardType) =>
+      NoneAction(); // Not used in current RPG
   static TileAction openShop() => const OpenShopAction();
 }
 

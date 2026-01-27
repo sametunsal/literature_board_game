@@ -2,9 +2,10 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../core/constants/game_constants.dart';
-import '../entities/board_tile.dart';
-import '../entities/player.dart';
-import '../entities/game_enums.dart';
+import '../../models/board_tile.dart';
+import '../../models/player.dart';
+import '../../models/game_enums.dart';
+import '../../models/difficulty.dart';
 
 class PurchasePropertyUseCase {
   /// Checks if a player can afford the star cost for mastery.
@@ -42,7 +43,7 @@ class PurchasePropertyUseCase {
     final price = _getPriceFromDifficulty(tile.difficulty);
     return PurchaseDetails(
       playerName: player.name,
-      tileTitle: tile.title,
+      tileTitle: tile.name,
       price: price,
       canAfford: player.stars >= price,
     );
@@ -58,7 +59,7 @@ class PurchasePropertyUseCase {
 
   /// Gets the default property price if not specified.
   int getDefaultPropertyPrice() {
-    return GameConstants.defaultPropertyPrice;
+    return 25; // Default medium difficulty price
   }
 }
 

@@ -2,8 +2,8 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../core/constants/game_constants.dart';
-import '../entities/player.dart';
-import '../entities/board_tile.dart';
+import '../../models/player.dart';
+import '../../models/board_tile.dart';
 
 class EndTurnUseCase {
   /// Calculates the next player index.

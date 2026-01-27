@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/board_tile.dart';
-import '../models/game_enums.dart';
+import '../models/tile_type.dart';
+import '../models/difficulty.dart';
 import '../core/theme/game_theme.dart';
 
 class GameTileWidget extends StatelessWidget {
@@ -15,7 +16,7 @@ class GameTileWidget extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final tokens = GameTheme.getTokens(isDarkMode);
 
-    bool isCorner = tile.id % 10 == 0;
+    bool isCorner = tile.type == TileType.corner;
 
     return Container(
       width: isCorner ? size * 1.5 : size,
@@ -42,7 +43,7 @@ class GameTileWidget extends StatelessWidget {
         // Renk Şeridi (Üst %20)
         Container(
           height: size * 0.25,
-          color: _getGroupColor(tile.id),
+          color: _getGroupColor(tile.position),
           child: _buildUpgradeIcons(),
         ),
         // İçerik
@@ -54,7 +55,7 @@ class GameTileWidget extends StatelessWidget {
               children: [
                 Spacer(),
                 Text(
-                  tile.title,
+                  tile.name,
                   textAlign: TextAlign.center,
                   style: GameTheme.tileTitle.copyWith(
                     fontSize: size * 0.13,
@@ -101,24 +102,19 @@ class GameTileWidget extends StatelessWidget {
 
     switch (tile.type) {
       case TileType.start:
-        icon = Icons.start;
-        bg = Color(0xFFC8E6C9);
+        icon = Icons.play_arrow;
+        bg = const Color(0xFFC8E6C9);
         label = "BAŞLANGIÇ";
         break;
-      case TileType.kiraathane:
+      case TileType.shop:
         icon = Icons.store;
         bg = const Color(0xFFFFE082); // Amber accent
-        label = "KIRAATHANe";
+        label = "KIRAATHANE";
         break;
-      case TileType.chance:
-        icon = Icons.casino;
+      case TileType.collection:
+        icon = Icons.collections_bookmark;
         bg = const Color(0xFFCE93D8); // Purple accent
-        label = "ŞANS";
-        break;
-      case TileType.fate:
-        icon = Icons.history_edu;
-        bg = const Color(0xFF90CAF9); // Blue accent
-        label = "KADER";
+        label = "KOLEKSİYON";
         break;
       default:
         icon = Icons.help;
@@ -160,6 +156,7 @@ class GameTileWidget extends StatelessWidget {
       case Difficulty.hard:
         return Colors.red;
     }
+    return Colors.grey;
   }
 
   Color _getGroupColor(int id) {

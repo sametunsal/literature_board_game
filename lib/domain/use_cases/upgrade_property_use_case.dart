@@ -1,9 +1,10 @@
 /// Use case for property upgrade logic.
 /// Pure Dart - no Flutter dependencies.
 
-import '../entities/board_tile.dart';
-import '../entities/player.dart';
-import '../entities/game_enums.dart';
+import '../../models/board_tile.dart';
+import '../../models/player.dart';
+import '../../models/game_enums.dart';
+import '../../models/difficulty.dart';
 
 class UpgradePropertyUseCase {
   /// Checks if a tile can be 'upgraded' (Next difficulty level).
@@ -51,7 +52,7 @@ class UpgradePropertyUseCase {
     final cost = calculateUpgradeCost(tile);
     return UpgradeDetails(
       playerName: player.name,
-      tileTitle: tile.title,
+      tileTitle: tile.name,
       currentLevel: tile.difficulty.index,
       newLevel: calculateNextDifficulty(tile).index,
       cost: cost,
