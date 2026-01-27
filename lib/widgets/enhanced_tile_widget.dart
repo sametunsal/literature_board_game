@@ -2,7 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/motion/motion_constants.dart';
 import '../models/board_tile.dart';
-import '../models/game_enums.dart';
+import '../models/difficulty.dart';
+import '../models/tile_type.dart';
 import '../data/board_config.dart';
 import '../../core/theme/game_theme.dart';
 
@@ -42,7 +43,7 @@ class EnhancedTileWidget extends StatefulWidget {
 class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   bool _isPressed = false;
 
-  bool get _isCorner => BoardConfig.isCorner(widget.tile.id);
+  bool get _isCorner => BoardConfig.isCorner(int.parse(widget.tile.id));
 
   @override
   Widget build(BuildContext context) {
@@ -55,10 +56,6 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     final scale = _isPressed
         ? 0.96
         : (widget.isHovered ? 1.05 : (widget.isSelected ? 1.08 : 1.0));
-
-    // DEBUG: Log shadow values to diagnose negative blur radius issue
-    // DEBUG: Log shadow values removed for production
-    // DEBUG: Log shadow values removed for production
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -98,7 +95,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
               BoxShadow(
                 color: _isPressed
                     ? tokens.primary.withValues(alpha: 0.15)
-                    : Colors.transparent, // Transparent instead of removing
+                    : Colors.transparent,
                 blurRadius: _isPressed ? 8 : 0,
                 spreadRadius: _isPressed ? 2 : 0,
               ),
@@ -134,7 +131,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         imagePath: 'assets/images/library.png',
         backgroundColor: isDarkMode
             ? const Color(0xFFFFF8E1)
-            : const Color(0xFFFFFBF0), // Lighter for light theme
+            : const Color(0xFFFFFBF0),
         tokens: tokens,
       );
     }
@@ -144,14 +141,13 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         imagePath: 'assets/images/old_shop.png',
         backgroundColor: isDarkMode
             ? const Color(0xFFF3E5F5)
-            : const Color(0xFFFAF5FC), // Lighter for light theme
+            : const Color(0xFFFAF5FC),
         tokens: tokens,
       );
     }
 
     // RPG Mode: No groupColor (using category-based design instead)
-    final groupColor = tokens.tileBase; // Fallback
-    final isOwned = false; // Not used in RPG
+    final groupColor = tokens.tileBase;
 
     // Color strip widget simplified
     Widget colorStrip = Container(
@@ -164,8 +160,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       ),
     );
 
-    // Text content widget (title + price)
-    Widget textContent = _buildTextContent(isOwned, tokens, isDarkMode);
+    // Text content widget (title + category + difficulty)
+    Widget textContent = _buildTextContent(tokens, isDarkMode);
 
     // STRICT SWITCH BY EDGE POSITION
     switch (widget.quarterTurns) {
@@ -233,18 +229,16 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
   /// Check if this is a Library/Question tile
   bool _isLibraryTile() {
-    final titleLower = widget.tile.title.toLowerCase();
-    return titleLower.contains('kütüphane') ||
-        widget.tile.id == 11; // 11 is now general shop corner but fits theme
+    final nameLower = widget.tile.name.toLowerCase();
+    return nameLower.contains('kütüphane') || widget.tile.id == '11';
   }
 
   /// Check if this is a Chance or Fate tile
   bool _isChanceOrFateTile() {
-    final titleLower = widget.tile.title.toLowerCase();
-    return titleLower.contains('şans') ||
-        titleLower.contains('kader') ||
-        widget.tile.type == TileType.chance ||
-        widget.tile.type == TileType.fate;
+    final nameLower = widget.tile.name.toLowerCase();
+    return nameLower.contains('şans') ||
+        nameLower.contains('kader') ||
+        widget.tile.type == TileType.corner;
   }
 
   /// Build special tile with custom image (Pop-Up Book style)
@@ -294,7 +288,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                 borderRadius: BorderRadius.circular(2),
               ),
               child: Text(
-                widget.tile.title,
+                widget.tile.name,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -318,8 +312,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     return Transform.rotate(angle: degrees * (math.pi / 180), child: child);
   }
 
-  /// Build the text content (title + price/rent + owner indicator)
-  Widget _buildTextContent(bool isOwned, ThemeTokens tokens, bool isDarkMode) {
+  /// Build the text content (title + category + difficulty)
+  Widget _buildTextContent(ThemeTokens tokens, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(2.0),
       child: Stack(
@@ -327,8 +321,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // CATEGORY DISPLAY (formerly price/rent)
-              _buildCategoryIndicator(tokens),
+              // CATEGORY AND DIFFICULTY DISPLAY
+              _buildCategoryAndDifficultyIndicator(tokens),
             ],
           ),
         ],
@@ -336,30 +330,60 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     );
   }
 
-  Widget _buildCategoryIndicator(ThemeTokens tokens) {
-    if (widget.tile.category == null) return const SizedBox.shrink();
+  Widget _buildCategoryAndDifficultyIndicator(ThemeTokens tokens) {
+    // For non-category tiles, show nothing
+    if (widget.tile.category == null) {
+      return const SizedBox.shrink();
+    }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(2),
-        color: tokens.shadow.withValues(alpha: 0.08),
-      ),
-      child: Text(
-        widget.tile.difficulty.name.toUpperCase(),
-        style: GameTheme.tilePriceStyle.copyWith(
-          fontSize: 7,
-          fontWeight: FontWeight.bold,
-          color: tokens.textPrimary,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Category Name
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            color: tokens.primary.withValues(alpha: 0.1),
+          ),
+          child: Text(
+            widget.tile.category!.toUpperCase(),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GameTheme.tilePriceStyle.copyWith(
+              fontSize: 6,
+              fontWeight: FontWeight.bold,
+              color: tokens.primary,
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 2),
+        // Difficulty Level
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            color: tokens.shadow.withValues(alpha: 0.08),
+          ),
+          child: Text(
+            widget.tile.difficulty.displayName,
+            style: GameTheme.tilePriceStyle.copyWith(
+              fontSize: 6,
+              fontWeight: FontWeight.w600,
+              color: tokens.textSecondary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   /// Build corner tile content
   Widget _buildCornerContent(ThemeTokens tokens, bool isDarkMode) {
     // Check if this is the Start Tile - use custom image
-    if (widget.tile.id == 0 || widget.tile.type == TileType.start) {
+    if (widget.tile.id == '0' || widget.tile.type == TileType.start) {
       return _buildStartTileContent(tokens);
     }
 
@@ -402,7 +426,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                       style: GameTheme.cornerLabelStyle.copyWith(
                         fontSize: 7,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87, // Always dark on colored corners
+                        color: Colors.black87,
                       ),
                     ),
                   ),
@@ -427,10 +451,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFE8F5E9), // Light green
-            const Color(0xFFC8E6C9), // Slightly darker green
-          ],
+          colors: [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
         ),
       ),
       child: Center(
@@ -472,7 +493,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                     style: GameTheme.cornerLabelStyle.copyWith(
                       fontSize: 7,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2E7D32), // Dark green for contrast
+                      color: const Color(0xFF2E7D32),
                     ),
                   ),
                 ),
@@ -485,7 +506,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   }
 
   CornerTileConfig _getCornerConfig() {
-    final predefined = GameTheme.cornerConfigs[widget.tile.id];
+    final predefined = GameTheme.cornerConfigs[int.tryParse(widget.tile.id)];
     if (predefined != null) return predefined;
 
     return switch (widget.tile.type) {
@@ -494,20 +515,15 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         label: 'BAŞLANGIÇ',
         backgroundColor: Color(0xFFC8E6C9),
       ),
-      TileType.kiraathane => const CornerTileConfig(
+      TileType.shop => const CornerTileConfig(
         icon: Icons.store,
         label: 'KIRAATHANe',
         backgroundColor: Color(0xFFFFECB3),
       ),
-      TileType.chance => const CornerTileConfig(
+      TileType.corner => const CornerTileConfig(
         icon: Icons.casino,
-        label: 'ŞANS',
+        label: 'ŞANS/KADER',
         backgroundColor: Color(0xFFF3E5F5),
-      ),
-      TileType.fate => const CornerTileConfig(
-        icon: Icons.history_edu,
-        label: 'KADER',
-        backgroundColor: Color(0xFFE3F2FD),
       ),
       _ => const CornerTileConfig(
         icon: Icons.help,

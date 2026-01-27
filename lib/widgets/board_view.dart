@@ -1088,7 +1088,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
       // Shop Dialog (Kıraathane)
       if (state.showShopDialog) _buildDialogOverlay(const ShopDialog()),
 
-      // Floating Score Effect (money changes)
+      // Floating Score Effect (stars changes)
       if (state.floatingEffect != null) _buildFloatingScore(state, layout),
     ];
   }

@@ -28,7 +28,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
   late AnimationController _counterController;
   late Animation<double> _counterAnimation;
 
-  int _displayedMoney = 0;
+  int _displayedStars = 0;
 
   @override
   void initState() {
@@ -62,7 +62,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
 
     _counterAnimation.addListener(() {
       setState(() {
-        _displayedMoney = _counterAnimation.value.toInt();
+        _displayedStars = _counterAnimation.value.toInt();
       });
     });
 
@@ -380,7 +380,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "⭐$_displayedMoney",
+                        "⭐$_displayedStars",
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
