@@ -17,8 +17,8 @@ class RulesDialog extends ConsumerWidget {
       insetPadding: const EdgeInsets.all(16),
       child: Center(
         child: Container(
-          width: 800,
-          height: 500,
+          width: 700,
+          height: 600,
           decoration: BoxDecoration(
             color: tokens.dialogBackground.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(24),
@@ -34,133 +34,197 @@ class RulesDialog extends ConsumerWidget {
               ),
             ],
           ),
-          child: DefaultTabController(
-            length: 4,
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: tokens.border.withValues(alpha: 0.3),
-                      ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: tokens.border.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "NASIL OYNANIR?",
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: tokens.accent,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close, color: tokens.textSecondary),
-                      ),
-                    ],
-                  ),
                 ),
-
-                // Tabs
-                TabBar(
-                  labelColor: tokens.accent,
-                  unselectedLabelColor: tokens.textSecondary,
-                  indicatorColor: tokens.accent,
-                  labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                  tabs: const [
-                    Tab(icon: Icon(Icons.flag), text: "AMAÇ"),
-                    Tab(icon: Icon(Icons.directions_walk), text: "HAREKET"),
-                    Tab(icon: Icon(Icons.auto_stories), text: "KARTLAR"),
-                    Tab(icon: Icon(Icons.emoji_events), text: "KAZANMA"),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.menu_book, color: tokens.accent, size: 32),
+                        const SizedBox(width: 12),
+                        Text(
+                          "Oyun Kuralları",
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: tokens.accent,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: tokens.textSecondary,
+                        size: 28,
+                      ),
+                    ),
                   ],
                 ),
+              ),
 
-                // Content
-                Expanded(
-                  child: TabBarView(
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTabContent(
+                      _buildSection(tokens, "Oyunun Amacı", Icons.flag, [
+                        "Nihai hedef \"Ehil\" unvanını kazanmaktır.",
+                        "Bunun için 6 farklı kategoride (İlkler, Edebi Sanatlar, vb.) \"Usta\" seviyesine ulaşmalısınız.",
+                        "Ayrıca \"Kıraathane\"den (Mağaza) 50 adet Edebi Söz Kartı biriktirmelisiniz.",
+                      ]),
+                      const SizedBox(height: 24),
+                      _buildSection(
                         tokens,
-                        "Oyunun Amacı",
-                        "Edebina'da amaç, Türk Edebiyatı'nın seçkin eserlerine ve yazarlarına sahip olarak en zengin koleksiyoner olmaktır.\n\n"
-                            "• Eserleri satın alın ve kira geliri elde edin.\n"
-                            "• Yayınevleri kurarak gücünüzü artırın.\n"
-                            "• Rakibinizin iflas etmesini sağlayın veya belirlenen süre sonunda en yüksek puana sahip olun.",
-                        Icons.flag_circle,
+                        "Nasıl Oynanır?",
+                        Icons.directions_walk,
+                        [
+                          "Sırası gelen oyuncu zar atar ve piyonunu ilerletir.",
+                          "Üzerine geldiğiniz kutucuktaki kategoriden bir soru sorulur.",
+                          "Soruyu doğru bilirseniz \"Yıldız\" (⭐) kazanırsınız ve o kategorideki ustalığınız artar.",
+                        ],
                       ),
-                      _buildTabContent(
+                      const SizedBox(height: 24),
+                      _buildSection(tokens, "Seviye Sistemi", Icons.trending_up, [
+                        "Her kategori için sırasıyla: Acemi → Çırak → Kalfa → Usta seviyeleri vardır.",
+                        "Soruları bildikçe seviye atlarsınız.",
+                        "Zorluk seviyesi arttıkça kazanılan Yıldız miktarı da artar.",
+                      ]),
+                      const SizedBox(height: 24),
+                      _buildSection(
                         tokens,
-                        "Oyun Akışı",
-                        "• Sırası gelen oyuncu iki zar atar ve gelen sayı kadar ilerler.\n"
-                            "• Geldiğiniz kare sahipsiz bir eserse, satın alabilirsiniz.\n"
-                            "• Sahipli bir kareye gelirseniz, mülk sahibine kira ödersiniz.\n"
-                            "• Çift zar atarsanız tekrar oynama hakkı kazanırsınız. Ancak 3 kez üst üste çift atarsanız 'Kütüphane Nöbeti'ne gidersiniz!",
-                        Icons.directions_run,
+                        "Yıldızlar ve Kıraathane",
+                        Icons.store,
+                        [
+                          "Kazandığınız yıldızları \"Kıraathane\" bölümünde harcayabilirsiniz.",
+                          "Buradan farklı dönemlere ait \"Edebi Söz Kartları\" satın alarak koleksiyonunuzu genişletin.",
+                        ],
                       ),
-                      _buildTabContent(
-                        tokens,
-                        "Şans ve Kader",
-                        "• 'Şans Kartı' karesine geldiğinizde, size beklenmedik bonuslar veya fırsatlar sunan bir kart çekersiniz.\n"
-                            "• 'Kader Kartı' ise oyunun gidişatını değiştirebilecek, bazen olumlu bazen riskli durumlar yaratır.\n"
-                            "• Ayrıca 'İmza Günü', 'Edebiyat Sınavı' gibi özel kareler de sürpriz etkiler yaratabilir.",
-                        Icons.style,
-                      ),
-                      _buildTabContent(
-                        tokens,
-                        "Bitiş ve Kazanma",
-                        "Oyun iki şekilde biter:\n\n"
-                            "1. İflas: Bir oyuncunun parası (puanı) 0'ın altına düşerse iflas eder ve oyun biter. Kalan oyuncular arasında en zengin olan kazanır.\n\n"
-                            "2. Süre/Tur Limiti: Belirlenen tur sayısı tamamlandığında oyun biter ve en çok varlığa sahip olan oyuncu kazanır.",
-                        Icons.emoji_events,
-                      ),
+                      const SizedBox(height: 24),
+                      _buildSection(tokens, "Şans ve Kader", Icons.casino, [
+                        "Köşelerdeki Şans ve Kader kutucukları size sürpriz avantajlar veya dezavantajlar sağlayabilir.",
+                      ]),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // Footer
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: tokens.border.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    "Bol şans, edebiyat yolculuğunuzda!",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: tokens.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTabContent(
+  Widget _buildSection(
     ThemeTokens tokens,
     String title,
-    String description,
     IconData icon,
+    List<String> points,
   ) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: tokens.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.border.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 64, color: tokens.accent.withValues(alpha: 0.5)),
-          const SizedBox(height: 24),
-          Text(
-            title,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: tokens.textPrimary,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: tokens.accent.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: tokens.accent, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: tokens.textPrimary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          Text(
-            description,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: tokens.textSecondary,
-              height: 1.6,
+          ...points.map(
+            (point) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: tokens.accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      point,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        color: tokens.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
