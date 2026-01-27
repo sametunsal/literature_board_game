@@ -2,7 +2,7 @@
 /// Wraps existing board_config.dart data.
 /// Pure Dart - no Flutter dependencies.
 
-import '../../domain/entities/board_tile.dart';
+import '../../models/board_tile.dart';
 
 class BoardConfigDataSource {
   BoardConfigDataSource._();

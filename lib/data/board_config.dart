@@ -1,4 +1,6 @@
 import '../models/board_tile.dart';
+import '../models/tile_type.dart';
+import '../models/difficulty.dart';
 import '../models/game_enums.dart';
 
 /// Board configuration with 22 tiles for RPG-style Literature Board Game
@@ -30,31 +32,18 @@ import '../models/game_enums.dart';
 /// Categories repeat 3 times each (18 category tiles total)
 class BoardConfig {
   /// The 6 question categories in specified order (repeats 3x on board)
-  static const List<QuestionCategory> _categoryOrder = [
-    QuestionCategory.turkEdebiyatindaIlkler, // 1st
-    QuestionCategory.edebiSanatlar, // 2nd
-    QuestionCategory.eserKarakter, // 3rd
-    QuestionCategory.edebiyatAkimlari, // 4th
-    QuestionCategory.benKimim, // 5th
-    QuestionCategory.tesvik, // 6th
+  static final List<QuestionCategory> _categoryOrder = [
+    QuestionCategory.turkEdebiyatindaIlkler, // 1st: Türk Edebiyatında İlkler
+    QuestionCategory.edebiSanatlar, // 2nd: Edebi Sanatlar
+    QuestionCategory.eserKarakter, // 3rd: Eser-Karakter
+    QuestionCategory.edebiyatAkimlari, // 4th: Edebiyat Akımları
+    QuestionCategory.benKimim, // 5th: Ben Kimim?
+    QuestionCategory.tesvik, // 6th: Teşvik
   ];
 
   /// Get category display name in full Turkish
   static String getCategoryDisplayName(QuestionCategory category) {
-    switch (category) {
-      case QuestionCategory.turkEdebiyatindaIlkler:
-        return 'Türk Edebiyatında İlkler';
-      case QuestionCategory.edebiSanatlar:
-        return 'Edebi Sanatlar';
-      case QuestionCategory.eserKarakter:
-        return 'Eser-Karakter';
-      case QuestionCategory.edebiyatAkimlari:
-        return 'Edebiyat Akımları';
-      case QuestionCategory.benKimim:
-        return 'Ben Kimim?';
-      case QuestionCategory.tesvik:
-        return 'Teşvik';
-    }
+    return category.displayName;
   }
 
   /// Board geometry
@@ -77,162 +66,195 @@ class BoardConfig {
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 0: START (Bottom-Right Corner)
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(id: 0, title: 'BAŞLANGIÇ', type: TileType.start),
+    const BoardTile(
+      id: '0',
+      name: 'BAŞLANGIÇ',
+      position: 0,
+      type: TileType.start,
+    ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 1-4: Bottom Row (Right to Left) - 4 Category Tiles
     // ═══════════════════════════════════════════════════════════════════════════
     BoardTile(
-      id: 1,
-      title: getCategoryDisplayName(_getCategoryAt(0)),
-      type: TileType.property,
-      category: _getCategoryAt(0), // benKimim
+      id: '1',
+      name: getCategoryDisplayName(_getCategoryAt(0)),
+      position: 1,
+      type: TileType.category,
+      category: _getCategoryAt(0).name, // turkEdebiyatindaIlkler (1st)
       difficulty: Difficulty.easy,
     ),
     BoardTile(
-      id: 2,
-      title: getCategoryDisplayName(_getCategoryAt(1)),
-      type: TileType.property,
-      category: _getCategoryAt(1), // turkEdebiyatindaIlkler
+      id: '2',
+      name: getCategoryDisplayName(_getCategoryAt(1)),
+      position: 2,
+      type: TileType.category,
+      category: _getCategoryAt(1).name, // edebiSanatlar (1st)
       difficulty: Difficulty.easy,
     ),
     BoardTile(
-      id: 3,
-      title: getCategoryDisplayName(_getCategoryAt(2)),
-      type: TileType.property,
-      category: _getCategoryAt(2), // edebiyatAkimlari
+      id: '3',
+      name: getCategoryDisplayName(_getCategoryAt(2)),
+      position: 3,
+      type: TileType.category,
+      category: _getCategoryAt(2).name, // eserKarakter (1st)
       difficulty: Difficulty.medium,
     ),
     BoardTile(
-      id: 4,
-      title: getCategoryDisplayName(_getCategoryAt(3)),
-      type: TileType.property,
-      category: _getCategoryAt(3), // edebiSanatlar
+      id: '4',
+      name: getCategoryDisplayName(_getCategoryAt(3)),
+      position: 4,
+      type: TileType.category,
+      category: _getCategoryAt(3).name, // edebiyatAkimlari (1st)
       difficulty: Difficulty.medium,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 5: ŞANS (Bottom-Left Corner) - Chance
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(id: 5, title: 'ŞANS', type: TileType.chance),
+    const BoardTile(id: '5', name: 'ŞANS', position: 5, type: TileType.corner),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 6-10: Left Column (Bottom to Top) - 5 Category Tiles
     // ═══════════════════════════════════════════════════════════════════════════
     BoardTile(
-      id: 6,
-      title: getCategoryDisplayName(_getCategoryAt(4)),
-      type: TileType.property,
-      category: _getCategoryAt(4), // eserKarakter
+      id: '6',
+      name: getCategoryDisplayName(_getCategoryAt(4)),
+      position: 6,
+      type: TileType.category,
+      category: _getCategoryAt(4).name, // benKimim (1st)
       difficulty: Difficulty.hard,
     ),
     BoardTile(
-      id: 7,
-      title: getCategoryDisplayName(_getCategoryAt(5)),
-      type: TileType.property,
-      category: _getCategoryAt(5), // tesvik
+      id: '7',
+      name: getCategoryDisplayName(_getCategoryAt(5)),
+      position: 7,
+      type: TileType.category,
+      category: _getCategoryAt(5).name, // tesvik (1st)
       difficulty: Difficulty.easy,
     ),
     BoardTile(
-      id: 8,
-      title: getCategoryDisplayName(_getCategoryAt(0)),
-      type: TileType.property,
-      category: _getCategoryAt(0), // benKimim (2nd)
+      id: '8',
+      name: getCategoryDisplayName(_getCategoryAt(0)),
+      position: 8,
+      type: TileType.category,
+      category: _getCategoryAt(0).name, // turkEdebiyatindaIlkler (2nd)
       difficulty: Difficulty.medium,
     ),
     BoardTile(
-      id: 9,
-      title: getCategoryDisplayName(_getCategoryAt(1)),
-      type: TileType.property,
-      category: _getCategoryAt(1), // turkEdebiyatindaIlkler (2nd)
+      id: '9',
+      name: getCategoryDisplayName(_getCategoryAt(1)),
+      position: 9,
+      type: TileType.category,
+      category: _getCategoryAt(1).name, // edebiSanatlar (2nd)
       difficulty: Difficulty.medium,
     ),
     BoardTile(
-      id: 10,
-      title: getCategoryDisplayName(_getCategoryAt(2)),
-      type: TileType.property,
-      category: _getCategoryAt(2), // edebiyatAkimlari (2nd)
+      id: '10',
+      name: getCategoryDisplayName(_getCategoryAt(2)),
+      position: 10,
+      type: TileType.category,
+      category: _getCategoryAt(2).name, // eserKarakter (2nd)
       difficulty: Difficulty.hard,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 11: KIRAATHANe (Top-Left Corner) - SHOP
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(id: 11, title: 'KIRAATHANe', type: TileType.kiraathane),
+    const BoardTile(
+      id: '11',
+      name: 'KIRAATHANe',
+      position: 11,
+      type: TileType.shop,
+    ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 12-15: Top Row (Left to Right) - 4 Category Tiles
     // ═══════════════════════════════════════════════════════════════════════════
     BoardTile(
-      id: 12,
-      title: getCategoryDisplayName(_getCategoryAt(3)),
-      type: TileType.property,
-      category: _getCategoryAt(3), // edebiSanatlar (2nd)
+      id: '12',
+      name: getCategoryDisplayName(_getCategoryAt(3)),
+      position: 12,
+      type: TileType.category,
+      category: _getCategoryAt(3).name, // edebiyatAkimlari (2nd)
       difficulty: Difficulty.hard,
     ),
     BoardTile(
-      id: 13,
-      title: getCategoryDisplayName(_getCategoryAt(4)),
-      type: TileType.property,
-      category: _getCategoryAt(4), // eserKarakter (2nd)
+      id: '13',
+      name: getCategoryDisplayName(_getCategoryAt(4)),
+      position: 13,
+      type: TileType.category,
+      category: _getCategoryAt(4).name, // benKimim (2nd)
       difficulty: Difficulty.easy,
     ),
     BoardTile(
-      id: 14,
-      title: getCategoryDisplayName(_getCategoryAt(5)),
-      type: TileType.property,
-      category: _getCategoryAt(5), // tesvik (2nd)
+      id: '14',
+      name: getCategoryDisplayName(_getCategoryAt(5)),
+      position: 14,
+      type: TileType.category,
+      category: _getCategoryAt(5).name, // tesvik (2nd)
       difficulty: Difficulty.medium,
     ),
     BoardTile(
-      id: 15,
-      title: getCategoryDisplayName(_getCategoryAt(0)),
-      type: TileType.property,
-      category: _getCategoryAt(0), // benKimim (3rd)
+      id: '15',
+      name: getCategoryDisplayName(_getCategoryAt(0)),
+      position: 15,
+      type: TileType.category,
+      category: _getCategoryAt(0).name, // turkEdebiyatindaIlkler (3rd)
       difficulty: Difficulty.hard,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 16: KADER (Top-Right Corner) - Fate
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(id: 16, title: 'KADER', type: TileType.fate),
+    const BoardTile(
+      id: '16',
+      name: 'KADER',
+      position: 16,
+      type: TileType.corner,
+    ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 17-21: Right Column (Top to Bottom) - 5 Category Tiles
     // ═══════════════════════════════════════════════════════════════════════════
     BoardTile(
-      id: 17,
-      title: getCategoryDisplayName(_getCategoryAt(1)),
-      type: TileType.property,
-      category: _getCategoryAt(1), // turkEdebiyatindaIlkler (3rd)
+      id: '17',
+      name: getCategoryDisplayName(_getCategoryAt(1)),
+      position: 17,
+      type: TileType.category,
+      category: _getCategoryAt(1).name, // edebiSanatlar (3rd)
       difficulty: Difficulty.hard,
     ),
     BoardTile(
-      id: 18,
-      title: getCategoryDisplayName(_getCategoryAt(2)),
-      type: TileType.property,
-      category: _getCategoryAt(2), // edebiyatAkimlari (3rd)
+      id: '18',
+      name: getCategoryDisplayName(_getCategoryAt(2)),
+      position: 18,
+      type: TileType.category,
+      category: _getCategoryAt(2).name, // eserKarakter (3rd)
       difficulty: Difficulty.easy,
     ),
     BoardTile(
-      id: 19,
-      title: getCategoryDisplayName(_getCategoryAt(3)),
-      type: TileType.property,
-      category: _getCategoryAt(3), // edebiSanatlar (3rd)
+      id: '19',
+      name: getCategoryDisplayName(_getCategoryAt(3)),
+      position: 19,
+      type: TileType.category,
+      category: _getCategoryAt(3).name, // edebiyatAkimlari (3rd)
       difficulty: Difficulty.medium,
     ),
     BoardTile(
-      id: 20,
-      title: getCategoryDisplayName(_getCategoryAt(4)),
-      type: TileType.property,
-      category: _getCategoryAt(4), // eserKarakter (3rd)
+      id: '20',
+      name: getCategoryDisplayName(_getCategoryAt(4)),
+      position: 20,
+      type: TileType.category,
+      category: _getCategoryAt(4).name, // benKimim (3rd)
       difficulty: Difficulty.medium,
     ),
     BoardTile(
-      id: 21,
-      title: getCategoryDisplayName(_getCategoryAt(5)),
-      type: TileType.property,
-      category: _getCategoryAt(5), // tesvik (3rd)
+      id: '21',
+      name: getCategoryDisplayName(_getCategoryAt(5)),
+      position: 21,
+      type: TileType.category,
+      category: _getCategoryAt(5).name, // tesvik (3rd)
       difficulty: Difficulty.hard,
     ),
   ];
@@ -245,7 +267,7 @@ class BoardConfig {
 
   /// Get all tiles for a specific category
   static List<BoardTile> getTilesByCategory(QuestionCategory category) {
-    return tiles.where((t) => t.category == category).toList();
+    return tiles.where((t) => t.category == category.name).toList();
   }
 
   /// Get all corner tiles

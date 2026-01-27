@@ -1,9 +1,9 @@
 /// Repository interface for game state persistence.
 /// Pure Dart - no Flutter dependencies.
 
-import '../entities/player.dart';
-import '../entities/board_tile.dart';
-import '../entities/game_enums.dart';
+import '../../models/player.dart';
+import '../../models/board_tile.dart';
+import '../../models/game_enums.dart';
 
 abstract class GameRepository {
   /// Saves the current game state.

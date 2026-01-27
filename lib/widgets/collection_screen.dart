@@ -295,44 +295,145 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
   }
 
   Widget _buildQuoteCard(LiteraryQuoteModel quote, ThemeTokens tokens) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: tokens.surfaceAlt,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: GameTheme.copperAccent.withValues(alpha: 0.3),
+    return GestureDetector(
+      onTap: () => _showQuoteDetail(quote),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: tokens.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: GameTheme.copperAccent.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"${quote.text}"',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 15,
+                fontStyle: FontStyle.italic,
+                color: tokens.textPrimary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.person, size: 16, color: GameTheme.copperAccent),
+                const SizedBox(width: 6),
+                Text(
+                  quote.author,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: GameTheme.copperAccent,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '"${quote.text}"',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 15,
-              fontStyle: FontStyle.italic,
-              color: tokens.textPrimary,
-              height: 1.5,
+    );
+  }
+
+  /// Show quote detail dialog with full text
+  void _showQuoteDetail(LiteraryQuoteModel quote) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                GameTheme.parchmentColor.withValues(alpha: 0.95),
+                GameTheme.parchmentColor,
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.person, size: 16, color: GameTheme.copperAccent),
-              const SizedBox(width: 6),
-              Text(
-                quote.author,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: GameTheme.copperAccent,
-                ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with close button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    quote.period,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: GameTheme.goldAccent,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Full quote text
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    '"${quote.text}"',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.black87,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Author
+              Row(
+                children: [
+                  const Icon(
+                    Icons.person,
+                    size: 20,
+                    color: GameTheme.copperAccent,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    quote.author,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

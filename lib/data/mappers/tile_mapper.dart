@@ -1,32 +1,32 @@
-/// Mapper for converting between BoardTileModel (data layer) and BoardTile (domain layer).
+/// Mapper for converting between BoardTile (data layer) and BoardTile (domain layer).
 /// Pure Dart - no Flutter dependencies.
 
-import '../../domain/entities/board_tile.dart';
-import '../../domain/entities/game_enums.dart';
-import '../models/board_tile_model.dart';
+import '../../models/board_tile.dart';
+import '../../models/tile_type.dart';
+import '../../models/difficulty.dart';
 
 class TileMapper {
   TileMapper._();
-
-  /// Convert TileTypeModel to TileType
-  static TileType _mapTileType(TileTypeModel modelType) {
-    return switch (modelType) {
-      TileTypeModel.start => TileType.start,
-      TileTypeModel.property => TileType.property,
-      TileTypeModel.chance => TileType.chance,
-      TileTypeModel.fate => TileType.fate,
-      TileTypeModel.kiraathane => TileType.kiraathane,
-    };
-  }
 
   /// Convert TileType to TileTypeModel
   static TileTypeModel _mapTileTypeModel(TileType domainType) {
     return switch (domainType) {
       TileType.start => TileTypeModel.start,
-      TileType.property => TileTypeModel.property,
-      TileType.chance => TileTypeModel.chance,
-      TileType.fate => TileTypeModel.fate,
-      TileType.kiraathane => TileTypeModel.kiraathane,
+      TileType.category => TileTypeModel.category,
+      TileType.corner => TileTypeModel.corner,
+      TileType.shop => TileTypeModel.shop,
+      TileType.collection => TileTypeModel.collection,
+    };
+  }
+
+  /// Convert TileTypeModel to TileType
+  static TileType _mapTileTypeModel(TileTypeModel domainType) {
+    return switch (domainType) {
+      TileTypeModel.start => TileType.start,
+      TileTypeModel.category => TileTypeModel.category,
+      TileTypeModel.corner => TileTypeModel.corner,
+      TileTypeModel.shop => TileTypeModel.shop,
+      TileTypeModel.collection => TileTypeModel.collection,
     };
   }
 
@@ -65,11 +65,11 @@ class TileMapper {
   }
 
   /// Difficulty mapping
-  static Difficulty _mapDifficulty(DifficultyModel model) {
-    return switch (model) {
-      DifficultyModel.easy => Difficulty.easy,
-      DifficultyModel.medium => Difficulty.medium,
-      DifficultyModel.hard => Difficulty.hard,
+  static DifficultyModel _mapDifficulty(Difficulty domain) {
+    return switch (domain) {
+      Difficulty.easy => DifficultyModel.easy,
+      Difficulty.medium => DifficultyModel.medium,
+      Difficulty.hard => DifficultyModel.hard,
     };
   }
 
@@ -81,35 +81,35 @@ class TileMapper {
     };
   }
 
-  /// Convert BoardTileModel to BoardTile domain entity
-  static BoardTile toDomain(BoardTileModel model) {
+  /// Convert BoardTile to BoardTile domain entity
+  static BoardTile toDomain(BoardTile model) {
     return BoardTile(
       id: model.id,
-      title: model.title,
-      type: _mapTileType(model.type),
+      name: model.name,
+      type: _mapTileTypeModel(model.type),
       category: _mapQuestionCategory(model.category),
-      difficulty: _mapDifficulty(model.difficulty),
+      difficulty: _mapDifficultyModel(model.difficulty),
     );
   }
 
-  /// Convert BoardTile domain entity to BoardTileModel
-  static BoardTileModel toData(BoardTile entity) {
-    return BoardTileModel(
+  /// Convert BoardTile domain entity to BoardTile
+  static BoardTile toData(BoardTile entity) {
+    return BoardTile(
       id: entity.id,
-      title: entity.title,
+      name: entity.name,
       type: _mapTileTypeModel(entity.type),
       category: _mapQuestionCategoryModel(entity.category),
       difficulty: _mapDifficultyModel(entity.difficulty),
     );
   }
 
-  /// Convert list of BoardTileModel to list of BoardTile
-  static List<BoardTile> toDomainList(List<BoardTileModel> models) {
+  /// Convert list of BoardTile to list of BoardTile
+  static List<BoardTile> toDomainList(List<BoardTile> models) {
     return models.map((model) => toDomain(model)).toList();
   }
 
-  /// Convert list of BoardTile to list of BoardTileModel
-  static List<BoardTileModel> toDataList(List<BoardTile> entities) {
+  /// Convert list of BoardTile to list of BoardTile
+  static List<BoardTile> toDataList(List<BoardTile> entities) {
     return entities.map((entity) => toData(entity)).toList();
   }
 }

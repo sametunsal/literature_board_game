@@ -4,9 +4,9 @@
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../domain/entities/player.dart';
-import '../../domain/entities/board_tile.dart';
-import '../../domain/entities/game_enums.dart';
+import '../../models/player.dart';
+import '../../models/board_tile.dart';
+import '../../models/game_enums.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../models/player_model.dart';
 import '../models/board_tile_model.dart';

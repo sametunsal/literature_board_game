@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/entities/question.dart';
-import '../../domain/entities/game_enums.dart';
+import '../../models/question.dart';
+import '../../models/game_enums.dart';
 import '../models/question_model.dart';
 
 class QuestionsDataSource {
@@ -145,19 +145,19 @@ class QuestionsDataSource {
   // --- Legacy methods for backward compatibility ---
 
   /// Get all questions as domain entities (synchronous - deprecated)
-  List<Question> getQuestions() {
+  List<QuestionModel> getQuestions() {
     // This method is synchronous and cannot fetch from Firestore
     // Use fetchQuestionsFromFirestore() instead
     return [];
   }
 
   /// Get questions by category
-  List<Question> getQuestionsByCategory(QuestionCategory category) {
+  List<QuestionModel> getQuestionsByCategory(QuestionCategory category) {
     return getQuestions().where((q) => q.category == category).toList();
   }
 
   /// Get a random question by category
-  Question? getRandomQuestion(QuestionCategory category) {
+  QuestionModel? getRandomQuestion(QuestionCategory category) {
     final questions = getQuestionsByCategory(category);
     if (questions.isEmpty) return null;
     return questions[(questions.length * DateTime.now().millisecond) %

@@ -1,8 +1,8 @@
 /// Repository interface for question loading.
 /// Pure Dart - no Flutter dependencies.
 
-import '../entities/question.dart';
-import '../entities/game_enums.dart';
+import '../../models/question.dart';
+import '../../models/game_enums.dart';
 
 abstract class QuestionRepository {
   /// Gets all questions.

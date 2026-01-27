@@ -1,7 +1,7 @@
 /// Mapper for converting between PlayerModel (data layer) and Player (domain layer).
 /// Pure Dart - no Flutter dependencies.
 
-import '../../domain/entities/player.dart';
+import '../../models/player.dart';
 import '../models/player_model.dart';
 
 class PlayerMapper {

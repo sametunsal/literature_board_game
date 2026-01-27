@@ -1,7 +1,7 @@
 /// Repository interface for player data access.
 /// Pure Dart - no Flutter dependencies.
 
-import '../entities/player.dart';
+import '../../models/player.dart';
 
 abstract class PlayerRepository {
   /// Gets all players.

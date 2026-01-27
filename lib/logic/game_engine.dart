@@ -1,6 +1,7 @@
 import '../models/player.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
+import '../models/tile_type.dart';
 import '../data/board_config.dart';
 
 class GameEngine {
@@ -24,16 +25,22 @@ class GameEngine {
   /// Bir kutucuğa gelindiğinde ne olacağını belirler
   static String resolveTileEffect(BoardTile tile, Player player) {
     switch (tile.type) {
-      case TileType.kiraathane:
+      case TileType.shop:
         return 'KIRAATHANe: Edebi sözler satın alabilirsin.';
-      case TileType.chance:
-        return 'ŞANS: Bir şans kartı çektin.';
-      case TileType.fate:
-        return 'KADER: Kaderin seni bekliyor.';
+      case TileType.corner:
+        // Handle corner tiles (ŞANS or KADER)
+        if (tile.name == 'ŞANS') {
+          return 'ŞANS: Bir şans kartı çektin.';
+        } else if (tile.name == 'KADER') {
+          return 'KADER: Kaderin seni bekliyor.';
+        }
+        return 'KÖŞE: Özel bir kareye geldin.';
       case TileType.start:
         return 'BAŞLANGIÇ: Yazın yolculuğu başlıyor!';
-      case TileType.property:
-        return 'SORU: ${tile.title} hakkındaki soruyu bil, telifi kap!';
+      case TileType.category:
+        return 'SORU: ${tile.name} hakkındaki soruyu bil, yıldızları kap!';
+      case TileType.collection:
+        return 'KOLEKSİYON: Eserlerini burada inceleyebilirsin.';
     }
   }
 }

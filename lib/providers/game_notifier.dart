@@ -6,7 +6,9 @@ import '../models/player.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/game_card.dart';
-import '../domain/entities/question.dart';
+import '../models/question.dart';
+import '../models/tile_type.dart';
+import '../models/difficulty.dart';
 import '../data/board_config.dart';
 import '../data/game_cards.dart';
 import '../data/repositories/question_repository_impl.dart';
@@ -46,18 +48,11 @@ class GameState {
   // Dialog Durumları
   final Question? currentQuestion;
   final bool showQuestionDialog;
-  final bool showPurchaseDialog;
   final bool showCardDialog;
-  final bool showUpgradeDialog;
-  final bool showRentDialog;
   final bool showLibraryPenaltyDialog;
   final bool showImzaGunuDialog;
   final bool showTurnSkippedDialog;
   final bool showShopDialog; // Kıraathane shop dialog
-
-  // Rent notification info
-  final String? rentOwnerName;
-  final int? rentAmount;
 
   final BoardTile? currentTile;
   final GameCard? currentCard;
@@ -82,16 +77,11 @@ class GameState {
     this.floatingEffect,
     this.currentQuestion,
     this.showQuestionDialog = false,
-    this.showPurchaseDialog = false,
     this.showCardDialog = false,
-    this.showUpgradeDialog = false,
-    this.showRentDialog = false,
     this.showLibraryPenaltyDialog = false,
     this.showImzaGunuDialog = false,
     this.showTurnSkippedDialog = false,
     this.showShopDialog = false,
-    this.rentOwnerName,
-    this.rentAmount,
     this.currentTile,
     this.currentCard,
     this.winner,
@@ -118,16 +108,11 @@ class GameState {
     FloatingEffect? floatingEffect,
     Question? currentQuestion,
     bool? showQuestionDialog,
-    bool? showPurchaseDialog,
     bool? showCardDialog,
-    bool? showUpgradeDialog,
-    bool? showRentDialog,
     bool? showLibraryPenaltyDialog,
     bool? showImzaGunuDialog,
     bool? showTurnSkippedDialog,
     bool? showShopDialog,
-    String? rentOwnerName,
-    int? rentAmount,
     BoardTile? currentTile,
     GameCard? currentCard,
     Player? winner,
@@ -149,18 +134,13 @@ class GameState {
       floatingEffect: floatingEffect,
       currentQuestion: currentQuestion ?? this.currentQuestion,
       showQuestionDialog: showQuestionDialog ?? this.showQuestionDialog,
-      showPurchaseDialog: showPurchaseDialog ?? this.showPurchaseDialog,
       showCardDialog: showCardDialog ?? this.showCardDialog,
-      showUpgradeDialog: showUpgradeDialog ?? this.showUpgradeDialog,
-      showRentDialog: showRentDialog ?? this.showRentDialog,
       showLibraryPenaltyDialog:
           showLibraryPenaltyDialog ?? this.showLibraryPenaltyDialog,
       showImzaGunuDialog: showImzaGunuDialog ?? this.showImzaGunuDialog,
       showTurnSkippedDialog:
           showTurnSkippedDialog ?? this.showTurnSkippedDialog,
       showShopDialog: showShopDialog ?? this.showShopDialog,
-      rentOwnerName: rentOwnerName ?? this.rentOwnerName,
-      rentAmount: rentAmount ?? this.rentAmount,
       currentTile: currentTile ?? this.currentTile,
       currentCard: currentCard ?? this.currentCard,
       winner: winner ?? this.winner,
@@ -242,13 +222,11 @@ class GameNotifier extends StateNotifier<GameState> {
       floatingEffect: null,
       // Reset all dialog flags
       showQuestionDialog: false,
-      showPurchaseDialog: false,
       showCardDialog: false,
-      showUpgradeDialog: false,
-      showRentDialog: false,
       showLibraryPenaltyDialog: false,
       showImzaGunuDialog: false,
       showTurnSkippedDialog: false,
+      showShopDialog: false,
     );
     _addLog("Oyun Kuruluyor - Sıralama belirleniyor...", type: 'info');
   }
@@ -392,7 +370,7 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(
       players: sortedPlayers,
       currentPlayerIndex: 0,
-      phase: GamePhase.playing,
+      phase: GamePhase.playerTurn,
       orderRolls: {}, // Clear rolls after use
       lastAction: "${sortedPlayers[0].name} başlıyor!",
       // Reset dice state so the start game button appears
@@ -410,14 +388,11 @@ class GameNotifier extends StateNotifier<GameState> {
   void rollDice() async {
     if (_isProcessing ||
         state.isDiceRolled ||
-        state.phase != GamePhase.playing) {
+        state.phase != GamePhase.playerTurn) {
       return;
     }
     if (state.showQuestionDialog ||
-        state.showPurchaseDialog ||
-        state.showUpgradeDialog ||
         state.showCardDialog ||
-        state.showRentDialog ||
         state.showLibraryPenaltyDialog) {
       return;
     }
@@ -425,10 +400,7 @@ class GameNotifier extends StateNotifier<GameState> {
     _isProcessing = true;
     try {
       if (state.showQuestionDialog ||
-          state.showPurchaseDialog ||
-          state.showUpgradeDialog ||
           state.showCardDialog ||
-          state.showRentDialog ||
           state.showLibraryPenaltyDialog) {
         return;
       }
@@ -580,31 +552,33 @@ class GameNotifier extends StateNotifier<GameState> {
     final tile = state.tiles[currentPos];
 
     state = state.copyWith(currentTile: tile);
-    _addLog("${tile.title} karesine gelindi.");
+    _addLog("${tile.name} karesine gelindi.");
 
     _handleTileArrival(tile);
   }
 
   void _handleTileArrival(BoardTile tile) {
-    if (tile.type == TileType.property && tile.category != null) {
+    if (tile.type == TileType.category && tile.category != null) {
       _triggerQuestion(tile);
-    } else if (tile.type == TileType.chance || tile.type == TileType.fate) {
-      _drawCard(tile.type);
-    } else if (tile.type == TileType.kiraathane) {
-      handleKiraathaneLanding();
+    } else if (tile.type == TileType.corner) {
+      // Corner tiles: START (no action), ŞANS (chance), KADER (fate), KIRAATHANe (shop)
+      if (tile.position == GameConstants.chancePosition ||
+          tile.position == GameConstants.fatePosition) {
+        _drawCard(
+          tile.position == GameConstants.chancePosition
+              ? CardType
+                    .sans // Use CardType enum for card drawing
+              : CardType.kader,
+        );
+      } else if (tile.position == GameConstants.shopPosition) {
+        handleKiraathaneLanding();
+      } else {
+        // START tile - no action
+        endTurn();
+      }
     } else {
       endTurn();
     }
-  }
-
-  /// Close rent dialog and end turn
-  void closeRentDialog() {
-    state = state.copyWith(
-      showRentDialog: false,
-      rentOwnerName: null,
-      rentAmount: null,
-    );
-    endTurn();
   }
 
   /// Close library penalty dialog and set turnsToSkip
@@ -634,12 +608,6 @@ class GameNotifier extends StateNotifier<GameState> {
     endTurn();
   }
 
-  void declineUpgrade() {
-    state = state.copyWith(showUpgradeDialog: false);
-    _addLog("Geliştirme yapılmadı.");
-    endTurn();
-  }
-
   // --- 4. YARDIMCILAR ---
   void _triggerQuestion(BoardTile tile) {
     // RPG MODE: Always show question for category tiles
@@ -650,17 +618,23 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    // Get question based on player's current level in this category
+    // Get question based on tile difficulty (not player level)
+    // Questions are now tied to tile difficulty, not player progression
     final player = state.currentPlayer;
-    final categoryName = tile.category!.name;
-    final currentLevel = player.categoryLevels[categoryName] ?? 0;
+    final categoryName = tile.category!;
 
-    // Determine difficulty based on level (0: easy, 1: med, 2+: hard)
-    String difficultyFilter = 'easy';
-    if (currentLevel == 1) {
-      difficultyFilter = 'medium';
-    } else if (currentLevel >= 2) {
-      difficultyFilter = 'hard';
+    // Determine difficulty based on tile difficulty
+    String difficultyFilter;
+    switch (tile.difficulty) {
+      case Difficulty.easy:
+        difficultyFilter = 'easy';
+        break;
+      case Difficulty.medium:
+        difficultyFilter = 'medium';
+        break;
+      case Difficulty.hard:
+        difficultyFilter = 'hard';
+        break;
     }
 
     // Filter questions by category and difficulty
@@ -687,7 +661,7 @@ class GameNotifier extends StateNotifier<GameState> {
         currentTile: tile,
       );
       _addLog(
-        '⚠ $difficultyFilter soru bulunamadı, rastgele soru seçildi.',
+        '⚠ $difficultyFilter zorlu soru bulunamadı, rastgele soru seçildi.',
         type: 'info',
       );
     } else {
@@ -701,7 +675,14 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Answer question with open-ended format (Bildin/Bilemedin)
-  /// RPG Progression: Correct answers award stars and promote rank after 3 correct
+  ///
+  /// Level Up System:
+  /// - Correct answer on Easy tile: +1 level, +5 stars
+  /// - Correct answer on Medium tile: +1 level, +10 stars
+  /// - Correct answer on Hard tile: +1 level, +15 stars
+  /// - Wrong answer: No level change, no stars
+  /// - Maximum level per category: 3 (Master)
+  /// - Bonus stars for reaching new levels: +20 stars
   void answerQuestion(bool isCorrect) async {
     if (_isProcessing || state.currentQuestion == null) return;
 
@@ -710,49 +691,46 @@ class GameNotifier extends StateNotifier<GameState> {
 
     try {
       final tile = state.currentTile;
-      final category = tile?.category;
+      final categoryName = tile?.category;
 
       state = state.copyWith(showQuestionDialog: false, currentQuestion: null);
 
-      if (isCorrect && category != null) {
-        // RPG PROGRESSION: Award stars and track correct answers
+      if (isCorrect && categoryName != null) {
+        // LEVEL UP SYSTEM: Award stars and increase level
         final player = state.currentPlayer;
-        final categoryName = category.name;
         final currentLevel = player.categoryLevels[categoryName] ?? 0;
 
-        // Determine star reward based on current level (difficulty)
+        // Determine star reward based on tile difficulty
         int starsAwarded;
         String difficultyName;
-        if (currentLevel == 0) {
-          starsAwarded = GameConstants.easyStarReward;
-          difficultyName = 'Kolay';
-        } else if (currentLevel == 1) {
-          starsAwarded = GameConstants.mediumStarReward;
-          difficultyName = 'Orta';
-        } else if (currentLevel == 2) {
-          starsAwarded = GameConstants.hardStarReward;
-          difficultyName = 'Zor';
-        } else {
-          // Already master - bonus reward
-          starsAwarded = GameConstants.masterBonusReward;
-          difficultyName = 'Usta';
+
+        switch (tile!.difficulty) {
+          case Difficulty.easy:
+            starsAwarded = GameConstants.easyStarReward;
+            difficultyName = 'Kolay';
+            break;
+          case Difficulty.medium:
+            starsAwarded = GameConstants.mediumStarReward;
+            difficultyName = 'Orta';
+            break;
+          case Difficulty.hard:
+            starsAwarded = GameConstants.hardStarReward;
+            difficultyName = 'Zor';
+            break;
         }
 
-        // Track correct answers for promotion
-        final correctAnswersMap = Map<String, int>.from(player.correctAnswers);
-        final currentCorrect = correctAnswersMap[categoryName] ?? 0;
-        final newCorrect = currentCorrect + 1;
-
-        String promotionMessage = '';
+        // Check if player can level up (max level is 3)
         int newLevel = currentLevel;
         final newCategoryLevels = Map<String, int>.from(player.categoryLevels);
+        String promotionMessage = '';
 
-        // Check if promotion threshold reached (3 correct answers)
-        if (newCorrect >= GameConstants.answersToPromote && currentLevel < 3) {
-          // PROMOTION!
+        if (currentLevel < GameConstants.maxLevelPerCategory) {
+          // LEVEL UP! Increase level and award bonus stars
           newLevel = currentLevel + 1;
-          correctAnswersMap[categoryName] = 0; // Reset counter for next level
           newCategoryLevels[categoryName] = newLevel;
+
+          // Award bonus stars for level up
+          final totalStars = starsAwarded + GameConstants.levelUpBonusStars;
 
           // Get rank name
           String rankName;
@@ -771,24 +749,29 @@ class GameNotifier extends StateNotifier<GameState> {
           }
 
           // Get category display name
-          final categoryDisplayName = _getCategoryDisplayName(category);
+          final categoryDisplayName = _getCategoryDisplayName(categoryName);
           promotionMessage =
-              '🏆 $categoryDisplayName kategorisinde $rankName oldun!';
-        } else if (currentLevel < 3) {
-          // Not promoted yet - track progress
-          correctAnswersMap[categoryName] = newCorrect;
-          final remaining = GameConstants.answersToPromote - newCorrect;
-          promotionMessage = '📊 Seviye atlamak için $remaining cevap daha!';
-        }
+              '🏆 $categoryDisplayName kategorisinde $rankName oldun! (+${GameConstants.levelUpBonusStars} ⭐ bonus)';
 
-        // Update player
-        List<Player> newPlayers = List.from(state.players);
-        newPlayers[state.currentPlayerIndex] = player.copyWith(
-          stars: player.stars + starsAwarded,
-          categoryLevels: newCategoryLevels,
-          correctAnswers: correctAnswersMap,
-        );
-        state = state.copyWith(players: newPlayers);
+          // Update player with new level and stars
+          List<Player> newPlayers = List.from(state.players);
+          newPlayers[state.currentPlayerIndex] = player.copyWith(
+            stars: player.stars + totalStars,
+            categoryLevels: newCategoryLevels,
+          );
+          state = state.copyWith(players: newPlayers);
+        } else {
+          // Already at max level - only award stars
+          promotionMessage =
+              '⭐ Zaten Usta seviyesindesin! Sadece yıldız kazandın.';
+
+          // Update player with stars only
+          List<Player> newPlayers = List.from(state.players);
+          newPlayers[state.currentPlayerIndex] = player.copyWith(
+            stars: player.stars + starsAwarded,
+          );
+          state = state.copyWith(players: newPlayers);
+        }
 
         // Log messages
         _addLog(
@@ -810,7 +793,8 @@ class GameNotifier extends StateNotifier<GameState> {
           shouldEndTurn = true;
         }
       } else if (!isCorrect) {
-        _addLog("Yanlış cevap.", type: 'error');
+        // Wrong answer - no stars, no level change
+        _addLog("Yanlış cevap. Seviye veya yıldız kazanamadın.", type: 'error');
         shouldEndTurn = true;
       } else {
         // No category (shouldn't happen)
@@ -826,37 +810,34 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Get display name for category (helper)
-  String _getCategoryDisplayName(QuestionCategory category) {
-    switch (category) {
-      case QuestionCategory.turkEdebiyatindaIlkler:
+  /// Note: categoryName is a String from the tile's category field
+  String _getCategoryDisplayName(String categoryName) {
+    switch (categoryName) {
+      case 'turkEdebiyatindaIlkler':
         return 'Türk Edebiyatında İlkler';
-      case QuestionCategory.edebiSanatlar:
+      case 'edebiSanatlar':
         return 'Edebi Sanatlar';
-      case QuestionCategory.eserKarakter:
+      case 'eserKarakter':
         return 'Eser-Karakter';
-      case QuestionCategory.edebiyatAkimlari:
+      case 'edebiyatAkimlari':
         return 'Edebiyat Akımları';
-      case QuestionCategory.benKimim:
+      case 'benKimim':
         return 'Ben Kimim?';
-      case QuestionCategory.tesvik:
+      case 'tesvik':
         return 'Teşvik';
+      default:
+        return categoryName;
     }
   }
 
-  void declinePurchase() {
-    state = state.copyWith(showPurchaseDialog: false);
-    _addLog("Satın alınmadı.");
-    endTurn();
-  }
-
-  void _drawCard(TileType type) async {
+  void _drawCard(CardType cardType) async {
     // NOTE: _isProcessing guard removed - rollDice() manages the lock
     // This method is called from _handleTileArrival which is inside rollDice's lock
 
     await Future.delayed(
       Duration(milliseconds: GameConstants.cardAnimationDelay),
     );
-    List<GameCard> deck = type == TileType.chance
+    List<GameCard> deck = cardType == CardType.sans
         ? GameCards.sansCards
         : GameCards.kaderCards;
     GameCard card = deck[_random.nextInt(deck.length)];
@@ -983,11 +964,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void closeDialogs() {
-    state = state.copyWith(
-      showCardDialog: false,
-      showUpgradeDialog: false,
-      showPurchaseDialog: false,
-    );
+    state = state.copyWith(showCardDialog: false);
     endTurn();
   }
 
@@ -1009,7 +986,7 @@ class GameNotifier extends StateNotifier<GameState> {
     _isProcessing = true;
     try {
       // Check for re-roll on doubles (if not in jail/penalty)
-      if (state.phase == GamePhase.playing &&
+      if (state.phase == GamePhase.playerTurn &&
           state.dice1 == state.dice2 &&
           state.dice1 != 0 &&
           state.currentPlayer.turnsToSkip == 0 &&
@@ -1023,7 +1000,7 @@ class GameNotifier extends StateNotifier<GameState> {
       }
 
       // In RPG mode, bankruptcy is not a thing.
-      // If stars ever needed to be checked for game end, it would be here.
+      // Players continue playing until win condition is met.
 
       await Future.delayed(
         Duration(milliseconds: GameConstants.turnChangeDelay),
@@ -1049,9 +1026,7 @@ class GameNotifier extends StateNotifier<GameState> {
         players: updatedPlayers,
         currentPlayerIndex: next,
         isDiceRolled: false,
-        showPurchaseDialog: false,
         showQuestionDialog: false,
-        showUpgradeDialog: false,
         showCardDialog: false,
         showTurnSkippedDialog: isSkipped, // Show dialog if skipped
       );
@@ -1146,11 +1121,13 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Check if current player has won (Ehil)
+  ///
+  /// Win Condition: 50 quotes collected AND Master in all 6 categories
   void _checkWinCondition() {
     final player = state.currentPlayer;
 
-    // Check if Usta in all categories and has 50+ quotes
-    if (player.isEhil) {
+    // Check if Master in all categories and has 50+ quotes
+    if (player.hasWon()) {
       // Update title and trigger victory
       List<Player> newPlayers = List.from(state.players);
       newPlayers[state.currentPlayerIndex] = player.copyWith(mainTitle: 'Ehil');
@@ -1166,6 +1143,8 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Handle Kıraathane tile landing - opens shop
+  ///
+  /// Shop allows players to purchase quotes with their stars
   void handleKiraathaneLanding() {
     openShopDialog();
   }

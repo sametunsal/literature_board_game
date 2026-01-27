@@ -1,4 +1,4 @@
-import '../entities/user_entity.dart';
+import '../../models/user_entity.dart';
 
 abstract class UserRepository {
   Future<void> createUserProfile(UserEntity user);

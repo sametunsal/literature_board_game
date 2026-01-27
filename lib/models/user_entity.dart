@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+/// Domain entity representing a Firebase user.
+/// Pure Dart - no Flutter dependencies.
 class UserEntity extends Equatable {
   final String uid;
   final bool isAnonymous;

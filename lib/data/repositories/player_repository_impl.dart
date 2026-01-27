@@ -4,7 +4,7 @@
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../domain/entities/player.dart';
+import '../../models/player.dart';
 import '../../domain/repositories/player_repository.dart';
 
 import '../models/player_model.dart';
@@ -38,7 +38,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
   Future<void> updatePlayer(Player player) async {
     try {
       final players = await getPlayers();
-      final index = players.indexWhere((p) => p.id == player.id);
+      final index = players.indexWhere((p) => p?.id == player.id);
 
       if (index >= 0) {
         players[index] = player;

@@ -9,7 +9,7 @@ import '../data/repositories/user_repository_impl.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/usecases/ensure_signed_in_anonymously.dart';
-import '../domain/entities/user_entity.dart';
+import '../models/user_entity.dart';
 
 // --- Firebase Instances ---
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
