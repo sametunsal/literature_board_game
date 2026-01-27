@@ -205,22 +205,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
           Container(decoration: GameTheme.tableDecorationFor(isDarkMode)),
 
           // ═══════════════════════════════════════════════════════════════
-          // LAYER 2: Paper Noise Texture - Tactile Paper Effect
-          // ═══════════════════════════════════════════════════════════════
-          Opacity(
-            opacity: 0.1,
-            child: Image(
-              image: AssetCache.instance.paperNoiseImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              colorBlendMode: BlendMode.multiply,
-              color: Colors.white,
-            ),
-          ),
-
-          // ═══════════════════════════════════════════════════════════════
-          // LAYER 3: Game Board Content
+          // LAYER 2: Game Board Content
           // ═══════════════════════════════════════════════════════════════
           Center(child: _buildBoard(state, layout, isDarkMode)),
 
@@ -439,33 +424,19 @@ class _BoardViewState extends ConsumerState<BoardView> {
       height: centerHeight,
       child: Container(
         decoration: BoxDecoration(
-          // Parchment color for contrast with green table
-          color: GameTheme.parchmentColor,
-          borderRadius: BorderRadius.circular(12),
+          // Pure white for modern, clean look
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(2, 2),
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Stack(
           children: [
-            // Background icon (faded book)
-            Center(
-              child: Opacity(
-                opacity: 0.1,
-                child: Icon(
-                  Icons.menu_book,
-                  size:
-                      math.min(centerWidth, centerHeight) *
-                      BoardLayoutConfig.centerIconRatio,
-                  color: GameTheme.textDark,
-                ),
-              ),
-            ),
-
             // ═══════════════════════════════════════════════════════════════
             // ŞANS CARD DECK (Top-Left, rotated)
             // ═══════════════════════════════════════════════════════════════
@@ -504,19 +475,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Game title with gold accent
+        // Game title with modern amber accent
         Text(
           'EDEBİNA',
-          style: GameTheme.hudTitleStyle.copyWith(
-            color: GameTheme.goldAccent,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 8,
-                offset: const Offset(2, 3),
-              ),
-            ],
-          ),
+          style: GameTheme.hudTitleStyle.copyWith(color: GameTheme.goldAccent),
         ),
         const SizedBox(height: 12),
         const DiceRoller(),

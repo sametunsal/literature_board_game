@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/board_tile.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
@@ -22,16 +23,19 @@ class GameTileWidget extends StatelessWidget {
       width: isCorner ? size * 1.5 : size,
       height: isCorner ? size * 1.5 : size,
       decoration: BoxDecoration(
-        color: tokens.surface, // Theme-aware surface
-        border: Border.all(color: tokens.border, width: 0.8),
-        boxShadow: isCorner
-            ? []
-            : [
-                BoxShadow(
-                  color: tokens.shadow.withValues(alpha: 0.12),
-                  offset: Offset(1, 1),
-                ),
-              ],
+        color: Colors.white, // Pure white for modern flat design
+        borderRadius: BorderRadius.circular(8), // Rounded corners
+        border: Border.all(
+          color: tokens.border.withValues(alpha: 0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.shadow.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: isCorner ? _buildCorner(tokens) : _buildStandard(tokens),
     );
@@ -40,53 +44,62 @@ class GameTileWidget extends StatelessWidget {
   Widget _buildStandard(ThemeTokens tokens) {
     return Column(
       children: [
-        // Renk Şeridi (Üst %20)
+        // Color Strip (Top 25%) - Vibrant, pastel colors
         Container(
           height: size * 0.25,
-          color: _getGroupColor(tile.position),
+          decoration: BoxDecoration(
+            color: _getGroupColor(tile.position),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+          ),
           child: _buildUpgradeIcons(),
         ),
-        // İçerik
+        // Content
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(2.0),
+            padding: const EdgeInsets.all(4.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Spacer(),
+                const Spacer(),
                 Text(
                   tile.name,
                   textAlign: TextAlign.center,
-                  style: GameTheme.tileTitle.copyWith(
-                    fontSize: size * 0.13,
-                    color: tokens.textPrimary, // Theme-aware text
+                  style: GoogleFonts.poppins(
+                    fontSize: size * 0.12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87, // Dark grey/black for readability
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Spacer(),
+                const Spacer(),
                 // Difficulty level indicator
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
+                    horizontal: 6,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     color: _getDifficultyColor(
                       tile.difficulty,
-                    ).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    ).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     tile.difficulty.name.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.poppins(
+                      fontSize: 7,
+                      fontWeight: FontWeight.w700,
                       color: _getDifficultyColor(tile.difficulty),
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 4),
               ],
             ),
           ),
@@ -102,39 +115,43 @@ class GameTileWidget extends StatelessWidget {
 
     switch (tile.type) {
       case TileType.start:
-        icon = Icons.play_arrow;
-        bg = const Color(0xFFC8E6C9);
-        label = "BAŞLANGIÇ";
+        icon = Icons.play_arrow_rounded;
+        bg = const Color(0xFFE8F5E9); // Light green
+        label = "BAŞLA";
         break;
       case TileType.shop:
-        icon = Icons.store;
-        bg = const Color(0xFFFFE082); // Amber accent
+        icon = Icons.store_rounded;
+        bg = const Color(0xFFFFF8E1); // Light amber
         label = "KIRAATHANE";
         break;
       case TileType.collection:
-        icon = Icons.collections_bookmark;
-        bg = const Color(0xFFCE93D8); // Purple accent
+        icon = Icons.collections_bookmark_rounded;
+        bg = const Color(0xFFF3E5F5); // Light purple
         label = "KOLEKSİYON";
         break;
       default:
-        icon = Icons.help;
-        bg = tokens.surface; // Theme-aware fallback
+        icon = Icons.help_outline_rounded;
+        bg = const Color(0xFFF5F5F5); // Light grey
     }
 
     return Container(
-      color: bg,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(icon, size: size * 0.6, color: Colors.black45),
+          Icon(icon, size: size * 0.5, color: Colors.black54),
           Positioned(
-            bottom: 4,
+            bottom: 6,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87, // Always dark on colored corners
+              style: GoogleFonts.poppins(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+                letterSpacing: 0.3,
               ),
             ),
           ),
@@ -150,24 +167,25 @@ class GameTileWidget extends StatelessWidget {
   Color _getDifficultyColor(Difficulty diff) {
     switch (diff) {
       case Difficulty.easy:
-        return Colors.green;
+        return const Color(0xFF4CAF50); // Vibrant green
       case Difficulty.medium:
-        return Colors.orange;
+        return const Color(0xFFFF9800); // Vibrant orange
       case Difficulty.hard:
-        return Colors.red;
+        return const Color(0xFFF44336); // Vibrant red
     }
     return Colors.grey;
   }
 
   Color _getGroupColor(int id) {
-    if (id > 0 && id < 5) return Color(0xFF8E24AA); // Mor
-    if (id > 5 && id < 10) return Color(0xFF039BE5); // Mavi
-    if (id > 10 && id < 15) return Color(0xFFD81B60); // Pembe
-    if (id > 15 && id < 20) return Color(0xFFFB8C00); // Turuncu
-    if (id > 20 && id < 25) return Color(0xFFE53935); // Kırmızı
-    if (id > 25 && id < 30) return Color(0xFFFDD835); // Sarı
-    if (id > 30 && id < 35) return Color(0xFF43A047); // Yeşil
-    if (id > 35 && id < 40) return Color(0xFF1E88E5); // Koyu Mavi
-    return Colors.grey;
+    // Vibrant, pastel colors for modern look
+    if (id > 0 && id < 5) return const Color(0xFF9C27B0); // Vibrant purple
+    if (id > 5 && id < 10) return const Color(0xFF2196F3); // Vibrant blue
+    if (id > 10 && id < 15) return const Color(0xFFE91E63); // Vibrant pink
+    if (id > 15 && id < 20) return const Color(0xFFFF9800); // Vibrant orange
+    if (id > 20 && id < 25) return const Color(0xFFF44336); // Vibrant red
+    if (id > 25 && id < 30) return const Color(0xFFFFEB3B); // Vibrant yellow
+    if (id > 30 && id < 35) return const Color(0xFF4CAF50); // Vibrant green
+    if (id > 35 && id < 40) return const Color(0xFF00BCD4); // Vibrant cyan
+    return Colors.grey.shade400;
   }
 }

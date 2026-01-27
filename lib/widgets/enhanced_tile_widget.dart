@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/motion/motion_constants.dart';
 import '../models/board_tile.dart';
 import '../models/difficulty.dart';
@@ -99,18 +100,18 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                 blurRadius: _isPressed ? 8 : 0,
                 spreadRadius: _isPressed ? 2 : 0,
               ),
-              // Existing selection/hover shadows
+              // Selection/hover shadows - subtle
               BoxShadow(
                 color: widget.isSelected
-                    ? tokens.primary.withValues(alpha: 0.3)
+                    ? tokens.primary.withValues(alpha: 0.2)
                     : (widget.isHovered
-                          ? tokens.shadow.withValues(alpha: 0.25)
-                          : tokens.shadow.withValues(alpha: 0.15)),
+                          ? tokens.shadow.withValues(alpha: 0.15)
+                          : tokens.shadow.withValues(alpha: 0.08)),
                 blurRadius:
-                    (widget.isSelected ? 6.0 : (widget.isHovered ? 4.0 : 2.0))
+                    (widget.isSelected ? 8.0 : (widget.isHovered ? 6.0 : 3.0))
                         .clamp(0.0, double.infinity),
-                spreadRadius: widget.isSelected ? 1 : 0,
-                offset: const Offset(1, 1),
+                spreadRadius: widget.isSelected ? 0 : 0,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -146,19 +147,13 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       );
     }
 
-    // RPG Mode: No groupColor (using category-based design instead)
-    final groupColor = tokens.tileBase;
-
-    // Color strip widget simplified
-    Widget colorStrip = Container(
-      decoration: BoxDecoration(
-        color: groupColor,
-        border: Border.all(
-          color: tokens.shadow.withValues(alpha: 0.3),
-          width: 0.5,
-        ),
-      ),
+    // RPG Mode: Use vibrant group colors
+    final groupColor = GameTheme.getGroupColor(
+      int.tryParse(widget.tile.id) ?? 0,
     );
+
+    // Color strip widget with vibrant colors
+    Widget colorStrip = Container(decoration: BoxDecoration(color: groupColor));
 
     // Text content widget (title + category + difficulty)
     Widget textContent = _buildTextContent(tokens, isDarkMode);
@@ -284,18 +279,18 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
               decoration: BoxDecoration(
-                color: tokens.shadow.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(2),
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 widget.tile.name,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GameTheme.tileTitleStyle.copyWith(
-                  fontSize: 6,
+                style: GoogleFonts.poppins(
+                  fontSize: 7,
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -352,10 +347,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GameTheme.tilePriceStyle.copyWith(
-              fontSize: 6,
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.poppins(
+              fontSize: 7,
+              fontWeight: FontWeight.w700,
               color: tokens.primary,
+              letterSpacing: 0.3,
             ),
           ),
         ),
@@ -369,8 +365,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           ),
           child: Text(
             widget.tile.difficulty.displayName,
-            style: GameTheme.tilePriceStyle.copyWith(
-              fontSize: 6,
+            style: GoogleFonts.poppins(
+              fontSize: 7,
               fontWeight: FontWeight.w600,
               color: tokens.textSecondary,
             ),
@@ -404,18 +400,21 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     };
 
     return Container(
-      color: config.backgroundColor,
+      decoration: BoxDecoration(
+        color: config.backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Center(
         child: Transform.rotate(
           angle: rotation,
           child: Padding(
-            padding: const EdgeInsets.all(3.0),
+            padding: const EdgeInsets.all(4.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(config.icon, size: iconSize, color: Colors.black87),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: minDimension * 0.85),
                   child: FittedBox(
@@ -423,10 +422,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                     child: Text(
                       config.label,
                       textAlign: TextAlign.center,
-                      style: GameTheme.cornerLabelStyle.copyWith(
-                        fontSize: 7,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.poppins(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
                         color: Colors.black87,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
@@ -447,12 +447,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
     return Container(
       decoration: BoxDecoration(
-        // Warm gradient background for Start tile
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
-        ),
+        // Light green background for Start tile
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
         child: Padding(
@@ -490,10 +487,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   child: Text(
                     'BAŞLANGIÇ',
                     textAlign: TextAlign.center,
-                    style: GameTheme.cornerLabelStyle.copyWith(
-                      fontSize: 7,
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.poppins(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF2E7D32),
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),

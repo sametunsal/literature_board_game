@@ -19,57 +19,57 @@ class GameTheme {
       ThemeTokens.forMode(isDarkMode);
 
   // ════════════════════════════════════════════════════════════════════════════
-  // COLOR PALETTE - MODERN DARK ACADEMIA (V2.5)
+  // COLOR PALETTE - MODERN MINIMALIST (V3.0)
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Primary background / Canvas - Hayalet Siyahı (Phantom Black)
-  static const Color tableBackgroundColor = Color(0xFF202621);
+  /// Primary background / Canvas - Deep Teal (Dark Mode)
+  static const Color tableBackgroundColor = Color(0xFF0F2E25);
 
   /// Slightly lighter shade for gradient spotlight effect
-  static const Color tableHighlightColor = Color(0xFF2A3029);
+  static const Color tableHighlightColor = Color(0xFF1A3D32);
 
-  /// Panel/Surface color - Eskitilmiş Deri (Worn Leather)
-  static const Color parchmentColor = Color(0xFF734838);
+  /// Panel/Surface color - Pure White
+  static const Color parchmentColor = Color(0xFFFFFFFF);
 
-  /// Success/Gold accent for highlights and borders - Altın (Gold)
-  static const Color goldAccent = Color(0xFFFFD700);
+  /// Success/Primary accent for highlights and borders - Modern Blue
+  static const Color goldAccent = Color(0xFFFFB300);
 
-  /// Primary CTA/Accent - Parlatılmış Bakır (Burnished Copper)
-  static const Color copperAccent = Color(0xFFA66F5B);
+  /// Primary CTA/Accent - Modern Blue
+  static const Color copperAccent = Color(0xFF2196F3);
 
-  /// Primary text color - Antik Dantel (Antique Lace)
-  static const Color textDark = Color(0xFFD9B596);
+  /// Primary text color - Black
+  static const Color textDark = Color(0xFF1A1A1A);
 
-  /// Error color - Derin Bordo (Deep Burgundy)
-  static const Color errorColor = Color(0xFF401B1B);
+  /// Error color - Bright Red
+  static const Color errorColor = Color(0xFFF44336);
 
   /// Dialog overlay color (darker for dark theme)
-  static const Color dialogOverlayColor = Color(0xCC000000);
+  static const Color dialogOverlayColor = Color(0x99000000);
 
   // ════════════════════════════════════════════════════════════════════════════
-  // COLOR PALETTE - CLASSIC LIBRARY (V2.6 - LIGHT MODE)
+  // COLOR PALETTE - MODERN MINIMALIST LIGHT (V3.0)
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Primary background / Canvas - Parchment/Cream
-  static const Color lightBackgroundColor = Color(0xFFF5F5DC);
+  /// Primary background / Canvas - Neutral Grey
+  static const Color lightBackgroundColor = Color(0xFFF0F2F5);
 
   /// Slightly darker shade for gradient spotlight effect
-  static const Color lightHighlightColor = Color(0xFFEBE8D0);
+  static const Color lightHighlightColor = Color(0xFFE8EBF0);
 
-  /// Panel/Surface color - Paper White
-  static const Color lightSurfaceColor = Color(0xFFE8E0D6);
+  /// Panel/Surface color - Pure White
+  static const Color lightSurfaceColor = Color(0xFFFFFFFF);
 
-  /// Accent color - Deep Red (for highlights)
-  static const Color lightAccentRed = Color(0xFFC41E3A);
+  /// Accent color - Modern Blue (for highlights)
+  static const Color lightAccentRed = Color(0xFF2196F3);
 
-  /// Primary text color - Dark Brown (for contrast)
-  static const Color lightTextColor = Color(0xFF2C241B);
+  /// Primary text color - Black (for contrast)
+  static const Color lightTextColor = Color(0xFF1A1A1A);
 
-  /// Error color - Muted Red
-  static const Color lightErrorColor = Color(0xFFB71C1C);
+  /// Error color - Bright Red
+  static const Color lightErrorColor = Color(0xFFF44336);
 
   /// Dialog overlay color (lighter for light theme)
-  static const Color lightDialogOverlay = Color(0x99000000);
+  static const Color lightDialogOverlay = Color(0x66000000);
 
   // ════════════════════════════════════════════════════════════════════════════
   // DYNAMIC COLOR GETTERS (token-based for theme mode)
@@ -100,14 +100,14 @@ class GameTheme {
   // ════════════════════════════════════════════════════════════════════════════
 
   static const Map<int, Color> _groupColors = {
-    1: Color(0xFF7B1FA2), // Purple - tiles 1-4
-    2: Color(0xFF1976D2), // Blue - tiles 6-9
-    3: Color(0xFFC2185B), // Pink - tiles 11-14
-    4: Color(0xFFF57C00), // Orange - tiles 16-19
-    5: Color(0xFFD32F2F), // Red - tiles 21-24
-    6: Color(0xFFFBC02D), // Yellow - tiles 26-29
-    7: Color(0xFF388E3C), // Green - tiles 31-34
-    8: Color(0xFF0288D1), // Light Blue - tiles 36-39
+    1: Color(0xFF9C27B0), // Purple - tiles 1-4 (vibrant)
+    2: Color(0xFF2196F3), // Blue - tiles 6-9 (vibrant)
+    3: Color(0xFFE91E63), // Pink - tiles 11-14 (vibrant)
+    4: Color(0xFFFF9800), // Orange - tiles 16-19 (vibrant)
+    5: Color(0xFFF44336), // Red - tiles 21-24 (vibrant)
+    6: Color(0xFFFFEB3B), // Yellow - tiles 26-29 (vibrant)
+    7: Color(0xFF4CAF50), // Green - tiles 31-34 (vibrant)
+    8: Color(0xFF00BCD4), // Cyan - tiles 36-39 (vibrant)
   };
 
   /// Get the group color for a tile based on its ID
@@ -130,8 +130,8 @@ class GameTheme {
   /// Corner tile visual configuration data
   static const Map<int, CornerTileConfig> cornerConfigs = {
     0: CornerTileConfig(
-      icon: Icons.start,
-      label: 'BAŞLANGIÇ',
+      icon: Icons.play_arrow,
+      label: 'BAŞLA',
       backgroundColor: Color(0xFFE8F5E9),
     ),
     10: CornerTileConfig(
@@ -141,22 +141,22 @@ class GameTheme {
     ),
     20: CornerTileConfig(
       icon: Icons.campaign,
-      label: 'İMZA GÜNÜ',
+      label: 'İMZA',
       backgroundColor: Color(0xFFF3E5F5),
     ),
     30: CornerTileConfig(
-      icon: Icons.gavel,
-      label: 'İFLAS RİSKİ',
+      icon: Icons.warning,
+      label: 'RİSK',
       backgroundColor: Color(0xFFFFEBEE),
     ),
   };
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TYPOGRAPHY - BASE FONTS
+  // TYPOGRAPHY - BASE FONTS (ALL SANS-SERIF)
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Header font - Playfair Display for elegant titles
-  static TextStyle get headerFont => GoogleFonts.playfairDisplay();
+  /// Header font - Poppins (Sans-Serif) for modern titles
+  static TextStyle get headerFont => GoogleFonts.poppins();
 
   /// Body font - Poppins for readable UI text
   static TextStyle get bodyFont => GoogleFonts.poppins();
@@ -167,24 +167,17 @@ class GameTheme {
   // ════════════════════════════════════════════════════════════════════════════
 
   /// HUD Title Large (24px) - Major game titles, winner announcements
-  static TextStyle get hudTitleLarge => GoogleFonts.playfairDisplay(
+  static TextStyle get hudTitleLarge => GoogleFonts.poppins(
     fontSize: 24,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: goldAccent,
     letterSpacing: 0.5,
-    shadows: [
-      Shadow(
-        color: Colors.black.withValues(alpha: 0.6),
-        blurRadius: 8,
-        offset: const Offset(2, 2),
-      ),
-    ],
   );
 
   /// HUD Title Medium (18px) - Section headers, panel titles
-  static TextStyle get hudTitleMedium => GoogleFonts.playfairDisplay(
+  static TextStyle get hudTitleMedium => GoogleFonts.poppins(
     fontSize: 18,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: goldAccent,
     letterSpacing: 0.3,
   );
@@ -206,7 +199,6 @@ class GameTheme {
   );
 
   /// HUD Caption (10px) - Small labels, timestamps, hints
-  /// IMPROVED: Increased alpha from 0.7 to 0.8 for small text readability
   static TextStyle get hudCaption => GoogleFonts.poppins(
     fontSize: 10,
     fontWeight: FontWeight.w500,
@@ -228,13 +220,12 @@ class GameTheme {
   /// Score panel header label (uppercase)
   static TextStyle get hudSectionLabel => GoogleFonts.poppins(
     fontSize: 11,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: goldAccent,
     letterSpacing: 0.5,
   );
 
   /// Player name in score row
-  /// IMPROVED: Increased alpha from 0.85 to 0.9 for better readability
   static TextStyle get hudPlayerName => GoogleFonts.poppins(
     fontSize: 11,
     fontWeight: FontWeight.w500,
@@ -244,15 +235,14 @@ class GameTheme {
   /// Balance/money display
   static TextStyle get hudBalance => GoogleFonts.poppins(
     fontSize: 11,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: textDark,
   );
 
   /// Log entry text
-  /// IMPROVED: Increased alpha from 0.7 to 0.75 for readability
   static TextStyle get hudLogEntry => GoogleFonts.poppins(
     fontSize: 10,
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.w500,
     color: textDark.withValues(alpha: 0.75),
     height: 1.3,
   );
@@ -261,48 +251,39 @@ class GameTheme {
   // LEGACY TEXT STYLES (Backward compatibility)
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// HUD title style (EDEBINA) - Large, bold, Gold, Playfair
+  /// HUD title style (EDEBINA) - Large, bold, Amber, Poppins
   /// @deprecated Use hudTitleLarge instead
-  static TextStyle get hudTitleStyle => hudTitleLarge.copyWith(
-    fontSize: 28,
-    shadows: [
-      Shadow(
-        color: Colors.black.withValues(alpha: 0.7),
-        blurRadius: 10,
-        offset: const Offset(2, 3),
-      ),
-    ],
-  );
+  static TextStyle get hudTitleStyle => hudTitleLarge.copyWith(fontSize: 28);
 
-  /// HUD subtitle/action text style - Antique Lace for readability
+  /// HUD subtitle/action text style - Black for readability
   /// @deprecated Use hudCaption instead
   static TextStyle get hudSubtitleStyle => hudCaption;
 
-  /// Tile title style - Small, bold, Antique Lace, Poppins
+  /// Tile title style - Small, bold, Black, Poppins
   static TextStyle get tileTitleStyle => GoogleFonts.poppins(
     fontSize: 8,
     fontWeight: FontWeight.w700,
     color: textDark,
   );
 
-  /// Tile price style - Very small, lighter Antique Lace, Poppins
+  /// Tile price style - Very small, lighter Black, Poppins
   static TextStyle get tilePriceStyle => GoogleFonts.poppins(
     fontSize: 7,
     fontWeight: FontWeight.w500,
     color: textDark.withValues(alpha: 0.7),
   );
 
-  /// Corner tile label style - Antique Lace for dark backgrounds
+  /// Corner tile label style - Black for backgrounds
   static TextStyle get cornerLabelStyle => GoogleFonts.poppins(
     fontSize: 8,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w700,
     color: textDark,
   );
 
-  /// Price badge text style - Antique Lace
+  /// Price badge text style - Black
   static const TextStyle priceBadgeStyle = TextStyle(
     fontSize: 7,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: textDark,
   );
 
@@ -333,33 +314,23 @@ class GameTheme {
   /// Alias for backward compatibility
   static BoxDecoration get backgroundTable => tableDecorationFor(true);
 
-  /// Board container with 3D shadow effect
+  /// Board container with flat shadow effect
   /// @deprecated Use boardDecorationFor(isDarkMode) for theme-aware decoration
   @Deprecated('Use boardDecorationFor(isDarkMode) for proper theme support')
   static BoxDecoration get boardDecoration => boardDecorationFor(true);
 
-  /// Theme-aware board decoration
+  /// Theme-aware board decoration (flat, modern)
   static BoxDecoration boardDecorationFor(bool isDarkMode) {
     final tokens = getTokens(isDarkMode);
     return BoxDecoration(
       color: tokens.surface,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       boxShadow: [
-        // Outer shadow for depth
         BoxShadow(
-          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.5 : 0.2),
-          blurRadius: 20,
-          spreadRadius: isDarkMode ? 5 : 2,
-          offset: const Offset(10, 10),
-        ),
-        // Inner highlight for embossed effect
-        BoxShadow(
-          color: (isDarkMode ? Colors.white : tokens.background).withValues(
-            alpha: isDarkMode ? 0.2 : 0.5,
-          ),
-          blurRadius: 15,
-          spreadRadius: -5,
-          offset: const Offset(-5, -5),
+          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.3 : 0.15),
+          blurRadius: 12,
+          spreadRadius: 0,
+          offset: const Offset(0, 4),
         ),
       ],
     );
@@ -373,33 +344,28 @@ class GameTheme {
   static BoxDecoration get centerAreaDecoration =>
       centerAreaDecorationFor(true);
 
-  /// Theme-aware center area decoration
+  /// Theme-aware center area decoration (flat, modern)
   static BoxDecoration centerAreaDecorationFor(bool isDarkMode) {
     final tokens = getTokens(isDarkMode);
     return BoxDecoration(
       color: tokens.surface,
-      borderRadius: BorderRadius.circular(12),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [tokens.surface, tokens.surfaceAlt],
-      ),
+      borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.2 : 0.1),
+          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.15 : 0.08),
           blurRadius: 8,
-          offset: const Offset(2, 2),
+          offset: const Offset(0, 2),
         ),
       ],
     );
   }
 
-  /// Card decoration for tiles/panels with 3D floating effect
+  /// Card decoration for tiles/panels with flat effect
   /// @deprecated Use cardDecorationFor(isDarkMode) for theme-aware decoration
   @Deprecated('Use cardDecorationFor(isDarkMode) for proper theme support')
   static BoxDecoration get cardDecoration => cardDecorationFor(true);
 
-  /// Theme-aware card decoration
+  /// Theme-aware card decoration (flat, modern)
   static BoxDecoration cardDecorationFor(bool isDarkMode) {
     final tokens = getTokens(isDarkMode);
     return BoxDecoration(
@@ -407,17 +373,10 @@ class GameTheme {
       borderRadius: BorderRadius.circular(8.0),
       border: Border.all(color: tokens.border, width: 1),
       boxShadow: [
-        // Ambient shadow (soft, spread)
         BoxShadow(
-          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.3 : 0.15),
-          blurRadius: 12,
-          spreadRadius: 1,
-        ),
-        // Direct shadow (sharper, offset for 3D effect)
-        BoxShadow(
-          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.4 : 0.1),
+          color: tokens.shadow.withValues(alpha: isDarkMode ? 0.15 : 0.08),
           blurRadius: 8,
-          offset: const Offset(2, 4),
+          offset: const Offset(0, 2),
         ),
       ],
     );
@@ -439,10 +398,8 @@ class GameTheme {
   );
 
   /// Color strip decoration for property tiles
-  static BoxDecoration groupColorStrip(int tileId) => BoxDecoration(
-    color: getGroupColor(tileId),
-    border: const Border(bottom: BorderSide(color: Colors.black87, width: 0.5)),
-  );
+  static BoxDecoration groupColorStrip(int tileId) =>
+      BoxDecoration(color: getGroupColor(tileId));
 
   // ════════════════════════════════════════════════════════════════════════════
   // PAWN DECORATIONS
@@ -455,39 +412,43 @@ class GameTheme {
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: isActive
-            ? const [BoxShadow(color: Colors.white, blurRadius: 10)]
-            : const [BoxShadow(color: Colors.black54, blurRadius: 4)],
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.6),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                ),
+              ],
       );
 
   // ════════════════════════════════════════════════════════════════════════════
   // BUTTON STYLES
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Primary elevated button style - Burnished Copper CTA
+  /// Primary elevated button style - Modern Blue CTA
   static ButtonStyle get elevatedButtonStyle => ElevatedButton.styleFrom(
     backgroundColor: copperAccent,
-    foregroundColor: textDark,
-    shadowColor: Colors.black.withValues(alpha: 0.5),
-    elevation: 8,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-    textStyle: GoogleFonts.playfairDisplay(
-      fontWeight: FontWeight.bold,
-      fontSize: 18,
-      color: textDark,
-    ),
+    foregroundColor: Colors.white,
+    shadowColor: Colors.black.withValues(alpha: 0.2),
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
   );
 
-  /// Secondary/Gold button style for special actions
+  /// Secondary/Amber button style for special actions
   static ButtonStyle get goldButtonStyle => ElevatedButton.styleFrom(
     backgroundColor: goldAccent,
-    foregroundColor: tableBackgroundColor,
-    shadowColor: goldAccent.withValues(alpha: 0.4),
-    elevation: 8,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-    textStyle: GoogleFonts.playfairDisplay(
-      fontWeight: FontWeight.bold,
-      fontSize: 18,
-    ),
+    foregroundColor: Colors.black,
+    shadowColor: goldAccent.withValues(alpha: 0.3),
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
   );
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -510,12 +471,12 @@ class GameTheme {
   static const Color accentRed = errorColor;
   static const Color accentGold = goldAccent;
   static const Color accentCopper = copperAccent;
-  static const Color tileBorder = Color(0xFF5D4037);
+  static const Color tileBorder = Color(0xFFE0E0E0);
 
   /// Legacy text styles
   static const TextStyle tileTitle = TextStyle(
     fontSize: 9,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
     color: textDark,
     letterSpacing: -0.2,
   );
@@ -568,8 +529,14 @@ class GameTheme {
         bodyLarge: GoogleFonts.poppins(color: tokens.textPrimary),
         bodyMedium: GoogleFonts.poppins(color: tokens.textPrimary),
         bodySmall: GoogleFonts.poppins(color: tokens.textSecondary),
-        titleLarge: GoogleFonts.playfairDisplay(color: tokens.textPrimary),
-        titleMedium: GoogleFonts.playfairDisplay(color: tokens.textPrimary),
+        titleLarge: GoogleFonts.poppins(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        titleMedium: GoogleFonts.poppins(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
         titleSmall: GoogleFonts.poppins(color: tokens.textSecondary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -577,13 +544,13 @@ class GameTheme {
           backgroundColor: tokens.primary,
           foregroundColor: tokens.textOnAccent,
           shadowColor: tokens.shadow,
-          elevation: isDarkMode ? 8 : 4,
+          elevation: isDarkMode ? 4 : 2,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.playfairDisplay(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+          textStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
           ),
         ),
       ),
