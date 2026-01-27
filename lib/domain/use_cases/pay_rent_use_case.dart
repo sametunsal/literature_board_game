@@ -1,86 +1,60 @@
 /// Use case for rent calculation and payment.
 /// Pure Dart - no Flutter dependencies.
 
-import '../../core/constants/game_constants.dart';
 import '../entities/board_tile.dart';
 import '../entities/player.dart';
+import '../entities/game_enums.dart';
 
 class PayRentUseCase {
-  /// Calculates the rent for a given tile.
+  /// Calculates the star cost/gain for a given tile.
   int calculateRent(BoardTile tile, int diceTotal) {
-    if (tile.isUtility) {
-      // Utility rent: dice total * multiplier
-      return diceTotal * GameConstants.utilityRentMultiplier;
-    } else {
-      // Property rent: baseRent * (upgradeLevel + 1)
-      int base = tile.baseRent ?? 20;
-      int multiplier = tile.upgradeLevel + 1;
-
-      // Special multiplier for max upgrade (Cilt)
-      if (tile.upgradeLevel == GameConstants.maxUpgradeLevel) {
-        multiplier =
-            GameConstants.maxUpgradeRentMultiplier; // Cilt gives 10x rent
-      }
-
-      return base * multiplier;
-    }
+    // In RPG, 'rent' becomes 'contribution' or 'cost'
+    // For now, let's use a base value based on difficulty
+    int base = switch (tile.difficulty) {
+      Difficulty.easy => 10,
+      Difficulty.medium => 20,
+      Difficulty.hard => 50,
+    };
+    return base;
   }
 
   /// Calculates the amount the payer can afford to pay.
   int calculateAffordableRent(Player payer, int fullRent) {
-    if (payer.balance < fullRent) {
+    if (payer.stars < fullRent) {
       // Payer goes bankrupt - pay what they can
-      return payer.balance > 0 ? payer.balance : 0;
+      return payer.stars > 0 ? payer.stars : 0;
     }
     return fullRent;
   }
 
-  /// Checks if a player can afford to pay rent.
+  /// Checks if a player can afford to pay stars.
   bool canAffordRent(Player payer, int rent) {
-    return payer.balance >= rent;
+    return payer.stars >= rent;
   }
 
-  /// Checks if a player is bankrupt after paying rent.
+  /// Checks if a player is out of stars after paying.
   bool isBankruptAfterRent(Player payer, int rent) {
-    return payer.balance - rent < 0;
+    return payer.stars - rent < 0;
   }
 
-  /// Calculates the new balance after paying rent.
+  /// Calculates the new stars after paying.
   int calculateNewBalanceAfterRent(Player payer, int rent) {
-    return payer.balance - rent;
+    return payer.stars - rent;
   }
 
-  /// Calculates the owner's new balance after receiving rent.
+  /// Calculates the owner's new stars after receiving.
   int calculateOwnerNewBalance(Player owner, int rent) {
-    return owner.balance + rent;
+    return owner.stars + rent;
   }
 
   /// Gets the rent calculation details for logging.
   RentDetails getRentDetails(BoardTile tile, int diceTotal) {
-    if (tile.isUtility) {
-      final int rent = diceTotal * GameConstants.utilityRentMultiplier;
-      return RentDetails(
-        rent: rent,
-        description:
-            'Yayınevi kirası: Zar($diceTotal) x ${GameConstants.utilityRentMultiplier} = $rent',
-        isUtility: true,
-      );
-    } else {
-      int base = tile.baseRent ?? 20;
-      int multiplier = tile.upgradeLevel + 1;
-
-      // Special multiplier for max upgrade (Cilt)
-      if (tile.upgradeLevel == GameConstants.maxUpgradeLevel) {
-        multiplier = GameConstants.maxUpgradeRentMultiplier;
-      }
-
-      final int rent = base * multiplier;
-      return RentDetails(
-        rent: rent,
-        description: 'Kira: $base x $multiplier = $rent',
-        isUtility: false,
-      );
-    }
+    int rent = calculateRent(tile, diceTotal);
+    return RentDetails(
+      rent: rent,
+      description: 'Bedel: $rent Yıldız',
+      isUtility: false,
+    );
   }
 }
 

@@ -8,7 +8,7 @@ enum QuestionCategoryModel {
   edebiyatAkimlari,
   edebiSanatlar,
   eserKarakter,
-  bonusBilgiler,
+  tesvik,
 }
 
 enum QuestionDifficultyModel { easy, medium, hard }

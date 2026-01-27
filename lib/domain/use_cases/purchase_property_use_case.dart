@@ -4,50 +4,56 @@
 import '../../core/constants/game_constants.dart';
 import '../entities/board_tile.dart';
 import '../entities/player.dart';
+import '../entities/game_enums.dart';
 
 class PurchasePropertyUseCase {
-  /// Checks if a player can afford to purchase a property.
+  /// Checks if a player can afford the star cost for mastery.
   bool canAffordProperty(Player player, BoardTile tile) {
-    final price = tile.price ?? 0;
-    return player.balance >= price;
+    // In RPG, price is derived from difficulty
+    final price = _getPriceFromDifficulty(tile.difficulty);
+    return player.stars >= price;
   }
 
-  /// Calculates the cost of purchasing a property.
+  /// Calculates the cost of mastering a property.
   int getPurchasePrice(BoardTile tile) {
-    return tile.price ?? 0;
+    return _getPriceFromDifficulty(tile.difficulty);
   }
 
-  /// Calculates the new balance after purchasing a property.
+  /// Calculates the new stars after mastering.
   int calculateNewBalanceAfterPurchase(Player player, BoardTile tile) {
-    final price = tile.price ?? 0;
-    return player.balance - price;
+    final price = _getPriceFromDifficulty(tile.difficulty);
+    return player.stars - price;
   }
 
-  /// Adds a tile to a player's owned tiles.
-  List<int> addTileToOwnedTiles(Player player, int tileId) {
-    return List<int>.from(player.ownedTiles)..add(tileId);
+  /// Adds a tile to a player's collected quotes (Formerly ownership).
+  List<String> addQuoteToCollected(Player player, String quote) {
+    return List<String>.from(player.collectedQuotes)..add(quote);
   }
 
-  /// Checks if a property is purchasable (not already owned).
-  bool isPurchasable(BoardTile tile, List<Player> allPlayers) {
-    // Check if any player owns this tile
-    for (final player in allPlayers) {
-      if (player.ownedTiles.contains(tile.id)) {
-        return false;
-      }
-    }
+  /// Checks if a property is masterable (Looping allows re-entry, but mastery is tracked per category).
+  bool isPurchasable(BoardTile tile, Player player) {
+    // In RPG, properties can be revisited for quotes or training.
+    // 'Ownership' as Monopoly is being phased out.
     return true;
   }
 
   /// Gets the purchase details for logging.
   PurchaseDetails getPurchaseDetails(Player player, BoardTile tile) {
-    final price = tile.price ?? 0;
+    final price = _getPriceFromDifficulty(tile.difficulty);
     return PurchaseDetails(
       playerName: player.name,
       tileTitle: tile.title,
       price: price,
-      canAfford: player.balance >= price,
+      canAfford: player.stars >= price,
     );
+  }
+
+  int _getPriceFromDifficulty(Difficulty difficulty) {
+    return switch (difficulty) {
+      Difficulty.easy => 10,
+      Difficulty.medium => 25,
+      Difficulty.hard => 50,
+    };
   }
 
   /// Gets the default property price if not specified.
@@ -70,13 +76,13 @@ class PurchaseDetails {
     required this.canAfford,
   });
 
-  /// Gets the message for insufficient balance.
-  String getInsufficientBalanceMessage(int currentBalance) {
-    return 'Yetersiz bakiye! (Gereken: $price, Mevcut: $currentBalance)';
+  /// Gets the message for insufficient stars.
+  String getInsufficientBalanceMessage(int currentStars) {
+    return 'Yetersiz Yıldız! (Gereken: $price, Mevcut: $currentStars)';
   }
 
   /// Gets the success message.
   String getSuccessMessage() {
-    return "$playerName '$tileTitle' satın aldı! (-$price)";
+    return "$playerName '$tileTitle' seviyesini geçti! (-$price Yıldız)";
   }
 }

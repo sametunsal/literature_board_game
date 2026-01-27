@@ -3,7 +3,6 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../domain/entities/board_tile.dart';
-import '../../domain/entities/game_enums.dart';
 
 class BoardConfigDataSource {
   BoardConfigDataSource._();
@@ -26,10 +25,5 @@ class BoardConfigDataSource {
       if (tile.id == id) return tile;
     }
     return null;
-  }
-
-  /// Get all tiles in a specific color group
-  List<BoardTile> getTilesByGroup(PropertyColorGroup group) {
-    return getTiles().where((t) => t.colorGroup == group).toList();
   }
 }

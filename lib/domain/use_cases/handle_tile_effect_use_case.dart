@@ -7,53 +7,23 @@ import '../entities/player.dart';
 import '../entities/game_enums.dart';
 
 class HandleTileEffectUseCase {
-  /// Determines the action to take when a player lands on a tile.
   TileAction determineTileAction(BoardTile tile, Player player) {
-    switch (tile.type) {
-      case TileType.property:
-      case TileType.publisher:
-      case TileType.writingSchool:
-      case TileType.educationFoundation:
-        return TileActions.propertyInteraction(tile);
-
-      case TileType.chance:
-      case TileType.fate:
-        return TileActions.drawCard(tile.type);
-
-      case TileType.libraryWatch:
-        return TileActions.libraryPenalty();
-
-      case TileType.autographDay:
-        return TileActions.autographDay();
-
-      case TileType.bankruptcyRisk:
-        return TileActions.bankruptcyRisk();
-
-      case TileType.incomeTax:
-        return TileActions.incomeTax(GameConstants.incomeTax);
-
-      case TileType.writingTax:
-        return TileActions.writingTax(GameConstants.writingTax);
-
-      case TileType.kiraathane:
-        return TileActions.openShop();
-
-      case TileType.start:
-        return TileActions.none();
-    }
+    return switch (tile.type) {
+      TileType.property => TileActions.propertyInteraction(tile),
+      TileType.chance || TileType.fate => TileActions.drawCard(tile.type),
+      TileType.kiraathane => TileActions.openShop(),
+      _ => TileActions.none(),
+    };
   }
 
-  /// Calculates the bankruptcy risk penalty.
+  /// Calculates the bankruptcy risk penalty (Stars).
   int calculateBankruptcyPenalty(Player player) {
-    return (player.balance * GameConstants.bankruptcyRiskMultiplier).floor();
+    return (player.stars * GameConstants.bankruptcyRiskMultiplier).floor();
   }
 
-  /// Checks if a tile is purchasable.
+  /// Checks if a tile is purchasable (Question interaction).
   bool isPurchasable(BoardTile tile) {
-    return tile.type == TileType.property ||
-        tile.type == TileType.publisher ||
-        tile.type == TileType.writingSchool ||
-        tile.type == TileType.educationFoundation;
+    return tile.type == TileType.property;
   }
 
   /// Checks if a tile requires a question before purchase.
@@ -61,26 +31,19 @@ class HandleTileEffectUseCase {
     return tile.category != null;
   }
 
-  /// Checks if a tile is a utility.
+  /// Checks if a tile is special (non-question).
   bool isUtility(BoardTile tile) {
-    return tile.isUtility;
+    return tile.type != TileType.property;
   }
 
-  /// Checks if a tile is upgradeable.
+  /// Checks if a tile is upgradeable (Difficulty level).
   bool isUpgradeable(BoardTile tile) {
-    return !tile.isUtility && tile.upgradeLevel < GameConstants.maxUpgradeLevel;
+    return tile.type == TileType.property && tile.difficulty != Difficulty.hard;
   }
 
-  /// Gets the tax amount for a tile.
+  /// Gets the tax amount for a tile (Not used in current RPG).
   int getTaxAmount(TileType type) {
-    switch (type) {
-      case TileType.incomeTax:
-        return GameConstants.incomeTax;
-      case TileType.writingTax:
-        return GameConstants.writingTax;
-      default:
-        return 0;
-    }
+    return 0;
   }
 }
 
@@ -100,39 +63,6 @@ class PropertyInteractionAction extends TileAction {
   const PropertyInteractionAction(this.tile);
 }
 
-/// Draw a chance or fate card.
-class DrawCardAction extends TileAction {
-  final TileType cardType;
-  const DrawCardAction(this.cardType);
-}
-
-/// Library penalty (jail).
-class LibraryPenaltyAction extends TileAction {
-  const LibraryPenaltyAction();
-}
-
-/// Autograph day (informative).
-class AutographDayAction extends TileAction {
-  const AutographDayAction();
-}
-
-/// Bankruptcy risk.
-class BankruptcyRiskAction extends TileAction {
-  const BankruptcyRiskAction();
-}
-
-/// Income tax.
-class IncomeTaxAction extends TileAction {
-  final int amount;
-  const IncomeTaxAction(this.amount);
-}
-
-/// Writing tax.
-class WritingTaxAction extends TileAction {
-  final int amount;
-  const WritingTaxAction(this.amount);
-}
-
 /// Open shop dialog (Kıraathane).
 class OpenShopAction extends TileAction {
   const OpenShopAction();
@@ -146,10 +76,10 @@ class TileActions {
   static TileAction propertyInteraction(BoardTile tile) =>
       PropertyInteractionAction(tile);
   static TileAction drawCard(TileType cardType) => DrawCardAction(cardType);
-  static TileAction libraryPenalty() => const LibraryPenaltyAction();
-  static TileAction autographDay() => const AutographDayAction();
-  static TileAction bankruptcyRisk() => const BankruptcyRiskAction();
-  static TileAction incomeTax(int amount) => IncomeTaxAction(amount);
-  static TileAction writingTax(int amount) => WritingTaxAction(amount);
   static TileAction openShop() => const OpenShopAction();
+}
+
+class DrawCardAction extends TileAction {
+  final TileType cardType;
+  const DrawCardAction(this.cardType);
 }

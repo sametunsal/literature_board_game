@@ -2,33 +2,13 @@
 /// Used for JSON serialization and persistence.
 /// Pure Dart - no Flutter dependencies.
 
-/// Color group identifiers for Monopoly-style property grouping
-enum PropertyColorGroupModel {
-  brown, // Group 1: Near Start
-  lightBlue, // Group 2
-  pink, // Group 3
-  orange, // Group 4
-  red, // Group 5
-  yellow, // Group 6
-  green, // Group 7
-  blue, // Group 8: Most expensive
-  utility, // Publishers, Schools, Foundations
-  special, // Corners, Tax, Cards
-}
+enum DifficultyModel { easy, medium, hard }
 
 enum TileTypeModel {
   start,
   property,
-  publisher,
   chance,
   fate,
-  libraryWatch,
-  autographDay,
-  bankruptcyRisk,
-  writingSchool,
-  educationFoundation,
-  incomeTax,
-  writingTax,
   kiraathane, // Shop corner tile
 }
 
@@ -38,30 +18,22 @@ enum QuestionCategoryModel {
   edebiyatAkimlari,
   edebiSanatlar,
   eserKarakter,
-  bonusBilgiler,
+  tesvik,
 }
 
 class BoardTileModel {
   final int id;
   final String title;
   final TileTypeModel type;
-  final int? price;
-  final int? baseRent;
   final QuestionCategoryModel? category;
-  final bool isUtility;
-  final int upgradeLevel;
-  final PropertyColorGroupModel? colorGroup;
+  final DifficultyModel difficulty;
 
   BoardTileModel({
     required this.id,
     required this.title,
     required this.type,
-    this.price,
-    this.baseRent,
     this.category,
-    this.isUtility = false,
-    this.upgradeLevel = 0,
-    this.colorGroup,
+    this.difficulty = DifficultyModel.easy,
   });
 
   factory BoardTileModel.fromJson(Map<String, dynamic> json) {
@@ -72,22 +44,18 @@ class BoardTileModel {
         (e) => e.name == json['type'],
         orElse: () => TileTypeModel.start,
       ),
-      price: json['price'] as int?,
-      baseRent: json['baseRent'] as int?,
       category: json['category'] != null
           ? QuestionCategoryModel.values.firstWhere(
               (e) => e.name == json['category'],
               orElse: () => QuestionCategoryModel.benKimim,
             )
           : null,
-      isUtility: json['isUtility'] as bool? ?? false,
-      upgradeLevel: json['upgradeLevel'] as int? ?? 0,
-      colorGroup: json['colorGroup'] != null
-          ? PropertyColorGroupModel.values.firstWhere(
-              (e) => e.name == json['colorGroup'],
-              orElse: () => PropertyColorGroupModel.special,
+      difficulty: json['difficulty'] != null
+          ? DifficultyModel.values.firstWhere(
+              (e) => e.name == json['difficulty'],
+              orElse: () => DifficultyModel.easy,
             )
-          : null,
+          : DifficultyModel.easy,
     );
   }
 
@@ -96,26 +64,18 @@ class BoardTileModel {
       'id': id,
       'title': title,
       'type': type.name,
-      'price': price,
-      'baseRent': baseRent,
       'category': category?.name,
-      'isUtility': isUtility,
-      'upgradeLevel': upgradeLevel,
-      'colorGroup': colorGroup?.name,
+      'difficulty': difficulty.name,
     };
   }
 
-  BoardTileModel copyWith({int? upgradeLevel}) {
+  BoardTileModel copyWith({DifficultyModel? difficulty}) {
     return BoardTileModel(
       id: id,
       title: title,
       type: type,
-      price: price,
-      baseRent: baseRent,
       category: category,
-      isUtility: isUtility,
-      upgradeLevel: upgradeLevel ?? this.upgradeLevel,
-      colorGroup: colorGroup,
+      difficulty: difficulty ?? this.difficulty,
     );
   }
 
@@ -130,8 +90,6 @@ class BoardTileModel {
 
   @override
   String toString() {
-    return 'BoardTileModel(id: $id, title: $title, type: $type, price: $price, '
-        'baseRent: $baseRent, category: $category, isUtility: $isUtility, '
-        'upgradeLevel: $upgradeLevel, colorGroup: $colorGroup)';
+    return 'BoardTileModel(id: $id, title: $title, type: $type, category: $category, difficulty: $difficulty)';
   }
 }

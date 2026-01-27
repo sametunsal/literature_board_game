@@ -75,7 +75,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       QuestionCategory.edebiyatAkimlari => "EDEBİYAT AKIMLARI",
       QuestionCategory.edebiSanatlar => "EDEBİ SANATLAR",
       QuestionCategory.eserKarakter => "ESER-KARAKTER",
-      QuestionCategory.bonusBilgiler => "BONUS BİLGİLER",
+      QuestionCategory.tesvik => "TEŞVİK",
       null => "GENEL",
     };
   }
@@ -88,7 +88,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       QuestionCategory.edebiyatAkimlari => const Color(0xFFD32F2F),
       QuestionCategory.edebiSanatlar => const Color(0xFF388E3C),
       QuestionCategory.eserKarakter => const Color(0xFFFF8C00),
-      QuestionCategory.bonusBilgiler => const Color(0xFF9C27B0),
+      QuestionCategory.tesvik => const Color(0xFF9C27B0),
       null => GameTheme.goldAccent,
     };
   }
@@ -101,7 +101,7 @@ class _QuestionDialogState extends ConsumerState<QuestionDialog> {
       QuestionCategory.edebiyatAkimlari => Icons.auto_stories,
       QuestionCategory.edebiSanatlar => Icons.brush,
       QuestionCategory.eserKarakter => Icons.menu_book,
-      QuestionCategory.bonusBilgiler => Icons.lightbulb,
+      QuestionCategory.tesvik => Icons.lightbulb,
       null => Icons.help_outline,
     };
   }

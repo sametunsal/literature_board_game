@@ -45,7 +45,7 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
     final player = state.currentPlayer;
-    final ownedIds = player.inventory.toSet();
+    final ownedIds = player.collectedQuotes.toSet();
 
     return Dialog(
       backgroundColor: Colors.transparent,

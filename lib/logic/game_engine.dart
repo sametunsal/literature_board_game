@@ -24,18 +24,16 @@ class GameEngine {
   /// Bir kutucuğa gelindiğinde ne olacağını belirler
   static String resolveTileEffect(BoardTile tile, Player player) {
     switch (tile.type) {
-      case TileType.libraryWatch:
-        return 'CEZA: Kütüphane nöbetine girdin. 2 tur bekle.';
-      case TileType.bankruptcyRisk:
-        return 'RİSK: Puanlarının yarısı silindi!';
-      case TileType.autographDay:
-        return 'GÜVENLİ: İmza günündesin, dinlen.';
-      case TileType.incomeTax:
-        return 'VERGİ: Gelir vergisi ödendi.';
+      case TileType.kiraathane:
+        return 'KIRAATHANe: Edebi sözler satın alabilirsin.';
+      case TileType.chance:
+        return 'ŞANS: Bir şans kartı çektin.';
+      case TileType.fate:
+        return 'KADER: Kaderin seni bekliyor.';
+      case TileType.start:
+        return 'BAŞLANGIÇ: Yazın yolculuğu başlıyor!';
       case TileType.property:
         return 'SORU: ${tile.title} hakkındaki soruyu bil, telifi kap!';
-      default:
-        return 'İşlem yok.';
     }
   }
 }

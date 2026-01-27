@@ -4,9 +4,7 @@ import 'game_enums.dart';
 class Player {
   final String id;
   final String name;
-  final int balance;
   final int position;
-  final List<int> ownedTiles;
   final bool inJail;
   final Color color;
   final int iconIndex;
@@ -14,8 +12,8 @@ class Player {
 
   // RPG Progression Fields
   final int stars; // Currency for shop
-  final List<String> inventory; // Owned quote IDs
-  final Map<String, PlayerRank> categoryProgress; // Rank per category
+  final List<String> collectedQuotes; // Owned quote IDs/texts
+  final Map<String, int> categoryLevels; // Level index per category (0-3)
   final String mainTitle; // Current title (Çaylak → Ehil)
   final Map<String, int> correctAnswers; // Correct answers per category
 
@@ -24,28 +22,26 @@ class Player {
     required this.name,
     required this.color,
     required this.iconIndex,
-    this.balance = 2500,
     this.position = 0,
-    this.ownedTiles = const [],
     this.inJail = false,
     this.turnsToSkip = 0,
     // RPG defaults
     this.stars = 0,
-    this.inventory = const [],
-    this.categoryProgress = const {},
+    this.collectedQuotes = const [],
+    this.categoryLevels = const {},
     this.mainTitle = 'Çaylak',
     this.correctAnswers = const {},
   });
 
-  /// Get rank for a specific category (defaults to none)
-  PlayerRank getRankForCategory(QuestionCategory category) {
-    return categoryProgress[category.name] ?? PlayerRank.none;
+  /// Get rank level for a specific category (0=none, 1=cirak, 2=kalfa, 3=usta)
+  int getLevelForCategory(QuestionCategory category) {
+    return categoryLevels[category.name] ?? 0;
   }
 
-  /// Check if player is master (Usta) in all categories
+  /// Check if player is master (Level 3) in all categories
   bool get isUstaInAllCategories {
     for (final category in QuestionCategory.values) {
-      if (getRankForCategory(category) != PlayerRank.usta) {
+      if (getLevelForCategory(category) < 3) {
         return false;
       }
     }
@@ -53,20 +49,18 @@ class Player {
   }
 
   /// Check if player qualifies for Ehil title
-  bool get isEhil => isUstaInAllCategories && inventory.length >= 50;
+  bool get isEhil => isUstaInAllCategories && collectedQuotes.length >= 50;
 
   Player copyWith({
     String? name,
     Color? color,
     int? iconIndex,
-    int? balance,
     int? position,
-    List<int>? ownedTiles,
     bool? inJail,
     int? turnsToSkip,
     int? stars,
-    List<String>? inventory,
-    Map<String, PlayerRank>? categoryProgress,
+    List<String>? collectedQuotes,
+    Map<String, int>? categoryLevels,
     String? mainTitle,
     Map<String, int>? correctAnswers,
   }) {
@@ -75,14 +69,12 @@ class Player {
       name: name ?? this.name,
       color: color ?? this.color,
       iconIndex: iconIndex ?? this.iconIndex,
-      balance: balance ?? this.balance,
       position: position ?? this.position,
-      ownedTiles: ownedTiles ?? this.ownedTiles,
       inJail: inJail ?? this.inJail,
       turnsToSkip: turnsToSkip ?? this.turnsToSkip,
       stars: stars ?? this.stars,
-      inventory: inventory ?? this.inventory,
-      categoryProgress: categoryProgress ?? this.categoryProgress,
+      collectedQuotes: collectedQuotes ?? this.collectedQuotes,
+      categoryLevels: categoryLevels ?? this.categoryLevels,
       mainTitle: mainTitle ?? this.mainTitle,
       correctAnswers: correctAnswers ?? this.correctAnswers,
     );

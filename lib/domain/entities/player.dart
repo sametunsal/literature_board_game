@@ -6,17 +6,16 @@ import 'game_enums.dart';
 class Player {
   final String id;
   final String name;
-  final int balance;
+  final int stars;
   final int position;
-  final List<int> ownedTiles;
+  final List<String> collectedQuotes;
   final bool inJail;
   final int iconIndex;
   final int turnsToSkip; // Library watch penalty turns remaining
 
   // RPG Progression Fields
-  final int stars; // Currency for shop
-  final List<String> inventory; // Owned quote IDs
-  final Map<String, PlayerRank> categoryProgress; // Rank per category
+  final Map<String, int>
+  categoryLevels; // 0=Novice, 1=Apprentice, 2=Journeyman, 3=Master
   final String mainTitle; // Current title (Çaylak → Ehil)
   final Map<String, int>
   correctAnswers; // Correct answers per category for promotion
@@ -25,28 +24,25 @@ class Player {
     required this.id,
     required this.name,
     required this.iconIndex,
-    this.balance = 2500,
+    this.stars = 0,
     this.position = 0,
-    this.ownedTiles = const [],
+    this.collectedQuotes = const [],
     this.inJail = false,
     this.turnsToSkip = 0,
-    // RPG defaults
-    this.stars = 0,
-    this.inventory = const [],
-    this.categoryProgress = const {},
+    this.categoryLevels = const {},
     this.mainTitle = 'Çaylak',
     this.correctAnswers = const {},
   });
 
-  /// Get rank for a specific category (defaults to none)
-  PlayerRank getRankForCategory(QuestionCategory category) {
-    return categoryProgress[category.name] ?? PlayerRank.none;
+  /// Get rank for a specific category
+  int getLevelForCategory(QuestionCategory category) {
+    return categoryLevels[category.name] ?? 0;
   }
 
-  /// Check if player is master (Usta) in all categories
-  bool get isUstaInAllCategories {
+  /// Check if player is master (Master = 3) in all categories
+  bool get isMasterInAllCategories {
     for (final category in QuestionCategory.values) {
-      if (getRankForCategory(category) != PlayerRank.usta) {
+      if (getLevelForCategory(category) < 3) {
         return false;
       }
     }
@@ -54,19 +50,18 @@ class Player {
   }
 
   /// Check if player qualifies for Ehil title
-  bool get isEhil => isUstaInAllCategories && inventory.length >= 50;
+  /// Check if player qualifies for Ehil title
+  bool get isEhil => isMasterInAllCategories && collectedQuotes.length >= 50;
 
   Player copyWith({
     String? name,
     int? iconIndex,
-    int? balance,
+    int? stars,
     int? position,
-    List<int>? ownedTiles,
+    List<String>? collectedQuotes,
     bool? inJail,
     int? turnsToSkip,
-    int? stars,
-    List<String>? inventory,
-    Map<String, PlayerRank>? categoryProgress,
+    Map<String, int>? categoryLevels,
     String? mainTitle,
     Map<String, int>? correctAnswers,
   }) {
@@ -74,14 +69,12 @@ class Player {
       id: id,
       name: name ?? this.name,
       iconIndex: iconIndex ?? this.iconIndex,
-      balance: balance ?? this.balance,
+      stars: stars ?? this.stars,
       position: position ?? this.position,
-      ownedTiles: ownedTiles ?? this.ownedTiles,
+      collectedQuotes: collectedQuotes ?? this.collectedQuotes,
       inJail: inJail ?? this.inJail,
       turnsToSkip: turnsToSkip ?? this.turnsToSkip,
-      stars: stars ?? this.stars,
-      inventory: inventory ?? this.inventory,
-      categoryProgress: categoryProgress ?? this.categoryProgress,
+      categoryLevels: categoryLevels ?? this.categoryLevels,
       mainTitle: mainTitle ?? this.mainTitle,
       correctAnswers: correctAnswers ?? this.correctAnswers,
     );
@@ -98,8 +91,8 @@ class Player {
 
   @override
   String toString() {
-    return 'Player(id: $id, name: $name, balance: $balance, position: $position, '
-        'ownedTiles: $ownedTiles, inJail: $inJail, turnsToSkip: $turnsToSkip, '
-        'stars: $stars, mainTitle: $mainTitle)';
+    return 'Player(id: $id, name: $name, stars: $stars, position: $position, '
+        'collectedQuotesCount: ${collectedQuotes.length}, inJail: $inJail, turnsToSkip: $turnsToSkip, '
+        'categoryLevels: $categoryLevels, mainTitle: $mainTitle)';
   }
 }

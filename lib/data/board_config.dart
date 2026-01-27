@@ -29,31 +29,31 @@ import '../models/game_enums.dart';
 ///
 /// Categories repeat 3 times each (18 category tiles total)
 class BoardConfig {
-  /// The 6 question categories in order
+  /// The 6 question categories in specified order (repeats 3x on board)
   static const List<QuestionCategory> _categoryOrder = [
-    QuestionCategory.benKimim,
-    QuestionCategory.turkEdebiyatindaIlkler,
-    QuestionCategory.edebiyatAkimlari,
-    QuestionCategory.edebiSanatlar,
-    QuestionCategory.eserKarakter,
-    QuestionCategory.bonusBilgiler,
+    QuestionCategory.turkEdebiyatindaIlkler, // 1st
+    QuestionCategory.edebiSanatlar, // 2nd
+    QuestionCategory.eserKarakter, // 3rd
+    QuestionCategory.edebiyatAkimlari, // 4th
+    QuestionCategory.benKimim, // 5th
+    QuestionCategory.tesvik, // 6th
   ];
 
-  /// Get category display name in Turkish
+  /// Get category display name in full Turkish
   static String getCategoryDisplayName(QuestionCategory category) {
     switch (category) {
-      case QuestionCategory.benKimim:
-        return 'Ben Kimim?';
       case QuestionCategory.turkEdebiyatindaIlkler:
-        return 'İlkler';
-      case QuestionCategory.edebiyatAkimlari:
-        return 'Akımlar';
+        return 'Türk Edebiyatında İlkler';
       case QuestionCategory.edebiSanatlar:
         return 'Edebi Sanatlar';
       case QuestionCategory.eserKarakter:
         return 'Eser-Karakter';
-      case QuestionCategory.bonusBilgiler:
-        return 'Bonus';
+      case QuestionCategory.edebiyatAkimlari:
+        return 'Edebiyat Akımları';
+      case QuestionCategory.benKimim:
+        return 'Ben Kimim?';
+      case QuestionCategory.tesvik:
+        return 'Teşvik';
     }
   }
 
@@ -77,12 +77,7 @@ class BoardConfig {
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 0: START (Bottom-Right Corner)
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: 0,
-      title: 'BAŞLANGIÇ',
-      type: TileType.start,
-      colorGroup: PropertyColorGroup.special,
-    ),
+    const BoardTile(id: 0, title: 'BAŞLANGIÇ', type: TileType.start),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 1-4: Bottom Row (Right to Left) - 4 Category Tiles
@@ -92,39 +87,34 @@ class BoardConfig {
       title: getCategoryDisplayName(_getCategoryAt(0)),
       type: TileType.property,
       category: _getCategoryAt(0), // benKimim
-      colorGroup: PropertyColorGroup.brown,
+      difficulty: Difficulty.easy,
     ),
     BoardTile(
       id: 2,
       title: getCategoryDisplayName(_getCategoryAt(1)),
       type: TileType.property,
       category: _getCategoryAt(1), // turkEdebiyatindaIlkler
-      colorGroup: PropertyColorGroup.lightBlue,
+      difficulty: Difficulty.easy,
     ),
     BoardTile(
       id: 3,
       title: getCategoryDisplayName(_getCategoryAt(2)),
       type: TileType.property,
       category: _getCategoryAt(2), // edebiyatAkimlari
-      colorGroup: PropertyColorGroup.pink,
+      difficulty: Difficulty.medium,
     ),
     BoardTile(
       id: 4,
       title: getCategoryDisplayName(_getCategoryAt(3)),
       type: TileType.property,
       category: _getCategoryAt(3), // edebiSanatlar
-      colorGroup: PropertyColorGroup.orange,
+      difficulty: Difficulty.medium,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 5: ŞANS (Bottom-Left Corner) - Chance
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: 5,
-      title: 'ŞANS',
-      type: TileType.chance,
-      colorGroup: PropertyColorGroup.special,
-    ),
+    const BoardTile(id: 5, title: 'ŞANS', type: TileType.chance),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 6-10: Left Column (Bottom to Top) - 5 Category Tiles
@@ -134,46 +124,41 @@ class BoardConfig {
       title: getCategoryDisplayName(_getCategoryAt(4)),
       type: TileType.property,
       category: _getCategoryAt(4), // eserKarakter
-      colorGroup: PropertyColorGroup.red,
+      difficulty: Difficulty.hard,
     ),
     BoardTile(
       id: 7,
       title: getCategoryDisplayName(_getCategoryAt(5)),
       type: TileType.property,
-      category: _getCategoryAt(5), // bonusBilgiler
-      colorGroup: PropertyColorGroup.yellow,
+      category: _getCategoryAt(5), // tesvik
+      difficulty: Difficulty.easy,
     ),
     BoardTile(
       id: 8,
       title: getCategoryDisplayName(_getCategoryAt(0)),
       type: TileType.property,
       category: _getCategoryAt(0), // benKimim (2nd)
-      colorGroup: PropertyColorGroup.brown,
+      difficulty: Difficulty.medium,
     ),
     BoardTile(
       id: 9,
       title: getCategoryDisplayName(_getCategoryAt(1)),
       type: TileType.property,
       category: _getCategoryAt(1), // turkEdebiyatindaIlkler (2nd)
-      colorGroup: PropertyColorGroup.lightBlue,
+      difficulty: Difficulty.medium,
     ),
     BoardTile(
       id: 10,
       title: getCategoryDisplayName(_getCategoryAt(2)),
       type: TileType.property,
       category: _getCategoryAt(2), // edebiyatAkimlari (2nd)
-      colorGroup: PropertyColorGroup.pink,
+      difficulty: Difficulty.hard,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 11: KIRAATHANe (Top-Left Corner) - SHOP
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: 11,
-      title: 'KIRAATHANe',
-      type: TileType.kiraathane,
-      colorGroup: PropertyColorGroup.special,
-    ),
+    const BoardTile(id: 11, title: 'KIRAATHANe', type: TileType.kiraathane),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 12-15: Top Row (Left to Right) - 4 Category Tiles
@@ -183,39 +168,34 @@ class BoardConfig {
       title: getCategoryDisplayName(_getCategoryAt(3)),
       type: TileType.property,
       category: _getCategoryAt(3), // edebiSanatlar (2nd)
-      colorGroup: PropertyColorGroup.orange,
+      difficulty: Difficulty.hard,
     ),
     BoardTile(
       id: 13,
       title: getCategoryDisplayName(_getCategoryAt(4)),
       type: TileType.property,
       category: _getCategoryAt(4), // eserKarakter (2nd)
-      colorGroup: PropertyColorGroup.red,
+      difficulty: Difficulty.easy,
     ),
     BoardTile(
       id: 14,
       title: getCategoryDisplayName(_getCategoryAt(5)),
       type: TileType.property,
-      category: _getCategoryAt(5), // bonusBilgiler (2nd)
-      colorGroup: PropertyColorGroup.yellow,
+      category: _getCategoryAt(5), // tesvik (2nd)
+      difficulty: Difficulty.medium,
     ),
     BoardTile(
       id: 15,
       title: getCategoryDisplayName(_getCategoryAt(0)),
       type: TileType.property,
       category: _getCategoryAt(0), // benKimim (3rd)
-      colorGroup: PropertyColorGroup.brown,
+      difficulty: Difficulty.hard,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDEX 16: KADER (Top-Right Corner) - Fate
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: 16,
-      title: 'KADER',
-      type: TileType.fate,
-      colorGroup: PropertyColorGroup.special,
-    ),
+    const BoardTile(id: 16, title: 'KADER', type: TileType.fate),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 17-21: Right Column (Top to Bottom) - 5 Category Tiles
@@ -225,35 +205,35 @@ class BoardConfig {
       title: getCategoryDisplayName(_getCategoryAt(1)),
       type: TileType.property,
       category: _getCategoryAt(1), // turkEdebiyatindaIlkler (3rd)
-      colorGroup: PropertyColorGroup.lightBlue,
+      difficulty: Difficulty.hard,
     ),
     BoardTile(
       id: 18,
       title: getCategoryDisplayName(_getCategoryAt(2)),
       type: TileType.property,
       category: _getCategoryAt(2), // edebiyatAkimlari (3rd)
-      colorGroup: PropertyColorGroup.pink,
+      difficulty: Difficulty.easy,
     ),
     BoardTile(
       id: 19,
       title: getCategoryDisplayName(_getCategoryAt(3)),
       type: TileType.property,
       category: _getCategoryAt(3), // edebiSanatlar (3rd)
-      colorGroup: PropertyColorGroup.orange,
+      difficulty: Difficulty.medium,
     ),
     BoardTile(
       id: 20,
       title: getCategoryDisplayName(_getCategoryAt(4)),
       type: TileType.property,
       category: _getCategoryAt(4), // eserKarakter (3rd)
-      colorGroup: PropertyColorGroup.red,
+      difficulty: Difficulty.medium,
     ),
     BoardTile(
       id: 21,
       title: getCategoryDisplayName(_getCategoryAt(5)),
       type: TileType.property,
-      category: _getCategoryAt(5), // bonusBilgiler (3rd)
-      colorGroup: PropertyColorGroup.yellow,
+      category: _getCategoryAt(5), // tesvik (3rd)
+      difficulty: Difficulty.hard,
     ),
   ];
 

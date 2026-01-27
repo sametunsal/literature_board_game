@@ -64,13 +64,27 @@ class GameTileWidget extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Spacer(),
-                if (tile.price != null)
-                  Text(
-                    "${tile.price} Y",
-                    style: GameTheme.tilePrice.copyWith(
-                      color: tokens.textSecondary, // Theme-aware secondary text
+                // Difficulty level indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getDifficultyColor(
+                      tile.difficulty,
+                    ).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    tile.difficulty.name.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: _getDifficultyColor(tile.difficulty),
                     ),
                   ),
+                ),
                 SizedBox(height: 2),
               ],
             ),
@@ -91,20 +105,20 @@ class GameTileWidget extends StatelessWidget {
         bg = Color(0xFFC8E6C9);
         label = "BAŞLANGIÇ";
         break;
-      case TileType.libraryWatch:
-        icon = Icons.menu_book;
-        bg = Color(0xFFFFCCBC);
-        label = "NÖBET";
+      case TileType.kiraathane:
+        icon = Icons.store;
+        bg = const Color(0xFFFFE082); // Amber accent
+        label = "KIRAATHANe";
         break;
-      case TileType.autographDay:
-        icon = Icons.edit;
-        bg = Color(0xFFE1BEE7);
-        label = "İMZA";
+      case TileType.chance:
+        icon = Icons.casino;
+        bg = const Color(0xFFCE93D8); // Purple accent
+        label = "ŞANS";
         break;
-      case TileType.bankruptcyRisk:
-        icon = Icons.warning;
-        bg = Color(0xFFFFCDD2);
-        label = "RİSK";
+      case TileType.fate:
+        icon = Icons.history_edu;
+        bg = const Color(0xFF90CAF9); // Blue accent
+        label = "KADER";
         break;
       default:
         icon = Icons.help;
@@ -134,14 +148,18 @@ class GameTileWidget extends StatelessWidget {
   }
 
   Widget _buildUpgradeIcons() {
-    if (tile.upgradeLevel == 0) return SizedBox();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        tile.upgradeLevel,
-        (i) => Icon(Icons.star, size: 8, color: Colors.white),
-      ),
-    );
+    return const SizedBox();
+  }
+
+  Color _getDifficultyColor(Difficulty diff) {
+    switch (diff) {
+      case Difficulty.easy:
+        return Colors.green;
+      case Difficulty.medium:
+        return Colors.orange;
+      case Difficulty.hard:
+        return Colors.red;
+    }
   }
 
   Color _getGroupColor(int id) {

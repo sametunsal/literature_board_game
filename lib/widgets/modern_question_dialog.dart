@@ -89,7 +89,8 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
       'edebi akımlar' => const Color(0xFFD32F2F),
       'edebi sanatlar' => const Color(0xFF388E3C),
       'eser & karakter' => const Color(0xFFFF8C00),
-      'bonus bilgiler' => const Color(0xFF9C27B0),
+      'tesvik' => const Color(0xFF9C27B0),
+      'teşvik' => const Color(0xFF9C27B0),
       _ => GameTheme.goldAccent,
     };
   }
@@ -102,7 +103,8 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
       'edebi akımlar' => Icons.auto_stories,
       'edebi sanatlar' => Icons.brush,
       'eser & karakter' => Icons.menu_book,
-      'bonus bilgiler' => Icons.lightbulb,
+      'tesvik' => Icons.lightbulb,
+      'teşvik' => Icons.lightbulb,
       _ => Icons.help_outline,
     };
   }

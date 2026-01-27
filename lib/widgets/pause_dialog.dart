@@ -13,6 +13,7 @@ import '../presentation/widgets/common/game_button.dart';
 class PauseDialog extends ConsumerWidget {
   final VoidCallback onResume;
   final VoidCallback onSettings;
+  final VoidCallback onCollection;
   final VoidCallback onEndGame;
   final VoidCallback onExit;
 
@@ -20,6 +21,7 @@ class PauseDialog extends ConsumerWidget {
     super.key,
     required this.onResume,
     required this.onSettings,
+    required this.onCollection,
     required this.onEndGame,
     required this.onExit,
   });
@@ -137,6 +139,19 @@ class PauseDialog extends ConsumerWidget {
                   onPressed: () {
                     SoundManager.instance.playClick();
                     onSettings();
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // COLLECTION BUTTON
+                GameButton(
+                  label: "KOLEKSİYONUM",
+                  icon: Icons.collections_bookmark,
+                  variant: GameButtonVariant.secondary,
+                  isFullWidth: true,
+                  onPressed: () {
+                    SoundManager.instance.playClick();
+                    onCollection();
                   },
                 ),
                 const SizedBox(height: 10),

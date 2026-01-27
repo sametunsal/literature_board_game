@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/motion/motion_constants.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
-import '../models/player.dart';
+import '../data/board_config.dart';
 import '../../core/theme/game_theme.dart';
 
 /// Enhanced tile widget with classic Monopoly-style appearance
@@ -22,8 +22,6 @@ class EnhancedTileWidget extends StatefulWidget {
 
   /// Quarter turns: 0=Bottom, 1=Right, 2=Top, 3=Left
   final int quarterTurns;
-  final Player? owner;
-  final int? calculatedRent;
   final bool isSelected;
   final bool isHovered;
 
@@ -33,8 +31,6 @@ class EnhancedTileWidget extends StatefulWidget {
     required this.width,
     required this.height,
     this.quarterTurns = 0,
-    this.owner,
-    this.calculatedRent,
     this.isSelected = false,
     this.isHovered = false,
   });
@@ -46,7 +42,7 @@ class EnhancedTileWidget extends StatefulWidget {
 class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   bool _isPressed = false;
 
-  bool get _isCorner => widget.tile.id % 10 == 0;
+  bool get _isCorner => BoardConfig.isCorner(widget.tile.id);
 
   @override
   Widget build(BuildContext context) {
@@ -153,10 +149,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       );
     }
 
-    final groupColor = widget.tile.groupColor;
-    final isOwned = widget.owner != null;
+    // RPG Mode: No groupColor (using category-based design instead)
+    final groupColor = tokens.tileBase; // Fallback
+    final isOwned = false; // Not used in RPG
 
-    // Color strip widget with improved border
+    // Color strip widget simplified
     Widget colorStrip = Container(
       decoration: BoxDecoration(
         color: groupColor,
@@ -164,14 +161,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           color: tokens.shadow.withValues(alpha: 0.3),
           width: 0.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: tokens.shadow.withValues(alpha: 0.2),
-            blurRadius: 1.0.clamp(0.0, double.infinity),
-          ),
-        ],
       ),
-      child: _buildUpgradeIcons(),
     );
 
     // Text content widget (title + price)
@@ -245,9 +235,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   bool _isLibraryTile() {
     final titleLower = widget.tile.title.toLowerCase();
     return titleLower.contains('kütüphane') ||
-        widget.tile.type == TileType.libraryWatch ||
-        widget.tile.type == TileType.writingSchool ||
-        widget.tile.type == TileType.educationFoundation;
+        widget.tile.id == 11; // 11 is now general shop corner but fits theme
   }
 
   /// Check if this is a Chance or Fate tile
@@ -339,114 +327,30 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // TITLE
-              Expanded(
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      widget.tile.title,
-                      textAlign: TextAlign.center,
-                      style: GameTheme.tileTitleStyle.copyWith(
-                        fontSize: 8,
-                        height: 1.1,
-                        color: tokens.textPrimary, // Theme-aware text
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ),
-              // PRICE or RENT
-              if (widget.tile.price != null && !widget.tile.isUtility)
-                _buildPriceRentBadge(isOwned, tokens),
+              // CATEGORY DISPLAY (formerly price/rent)
+              _buildCategoryIndicator(tokens),
             ],
           ),
-          // Owner icon
-          if (isOwned)
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: widget.owner!.color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDarkMode ? Colors.white : Colors.white,
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: tokens.shadow.withValues(alpha: 0.3),
-                      blurRadius: 2.0.clamp(0.0, double.infinity),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  /// Build upgrade icons (houses/hotel)
-  Widget _buildUpgradeIcons() {
-    if (widget.tile.upgradeLevel == 0) return const SizedBox.shrink();
-
-    if (widget.tile.upgradeLevel == 4) {
-      return const Center(child: Icon(Icons.home, size: 7, color: Colors.red));
-    }
-
-    // Vertical for left/right edges, horizontal for top/bottom
-    bool isVertical = widget.quarterTurns == 1 || widget.quarterTurns == 3;
-
-    if (isVertical) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            widget.tile.upgradeLevel,
-            (i) => const Icon(Icons.home, size: 5, color: Colors.green),
-          ),
-        ),
-      );
-    }
-
-    return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          widget.tile.upgradeLevel,
-          (i) => const Icon(Icons.home, size: 5, color: Colors.green),
-        ),
-      ),
-    );
-  }
-
-  /// Build price/rent badge
-  Widget _buildPriceRentBadge(bool isOwned, ThemeTokens tokens) {
-    final displayValue = isOwned
-        ? (widget.calculatedRent ?? widget.tile.price!)
-        : widget.tile.price!;
-    final label = isOwned ? 'K' : '₺';
+  Widget _buildCategoryIndicator(ThemeTokens tokens) {
+    if (widget.tile.category == null) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(2),
-        color: isOwned
-            ? Colors.orange.withValues(alpha: 0.2)
-            : tokens.shadow.withValues(alpha: 0.08),
+        color: tokens.shadow.withValues(alpha: 0.08),
       ),
       child: Text(
-        '$label$displayValue',
+        widget.tile.difficulty.name.toUpperCase(),
         style: GameTheme.tilePriceStyle.copyWith(
           fontSize: 7,
           fontWeight: FontWeight.bold,
-          color: isOwned ? Colors.deepOrange : tokens.textPrimary,
+          color: tokens.textPrimary,
         ),
       ),
     );
@@ -586,24 +490,24 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
     return switch (widget.tile.type) {
       TileType.start => const CornerTileConfig(
-        icon: Icons.arrow_forward,
+        icon: Icons.start,
         label: 'BAŞLANGIÇ',
-        backgroundColor: Color(0xFFE8F5E9),
+        backgroundColor: Color(0xFFC8E6C9),
       ),
-      TileType.libraryWatch => const CornerTileConfig(
-        icon: Icons.local_library,
-        label: 'KÜTÜPHANE\nNÖBETİ',
-        backgroundColor: Color(0xFFFFF3E0),
+      TileType.kiraathane => const CornerTileConfig(
+        icon: Icons.store,
+        label: 'KIRAATHANe',
+        backgroundColor: Color(0xFFFFECB3),
       ),
-      TileType.autographDay => const CornerTileConfig(
-        icon: Icons.edit,
-        label: 'İMZA GÜNÜ',
+      TileType.chance => const CornerTileConfig(
+        icon: Icons.casino,
+        label: 'ŞANS',
         backgroundColor: Color(0xFFF3E5F5),
       ),
-      TileType.bankruptcyRisk => const CornerTileConfig(
-        icon: Icons.warning,
-        label: 'İFLAS RİSKİ',
-        backgroundColor: Color(0xFFFFEBEE),
+      TileType.fate => const CornerTileConfig(
+        icon: Icons.history_edu,
+        label: 'KADER',
+        backgroundColor: Color(0xFFE3F2FD),
       ),
       _ => const CornerTileConfig(
         icon: Icons.help,

@@ -137,9 +137,9 @@ class GameLog extends StatelessWidget {
   }
 
   Widget _buildScoreList() {
-    // Sort players by balance (descending)
+    // Sort players by stars (descending)
     final sortedPlayers = List<Player>.from(players)
-      ..sort((a, b) => b.balance.compareTo(a.balance));
+      ..sort((a, b) => b.stars.compareTo(a.stars));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -212,8 +212,8 @@ class _PlayerScoreRow extends ConsumerStatefulWidget {
 
 class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
     with SingleTickerProviderStateMixin {
-  int _previousBalance = 0;
-  int _displayedBalance = 0;
+  int _previousStars = 0;
+  int _displayedStars = 0;
   bool _isAnimating = false;
   bool _isIncrease = false;
   double _scale = 1.0;
@@ -221,19 +221,19 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
   @override
   void initState() {
     super.initState();
-    _previousBalance = widget.player.balance;
-    _displayedBalance = widget.player.balance;
+    _previousStars = widget.player.stars;
+    _displayedStars = widget.player.stars;
   }
 
   @override
   void didUpdateWidget(_PlayerScoreRow oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Detect balance change
-    if (oldWidget.player.balance != widget.player.balance) {
-      _previousBalance = oldWidget.player.balance;
-      final newBalance = widget.player.balance;
-      _isIncrease = newBalance > _previousBalance;
+    // Detect stars change
+    if (oldWidget.player.stars != widget.player.stars) {
+      _previousStars = oldWidget.player.stars;
+      final newStars = widget.player.stars;
+      _isIncrease = newStars > _previousStars;
 
       // Start animation
       setState(() {
@@ -242,7 +242,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
       });
 
       // Animate number counting
-      _animateNumber(_previousBalance, newBalance);
+      _animateNumber(_previousStars, newStars);
 
       // Reset scale after animation
       Future.delayed(MotionDurations.fast, () {
@@ -272,7 +272,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
         if (mounted) {
           setState(() {
             current += increment;
-            _displayedBalance = current;
+            _displayedStars = current;
           });
         }
       });
@@ -281,7 +281,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
     // Ensure final value is exact
     Future.delayed(MotionDurations.fast, () {
       if (mounted) {
-        setState(() => _displayedBalance = to);
+        setState(() => _displayedStars = to);
       }
     });
   }
@@ -407,7 +407,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
                     : (rank == 1 ? GameTheme.goldAccent : GameTheme.textDark),
                 shadows: const [Shadow(color: Colors.black54, blurRadius: 2)],
               ),
-              child: Text("₺$_displayedBalance"),
+              child: Text("⭐$_displayedStars"),
             ),
 
             // Current turn indicator

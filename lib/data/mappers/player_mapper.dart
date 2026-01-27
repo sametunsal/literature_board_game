@@ -2,24 +2,10 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../../domain/entities/player.dart';
-import '../../domain/entities/game_enums.dart';
 import '../models/player_model.dart';
 
 class PlayerMapper {
   PlayerMapper._();
-
-  /// Convert PlayerRank to string for serialization
-  static String _rankToString(PlayerRank rank) {
-    return rank.name;
-  }
-
-  /// Convert string to PlayerRank
-  static PlayerRank _stringToRank(String rankStr) {
-    return PlayerRank.values.firstWhere(
-      (r) => r.name == rankStr,
-      orElse: () => PlayerRank.none,
-    );
-  }
 
   /// Convert PlayerModel to Player domain entity
   static Player toDomain(PlayerModel model) {
@@ -27,16 +13,12 @@ class PlayerMapper {
       id: model.id,
       name: model.name,
       iconIndex: model.iconIndex,
-      balance: model.balance,
+      stars: model.stars,
       position: model.position,
-      ownedTiles: model.ownedTiles,
+      collectedQuotes: model.collectedQuotes,
       inJail: model.inJail,
       turnsToSkip: model.turnsToSkip,
-      stars: model.stars,
-      inventory: model.inventory,
-      categoryProgress: model.categoryProgress.map(
-        (k, v) => MapEntry(k, _stringToRank(v)),
-      ),
+      categoryLevels: model.categoryLevels,
       mainTitle: model.mainTitle,
       correctAnswers: model.correctAnswers,
     );
@@ -48,16 +30,12 @@ class PlayerMapper {
       id: entity.id,
       name: entity.name,
       iconIndex: entity.iconIndex,
-      balance: entity.balance,
+      stars: entity.stars,
       position: entity.position,
-      ownedTiles: entity.ownedTiles,
+      collectedQuotes: entity.collectedQuotes,
       inJail: entity.inJail,
       turnsToSkip: entity.turnsToSkip,
-      stars: entity.stars,
-      inventory: entity.inventory,
-      categoryProgress: entity.categoryProgress.map(
-        (k, v) => MapEntry(k, _rankToString(v)),
-      ),
+      categoryLevels: entity.categoryLevels,
       mainTitle: entity.mainTitle,
       correctAnswers: entity.correctAnswers,
     );

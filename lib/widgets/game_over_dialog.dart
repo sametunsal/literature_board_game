@@ -47,19 +47,12 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
     );
 
     final state = ref.read(gameProvider);
-    final notifier = ref.read(gameProvider.notifier);
     final rankedPlayers = List<Player>.from(state.players);
-    rankedPlayers.sort(
-      (a, b) => notifier
-          .calculateNetWorth(b)
-          .compareTo(notifier.calculateNetWorth(a)),
-    );
-
-    final winnerNetWorth = rankedPlayers.isNotEmpty
-        ? notifier.calculateNetWorth(rankedPlayers.first)
+    final winnerStars = rankedPlayers.isNotEmpty
+        ? rankedPlayers.first.stars
         : 0;
 
-    _counterAnimation = Tween<double>(begin: 0, end: winnerNetWorth.toDouble())
+    _counterAnimation = Tween<double>(begin: 0, end: winnerStars.toDouble())
         .animate(
           CurvedAnimation(
             parent: _counterController,
@@ -97,13 +90,9 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final tokens = GameTheme.getTokens(isDarkMode);
 
-    // Sort players by net worth (descending)
+    // Sort players by stars (descending)
     final rankedPlayers = List<Player>.from(state.players);
-    rankedPlayers.sort(
-      (a, b) => notifier
-          .calculateNetWorth(b)
-          .compareTo(notifier.calculateNetWorth(a)),
-    );
+    rankedPlayers.sort((a, b) => b.stars.compareTo(a.stars));
 
     final winner = rankedPlayers.isNotEmpty ? rankedPlayers.first : null;
 
@@ -391,7 +380,7 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "₺$_displayedMoney",
+                        "⭐$_displayedMoney",
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -437,17 +426,17 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
         // Staggered stat items
         _buildStatItem(
           Icons.account_balance_wallet,
-          "Nakit",
-          "₺${winner.balance}",
+          "Yıldız",
+          "⭐${winner.stars}",
           delay: MotionDurations.dice,
           tokens: tokens,
           isDarkMode: isDarkMode,
         ),
         const SizedBox(height: 12),
         _buildStatItem(
-          Icons.business,
-          "Mülkler",
-          "${winner.ownedTiles.length} Adet",
+          Icons.library_books,
+          "Edinilen Sözler",
+          "${winner.collectedQuotes.length} Adet",
           delay: MotionDurations.dice + MotionDurations.fast,
           tokens: tokens,
           isDarkMode: isDarkMode,

@@ -6,7 +6,6 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../data/board_config.dart';
 import '../models/game_enums.dart';
-import '../domain/entities/game_enums.dart' as domain;
 import '../models/player.dart';
 import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
@@ -18,9 +17,7 @@ import 'game_log.dart';
 import 'dice_roller.dart';
 import 'modern_question_dialog.dart';
 import 'card_dialog.dart';
-import 'copyright_purchase_dialog.dart';
 import 'notification_dialogs.dart';
-import 'upgrade_dialog.dart';
 import 'pawn_widget.dart';
 import 'pause_dialog.dart';
 import 'settings_screen.dart';
@@ -29,6 +26,8 @@ import 'game_over_dialog.dart';
 import 'card_deck_widget.dart';
 import 'floating_score.dart';
 import 'shop_dialog.dart';
+import 'player_scoreboard.dart';
+import 'collection_screen.dart';
 import '../utils/sound_manager.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -244,17 +243,22 @@ class _BoardViewState extends ConsumerState<BoardView> {
               ),
             ),
 
-          // PAUSE BUTTON (top-right)
+          // PAUSE BUTTON (top-right) - moved to overlap with P2 scoreboard
           Positioned(
             top: 0,
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.only(top: 60, right: 8),
                 child: _buildPauseButton(),
               ),
             ),
           ),
+
+          // ═══════════════════════════════════════════════════════════════
+          // CORNER SCOREBOARDS - Player stats at 4 corners
+          // ═══════════════════════════════════════════════════════════════
+          ..._buildCornerScoreboards(state),
 
           // PAUSE MENU OVERLAY
           if (_showPauseMenu) _buildPauseOverlay(),
@@ -346,6 +350,18 @@ class _BoardViewState extends ConsumerState<BoardView> {
             setState(() => _showPauseMenu = false);
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const SettingsScreen()),
+            );
+          },
+          onCollection: () {
+            setState(() => _showPauseMenu = false);
+            final state = ref.read(gameProvider);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => CollectionScreen(
+                  collectedQuoteIds: state.currentPlayer.collectedQuotes,
+                  playerName: state.currentPlayer.name,
+                ),
+              ),
             );
           },
           onEndGame: () {
@@ -506,6 +522,58 @@ class _BoardViewState extends ConsumerState<BoardView> {
         const DiceRoller(),
       ],
     );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CORNER SCOREBOARDS
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Build corner scoreboards for all players (2-4 players supported)
+  List<Widget> _buildCornerScoreboards(GameState state) {
+    final players = state.players;
+    if (players.isEmpty) return [];
+
+    // Corner positions: [TopLeft, TopRight, BottomLeft, BottomRight]
+    const alignments = [
+      Alignment.topLeft,
+      Alignment.topRight,
+      Alignment.bottomLeft,
+      Alignment.bottomRight,
+    ];
+
+    return List.generate(players.length.clamp(0, 4), (index) {
+      final player = players[index];
+      final isCurrentPlayer = index == state.currentPlayerIndex;
+      final alignment = alignments[index];
+
+      // Position based on alignment
+      return Positioned(
+        top: alignment == Alignment.topLeft || alignment == Alignment.topRight
+            ? 0
+            : null,
+        bottom:
+            alignment == Alignment.bottomLeft ||
+                alignment == Alignment.bottomRight
+            ? 0
+            : null,
+        left:
+            alignment == Alignment.topLeft || alignment == Alignment.bottomLeft
+            ? 0
+            : null,
+        right:
+            alignment == Alignment.topRight ||
+                alignment == Alignment.bottomRight
+            ? 0
+            : null,
+        child: SafeArea(
+          child: PlayerScoreboard(
+            player: player,
+            isCurrentPlayer: isCurrentPlayer,
+            alignment: alignment,
+          ),
+        ),
+      );
+    });
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -689,30 +757,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
     // Get tile data from BoardConfig
     final tile = BoardConfig.getTile(id);
 
-    // Find owner from state
     final state = ref.watch(gameProvider);
-    Player? owner;
-    for (final player in state.players) {
-      if (player.ownedTiles.contains(id)) {
-        owner = player;
-        break;
-      }
-    }
-
-    // Calculate rent based on upgrade level
-    int? calculatedRent;
-    if (owner != null && tile.baseRent != null) {
-      final multiplier = tile.upgradeLevel == 4 ? 10 : (tile.upgradeLevel + 1);
-      calculatedRent = (tile.baseRent ?? 20) * multiplier;
-    }
-
-    // Check if this tile should pulse (landing effect)
-    final isPulsing = _pulsingTileId == id;
-
-    // Determine selection state: tile where current player's pawn is located
     final isSelected = id == state.currentPlayer.position;
-
-    // Determine hover state: tile currently being hovered
+    final isPulsing = _pulsingTileId == id;
     final isHovered = id == _hoveredTileId;
 
     // Tile widget wrapped in MouseRegion for hover tracking (Desktop/Web only)
@@ -739,8 +786,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
         width: width,
         height: height,
         quarterTurns: rotation,
-        owner: owner,
-        calculatedRent: calculatedRent,
         isSelected: isSelected,
         isHovered: isHovered,
       ),
@@ -1028,26 +1073,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
           ),
         ),
 
-      if (state.showPurchaseDialog && state.currentTile != null)
-        _buildDialogOverlay(CopyrightPurchaseDialog(tile: state.currentTile!)),
-
       if (state.showCardDialog && state.currentCard != null)
         _buildDialogOverlay(CardDialog(card: state.currentCard!)),
 
-      if (state.showUpgradeDialog && state.currentTile != null)
-        _buildDialogOverlay(UpgradeDialog(tile: state.currentTile!)),
-
       // Notification dialogs
-      if (state.showRentDialog &&
-          state.rentOwnerName != null &&
-          state.rentAmount != null)
-        _buildDialogOverlay(
-          RentNotificationDialog(
-            ownerName: state.rentOwnerName!,
-            rentAmount: state.rentAmount!,
-          ),
-        ),
-
       if (state.showLibraryPenaltyDialog)
         _buildDialogOverlay(const LibraryPenaltyDialog()),
 
@@ -1108,22 +1137,20 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   /// Convert QuestionCategory enum to display string
-  String _getCategoryString(domain.QuestionCategory category) {
+  String _getCategoryString(QuestionCategory category) {
     switch (category) {
-      case domain.QuestionCategory.benKimim:
+      case QuestionCategory.benKimim:
         return 'Ben Kimim?';
-      case domain.QuestionCategory.turkEdebiyatindaIlkler:
+      case QuestionCategory.turkEdebiyatindaIlkler:
         return 'İlkler';
-      case domain.QuestionCategory.edebiyatAkimlari:
+      case QuestionCategory.edebiyatAkimlari:
         return 'Edebi Akımlar';
-      case domain.QuestionCategory.edebiSanatlar:
+      case QuestionCategory.edebiSanatlar:
         return 'Edebi Sanatlar';
-      case domain.QuestionCategory.eserKarakter:
+      case QuestionCategory.eserKarakter:
         return 'Eser & Karakter';
-      case domain.QuestionCategory.bonusBilgiler:
-        return 'Bonus Bilgiler';
-      default:
-        return 'Genel Kültür';
+      case QuestionCategory.tesvik:
+        return 'Teşvik';
     }
   }
 

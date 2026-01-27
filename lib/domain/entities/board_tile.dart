@@ -7,36 +7,24 @@ class BoardTile {
   final int id;
   final String title;
   final TileType type;
-  final int? price;
-  final int? baseRent;
   final QuestionCategory? category;
-  final bool isUtility;
-  final int upgradeLevel;
-  final PropertyColorGroup? colorGroup;
+  final Difficulty difficulty;
 
   const BoardTile({
     required this.id,
     required this.title,
     required this.type,
-    this.price,
-    this.baseRent,
     this.category,
-    this.isUtility = false,
-    this.upgradeLevel = 0,
-    this.colorGroup,
+    this.difficulty = Difficulty.easy,
   });
 
-  BoardTile copyWith({int? upgradeLevel}) {
+  BoardTile copyWith({Difficulty? difficulty}) {
     return BoardTile(
       id: id,
       title: title,
       type: type,
-      price: price,
-      baseRent: baseRent,
       category: category,
-      isUtility: isUtility,
-      upgradeLevel: upgradeLevel ?? this.upgradeLevel,
-      colorGroup: colorGroup,
+      difficulty: difficulty ?? this.difficulty,
     );
   }
 
@@ -51,8 +39,6 @@ class BoardTile {
 
   @override
   String toString() {
-    return 'BoardTile(id: $id, title: $title, type: $type, price: $price, '
-        'baseRent: $baseRent, category: $category, isUtility: $isUtility, '
-        'upgradeLevel: $upgradeLevel, colorGroup: $colorGroup)';
+    return 'BoardTile(id: $id, title: $title, type: $type, category: $category, difficulty: $difficulty)';
   }
 }

@@ -26,12 +26,24 @@ class GameConstants {
   static const int diceMaxRoll = 12;
 
   // RPG Progression Rewards
-  static const int cirakPromotionStars = 10; // Correct easy question
-  static const int kalfaPromotionStars = 20; // Correct medium question
-  static const int ustaPromotionStars = 50; // Correct hard question
+  static const int answersToPromote = 3; // Correct answers needed per level
+  static const int easyStarReward = 10; // Stars per correct easy answer
+  static const int mediumStarReward = 20; // Stars per correct medium answer
+  static const int hardStarReward = 30; // Stars per correct hard answer
+  static const int masterBonusReward = 5; // Bonus for already-master correct
+
+  // Legacy promotion constants (kept for reference)
+  static const int cirakPromotionStars = 10;
+  static const int kalfaPromotionStars = 20;
+  static const int ustaPromotionStars = 50;
+
+  // Question Timer (in seconds)
+  static const int questionTimerSeconds = 45; // Standard category tiles
+  static const int chanceCardTimerSeconds = 60; // Extended for Chance/Fate
 
   // Win Condition
   static const int ehilInventoryRequirement = 50; // Cards needed for Ehil
+  static const int quotesToCollect = 50; // Alias for Collection screen
 
   // Rent Multipliers (kept for legacy compatibility)
   static const int utilityRentMultiplier = 15;

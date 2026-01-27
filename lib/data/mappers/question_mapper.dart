@@ -20,7 +20,7 @@ class QuestionMapper {
         QuestionCategory.edebiyatAkimlari,
       QuestionCategoryModel.edebiSanatlar => QuestionCategory.edebiSanatlar,
       QuestionCategoryModel.eserKarakter => QuestionCategory.eserKarakter,
-      QuestionCategoryModel.bonusBilgiler => QuestionCategory.bonusBilgiler,
+      QuestionCategoryModel.tesvik => QuestionCategory.tesvik,
     };
   }
 
@@ -36,7 +36,7 @@ class QuestionMapper {
         QuestionCategoryModel.edebiyatAkimlari,
       QuestionCategory.edebiSanatlar => QuestionCategoryModel.edebiSanatlar,
       QuestionCategory.eserKarakter => QuestionCategoryModel.eserKarakter,
-      QuestionCategory.bonusBilgiler => QuestionCategoryModel.bonusBilgiler,
+      QuestionCategory.tesvik => QuestionCategoryModel.tesvik,
     };
   }
 

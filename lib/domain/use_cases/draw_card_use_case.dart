@@ -24,9 +24,9 @@ class DrawCardUseCase {
   ) {
     switch (card.effectType) {
       case CardEffectType.moneyChange:
-        final newBalance = currentPlayer.balance + card.value;
-        return MoneyChangeEffect(
-          newBalance: newBalance,
+        final newStars = currentPlayer.stars + card.value;
+        return StarChangeEffect(
+          newStars: newStars,
           amount: card.value,
           isPositive: card.value > 0,
         );
@@ -36,14 +36,14 @@ class DrawCardUseCase {
         bool passedStart = targetPos < currentPlayer.position;
 
         // Give passing start bonus if passed start
-        int newBalance = currentPlayer.balance;
+        int newStars = currentPlayer.stars;
         if (passedStart && targetPos != GameConstants.startPosition) {
-          newBalance += GameConstants.passingStartBonus;
+          newStars += GameConstants.passingStartBonus;
         }
 
         return MoveEffect(
           targetPosition: targetPos,
-          newBalance: newBalance,
+          newStars: newStars,
           passedStart: passedStart,
         );
 
@@ -56,35 +56,35 @@ class DrawCardUseCase {
       case CardEffectType.globalMoney:
         // Collect from or pay to all other players
         int totalTransfer = 0;
-        List<int> playerBalances = List.from(allPlayers.map((p) => p.balance));
+        List<int> playerStars = List.from(allPlayers.map((p) => p.stars));
 
         for (int i = 0; i < allPlayers.length; i++) {
           if (allPlayers[i].id != currentPlayer.id) {
             if (card.value > 0) {
               // Current player receives from others
               int amount = card.value;
-              if (playerBalances[i] < amount) {
-                amount = playerBalances[i] > 0 ? playerBalances[i] : 0;
+              if (playerStars[i] < amount) {
+                amount = playerStars[i] > 0 ? playerStars[i] : 0;
               }
-              playerBalances[i] -= amount;
+              playerStars[i] -= amount;
               totalTransfer += amount;
             } else {
               // Current player pays to others
               int amount = -card.value;
-              playerBalances[i] += amount;
+              playerStars[i] += amount;
               totalTransfer += amount;
             }
           }
         }
 
         // Update current player
-        int finalBalance = card.value > 0
-            ? currentPlayer.balance + totalTransfer
-            : currentPlayer.balance - totalTransfer;
-        playerBalances[allPlayers.indexOf(currentPlayer)] = finalBalance;
+        int finalStars = card.value > 0
+            ? currentPlayer.stars + totalTransfer
+            : currentPlayer.stars - totalTransfer;
+        playerStars[allPlayers.indexOf(currentPlayer)] = finalStars;
 
-        return GlobalMoneyEffect(
-          playerBalances: playerBalances,
+        return GlobalStarEffect(
+          playerStars: playerStars,
           totalTransfer: totalTransfer,
           isReceiving: card.value > 0,
         );
@@ -118,14 +118,14 @@ sealed class CardEffectResult {
   const CardEffectResult();
 }
 
-/// Money change effect.
-class MoneyChangeEffect extends CardEffectResult {
-  final int newBalance;
+/// Star change effect.
+class StarChangeEffect extends CardEffectResult {
+  final int newStars;
   final int amount;
   final bool isPositive;
 
-  const MoneyChangeEffect({
-    required this.newBalance,
+  const StarChangeEffect({
+    required this.newStars,
     required this.amount,
     required this.isPositive,
   });
@@ -134,12 +134,12 @@ class MoneyChangeEffect extends CardEffectResult {
 /// Move effect.
 class MoveEffect extends CardEffectResult {
   final int targetPosition;
-  final int newBalance;
+  final int newStars;
   final bool passedStart;
 
   const MoveEffect({
     required this.targetPosition,
-    required this.newBalance,
+    required this.newStars,
     required this.passedStart,
   });
 }
@@ -152,14 +152,14 @@ class JailEffect extends CardEffectResult {
   const JailEffect({required this.newPosition, required this.turnsToSkip});
 }
 
-/// Global money effect.
-class GlobalMoneyEffect extends CardEffectResult {
-  final List<int> playerBalances;
+/// Global star effect.
+class GlobalStarEffect extends CardEffectResult {
+  final List<int> playerStars;
   final int totalTransfer;
   final bool isReceiving;
 
-  const GlobalMoneyEffect({
-    required this.playerBalances,
+  const GlobalStarEffect({
+    required this.playerStars,
     required this.totalTransfer,
     required this.isReceiving,
   });

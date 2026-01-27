@@ -5,8 +5,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/player.dart';
-import '../../domain/entities/board_tile.dart';
 import '../../domain/repositories/player_repository.dart';
+
 import '../models/player_model.dart';
 import '../mappers/player_mapper.dart';
 
@@ -76,34 +76,6 @@ class PlayerRepositoryImpl implements PlayerRepository {
     } catch (e) {
       return null;
     }
-  }
-
-  @override
-  Future<Player?> getTileOwner(int tileId, List<Player> players) async {
-    for (var player in players) {
-      if (player.ownedTiles.contains(tileId)) {
-        return player;
-      }
-    }
-    return null;
-  }
-
-  @override
-  Future<int> calculateNetWorth(Player player, List<BoardTile> allTiles) async {
-    int netWorth = player.balance;
-
-    // Add value of owned properties
-    for (var tileId in player.ownedTiles) {
-      final tile = allTiles.firstWhere(
-        (t) => t.id == tileId,
-        orElse: () => allTiles[0],
-      );
-      if (tile.price != null) {
-        netWorth += tile.price!;
-      }
-    }
-
-    return netWorth;
   }
 
   Future<void> _savePlayers(List<Player> players) async {

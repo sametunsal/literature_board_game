@@ -2,7 +2,6 @@
 /// Pure Dart - no Flutter dependencies.
 
 import '../entities/player.dart';
-import '../entities/board_tile.dart';
 
 abstract class PlayerRepository {
   /// Gets all players.
@@ -16,10 +15,4 @@ abstract class PlayerRepository {
 
   /// Gets the current player by index.
   Future<Player?> getCurrentPlayer(int index);
-
-  /// Gets the player who owns a specific tile.
-  Future<Player?> getTileOwner(int tileId, List<Player> players);
-
-  /// Calculates a player's net worth (balance + assets).
-  Future<int> calculateNetWorth(Player player, List<BoardTile> allTiles);
 }

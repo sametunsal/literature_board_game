@@ -13,16 +13,8 @@ class TileMapper {
     return switch (modelType) {
       TileTypeModel.start => TileType.start,
       TileTypeModel.property => TileType.property,
-      TileTypeModel.publisher => TileType.publisher,
       TileTypeModel.chance => TileType.chance,
       TileTypeModel.fate => TileType.fate,
-      TileTypeModel.libraryWatch => TileType.libraryWatch,
-      TileTypeModel.autographDay => TileType.autographDay,
-      TileTypeModel.bankruptcyRisk => TileType.bankruptcyRisk,
-      TileTypeModel.writingSchool => TileType.writingSchool,
-      TileTypeModel.educationFoundation => TileType.educationFoundation,
-      TileTypeModel.incomeTax => TileType.incomeTax,
-      TileTypeModel.writingTax => TileType.writingTax,
       TileTypeModel.kiraathane => TileType.kiraathane,
     };
   }
@@ -32,16 +24,8 @@ class TileMapper {
     return switch (domainType) {
       TileType.start => TileTypeModel.start,
       TileType.property => TileTypeModel.property,
-      TileType.publisher => TileTypeModel.publisher,
       TileType.chance => TileTypeModel.chance,
       TileType.fate => TileTypeModel.fate,
-      TileType.libraryWatch => TileTypeModel.libraryWatch,
-      TileType.autographDay => TileTypeModel.autographDay,
-      TileType.bankruptcyRisk => TileTypeModel.bankruptcyRisk,
-      TileType.writingSchool => TileTypeModel.writingSchool,
-      TileType.educationFoundation => TileTypeModel.educationFoundation,
-      TileType.incomeTax => TileTypeModel.incomeTax,
-      TileType.writingTax => TileTypeModel.writingTax,
       TileType.kiraathane => TileTypeModel.kiraathane,
     };
   }
@@ -59,7 +43,7 @@ class TileMapper {
         QuestionCategory.edebiyatAkimlari,
       QuestionCategoryModel.edebiSanatlar => QuestionCategory.edebiSanatlar,
       QuestionCategoryModel.eserKarakter => QuestionCategory.eserKarakter,
-      QuestionCategoryModel.bonusBilgiler => QuestionCategory.bonusBilgiler,
+      QuestionCategoryModel.tesvik => QuestionCategory.tesvik,
     };
   }
 
@@ -76,45 +60,24 @@ class TileMapper {
         QuestionCategoryModel.edebiyatAkimlari,
       QuestionCategory.edebiSanatlar => QuestionCategoryModel.edebiSanatlar,
       QuestionCategory.eserKarakter => QuestionCategoryModel.eserKarakter,
-      QuestionCategory.bonusBilgiler => QuestionCategoryModel.bonusBilgiler,
+      QuestionCategory.tesvik => QuestionCategoryModel.tesvik,
     };
   }
 
-  /// Convert PropertyColorGroupModel to PropertyColorGroup
-  static PropertyColorGroup? _mapPropertyColorGroup(
-    PropertyColorGroupModel? modelGroup,
-  ) {
-    if (modelGroup == null) return null;
-    return switch (modelGroup) {
-      PropertyColorGroupModel.brown => PropertyColorGroup.brown,
-      PropertyColorGroupModel.lightBlue => PropertyColorGroup.lightBlue,
-      PropertyColorGroupModel.pink => PropertyColorGroup.pink,
-      PropertyColorGroupModel.orange => PropertyColorGroup.orange,
-      PropertyColorGroupModel.red => PropertyColorGroup.red,
-      PropertyColorGroupModel.yellow => PropertyColorGroup.yellow,
-      PropertyColorGroupModel.green => PropertyColorGroup.green,
-      PropertyColorGroupModel.blue => PropertyColorGroup.blue,
-      PropertyColorGroupModel.utility => PropertyColorGroup.utility,
-      PropertyColorGroupModel.special => PropertyColorGroup.special,
+  /// Difficulty mapping
+  static Difficulty _mapDifficulty(DifficultyModel model) {
+    return switch (model) {
+      DifficultyModel.easy => Difficulty.easy,
+      DifficultyModel.medium => Difficulty.medium,
+      DifficultyModel.hard => Difficulty.hard,
     };
   }
 
-  /// Convert PropertyColorGroup to PropertyColorGroupModel
-  static PropertyColorGroupModel? _mapPropertyColorGroupModel(
-    PropertyColorGroup? domainGroup,
-  ) {
-    if (domainGroup == null) return null;
-    return switch (domainGroup) {
-      PropertyColorGroup.brown => PropertyColorGroupModel.brown,
-      PropertyColorGroup.lightBlue => PropertyColorGroupModel.lightBlue,
-      PropertyColorGroup.pink => PropertyColorGroupModel.pink,
-      PropertyColorGroup.orange => PropertyColorGroupModel.orange,
-      PropertyColorGroup.red => PropertyColorGroupModel.red,
-      PropertyColorGroup.yellow => PropertyColorGroupModel.yellow,
-      PropertyColorGroup.green => PropertyColorGroupModel.green,
-      PropertyColorGroup.blue => PropertyColorGroupModel.blue,
-      PropertyColorGroup.utility => PropertyColorGroupModel.utility,
-      PropertyColorGroup.special => PropertyColorGroupModel.special,
+  static DifficultyModel _mapDifficultyModel(Difficulty domain) {
+    return switch (domain) {
+      Difficulty.easy => DifficultyModel.easy,
+      Difficulty.medium => DifficultyModel.medium,
+      Difficulty.hard => DifficultyModel.hard,
     };
   }
 
@@ -124,12 +87,8 @@ class TileMapper {
       id: model.id,
       title: model.title,
       type: _mapTileType(model.type),
-      price: model.price,
-      baseRent: model.baseRent,
       category: _mapQuestionCategory(model.category),
-      isUtility: model.isUtility,
-      upgradeLevel: model.upgradeLevel,
-      colorGroup: _mapPropertyColorGroup(model.colorGroup),
+      difficulty: _mapDifficulty(model.difficulty),
     );
   }
 
@@ -139,12 +98,8 @@ class TileMapper {
       id: entity.id,
       title: entity.title,
       type: _mapTileTypeModel(entity.type),
-      price: entity.price,
-      baseRent: entity.baseRent,
       category: _mapQuestionCategoryModel(entity.category),
-      isUtility: entity.isUtility,
-      upgradeLevel: entity.upgradeLevel,
-      colorGroup: _mapPropertyColorGroupModel(entity.colorGroup),
+      difficulty: _mapDifficultyModel(entity.difficulty),
     );
   }
 

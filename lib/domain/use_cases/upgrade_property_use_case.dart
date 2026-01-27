@@ -1,86 +1,67 @@
 /// Use case for property upgrade logic.
 /// Pure Dart - no Flutter dependencies.
 
-import '../../core/constants/game_constants.dart';
 import '../entities/board_tile.dart';
 import '../entities/player.dart';
+import '../entities/game_enums.dart';
 
 class UpgradePropertyUseCase {
-  /// Checks if a property can be upgraded.
+  /// Checks if a tile can be 'upgraded' (Next difficulty level).
   bool canUpgrade(BoardTile tile) {
-    return !tile.isUtility && tile.upgradeLevel < GameConstants.maxUpgradeLevel;
+    return tile.difficulty != Difficulty.hard;
   }
 
-  /// Checks if a player can afford to upgrade a property.
+  /// Checks if a player can afford to increase difficulty (Formerly upgrade).
   bool canAffordUpgrade(Player player, BoardTile tile) {
     final cost = calculateUpgradeCost(tile);
-    return player.balance >= cost;
+    return player.stars >= cost;
   }
 
-  /// Calculates the cost of upgrading a property.
+  /// Calculates the cost of increasing difficulty.
   int calculateUpgradeCost(BoardTile tile) {
-    final propertyPrice = tile.price ?? GameConstants.defaultPropertyPrice;
-
-    // Final upgrade (Cilt) costs more
-    if (tile.upgradeLevel == GameConstants.finalUpgradeLevel) {
-      return (propertyPrice * GameConstants.finalUpgradeCostMultiplier).floor();
-    }
-
-    // Normal upgrade costs half of property price
-    return (propertyPrice * GameConstants.upgradeCostMultiplier).floor();
+    return switch (tile.difficulty) {
+      Difficulty.easy => 20, // To medium
+      Difficulty.medium => 50, // To hard
+      Difficulty.hard => 0,
+    };
   }
 
-  /// Calculates the new balance after upgrading.
+  /// Calculates the new stars after difficulty increase.
   int calculateNewBalanceAfterUpgrade(Player player, BoardTile tile) {
     final cost = calculateUpgradeCost(tile);
-    return player.balance - cost;
+    return player.stars - cost;
   }
 
-  /// Calculates the new upgrade level.
-  int calculateNewUpgradeLevel(BoardTile tile) {
-    return tile.upgradeLevel + 1;
+  /// Calculates the next difficulty level.
+  Difficulty calculateNextDifficulty(BoardTile tile) {
+    return switch (tile.difficulty) {
+      Difficulty.easy => Difficulty.medium,
+      Difficulty.medium => Difficulty.hard,
+      Difficulty.hard => Difficulty.hard,
+    };
   }
 
-  /// Checks if this is the final upgrade (Cilt).
-  bool isFinalUpgrade(BoardTile tile) {
-    return tile.upgradeLevel == GameConstants.finalUpgradeLevel;
-  }
-
-  /// Checks if the property is at max upgrade level.
+  /// Checks if the property is at max difficulty.
   bool isMaxUpgradeLevel(BoardTile tile) {
-    return tile.upgradeLevel >= GameConstants.maxUpgradeLevel;
+    return tile.difficulty == Difficulty.hard;
   }
 
   /// Gets the upgrade details for logging.
   UpgradeDetails getUpgradeDetails(Player player, BoardTile tile) {
     final cost = calculateUpgradeCost(tile);
-    final newLevel = calculateNewUpgradeLevel(tile);
     return UpgradeDetails(
       playerName: player.name,
       tileTitle: tile.title,
-      currentLevel: tile.upgradeLevel,
-      newLevel: newLevel,
+      currentLevel: tile.difficulty.index,
+      newLevel: calculateNextDifficulty(tile).index,
       cost: cost,
-      canAfford: player.balance >= cost,
+      canAfford: player.stars >= cost,
     );
   }
 
-  /// Gets the upgrade level name for display.
-  String getUpgradeLevelName(int level) {
-    switch (level) {
-      case 0:
-        return 'Temel';
-      case 1:
-        return '1. Baskı';
-      case 2:
-        return '2. Baskı';
-      case 3:
-        return '3. Baskı';
-      case 4:
-        return 'Cilt';
-      default:
-        return 'Bilinmeyen';
-    }
+  /// Gets the difficulty name for display.
+  String getUpgradeLevelName(Difficulty difficulty) {
+    return difficulty.name.toUpperCase();
   }
 }
 
@@ -107,13 +88,13 @@ class UpgradeDetails {
     return 'Geliştirme başarılı! (Seviye $newLevel)';
   }
 
-  /// Gets the insufficient balance message.
-  String getInsufficientBalanceMessage(int currentBalance) {
-    return 'Yetersiz bakiye! (Gereken: $cost, Mevcut: $currentBalance)';
+  /// Gets the insufficient stars message.
+  String getInsufficientBalanceMessage(int currentStars) {
+    return 'Yetersiz Yıldız! (Gereken: $cost, Mevcut: $currentStars)';
   }
 
-  /// Gets the max upgrade message.
+  /// Gets the max difficulty message.
   String getMaxUpgradeMessage() {
-    return 'Telif Hakkı Zirvede (Full Upgrade).';
+    return 'Daha fazla zorlaştırılamaz (Hard).';
   }
 }
