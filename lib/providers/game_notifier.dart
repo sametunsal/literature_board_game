@@ -977,9 +977,11 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _isProcessing = true;
     try {
+      // Check if current roll was a double (for bonus turn)
+      final isDouble = state.dice1 == state.dice2 && state.dice1 != 0;
+
       if (state.phase == GamePhase.playerTurn &&
-          state.dice1 == state.dice2 &&
-          state.dice1 != 0 &&
+          isDouble &&
           state.currentPlayer.turnsToSkip == 0 &&
           !state.currentPlayer.inJail) {
         _addLog(
@@ -994,6 +996,7 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
+      // Non-double: Pass turn to next player
       await Future.delayed(
         Duration(milliseconds: GameConstants.turnChangeDelay),
       );
@@ -1016,6 +1019,7 @@ class GameNotifier extends StateNotifier<GameState> {
         currentPlayerIndex: next,
         isDiceRolled: false,
         isDoubleTurn: false,
+        consecutiveDoubles: 0, // Reset on non-double
         showQuestionDialog: false,
         showCardDialog: false,
         showTurnSkippedDialog: isSkipped,
