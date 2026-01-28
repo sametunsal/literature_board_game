@@ -52,6 +52,7 @@ class GameState {
   final bool showImzaGunuDialog;
   final bool showTurnSkippedDialog;
   final bool showShopDialog; // Kıraathane shop dialog
+  final bool showTurnOrderDialog; // Turn order result dialog
 
   final BoardTile? currentTile;
   final GameCard? currentCard;
@@ -81,6 +82,7 @@ class GameState {
     this.showImzaGunuDialog = false,
     this.showTurnSkippedDialog = false,
     this.showShopDialog = false,
+    this.showTurnOrderDialog = false,
     this.currentTile,
     this.currentCard,
     this.winner,
@@ -112,6 +114,7 @@ class GameState {
     bool? showImzaGunuDialog,
     bool? showTurnSkippedDialog,
     bool? showShopDialog,
+    bool? showTurnOrderDialog,
     BoardTile? currentTile,
     GameCard? currentCard,
     Player? winner,
@@ -140,6 +143,7 @@ class GameState {
       showTurnSkippedDialog:
           showTurnSkippedDialog ?? this.showTurnSkippedDialog,
       showShopDialog: showShopDialog ?? this.showShopDialog,
+      showTurnOrderDialog: showTurnOrderDialog ?? this.showTurnOrderDialog,
       currentTile: currentTile ?? this.currentTile,
       currentCard: currentCard ?? this.currentCard,
       winner: winner ?? this.winner,
@@ -316,6 +320,7 @@ class GameNotifier extends StateNotifier<GameState> {
       diceTotal: 0,
       dice1: 0,
       dice2: 0,
+      showTurnOrderDialog: true,
       lastAction: 'Sıra belirlendi! ${sortedPlayers.first.name} başlıyor.',
     );
 
@@ -327,6 +332,11 @@ class GameNotifier extends StateNotifier<GameState> {
       final roll = rolls[player.id] ?? 0;
       _addLog("  ${i + 1}. ${player.name} ($roll)");
     }
+  }
+
+  /// Close turn order dialog and start the game
+  void closeTurnOrderDialog() {
+    state = state.copyWith(showTurnOrderDialog: false);
   }
 
   /// Handle normal movement roll

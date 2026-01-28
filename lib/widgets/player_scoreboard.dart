@@ -7,15 +7,18 @@ import '../core/constants/game_constants.dart';
 
 /// Compact corner scoreboard for displaying player stats
 /// Shows: Avatar, Name, Stars, and Mastery count
+/// Includes visual indicators for current and next player
 class PlayerScoreboard extends StatelessWidget {
   final Player player;
   final bool isCurrentPlayer;
+  final bool isNext;
   final Alignment alignment;
 
   const PlayerScoreboard({
     super.key,
     required this.player,
     required this.isCurrentPlayer,
+    this.isNext = false,
     required this.alignment,
   });
 
@@ -25,21 +28,48 @@ class PlayerScoreboard extends StatelessWidget {
     final isLeft =
         alignment == Alignment.topLeft || alignment == Alignment.bottomLeft;
 
+    // Determine border color based on player status
+    Color borderColor;
+    double borderWidth = 1;
+    if (isCurrentPlayer) {
+      borderColor = Colors.green.shade400;
+      borderWidth = 3;
+    } else if (isNext) {
+      borderColor = Colors.amber.shade400;
+      borderWidth = 2;
+    } else {
+      borderColor = Colors.grey.shade200;
+      borderWidth = 1;
+    }
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: isCurrentPlayer
+            ? Colors.green.shade50.withValues(alpha: 0.95)
+            : isNext
+            ? Colors.amber.shade50.withValues(alpha: 0.95)
+            : Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: borderColor, width: borderWidth),
         boxShadow: isCurrentPlayer
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: Colors.green.withValues(alpha: 0.3),
                   blurRadius: 12,
-                  spreadRadius: 0,
+                  spreadRadius: 2,
                   offset: const Offset(0, 4),
+                ),
+              ]
+            : isNext
+            ? [
+                BoxShadow(
+                  color: Colors.amber.withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 3),
                 ),
               ]
             : [
@@ -107,14 +137,53 @@ class PlayerScoreboard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Player name
-        Text(
-          player.name,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Colors.grey.shade900,
-          ),
+        // Player name with turn indicator badge
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              player.name,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade900,
+              ),
+            ),
+            const SizedBox(width: 6),
+            // Turn indicator badge
+            if (isCurrentPlayer)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade500,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'SIRA SENDE',
+                  style: GoogleFonts.poppins(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            else if (isNext)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade500,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'SIRADAKİ',
+                  style: GoogleFonts.poppins(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         // Stars row

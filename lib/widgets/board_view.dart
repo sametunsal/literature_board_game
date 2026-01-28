@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../data/board_config.dart';
 import '../models/game_enums.dart';
 import '../models/player.dart';
@@ -11,6 +12,7 @@ import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
+import '../core/constants/game_constants.dart';
 import 'enhanced_tile_widget.dart';
 import 'game_log.dart';
 import 'dice_roller.dart';
@@ -264,6 +266,15 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
+          // TURN ORDER DIALOG - Shows final turn order after rolling phase
+          if (state.showTurnOrderDialog)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: _buildTurnOrderDialog(state),
+              ),
+            ),
+
           // GAME OVER DIALOG (on top of confetti)
           if (state.phase == GamePhase.gameOver)
             Positioned.fill(
@@ -500,6 +511,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
     return List.generate(players.length.clamp(0, 4), (index) {
       final player = players[index];
       final isCurrentPlayer = index == state.currentPlayerIndex;
+      // Calculate next player index (wraps around)
+      final nextPlayerIndex =
+          (state.currentPlayerIndex + 1) % state.players.length;
+      final isNext = index == nextPlayerIndex;
       final alignment = alignments[index];
 
       // Position based on alignment
@@ -525,11 +540,210 @@ class _BoardViewState extends ConsumerState<BoardView> {
           child: PlayerScoreboard(
             player: player,
             isCurrentPlayer: isCurrentPlayer,
+            isNext: isNext,
             alignment: alignment,
           ),
         ),
       );
     });
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // TURN ORDER DIALOG
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Build the turn order dialog showing sorted players with their rolls
+  Widget _buildTurnOrderDialog(GameState state) {
+    final players = state.players;
+    final orderRolls = state.orderRolls;
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title
+            Text(
+              '🎲 Sıra Belirlendi!',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.grey.shade900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'En yüksek zar atan başlar',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Player list sorted by roll
+            ...List.generate(players.length, (index) {
+              final player = players[index];
+              final roll = orderRolls[player.id] ?? 0;
+              final isFirst = index == 0;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isFirst ? Colors.green.shade50 : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isFirst
+                        ? Colors.green.shade300
+                        : Colors.grey.shade200,
+                    width: isFirst ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Rank number
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isFirst
+                            ? Colors.green.shade500
+                            : Colors.grey.shade400,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Player avatar
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey.shade100,
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          GameConstants.getAvatarPath(player.iconIndex),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: Colors.grey.shade600,
+                                size: 20,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Player name
+                    Expanded(
+                      child: Text(
+                        player.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade900,
+                        ),
+                      ),
+                    ),
+
+                    // Roll value
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isFirst
+                            ? Colors.amber.shade100
+                            : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Attığı Zar: $roll',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: isFirst
+                              ? Colors.amber.shade800
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: 24),
+
+            // Start button
+            ElevatedButton(
+              onPressed: () {
+                ref.read(gameProvider.notifier).closeTurnOrderDialog();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade500,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+              ),
+              child: Text(
+                'BAŞLA',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ════════════════════════════════════════════════════════════════════════════
