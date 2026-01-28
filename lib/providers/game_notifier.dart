@@ -36,6 +36,7 @@ class GameState {
   final int consecutiveDoubles;
   final String lastAction;
   final bool isDiceRolled;
+  final bool isDiceRolling; // True while dice animation is playing
   final GamePhase phase;
 
   // LOGS
@@ -73,6 +74,7 @@ class GameState {
     this.consecutiveDoubles = 0,
     this.lastAction = 'Oyun Kurulumu Bekleniyor...',
     this.isDiceRolled = false,
+    this.isDiceRolling = false,
     this.phase = GamePhase.setup,
     this.logs = const [],
     this.floatingEffect,
@@ -106,6 +108,7 @@ class GameState {
     int? consecutiveDoubles,
     String? lastAction,
     bool? isDiceRolled,
+    bool? isDiceRolling,
     GamePhase? phase,
     List<String>? logs,
     FloatingEffect? floatingEffect,
@@ -134,6 +137,7 @@ class GameState {
       consecutiveDoubles: consecutiveDoubles ?? this.consecutiveDoubles,
       lastAction: lastAction ?? this.lastAction,
       isDiceRolled: isDiceRolled ?? this.isDiceRolled,
+      isDiceRolling: isDiceRolling ?? this.isDiceRolling,
       phase: phase ?? this.phase,
       logs: logs ?? this.logs,
       floatingEffect: floatingEffect,
@@ -213,7 +217,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   /// Roll dice - handles both turn order and normal movement phases
   Future<void> rollDice() async {
-    if (_isProcessing) return;
+    if (_isProcessing || state.isDiceRolling) return;
 
     _isProcessing = true;
     try {
@@ -250,11 +254,20 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
+      // Start dice rolling animation
+      state = state.copyWith(isDiceRolling: true);
+
+      // Wait for animation duration (2 seconds)
+      await Future.delayed(const Duration(seconds: 2));
+
       // Generate two independent dice
       int d1 = _random.nextInt(6) + 1;
       int d2 = _random.nextInt(6) + 1;
       int roll = d1 + d2;
       bool isDouble = d1 == d2;
+
+      // Stop rolling animation and show results
+      state = state.copyWith(isDiceRolling: false);
 
       // Handle based on game phase
       if (state.phase == GamePhase.rollingForOrder) {
@@ -354,14 +367,10 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Check for 3 consecutive doubles -> Jail
     if (newConsecutive >= 3) {
-      state = state.copyWith(
-        dice1: d1,
-        dice2: d2,
-        diceTotal: roll,
-        isDiceRolled: true,
-        consecutiveDoubles: 0, // Reset
+      _addLog(
+        "🚨 3. Çift Zar ($d1-$d2)! Kütüphaneye gidiyorsun!",
+        type: 'error',
       );
-      _addLog("3. Çift Zar ($d1-$d2)! Kütüphaneye gidiyorsun.", type: 'error');
 
       // Send to jail immediately
       await Future.delayed(const Duration(milliseconds: 1500));
@@ -370,7 +379,14 @@ class GameNotifier extends StateNotifier<GameState> {
         position: GameConstants.jailPosition,
         turnsToSkip: GameConstants.jailTurns,
       );
-      state = state.copyWith(players: temp);
+      state = state.copyWith(
+        players: temp,
+        dice1: d1,
+        dice2: d2,
+        diceTotal: roll,
+        isDiceRolled: true,
+        consecutiveDoubles: 0, // Reset
+      );
       endTurn();
       return;
     }
@@ -385,7 +401,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (isDouble) {
       _addLog(
-        "${state.currentPlayer.name} $roll ($d1-$d2) attı. Çift! Tekrar oynayacak.",
+        "${state.currentPlayer.name} $roll ($d1-$d2) attı. Çift! (${newConsecutive}/3)",
         type: 'dice',
       );
     } else {

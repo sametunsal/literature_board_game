@@ -261,10 +261,10 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
             widget.question,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 17,
-              height: 1.6,
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              height: 1.5,
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -281,8 +281,9 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
           Text(
             "Cevabı düşün, hazır olunca aç:",
             style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey[700],
+              fontSize: 13,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -401,9 +402,9 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
           Text(
             "Doğru bildin mi?",
             style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.grey[800],
-              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
             ),
           ),
 
