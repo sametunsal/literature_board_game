@@ -364,24 +364,66 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void _handleTileArrival(BoardTile tile) {
-    if (tile.type == TileType.category && tile.category != null) {
-      _triggerQuestion(tile);
-    } else if (tile.type == TileType.corner) {
-      if (tile.position == GameConstants.chancePosition ||
-          tile.position == GameConstants.fatePosition) {
-        _drawCard(
-          tile.position == GameConstants.chancePosition
-              ? CardType.sans
-              : CardType.kader,
-        );
-      } else if (tile.position == GameConstants.shopPosition) {
-        handleKiraathaneLanding();
-      } else {
+    switch (tile.type) {
+      case TileType.category:
+        if (tile.category != null) {
+          _triggerQuestion(tile);
+        } else {
+          endTurn();
+        }
+        break;
+      case TileType.start:
+        // Start tile - no action needed
         endTurn();
-      }
-    } else {
-      endTurn();
+        break;
+      case TileType.shop:
+        // Kıraathane - Open shop
+        handleKiraathaneLanding();
+        break;
+      case TileType.library:
+        // Kütüphane - Apply 2-turn penalty
+        _handleLibraryLanding();
+        break;
+      case TileType.signingDay:
+        // İmza Günü - Show dialog, no penalty
+        _handleSigningDayLanding();
+        break;
+      case TileType.corner:
+      case TileType.collection:
+        // Generic corners - end turn
+        endTurn();
+        break;
     }
+  }
+
+  /// Handle Kütüphane (Library) landing - Apply 2-turn penalty
+  void _handleLibraryLanding() {
+    final player = state.currentPlayer;
+    const libraryPenaltyTurns = 2;
+
+    List<Player> newPlayers = List.from(state.players);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(
+      turnsToSkip: libraryPenaltyTurns,
+    );
+
+    state = state.copyWith(players: newPlayers, showLibraryPenaltyDialog: true);
+
+    _addLog(
+      "📚 ${player.name} Kütüphanede! Sessizlik lazım, $libraryPenaltyTurns tur bekle.",
+      type: 'error',
+    );
+  }
+
+  /// Handle İmza Günü (Signing Day) landing - Show dialog, no penalty
+  void _handleSigningDayLanding() {
+    final player = state.currentPlayer;
+
+    state = state.copyWith(showImzaGunuDialog: true);
+
+    _addLog(
+      "✍️ ${player.name} İmza Günü'nde okurlarıyla buluştu!",
+      type: 'success',
+    );
   }
 
   /// Close library penalty dialog and set turnsToSkip

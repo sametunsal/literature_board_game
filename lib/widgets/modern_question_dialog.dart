@@ -118,7 +118,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
         Container(
               margin: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: GameTheme.tableBackgroundColor.withValues(alpha: 0.95),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: categoryColor, width: 2),
                 boxShadow: [

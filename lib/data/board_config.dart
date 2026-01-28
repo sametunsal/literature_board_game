@@ -52,10 +52,10 @@ class BoardConfig {
   static const int boardSize = 22; // Total perimeter tiles
 
   /// Corner positions
-  static const int startPosition = 0; // Bottom-Right
-  static const int chancePosition = 5; // Bottom-Left (Şans)
+  static const int startPosition = 0; // Bottom-Right (Başlangıç)
+  static const int libraryPosition = 5; // Bottom-Left (Kütüphane)
   static const int shopPosition = 11; // Top-Left (Kıraathane)
-  static const int fatePosition = 16; // Top-Right (Kader)
+  static const int signingDayPosition = 16; // Top-Right (İmza Günü)
 
   /// Helper to get category at position (cycles through 6 categories)
   static QuestionCategory _getCategoryAt(int categoryIndex) {
@@ -110,9 +110,14 @@ class BoardConfig {
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // INDEX 5: ŞANS (Bottom-Left Corner) - Chance
+    // INDEX 5: KÜTÜPHANE (Bottom-Left Corner) - Library (Penalty)
     // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(id: '5', name: 'ŞANS', position: 5, type: TileType.corner),
+    const BoardTile(
+      id: '5',
+      name: 'KÜTÜPHANE',
+      position: 5,
+      type: TileType.library,
+    ),
 
     // ═══════════════════════════════════════════════════════════════════════════
     // INDICES 6-10: Left Column (Bottom to Top) - 5 Category Tiles
@@ -205,13 +210,13 @@ class BoardConfig {
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // INDEX 16: KADER (Top-Right Corner) - Fate
+    // INDEX 16: İMZA GÜNÜ (Top-Right Corner) - Signing Day
     // ═══════════════════════════════════════════════════════════════════════════
     const BoardTile(
       id: '16',
-      name: 'KADER',
+      name: 'İMZA GÜNÜ',
       position: 16,
-      type: TileType.corner,
+      type: TileType.signingDay,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════════

@@ -105,13 +105,22 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
       }
     });
 
+    // Get current player name
+    final currentPlayerName = state.currentPlayer.name;
+
     // Show dice result after roll
     if (state.isDiceRolled && state.diceTotal > 0) {
-      return _buildDiceDisplay(state.diceTotal, tokens);
+      return _buildDiceDisplay(
+        state.diceTotal,
+        tokens,
+        currentPlayerName,
+        state.dice1,
+        state.dice2,
+      );
     }
 
     // Show roll button
-    return _buildRollButton(state.phase, tokens);
+    return _buildRollButton(state.phase, tokens, currentPlayerName);
   }
 
   void _startAnimation() {
@@ -155,7 +164,13 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   }
 
   /// Build TWO dice side by side with individual numbers below
-  Widget _buildDiceDisplay(int total, ThemeTokens tokens) {
+  Widget _buildDiceDisplay(
+    int total,
+    ThemeTokens tokens,
+    String playerName,
+    int dice1,
+    int dice2,
+  ) {
     // Apply shake animation when triggerShake is true
     // Apply bounce animation when triggerBounce is true
     return Animate(
@@ -216,6 +231,25 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Player name and roll result
+            Text(
+              '$playerName attı:',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$dice1 + $dice2 = $total',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
             // TWO DICE - Spaced evenly
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -363,40 +397,61 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   }
 
   /// Build modern roll button - Flat design
-  Widget _buildRollButton(GamePhase phase, ThemeTokens tokens) {
+  Widget _buildRollButton(
+    GamePhase phase,
+    ThemeTokens tokens,
+    String currentPlayerName,
+  ) {
     // Determine button label based on phase
     final String buttonLabel = phase == GamePhase.rollingForOrder
-        ? "SIRA İÇİN ZAR AT"
-        : "ZAR AT";
+        ? "Sıralama İçin At"
+        : "Zar At";
 
-    return ElevatedButton(
-      onPressed: () {
-        // Route based on phase - sound will play when animation starts
-        // For turn order, just roll dice (the order is determined by dice values)
-        ref.read(gameProvider.notifier).rollDice();
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: tokens.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shadowColor: tokens.primary.withValues(alpha: 0.3),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.casino_rounded, size: 24),
-          const SizedBox(width: 8),
-          Text(
-            buttonLabel,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Current player indicator
+        Text(
+          'Sıra: $currentPlayerName',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton(
+          onPressed: () {
+            // Route based on phase - sound will play when animation starts
+            // For turn order, just roll dice (the order is determined by dice values)
+            ref.read(gameProvider.notifier).rollDice();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: tokens.primary,
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shadowColor: tokens.primary.withValues(alpha: 0.3),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.casino_rounded, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                buttonLabel,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

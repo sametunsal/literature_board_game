@@ -96,30 +96,40 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   }
 
   Widget _buildContent() {
-    // Check for special tiles that use custom icons
-    if (_isLibraryTile()) {
-      return _buildCornerTileContent(
-        icon: Icons.local_library,
-        iconColor: Colors.blue.shade700,
-        label: 'KIRAATHANE',
-      );
-    }
-
-    if (_isChanceOrFateTile()) {
-      return _buildCornerTileContent(
-        icon: Icons.store,
-        iconColor: Colors.purple.shade700,
-        label: 'DÜKKAN',
-      );
-    }
-
-    // Check if this is a Start Tile - use custom icon
-    if (widget.tile.id == '0' || widget.tile.type == TileType.start) {
-      return _buildCornerTileContent(
-        icon: Icons.play_arrow,
-        iconColor: Colors.green.shade700,
-        label: 'BAŞLANGIÇ',
-      );
+    // Check tile type for custom corner icons
+    switch (widget.tile.type) {
+      case TileType.start:
+        return _buildCornerTileContent(
+          icon: Icons.play_arrow,
+          iconColor: Colors.green.shade700,
+          label: 'BAŞLANGIÇ',
+        );
+      case TileType.shop:
+        return _buildCornerTileContent(
+          icon: Icons.local_cafe,
+          iconColor: Colors.brown.shade700,
+          label: 'KIRAATHANE',
+        );
+      case TileType.library:
+        return _buildCornerTileContent(
+          icon: Icons.local_library,
+          iconColor: Colors.teal.shade700,
+          label: 'KÜTÜPHANE',
+        );
+      case TileType.signingDay:
+        return _buildCornerTileContent(
+          icon: Icons.edit_note,
+          iconColor: Colors.purple.shade700,
+          label: 'İMZA GÜNÜ',
+        );
+      case TileType.corner:
+        return _buildCornerTileContent(
+          icon: Icons.star,
+          iconColor: Colors.orange.shade700,
+          label: 'KÖŞE',
+        );
+      default:
+        break;
     }
 
     // Standard tiles with color strip and text

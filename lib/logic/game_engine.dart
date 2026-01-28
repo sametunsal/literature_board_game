@@ -28,12 +28,6 @@ class GameEngine {
       case TileType.shop:
         return 'KIRAATHANe: Edebi sözler satın alabilirsin.';
       case TileType.corner:
-        // Handle corner tiles (ŞANS or KADER)
-        if (tile.name == 'ŞANS') {
-          return 'ŞANS: Bir şans kartı çektin.';
-        } else if (tile.name == 'KADER') {
-          return 'KADER: Kaderin seni bekliyor.';
-        }
         return 'KÖŞE: Özel bir kareye geldin.';
       case TileType.start:
         return 'BAŞLANGIÇ: Yazın yolculuğu başlıyor!';
@@ -41,6 +35,10 @@ class GameEngine {
         return 'SORU: ${tile.name} hakkındaki soruyu bil, yıldızları kap!';
       case TileType.collection:
         return 'KOLEKSİYON: Eserlerini burada inceleyebilirsin.';
+      case TileType.library:
+        return 'KÜTÜPHANE: Sessizlik lazım! 2 tur bekle.';
+      case TileType.signingDay:
+        return 'İMZA GÜNÜ: Okurlarınla bir araya geldin!';
     }
   }
 }
