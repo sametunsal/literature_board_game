@@ -487,8 +487,8 @@ class GameNotifier extends StateNotifier<GameState> {
         }
         break;
       case TileType.start:
-        // Start tile - no action needed
-        endTurn();
+        // Start tile - award salary and end turn
+        _handleStartTileLanding();
         break;
       case TileType.shop:
         // Kıraathane - Open shop
@@ -508,6 +508,28 @@ class GameNotifier extends StateNotifier<GameState> {
         endTurn();
         break;
     }
+  }
+
+  /// Handle Start tile landing - award salary and auto-end turn
+  void _handleStartTileLanding() async {
+    final player = state.currentPlayer;
+    const salaryAmount = 20; // Stars awarded for landing on start
+
+    // Award salary
+    List<Player> newPlayers = List.from(state.players);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(
+      stars: player.stars + salaryAmount,
+    );
+    state = state.copyWith(players: newPlayers);
+
+    _addLog(
+      "🏁 ${player.name} Başlangıç'tan geçti! +$salaryAmount Yıldız kazandı!",
+      type: 'success',
+    );
+
+    // Wait 1.5 seconds to show the message, then end turn
+    await Future.delayed(const Duration(milliseconds: 1500));
+    endTurn();
   }
 
   /// Handle Kütüphane (Library) landing - Apply 2-turn penalty
