@@ -404,22 +404,50 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   ) {
     // Determine button label based on phase
     final String buttonLabel = phase == GamePhase.rollingForOrder
-        ? "Sıralama İçin At"
-        : "Zar At";
+        ? "SIRALAMA İÇİN AT"
+        : "ZAR AT";
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Current player indicator
-        Text(
-          'Sıra: $currentPlayerName',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+        // Current player indicator with phase context
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: phase == GamePhase.rollingForOrder
+                ? Colors.amber.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: phase == GamePhase.rollingForOrder
+                  ? Colors.amber.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Sıra: $currentPlayerName',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              if (phase == GamePhase.rollingForOrder)
+                Text(
+                  'Sıralama için zar atılıyor...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.amber.shade200,
+                  ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         ElevatedButton(
           onPressed: () {
             // Route based on phase - sound will play when animation starts

@@ -203,20 +203,22 @@ class GameNotifier extends StateNotifier<GameState> {
   // 2. ZAR ATMA & HAREKET
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Roll dice and move player
+  /// Roll dice - handles both turn order and normal movement phases
   Future<void> rollDice() async {
     if (_isProcessing) return;
 
     _isProcessing = true;
     try {
+      // Block roll if dialogs are open
       if (state.showQuestionDialog ||
           state.showCardDialog ||
           state.showLibraryPenaltyDialog) {
         return;
       }
 
-      // Check if player has turns to skip (library penalty)
-      if (state.currentPlayer.turnsToSkip > 0) {
+      // Check if player has turns to skip (library penalty) - only in playerTurn phase
+      if (state.phase == GamePhase.playerTurn &&
+          state.currentPlayer.turnsToSkip > 0) {
         final player = state.currentPlayer;
         final remaining = player.turnsToSkip - 1;
 
@@ -246,60 +248,142 @@ class GameNotifier extends StateNotifier<GameState> {
       int roll = d1 + d2;
       bool isDouble = d1 == d2;
 
-      int newConsecutive = isDouble ? state.consecutiveDoubles + 1 : 0;
-
-      // Check for 3 consecutive doubles -> Jail
-      if (newConsecutive >= 3) {
-        state = state.copyWith(
-          dice1: d1,
-          dice2: d2,
-          diceTotal: roll,
-          isDiceRolled: true,
-          consecutiveDoubles: 0, // Reset
-        );
-        _addLog(
-          "3. Çift Zar ($d1-$d2)! Kütüphaneye gidiyorsun.",
-          type: 'error',
-        );
-
-        // Send to jail immediately
-        await Future.delayed(const Duration(milliseconds: 1500));
-        List<Player> temp = List.from(state.players);
-        temp[state.currentPlayerIndex] = state.currentPlayer.copyWith(
-          position: GameConstants.jailPosition,
-          turnsToSkip: GameConstants.jailTurns,
-        );
-        state = state.copyWith(players: temp);
-        endTurn();
-        return;
-      }
-
-      state = state.copyWith(
-        isDiceRolled: true,
-        diceTotal: roll,
-        dice1: d1,
-        dice2: d2,
-        consecutiveDoubles: newConsecutive,
-      );
-
-      if (isDouble) {
-        _addLog(
-          "${state.currentPlayer.name} $roll ($d1-$d2) attı. Çift! Tekrar oynayacak.",
-          type: 'dice',
-        );
+      // Handle based on game phase
+      if (state.phase == GamePhase.rollingForOrder) {
+        await _handleTurnOrderRoll(d1, d2, roll);
       } else {
-        _addLog(
-          "${state.currentPlayer.name} $roll ($d1-$d2) attı.",
-          type: 'dice',
-        );
+        await _handleMovementRoll(d1, d2, roll, isDouble);
       }
-
-      // Wait for dice animation to settle before moving
-      await Future.delayed(const Duration(milliseconds: 1500));
-      await _movePlayer(roll);
     } finally {
       _isProcessing = false;
     }
+  }
+
+  /// Handle turn order roll - store roll, show result, advance to next player
+  Future<void> _handleTurnOrderRoll(int d1, int d2, int roll) async {
+    final currentPlayer = state.currentPlayer;
+
+    // Store the roll for this player
+    final updatedOrderRolls = Map<String, int>.from(state.orderRolls);
+    updatedOrderRolls[currentPlayer.id] = roll;
+
+    state = state.copyWith(
+      isDiceRolled: true,
+      diceTotal: roll,
+      dice1: d1,
+      dice2: d2,
+      orderRolls: updatedOrderRolls,
+    );
+
+    _addLog(
+      "🎲 ${currentPlayer.name} sıra için $roll ($d1-$d2) attı.",
+      type: 'dice',
+    );
+
+    // Show result for 3 seconds
+    await Future.delayed(const Duration(seconds: 3));
+
+    // Check if everyone has rolled
+    if (updatedOrderRolls.length >= state.players.length) {
+      // All players have rolled - determine turn order
+      _finalizeTurnOrder(updatedOrderRolls);
+    } else {
+      // Move to next player
+      final nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
+      state = state.copyWith(
+        currentPlayerIndex: nextIndex,
+        isDiceRolled: false,
+        diceTotal: 0,
+        dice1: 0,
+        dice2: 0,
+      );
+    }
+  }
+
+  /// Finalize turn order - sort players by roll (highest first)
+  void _finalizeTurnOrder(Map<String, int> rolls) {
+    // Sort players by their roll (highest roll goes first)
+    final sortedPlayers = List<Player>.from(state.players);
+    sortedPlayers.sort(
+      (a, b) => (rolls[b.id] ?? 0).compareTo(rolls[a.id] ?? 0),
+    );
+
+    state = state.copyWith(
+      players: sortedPlayers,
+      currentPlayerIndex: 0,
+      phase: GamePhase.playerTurn,
+      isDiceRolled: false,
+      diceTotal: 0,
+      dice1: 0,
+      dice2: 0,
+      lastAction: 'Sıra belirlendi! ${sortedPlayers.first.name} başlıyor.',
+    );
+
+    _addLog("✅ Sıra belirlendi! ${sortedPlayers.first.name} başlıyor.");
+
+    // Log the order
+    for (int i = 0; i < sortedPlayers.length; i++) {
+      final player = sortedPlayers[i];
+      final roll = rolls[player.id] ?? 0;
+      _addLog("  ${i + 1}. ${player.name} ($roll)");
+    }
+  }
+
+  /// Handle normal movement roll
+  Future<void> _handleMovementRoll(
+    int d1,
+    int d2,
+    int roll,
+    bool isDouble,
+  ) async {
+    int newConsecutive = isDouble ? state.consecutiveDoubles + 1 : 0;
+
+    // Check for 3 consecutive doubles -> Jail
+    if (newConsecutive >= 3) {
+      state = state.copyWith(
+        dice1: d1,
+        dice2: d2,
+        diceTotal: roll,
+        isDiceRolled: true,
+        consecutiveDoubles: 0, // Reset
+      );
+      _addLog("3. Çift Zar ($d1-$d2)! Kütüphaneye gidiyorsun.", type: 'error');
+
+      // Send to jail immediately
+      await Future.delayed(const Duration(milliseconds: 1500));
+      List<Player> temp = List.from(state.players);
+      temp[state.currentPlayerIndex] = state.currentPlayer.copyWith(
+        position: GameConstants.jailPosition,
+        turnsToSkip: GameConstants.jailTurns,
+      );
+      state = state.copyWith(players: temp);
+      endTurn();
+      return;
+    }
+
+    state = state.copyWith(
+      isDiceRolled: true,
+      diceTotal: roll,
+      dice1: d1,
+      dice2: d2,
+      consecutiveDoubles: newConsecutive,
+    );
+
+    if (isDouble) {
+      _addLog(
+        "${state.currentPlayer.name} $roll ($d1-$d2) attı. Çift! Tekrar oynayacak.",
+        type: 'dice',
+      );
+    } else {
+      _addLog(
+        "${state.currentPlayer.name} $roll ($d1-$d2) attı.",
+        type: 'dice',
+      );
+    }
+
+    // Wait for dice animation to settle before moving
+    await Future.delayed(const Duration(milliseconds: 1500));
+    await _movePlayer(roll);
   }
 
   /// Move player step-by-step with hopping animation
