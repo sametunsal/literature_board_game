@@ -53,6 +53,7 @@ class GameState {
   final bool showTurnSkippedDialog;
   final bool showShopDialog; // Kıraathane shop dialog
   final bool showTurnOrderDialog; // Turn order result dialog
+  final bool isDoubleTurn; // Indicates if current turn is a double roll bonus
 
   final BoardTile? currentTile;
   final GameCard? currentCard;
@@ -83,6 +84,7 @@ class GameState {
     this.showTurnSkippedDialog = false,
     this.showShopDialog = false,
     this.showTurnOrderDialog = false,
+    this.isDoubleTurn = false,
     this.currentTile,
     this.currentCard,
     this.winner,
@@ -115,6 +117,7 @@ class GameState {
     bool? showTurnSkippedDialog,
     bool? showShopDialog,
     bool? showTurnOrderDialog,
+    bool? isDoubleTurn,
     BoardTile? currentTile,
     GameCard? currentCard,
     Player? winner,
@@ -144,6 +147,7 @@ class GameState {
           showTurnSkippedDialog ?? this.showTurnSkippedDialog,
       showShopDialog: showShopDialog ?? this.showShopDialog,
       showTurnOrderDialog: showTurnOrderDialog ?? this.showTurnOrderDialog,
+      isDoubleTurn: isDoubleTurn ?? this.isDoubleTurn,
       currentTile: currentTile ?? this.currentTile,
       currentCard: currentCard ?? this.currentCard,
       winner: winner ?? this.winner,
@@ -940,9 +944,13 @@ class GameNotifier extends StateNotifier<GameState> {
           state.dice1 != 0 &&
           state.currentPlayer.turnsToSkip == 0 &&
           !state.currentPlayer.inJail) {
-        _addLog("Çift olduğu için tekrar zar at!", type: 'info');
+        _addLog(
+          "🎲 ÇİFT ZAR! ${state.currentPlayer.name} tekrar oynuyor.",
+          type: 'info',
+        );
         state = state.copyWith(
           isDiceRolled: false,
+          isDoubleTurn: true,
           lastAction: "${state.currentPlayer.name} tekrar zar atacak...",
         );
         return;
@@ -969,6 +977,7 @@ class GameNotifier extends StateNotifier<GameState> {
         players: updatedPlayers,
         currentPlayerIndex: next,
         isDiceRolled: false,
+        isDoubleTurn: false,
         showQuestionDialog: false,
         showCardDialog: false,
         showTurnSkippedDialog: isSkipped,

@@ -264,44 +264,47 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon - Prominent size with breathing animation
-              Animate(
-                onPlay: (controller) => controller.repeat(),
-                delay: Duration(milliseconds: randomDelay),
-                effects: [
-                  ScaleEffect(
-                    begin: const Offset(1.0, 1.0),
-                    end: const Offset(1.05, 1.05),
-                    duration: const Duration(milliseconds: 1500),
-                    curve: Curves.easeInOut,
-                  ),
-                  ScaleEffect(
-                    begin: const Offset(1.05, 1.05),
-                    end: const Offset(1.0, 1.0),
-                    duration: const Duration(milliseconds: 1500),
-                    curve: Curves.easeInOut,
-                  ),
-                ],
-                child: Icon(icon, size: 32, color: iconColor),
-              ),
-              const SizedBox(height: 4),
-              // Label text - Dark for contrast
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  letterSpacing: 0.3,
+          padding: const EdgeInsets.all(1.0),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon - Prominent size with breathing animation
+                Animate(
+                  onPlay: (controller) => controller.repeat(),
+                  delay: Duration(milliseconds: randomDelay),
+                  effects: [
+                    ScaleEffect(
+                      begin: const Offset(1.0, 1.0),
+                      end: const Offset(1.05, 1.05),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeInOut,
+                    ),
+                    ScaleEffect(
+                      begin: const Offset(1.05, 1.05),
+                      end: const Offset(1.0, 1.0),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeInOut,
+                    ),
+                  ],
+                  child: Icon(icon, size: 32, color: iconColor),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                // Label text - Dark for contrast
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

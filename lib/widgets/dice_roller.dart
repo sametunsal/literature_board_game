@@ -402,10 +402,22 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     ThemeTokens tokens,
     String currentPlayerName,
   ) {
-    // Determine button label based on phase
-    final String buttonLabel = phase == GamePhase.rollingForOrder
-        ? "SIRALAMA İÇİN AT"
-        : "ZAR AT";
+    final state = ref.watch(gameProvider);
+    final isDoubleTurn = state.isDoubleTurn;
+
+    // Determine button label based on phase and double turn
+    final String buttonLabel;
+    final Color buttonColor;
+    if (phase == GamePhase.rollingForOrder) {
+      buttonLabel = "SIRALAMA İÇİN AT";
+      buttonColor = tokens.primary;
+    } else if (isDoubleTurn) {
+      buttonLabel = "ÇİFT GELDİ - TEKRAR AT";
+      buttonColor = Colors.orange.shade600;
+    } else {
+      buttonLabel = "ZAR AT";
+      buttonColor = tokens.primary;
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -416,13 +428,17 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
           decoration: BoxDecoration(
             color: phase == GamePhase.rollingForOrder
                 ? Colors.amber.withValues(alpha: 0.2)
+                : isDoubleTurn
+                ? Colors.orange.withValues(alpha: 0.25)
                 : Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: phase == GamePhase.rollingForOrder
                   ? Colors.amber.withValues(alpha: 0.5)
+                  : isDoubleTurn
+                  ? Colors.orange.withValues(alpha: 0.6)
                   : Colors.white.withValues(alpha: 0.3),
-              width: 1,
+              width: isDoubleTurn ? 2 : 1,
             ),
           ),
           child: Column(
@@ -443,6 +459,15 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
                     fontWeight: FontWeight.w500,
                     color: Colors.amber.shade200,
                   ),
+                )
+              else if (isDoubleTurn)
+                Text(
+                  'Sıra Yine Sende! 🎲',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.orange.shade200,
+                  ),
                 ),
             ],
           ),
@@ -455,7 +480,7 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
             ref.read(gameProvider.notifier).rollDice();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: tokens.primary,
+            backgroundColor: buttonColor,
             foregroundColor: Colors.white,
             elevation: 4,
             shadowColor: tokens.primary.withValues(alpha: 0.3),
