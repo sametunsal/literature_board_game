@@ -1,28 +1,18 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/motion/motion_constants.dart';
 import '../models/board_tile.dart';
 import '../models/difficulty.dart';
 import '../models/tile_type.dart';
-import '../data/board_config.dart';
-import '../../core/theme/game_theme.dart';
 
-/// Enhanced tile widget with classic Monopoly-style appearance
-///
-/// STRICT LAYOUT RULES BY EDGE (quarterTurns) - All strips face INWARD:
-/// - Bottom (0): Column [Strip(top), Text] - Text 0° (no rotation)
-/// - Right (1): Row [Text, Strip(right)] - RotatedBox(quarterTurns: 3) = bottom→top reading
-/// - Top (2): Column [Text, Strip(bottom)] - Text 180° (Transform.rotate)
-/// - Left (3): Row [Strip(left), Text] - RotatedBox(quarterTurns: 1) = top→bottom reading
-///
-/// No parent RotatedBox wrapper - widget handles all orientation internally
+/// Enhanced tile widget with modern flat design
+/// Uses Icons instead of vintage images for cleaner look
 class EnhancedTileWidget extends StatefulWidget {
   final BoardTile tile;
   final double width;
   final double height;
-
-  /// Quarter turns: 0=Bottom, 1=Right, 2=Top, 3=Left
   final int quarterTurns;
   final bool isSelected;
   final bool isHovered;
@@ -44,14 +34,8 @@ class EnhancedTileWidget extends StatefulWidget {
 class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   bool _isPressed = false;
 
-  bool get _isCorner => BoardConfig.isCorner(int.parse(widget.tile.id));
-
   @override
   Widget build(BuildContext context) {
-    // Get theme tokens based on current brightness
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final tokens = GameTheme.getTokens(isDarkMode);
-
     // Calculate scale based on press, hover, and selection state
     // Press takes priority, then selection, then hover
     final scale = _isPressed
@@ -60,7 +44,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+      },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
         scale: scale,
@@ -72,91 +58,78 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            color: _isCorner
-                ? (widget.isSelected
-                      ? tokens.primary.withValues(alpha: 0.15)
-                      : (widget.isHovered
-                            ? tokens.primary.withValues(alpha: 0.08)
-                            : tokens.tileBase))
-                : tokens.tileBase,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: _isPressed
-                  ? tokens.primary
-                  : (widget.isSelected
-                        ? tokens.primary
-                        : (widget.isHovered
-                              ? tokens.primary.withValues(alpha: 0.5)
-                              : tokens.border.withValues(alpha: 0.5))),
-              width: _isPressed
-                  ? 2.0
-                  : (widget.isSelected ? 2.0 : (widget.isHovered ? 1.5 : 0.5)),
+              color: widget.isSelected ? Colors.blue : Colors.grey.shade300,
+              width: widget.isSelected ? 2.0 : 1.0,
             ),
             boxShadow: [
-              // Press glow effect - always present but hidden when not pressed
+              // Press glow effect
               BoxShadow(
-                color: _isPressed
-                    ? tokens.primary.withValues(alpha: 0.15)
+                color: widget.isSelected
+                    ? Colors.blue.withValues(alpha: 0.3)
                     : Colors.transparent,
                 blurRadius: _isPressed ? 8 : 0,
                 spreadRadius: _isPressed ? 2 : 0,
               ),
-              // Selection/hover shadows - subtle
+              // Selection/hover shadows
               BoxShadow(
                 color: widget.isSelected
-                    ? tokens.primary.withValues(alpha: 0.2)
+                    ? Colors.blue.withValues(alpha: 0.2)
                     : (widget.isHovered
-                          ? tokens.shadow.withValues(alpha: 0.15)
-                          : tokens.shadow.withValues(alpha: 0.08)),
-                blurRadius:
-                    (widget.isSelected ? 8.0 : (widget.isHovered ? 6.0 : 3.0))
-                        .clamp(0.0, double.infinity),
+                          ? Colors.blue.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.1)),
+                blurRadius: widget.isSelected
+                    ? 8.0
+                    : (widget.isHovered ? 6.0 : 3.0),
                 spreadRadius: widget.isSelected ? 0 : 0,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: _isCorner
-              ? _buildCornerContent(tokens, isDarkMode)
-              : _buildPropertyContent(tokens, isDarkMode),
+          child: _buildContent(),
         ),
       ),
     );
   }
 
-  /// Build property tile with edge-specific layout
-  Widget _buildPropertyContent(ThemeTokens tokens, bool isDarkMode) {
-    // Check for special tiles that use custom images
+  Widget _buildContent() {
+    // Check for special tiles that use custom icons
     if (_isLibraryTile()) {
-      return _buildSpecialTileContent(
-        imagePath: 'assets/images/library.png',
-        backgroundColor: isDarkMode
-            ? const Color(0xFFFFF8E1)
-            : const Color(0xFFFFFBF0),
-        tokens: tokens,
+      return _buildCornerTileContent(
+        icon: Icons.local_library,
+        iconColor: Colors.blue.shade700,
+        label: 'KIRAATHANE',
       );
     }
 
     if (_isChanceOrFateTile()) {
-      return _buildSpecialTileContent(
-        imagePath: 'assets/images/old_shop.png',
-        backgroundColor: isDarkMode
-            ? const Color(0xFFF3E5F5)
-            : const Color(0xFFFAF5FC),
-        tokens: tokens,
+      return _buildCornerTileContent(
+        icon: Icons.store,
+        iconColor: Colors.purple.shade700,
+        label: 'DÜKKAN',
       );
     }
 
-    // RPG Mode: Use vibrant group colors
-    final groupColor = GameTheme.getGroupColor(
-      int.tryParse(widget.tile.id) ?? 0,
-    );
+    // Check if this is a Start Tile - use custom icon
+    if (widget.tile.id == '0' || widget.tile.type == TileType.start) {
+      return _buildCornerTileContent(
+        icon: Icons.play_arrow,
+        iconColor: Colors.green.shade700,
+        label: 'BAŞLANGIÇ',
+      );
+    }
+
+    // Standard tiles with color strip and text
+    final groupColor = _getGroupColor();
 
     // Color strip widget with vibrant colors
     Widget colorStrip = Container(decoration: BoxDecoration(color: groupColor));
 
-    // Text content widget (title + category + difficulty)
-    Widget textContent = _buildTextContent(tokens, isDarkMode);
+    // Text content widget (title + price/info)
+    Widget textContent = _buildStandardTileContent();
 
     // STRICT SWITCH BY EDGE POSITION
     switch (widget.quarterTurns) {
@@ -166,9 +139,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Strip at TOP
             SizedBox(height: 10, child: colorStrip),
-            // Text CENTER (no rotation)
+            SizedBox(height: 4), // Spacing between strip and text
             Expanded(child: _wrapWithRotation(textContent, 0)),
           ],
         );
@@ -179,9 +151,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Strip on LEFT side of tile = faces LEFT toward board center
             SizedBox(width: 10, child: colorStrip),
-            // Text rotated -90° (bottom-to-top reading)
+            SizedBox(width: 4), // Spacing between strip and text
             Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
           ],
         );
@@ -192,9 +163,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Text CENTER (no rotation - readable from player side)
             Expanded(child: textContent),
-            // Strip at BOTTOM
+            SizedBox(height: 4), // Spacing between text and strip
             SizedBox(height: 10, child: colorStrip),
           ],
         );
@@ -205,9 +175,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Text rotated +90° (top-to-bottom reading)
             Expanded(child: RotatedBox(quarterTurns: 1, child: textContent)),
-            // Strip on RIGHT side of tile = faces RIGHT toward board center
+            SizedBox(width: 4), // Spacing between text and strip
             SizedBox(width: 10, child: colorStrip),
           ],
         );
@@ -216,10 +185,117 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Column(
           children: [
             SizedBox(height: 10, child: colorStrip),
+            SizedBox(height: 4), // Spacing between strip and text
             Expanded(child: textContent),
           ],
         );
     }
+  }
+
+  /// Wrap content with rotation transform
+  Widget _wrapWithRotation(Widget child, double degrees) {
+    if (degrees == 0) return child;
+    return Transform.rotate(angle: degrees * (math.pi / 180), child: child);
+  }
+
+  /// Build standard tile content with title and difficulty
+  Widget _buildStandardTileContent() {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Title - Centered, wraps naturally
+          Text(
+            widget.tile.name,
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 2),
+          // Difficulty - if category tile
+          if (widget.tile.category != null) ...[
+            Text(
+              widget.tile.difficulty.displayName,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Build corner tile with icon and label (Column layout)
+  /// Icons have a subtle "breathing" idle animation with random delay
+  Widget _buildCornerTileContent({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+  }) {
+    // Generate a random delay (0-1000ms) based on tile id for uniqueness
+    final randomDelay = (widget.tile.id.hashCode % 1000).abs();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon - Prominent size with breathing animation
+              Animate(
+                onPlay: (controller) => controller.repeat(),
+                delay: Duration(milliseconds: randomDelay),
+                effects: [
+                  ScaleEffect(
+                    begin: const Offset(1.0, 1.0),
+                    end: const Offset(1.05, 1.05),
+                    duration: const Duration(milliseconds: 1500),
+                    curve: Curves.easeInOut,
+                  ),
+                  ScaleEffect(
+                    begin: const Offset(1.05, 1.05),
+                    end: const Offset(1.0, 1.0),
+                    duration: const Duration(milliseconds: 1500),
+                    curve: Curves.easeInOut,
+                  ),
+                ],
+                child: Icon(icon, size: 32, color: iconColor),
+              ),
+              const SizedBox(height: 4),
+              // Label text - Dark for contrast
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Check if this is a Library/Question tile
@@ -236,298 +312,48 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         widget.tile.type == TileType.corner;
   }
 
-  /// Build special tile with custom image (Pop-Up Book style)
-  Widget _buildSpecialTileContent({
-    required String imagePath,
-    required Color backgroundColor,
-    required ThemeTokens tokens,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [backgroundColor, backgroundColor.withValues(alpha: 0.8)],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Centered image with shadow
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(3.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: tokens.shadow.withValues(alpha: 0.25),
-                      blurRadius: 4.0.clamp(0.0, double.infinity),
-                      spreadRadius: 0.5,
-                      offset: const Offset(1, 2),
-                    ),
-                  ],
-                ),
-                child: Image.asset(imagePath, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-          // Title label at bottom
-          Positioned(
-            left: 2,
-            right: 2,
-            bottom: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                widget.tile.name,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 7,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  /// Get group color from tile ID (simplified for modern theme)
+  Color _getGroupColor() {
+    final id = int.tryParse(widget.tile.id) ?? 0;
 
-  /// Wrap content with rotation transform
-  Widget _wrapWithRotation(Widget child, double degrees) {
-    if (degrees == 0) return child;
-
-    return Transform.rotate(angle: degrees * (math.pi / 180), child: child);
-  }
-
-  /// Build the text content (title + category + difficulty)
-  Widget _buildTextContent(ThemeTokens tokens, bool isDarkMode) {
-    return Padding(
-      padding: const EdgeInsets.all(2.0),
-      child: Stack(
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // CATEGORY AND DIFFICULTY DISPLAY
-              _buildCategoryAndDifficultyIndicator(tokens),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryAndDifficultyIndicator(ThemeTokens tokens) {
-    // For non-category tiles, show nothing
-    if (widget.tile.category == null) {
-      return const SizedBox.shrink();
+    // Modern vibrant colors
+    switch (id) {
+      case 0:
+        return Colors.green.shade500;
+      case 1:
+        return Colors.blue.shade500;
+      case 2:
+        return Colors.purple.shade400;
+      case 3:
+        return Colors.orange.shade400;
+      case 4:
+        return Colors.red.shade400;
+      case 5:
+        return Colors.teal.shade400;
+      case 6:
+        return Colors.pink.shade400;
+      case 7:
+        return Colors.indigo.shade400;
+      case 8:
+        return Colors.brown.shade400;
+      case 9:
+        return Colors.grey.shade400;
+      case 10:
+        return Colors.blue.shade300;
+      case 11:
+        return Colors.purple.shade300;
+      case 12:
+        return Colors.orange.shade300;
+      case 13:
+        return Colors.red.shade300;
+      case 14:
+        return Colors.teal.shade300;
+      case 15:
+        return Colors.amber.shade300;
+      case 16:
+        return Colors.brown.shade300;
+      default:
+        return Colors.grey.shade200;
     }
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Category Name
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            color: tokens.primary.withValues(alpha: 0.1),
-          ),
-          child: Text(
-            widget.tile.category!.toUpperCase(),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 7,
-              fontWeight: FontWeight.w700,
-              color: tokens.primary,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        // Difficulty Level
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            color: tokens.shadow.withValues(alpha: 0.08),
-          ),
-          child: Text(
-            widget.tile.difficulty.displayName,
-            style: GoogleFonts.poppins(
-              fontSize: 7,
-              fontWeight: FontWeight.w600,
-              color: tokens.textSecondary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build corner tile content
-  Widget _buildCornerContent(ThemeTokens tokens, bool isDarkMode) {
-    // Check if this is the Start Tile - use custom image
-    if (widget.tile.id == '0' || widget.tile.type == TileType.start) {
-      return _buildStartTileContent(tokens);
-    }
-
-    final config = _getCornerConfig();
-    final minDimension = widget.width < widget.height
-        ? widget.width
-        : widget.height;
-    final iconSize = minDimension * 0.28;
-
-    // Corner text rotation based on position
-    // Top corners (quarterTurns 1 and 2) should be readable (0°)
-    double rotation = switch (widget.quarterTurns) {
-      0 => 0, // Bottom-left: normal
-      1 => 0, // Top-left: readable (was -90°)
-      2 => 0, // Top-right: readable (was 180°)
-      3 => 90 * (math.pi / 180), // Bottom-right: rotated
-      _ => 0,
-    };
-
-    return Container(
-      decoration: BoxDecoration(
-        color: config.backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Transform.rotate(
-          angle: rotation,
-          child: Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(config.icon, size: iconSize, color: Colors.black87),
-                const SizedBox(height: 2),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: minDimension * 0.85),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      config.label,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Build Start Tile with custom gate.png image
-  Widget _buildStartTileContent(ThemeTokens tokens) {
-    final minDimension = widget.width < widget.height
-        ? widget.width
-        : widget.height;
-
-    return Container(
-      decoration: BoxDecoration(
-        // Light green background for Start tile
-        color: const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Gate Image with shadow effect
-              Expanded(
-                flex: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: tokens.shadow.withValues(alpha: 0.25),
-                        blurRadius: 6.0.clamp(0.0, double.infinity),
-                        spreadRadius: 1,
-                        offset: const Offset(2, 3),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/gate.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 2),
-              // Label text
-              ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: minDimension * 0.85),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'BAŞLANGIÇ',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF2E7D32),
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  CornerTileConfig _getCornerConfig() {
-    final predefined = GameTheme.cornerConfigs[int.tryParse(widget.tile.id)];
-    if (predefined != null) return predefined;
-
-    return switch (widget.tile.type) {
-      TileType.start => const CornerTileConfig(
-        icon: Icons.start,
-        label: 'BAŞLANGIÇ',
-        backgroundColor: Color(0xFFC8E6C9),
-      ),
-      TileType.shop => const CornerTileConfig(
-        icon: Icons.store,
-        label: 'KIRAATHANe',
-        backgroundColor: Color(0xFFFFECB3),
-      ),
-      TileType.corner => const CornerTileConfig(
-        icon: Icons.casino,
-        label: 'ŞANS/KADER',
-        backgroundColor: Color(0xFFF3E5F5),
-      ),
-      _ => const CornerTileConfig(
-        icon: Icons.help,
-        label: '',
-        backgroundColor: Colors.white,
-      ),
-    };
   }
 }

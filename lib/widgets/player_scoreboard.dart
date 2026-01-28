@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/player.dart';
 import '../models/game_enums.dart';
 import '../core/constants/game_constants.dart';
-import '../core/theme/game_theme.dart';
 
 /// Compact corner scoreboard for displaying player stats
 /// Shows: Avatar, Name, Stars, and Mastery count
@@ -29,57 +28,39 @@ class PlayerScoreboard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
-          end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
-          colors: [
-            Colors.black.withValues(alpha: 0.7),
-            Colors.black.withValues(alpha: 0.4),
-          ],
-        ),
-        borderRadius: BorderRadius.only(
-          topLeft: alignment == Alignment.bottomRight
-              ? const Radius.circular(16)
-              : Radius.zero,
-          topRight: alignment == Alignment.bottomLeft
-              ? const Radius.circular(16)
-              : Radius.zero,
-          bottomLeft: alignment == Alignment.topRight
-              ? const Radius.circular(16)
-              : Radius.zero,
-          bottomRight: alignment == Alignment.topLeft
-              ? const Radius.circular(16)
-              : Radius.zero,
-        ),
-        border: Border.all(
-          color: isCurrentPlayer
-              ? GameTheme.goldAccent
-              : Colors.white.withValues(alpha: 0.2),
-          width: isCurrentPlayer ? 2 : 1,
-        ),
+        color: Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: isCurrentPlayer
             ? [
                 BoxShadow(
-                  color: GameTheme.goldAccent.withValues(alpha: 0.4),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 12,
-                  spreadRadius: 2,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 4),
                 ),
               ]
-            : null,
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: isLeft
             ? [
                 _buildAvatar(),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 _buildInfo(masteriesCount),
               ]
             : [
                 _buildInfo(masteriesCount),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 _buildAvatar(),
               ],
       ),
@@ -88,17 +69,15 @@ class PlayerScoreboard extends StatelessWidget {
 
   Widget _buildAvatar() {
     return Container(
-      width: 40,
-      height: 40,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: isCurrentPlayer ? GameTheme.goldAccent : Colors.white54,
-          width: 2,
-        ),
+        color: isCurrentPlayer ? Colors.amber.shade50 : Colors.grey.shade100,
+        border: Border.all(color: Colors.grey.shade300, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -110,8 +89,12 @@ class PlayerScoreboard extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: GameTheme.goldAccent.withValues(alpha: 0.3),
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
+              color: Colors.grey.shade200,
+              child: Icon(
+                Icons.person_rounded,
+                color: Colors.grey.shade600,
+                size: 22,
+              ),
             );
           },
         ),
@@ -128,42 +111,42 @@ class PlayerScoreboard extends StatelessWidget {
         Text(
           player.name,
           style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isCurrentPlayer ? GameTheme.goldAccent : Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade900,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         // Stars row
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.star, color: Colors.amber, size: 14),
-            const SizedBox(width: 3),
+            Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+            const SizedBox(width: 4),
             Text(
               '${player.stars}',
               style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
               ),
             ),
             const SizedBox(width: 8),
             // Masteries count
             Icon(
-              Icons.emoji_events,
-              color: masteriesCount > 0 ? Colors.orangeAccent : Colors.white38,
+              Icons.emoji_events_rounded,
+              color: masteriesCount > 0 ? Colors.orange : Colors.grey.shade400,
               size: 14,
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: 4),
             Text(
               '$masteriesCount/6',
               style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: masteriesCount > 0
-                    ? Colors.orangeAccent
-                    : Colors.white54,
+                    ? Colors.orange
+                    : Colors.grey.shade600,
               ),
             ),
           ],

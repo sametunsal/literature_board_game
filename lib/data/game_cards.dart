@@ -27,7 +27,7 @@ class GameCards {
     ),
     GameCard(
       description:
-          "Kütüphanede çok gürültü yaptın! Doğruca Kütüphane Nöbetine git (Başlangıçtan geçsen bile para alamazsın).",
+          "Kıraathanede çok gürültü yaptın! Doğruca Kıraathane Nöbetine git (Başlangıçtan geçsen bile para alamazsın).",
       type: CardType.sans,
       effectType: CardEffectType.jail,
     ),

@@ -19,8 +19,8 @@ class PlayerMapper {
       'inJail': entity.inJail,
       'turnsToSkip': entity.turnsToSkip,
       'categoryLevels': entity.categoryLevels,
+      'categoryProgress': entity.categoryProgress,
       'mainTitle': entity.mainTitle,
-      'correctAnswers': entity.correctAnswers,
     };
   }
 
@@ -45,12 +45,17 @@ class PlayerMapper {
             (key, value) => MapEntry(key, value as int),
           ) ??
           {},
-      mainTitle: json['mainTitle'] as String? ?? 'Çaylak',
-      correctAnswers:
-          (json['correctAnswers'] as Map<String, dynamic>?)?.map(
-            (key, value) => MapEntry(key, value as int),
+      categoryProgress:
+          (json['categoryProgress'] as Map<String, dynamic>?)?.map(
+            (catKey, catValue) => MapEntry(
+              catKey,
+              (catValue as Map<String, dynamic>).map(
+                (diffKey, count) => MapEntry(diffKey, count as int),
+              ),
+            ),
           ) ??
           {},
+      mainTitle: json['mainTitle'] as String? ?? 'Çaylak',
     );
   }
 

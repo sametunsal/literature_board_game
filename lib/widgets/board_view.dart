@@ -11,7 +11,6 @@ import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
-import '../core/assets/asset_cache.dart';
 import 'enhanced_tile_widget.dart';
 import 'game_log.dart';
 import 'dice_roller.dart';
@@ -135,11 +134,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
-
-    // Preload assets
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AssetCache.preload(context);
-    });
   }
 
   @override

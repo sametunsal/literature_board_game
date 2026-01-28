@@ -1,19 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
-import 'package:shimmer/shimmer.dart';
 import '../core/theme/game_theme.dart';
 import '../core/motion/motion_constants.dart';
-import '../core/assets/asset_cache.dart';
 import '../models/game_enums.dart';
 import '../providers/game_notifier.dart';
 import '../providers/theme_notifier.dart';
 import '../utils/sound_manager.dart';
 
 /// Premium dice roller with TWO separate Lottie dice animations
+/// Features "Game Juice" animations: shake before roll, bounce on land,
+/// sound sync, and colorful glow effects.
 class DiceRoller extends ConsumerStatefulWidget {
   const DiceRoller({super.key});
 
@@ -28,13 +29,12 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   bool _showResult = false;
   int _dice1 = 0;
   int _dice2 = 0;
-  Timer? _hapticTimer; // For haptic feedback during dice roll
-  Timer? _bounceTimer; // For bounce reset after animation
+  Timer? _hapticTimer;
 
-  // Dice Juice animation states
-  double _diceScale = 1.0;
+  // Animation trigger keys for flutter_animate
+  bool _triggerShake = false;
+  bool _triggerBounce = false;
   bool _showGlow = false;
-  bool _resultBounce = false;
 
   @override
   void initState() {
@@ -46,26 +46,30 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
     _lottieController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        // Stop haptic timer and deliver heavy "thud" on landing
-        _hapticTimer?.cancel();
-        HapticFeedback.heavyImpact();
-        SoundManager.instance.playDiceLand(); // Dice landing sound
+        _onDiceLanded();
+      }
+    });
+  }
 
-        setState(() {
-          _isAnimating = false;
-          _showResult = true;
-          _diceScale = 1.0; // Reset scale
-          _showGlow = false; // Remove glow
-          _resultBounce = true; // Trigger result bounce
-        });
+  void _onDiceLanded() {
+    // Stop haptic timer and deliver heavy "thud" on landing
+    _hapticTimer?.cancel();
+    HapticFeedback.heavyImpact();
 
-        // Reset bounce state after animation
-        _bounceTimer?.cancel();
-        _bounceTimer = Timer(MotionDurations.fast, () {
-          if (mounted) {
-            setState(() => _resultBounce = false);
-          }
-        });
+    // Trigger landing sound and animations
+    SoundManager.instance.playDiceLand();
+
+    setState(() {
+      _isAnimating = false;
+      _showResult = true;
+      _showGlow = true;
+      _triggerBounce = true;
+    });
+
+    // Reset glow after landing animation completes
+    Future.delayed(MotionDurations.medium.safe, () {
+      if (mounted) {
+        setState(() => _showGlow = false);
       }
     });
   }
@@ -73,7 +77,6 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
   @override
   void dispose() {
     _hapticTimer?.cancel();
-    _bounceTimer?.cancel();
     _lottieController.dispose();
     super.dispose();
   }
@@ -90,7 +93,6 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
           next.diceTotal > 0 &&
           !_isAnimating &&
           !_showResult) {
-        // Use setState to trigger animation safely
         setState(() {
           _dice1 = next.dice1;
           _dice2 = next.dice2;
@@ -109,16 +111,19 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     }
 
     // Show roll button
-    return _buildRollButton(state.phase);
+    return _buildRollButton(state.phase, tokens);
   }
 
   void _startAnimation() {
     setState(() {
       _isAnimating = true;
       _showResult = false;
-      _diceScale = 1.1; // Scale up for "juice"
-      _showGlow = true; // Enable glow
+      _triggerShake = true;
+      _triggerBounce = false;
     });
+
+    // Play roll sound at the start
+    SoundManager.instance.playDiceRoll();
 
     // Start haptic feedback during animation - random light taps
     _hapticTimer = Timer.periodic(MotionDurations.fast, (timer) {
@@ -129,46 +134,84 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
       }
     });
 
-    _lottieController.forward(from: 0);
+    // Reset shake trigger after shake completes, then start Lottie
+    Future.delayed(MotionDurations.medium.safe, () {
+      if (mounted) {
+        setState(() => _triggerShake = false);
+        _lottieController.forward(from: 0);
+      }
+    });
   }
 
   void _resetState() {
     setState(() {
       _showResult = false;
       _isAnimating = false;
-      _diceScale = 1.0;
+      _triggerShake = false;
+      _triggerBounce = false;
       _showGlow = false;
-      _resultBounce = false;
     });
     _lottieController.reset();
   }
 
   /// Build TWO dice side by side with individual numbers below
   Widget _buildDiceDisplay(int total, ThemeTokens tokens) {
-    // Calculate bounce scale for result appearance
-    final displayScale = _resultBounce ? 1.12 : 1.0;
-
-    return AnimatedScale(
-      scale: _diceScale * displayScale,
-      duration: MotionDurations.fast.safe,
-      curve: MotionCurves.standard,
+    // Apply shake animation when triggerShake is true
+    // Apply bounce animation when triggerBounce is true
+    return Animate(
+      key: ValueKey('dice_container_$_triggerShake$_triggerBounce'),
+      effects: _triggerShake
+          ? [
+              // Shake effect before roll - simulates dice shaking in hand
+              ShakeEffect(
+                duration: MotionDurations.medium.safe,
+                hz: 8,
+                curve: Curves.easeInOut,
+              ),
+            ]
+          : _triggerBounce
+          ? [
+              // Bounce on land - scale up to 1.5x then elastic back to 1.0x
+              ScaleEffect(
+                begin: const Offset(1.0, 1.0),
+                end: const Offset(1.5, 1.5),
+                duration: MotionDurations.fast.safe,
+                curve: Curves.easeOut,
+              ),
+              ScaleEffect(
+                begin: const Offset(1.5, 1.5),
+                end: const Offset(1.0, 1.0),
+                duration: MotionDurations.slow.safe,
+                curve: Curves.elasticOut,
+                delay: MotionDurations.fast.safe,
+              ),
+            ]
+          : [],
       child: Container(
         decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: _showGlow
               ? [
+                  // Colorful amber glow during landing
                   BoxShadow(
-                    color: tokens.primary.withValues(alpha: 0.4),
-                    blurRadius: 20,
+                    color: Colors.amber.withValues(alpha: 0.5),
+                    blurRadius: 24,
                     spreadRadius: 4,
                   ),
                   BoxShadow(
-                    color: tokens.primary.withValues(alpha: 0.2),
-                    blurRadius: 40,
-                    spreadRadius: 8,
+                    color: Colors.blue.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                    spreadRadius: 2,
                   ),
                 ]
-              : [],
+              : [
+                  BoxShadow(
+                    color: tokens.shadow.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -179,43 +222,30 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // DICE 1
-                _buildSingleDie(_dice1),
+                _buildSingleDie(_dice1, tokens),
                 const SizedBox(width: 16),
                 // DICE 2
-                _buildSingleDie(_dice2),
+                _buildSingleDie(_dice2, tokens),
               ],
             ),
 
             const SizedBox(height: 12),
 
-            // TOTAL display below both dice - V2.5 styled
+            // TOTAL display below both dice - Modern flat style
             if (_showResult)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 8,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [GameTheme.copperAccent, GameTheme.goldAccent],
-                  ),
+                  color: tokens.primary,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: GameTheme.goldAccent.withValues(alpha: 0.6),
-                    width: 1.5,
-                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(3, 4),
-                    ),
-                    BoxShadow(
-                      color: GameTheme.goldAccent.withValues(alpha: 0.2),
+                      color: tokens.primary.withValues(alpha: 0.3),
                       blurRadius: 8,
-                      spreadRadius: -2,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -223,9 +253,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
                   "TOPLAM: $total",
                   style: GoogleFonts.poppins(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: GameTheme
-                        .tableBackgroundColor, // Dark text for contrast
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -235,8 +264,8 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
     );
   }
 
-  /// Build a single die with Lottie animation and number below - V2.5 Tactile Rebellion
-  Widget _buildSingleDie(int value) {
+  /// Build a single die with Lottie animation and number below - Modern flat style
+  Widget _buildSingleDie(int value, ThemeTokens tokens) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -256,228 +285,117 @@ class _DiceRollerState extends ConsumerState<DiceRoller>
 
         const SizedBox(height: 6),
 
-        // Individual die value BELOW - V2.5 styled with gradient
+        // Individual die value BELOW - Modern flat style with bounce
         if (_showResult)
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              // Copper to Gold gradient for tactile feel
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [GameTheme.copperAccent, GameTheme.goldAccent],
+          Animate(
+            effects: [
+              ScaleEffect(
+                begin: const Offset(0.5, 0.5),
+                end: const Offset(1.0, 1.0),
+                duration: MotionDurations.medium.safe,
+                curve: Curves.elasticOut,
               ),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: GameTheme.goldAccent.withValues(alpha: 0.8),
-                width: 2,
+              FadeEffect(
+                begin: 0.0,
+                end: 1.0,
+                duration: MotionDurations.fast.safe,
               ),
-              // Heavy 3D shadow for raised effect
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 8,
-                  offset: const Offset(4, 4),
-                ),
-                BoxShadow(
-                  color: GameTheme.goldAccent.withValues(alpha: 0.3),
-                  blurRadius: 4,
-                  spreadRadius: -1,
-                  offset: const Offset(-1, -1),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Paper texture overlay
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Opacity(
-                    opacity: 0.05,
-                    child: Image(
-                      image: AssetCache.instance.paperNoiseImage,
-                      fit: BoxFit.cover,
-                      width: 40,
-                      height: 40,
-                      colorBlendMode: BlendMode.overlay,
-                      color: Colors.white,
-                    ),
+            ],
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: tokens.border, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: tokens.shadow.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '$value',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
                   ),
                 ),
-                // Pip number - dark for contrast
-                Center(
-                  child: Text(
-                    '$value',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: GameTheme.tableBackgroundColor, // Dark pips
-                      shadows: [
-                        Shadow(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          blurRadius: 1,
-                          offset: const Offset(0.5, 0.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
       ],
     );
   }
 
-  /// Fallback die display if Lottie fails - V2.5 Tactile Rebellion style
+  /// Fallback die display if Lottie fails - Modern flat style
   Widget _buildFallbackDie(int value) {
     return Container(
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        // Copper to Gold gradient
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [GameTheme.copperAccent, GameTheme.goldAccent],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: GameTheme.goldAccent.withValues(alpha: 0.8),
-          width: 2,
-        ),
-        // Heavy 3D shadow for raised effect
+        border: Border.all(color: Colors.grey.shade300, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 8,
-            offset: const Offset(4, 4),
-          ),
-          BoxShadow(
-            color: GameTheme.goldAccent.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
-            spreadRadius: -2,
-            offset: const Offset(-2, -2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Paper texture overlay
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Opacity(
-              opacity: 0.05,
-              child: Image(
-                image: AssetCache.instance.paperNoiseImage,
-                fit: BoxFit.cover,
-                width: 60,
-                height: 60,
-                colorBlendMode: BlendMode.overlay,
-                color: Colors.white,
-              ),
-            ),
+      child: Center(
+        child: Text(
+          '$value',
+          style: GoogleFonts.poppins(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
           ),
-          // Pip number - dark for contrast
-          Center(
-            child: Text(
-              '$value',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: GameTheme.tableBackgroundColor, // Dark pips
-                shadows: [
-                  Shadow(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    blurRadius: 1,
-                    offset: const Offset(0.5, 0.5),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  /// Build stylized roll button - V2.5 Tactile Rebellion
-  Widget _buildRollButton(GamePhase phase) {
+  /// Build modern roll button - Flat design
+  Widget _buildRollButton(GamePhase phase, ThemeTokens tokens) {
     // Determine button label based on phase
     final String buttonLabel = phase == GamePhase.rollingForOrder
         ? "SIRA İÇİN ZAR AT"
         : "ZAR AT";
 
-    return Container(
-      decoration: BoxDecoration(
-        // Copper to Gold gradient
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [GameTheme.copperAccent, GameTheme.goldAccent],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: GameTheme.goldAccent.withValues(alpha: 0.6),
-          width: 1.5,
-        ),
-        // Heavy 3D shadow for raised effect
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 10,
-            offset: const Offset(4, 4),
-          ),
-          BoxShadow(
-            color: GameTheme.goldAccent.withValues(alpha: 0.3),
-            blurRadius: 6,
-            spreadRadius: -2,
-            offset: const Offset(-2, -2),
-          ),
-        ],
+    return ElevatedButton(
+      onPressed: () {
+        // Route based on phase - sound will play when animation starts
+        // For turn order, just roll dice (the order is determined by dice values)
+        ref.read(gameProvider.notifier).rollDice();
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: tokens.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shadowColor: tokens.primary.withValues(alpha: 0.3),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            SoundManager.instance.playDiceRoll(); // Start roll sound
-            // Route based on phase
-            if (phase == GamePhase.rollingForOrder) {
-              ref.read(gameProvider.notifier).rollForTurnOrder();
-            } else {
-              ref.read(gameProvider.notifier).rollDice();
-            }
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.casino,
-                  size: 24,
-                  color: GameTheme.tableBackgroundColor, // Dark icon
-                ),
-                const SizedBox(width: 8),
-                Shimmer.fromColors(
-                  baseColor: GameTheme.tableBackgroundColor,
-                  highlightColor: Colors.white,
-                  period: const Duration(seconds: 3),
-                  child: Text(
-                    buttonLabel,
-                    style: GoogleFonts.playfairDisplay(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: GameTheme.tableBackgroundColor, // Fallback color
-                    ),
-                  ),
-                ),
-              ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.casino_rounded, size: 24),
+          const SizedBox(width: 8),
+          Text(
+            buttonLabel,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
             ),
           ),
-        ),
+        ],
       ),
     );
   }

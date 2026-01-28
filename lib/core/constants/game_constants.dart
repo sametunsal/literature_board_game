@@ -33,25 +33,28 @@ class GameConstants {
   static const int diceMaxRoll = 12;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LEVEL UP SYSTEM (Literature Quiz RPG)
+  // MASTERY SYSTEM (Literature Quiz RPG)
   // ═══════════════════════════════════════════════════════════════════════════
-  // Level System: 4 levels per category
-  // Level 0: Novice (Başlangıç)
-  // Level 1: Apprentice (Çırak)
-  // Level 2: Journeyman (Kalfa)
-  // Level 3: Master (Usta)
+  // Mastery System: 4 levels per category
+  // Level 0: Novice (Hiçbir Şey Bilmiyor)
+  // Level 1: Çırak (Apprentice) - Requires 3 Easy correct answers
+  // Level 2: Kalfa (Journeyman) - Requires 3 Medium correct answers (must be Çırak)
+  // Level 3: Usta (Master) - Requires 3 Hard correct answers (must be Kalfa)
+
+  // Correct answers required for each promotion
+  static const int answersRequiredForPromotion = 3;
 
   // Star Rewards for correct answers based on tile difficulty
   static const int easyStarReward = 5; // Stars per correct easy answer
   static const int mediumStarReward = 10; // Stars per correct medium answer
   static const int hardStarReward = 15; // Stars per correct hard answer
 
-  // Bonus stars for reaching new levels
-  static const int levelUpBonusStars = 20; // Bonus stars when leveling up
+  // Promotion rewards (multiplier based on new rank)
+  // Çırak = 1x, Kalfa = 2x, Usta = 3x
+  static const int promotionBaseReward = 10; // Base stars for promotion
 
-  // Level progression: Correct answer = +1 level (max level 3)
-  // No requirement for multiple correct answers - instant level up
-  static const int maxLevelPerCategory = 3; // Maximum level (Master)
+  // Maximum level per category
+  static const int maxLevelPerCategory = 3; // Maximum level (Usta)
 
   // ═══════════════════════════════════════════════════════════════════════════
   // WIN CONDITION
