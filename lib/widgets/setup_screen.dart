@@ -87,36 +87,17 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     final tokens = GameTheme.getTokens(isDarkMode);
 
     return Scaffold(
-      // Modern themed - Layered Background
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // LAYER 1: Base Background Color
-          Container(decoration: GameTheme.tableDecorationFor(isDarkMode)),
-
-          // LAYER 2: Paper Noise Texture - Tactile Effect
-          Opacity(
-            opacity: isDarkMode ? 0.12 : 0.06,
-            child: Image.asset(
-              'assets/images/paper_noise.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              colorBlendMode: BlendMode.multiply,
-              color: isDarkMode ? Colors.white : Colors.black,
+      // Clean modern background
+      body: Container(
+        decoration: BoxDecoration(color: tokens.background),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: _buildMainCard(tokens, isDarkMode),
             ),
           ),
-
-          // LAYER 3: Content
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: _buildMainCard(tokens, isDarkMode),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -209,11 +190,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         // Title
         Text(
           "OYUN KURULUMU",
-          style: GoogleFonts.cinzel(
+          style: GoogleFonts.poppins(
             fontSize: 26,
             fontWeight: FontWeight.bold,
             color: tokens.textPrimary,
-            letterSpacing: 3,
+            letterSpacing: 2,
           ),
         ),
 
@@ -412,13 +393,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: tokens.textPrimary,
+                  color: Colors.black87,
                 ),
                 decoration: InputDecoration(
                   hintText: "Oyuncu ${index + 1}",
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: tokens.textSecondary,
+                    color: Colors.grey.shade500,
                   ),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
@@ -426,14 +407,18 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     vertical: 5,
                   ),
                   filled: true,
-                  fillColor: tokens.surface,
+                  fillColor: Colors.white,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: tokens.accent, width: 1.5),
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: tokens.primary, width: 2),
                   ),
                 ),
               ),
@@ -639,10 +624,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     const SizedBox(width: 8),
                     Text(
                       "OYUNA BAŞLA",
-                      style: GoogleFonts.cinzel(
+                      style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: tokens.textOnAccent,
+                        color: Colors.white,
                         letterSpacing: 2,
                       ),
                     ),

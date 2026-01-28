@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,7 +10,6 @@ import '../services/streak_service.dart';
 import 'setup_screen.dart';
 import 'settings_screen.dart';
 import 'streak_candle_widget.dart';
-
 import 'rules_dialog.dart';
 
 /// Main menu screen with EDEBİNA branding - Theme-aware design
@@ -112,19 +110,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
                     ],
                     stops: const [0.0, 0.6, 1.0],
                   ),
-                ),
-              ),
-
-              // Paper noise texture
-              Opacity(
-                opacity: isDark ? 0.12 : 0.06,
-                child: Image.asset(
-                  'assets/images/paper_noise.png',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  colorBlendMode: BlendMode.multiply,
-                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
 
@@ -246,62 +231,26 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   }
 
   Widget _buildTitle(ThemeTokens tokens) {
-    return Stack(
-      children: [
-        // Bottom Text: has glow shadows, NOT animated
-        Text(
+    return Text(
           "EDEBİNA",
-          style: GoogleFonts.playfairDisplay(
+          style: GoogleFonts.poppins(
             fontSize: 56,
             fontWeight: FontWeight.bold,
-            color: tokens.accent,
-            letterSpacing: 12,
-            shadows: [
-              // Multi-layer glow
-              Shadow(
-                color: tokens.accent.withValues(alpha: 0.6),
-                blurRadius: 30,
-              ),
-              Shadow(
-                color: tokens.accent.withValues(alpha: 0.4),
-                blurRadius: 20,
-              ),
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.8),
-                blurRadius: 15,
-                offset: const Offset(3, 5),
-              ),
-            ],
+            color: tokens.textPrimary,
+            letterSpacing: 8,
           ),
-        ),
-        // Top Text: animated, NO shadows
-        Text(
-              "EDEBİNA",
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 56,
-                fontWeight: FontWeight.bold,
-                color: tokens.accent,
-                letterSpacing: 12,
-              ),
-            )
-            .animate()
-            .fadeIn(
-              delay: MotionDurations.fast.safe,
-              duration: MotionDurations.medium.safe * 2,
-            )
-            .slideY(
-              begin: 0.2,
-              end: 0,
-              delay: MotionDurations.fast.safe,
-              duration: MotionDurations.medium.safe * 2,
-            )
-            .then(delay: MotionDurations.medium.safe)
-            .shimmer(
-              duration: MotionDurations.slow.safe * 5,
-              color: tokens.accent.withValues(alpha: 0.3),
-            ),
-      ],
-    );
+        )
+        .animate()
+        .fadeIn(
+          delay: MotionDurations.fast.safe,
+          duration: MotionDurations.medium.safe * 2,
+        )
+        .slideY(
+          begin: 0.2,
+          end: 0,
+          delay: MotionDurations.fast.safe,
+          duration: MotionDurations.medium.safe * 2,
+        );
   }
 
   Widget _buildSubtitle(ThemeTokens tokens) {
@@ -452,7 +401,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               icon: Icons.play_arrow,
               isPrimary: true,
               tokens: tokens,
-              isDark: isDark,
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   PageRouteBuilder(
@@ -486,7 +434,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               label: "KURALLAR",
               icon: Icons.menu_book,
               tokens: tokens,
-              isDark: isDark,
               onPressed: () {
                 showDialog(
                   context: context,
@@ -512,7 +459,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               label: "AYARLAR",
               icon: Icons.settings,
               tokens: tokens,
-              isDark: isDark,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -537,9 +483,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               label: "HAKKINDA",
               icon: Icons.info_outline,
               tokens: tokens,
-              isDark: isDark,
-              onPressed: () =>
-                  _showEnhancedAboutDialog(context, tokens, isDark),
+              onPressed: () => _showEnhancedAboutDialog(context, tokens),
             )
             .animate()
             .fadeIn(
@@ -557,11 +501,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     );
   }
 
-  void _showEnhancedAboutDialog(
-    BuildContext context,
-    ThemeTokens tokens,
-    bool isDark,
-  ) {
+  void _showEnhancedAboutDialog(BuildContext context, ThemeTokens tokens) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -590,10 +530,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
               const SizedBox(height: 16),
               Text(
                 "EDEBİNA",
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   fontSize: 32,
-                  color: tokens.accent,
+                  color: tokens.textPrimary,
                   letterSpacing: 2,
                 ),
               ),
@@ -658,21 +598,19 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   }
 }
 
-/// True glassmorphic button with BackdropFilter - theme-aware
+/// Modern elevated button - clean flat design
 class _GlassmorphicButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
   final bool isPrimary;
   final ThemeTokens tokens;
-  final bool isDark;
 
   const _GlassmorphicButton({
     required this.label,
     required this.icon,
     required this.onPressed,
     required this.tokens,
-    required this.isDark,
     this.isPrimary = false,
   });
 
@@ -680,141 +618,74 @@ class _GlassmorphicButton extends StatefulWidget {
   State<_GlassmorphicButton> createState() => _GlassmorphicButtonState();
 }
 
-class _GlassmorphicButtonState extends State<_GlassmorphicButton>
-    with SingleTickerProviderStateMixin {
+class _GlassmorphicButtonState extends State<_GlassmorphicButton> {
   bool _isPressed = false;
   bool _isHovered = false;
-  bool _isFocused = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = widget.tokens;
-    final isDark = widget.isDark;
-
-    // Calculate scale based on state priority: press > hover > normal
     final scale = _isPressed ? 0.96 : (_isHovered ? 1.02 : 1.0);
 
-    // Shadow target values (constant, not animated by AnimatedContainer)
-    final shadowOpacity = widget.isPrimary ? 0.3 : 0.0;
-    final shadowBlur = widget.isPrimary ? 20.0 : 0.0;
-    final shadowSpread = widget.isPrimary ? 2.0 : 0.0;
-
-    return Focus(
-      onFocusChange: (focused) => setState(() => _isFocused = focused),
-      child: MouseRegion(
-        onEnter: (_) {
-          setState(() {
-            _isHovered = true;
-          });
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onPressed();
         },
-        onExit: (_) {
-          setState(() {
-            _isHovered = false;
-          });
-        },
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) {
-            setState(() => _isPressed = false);
-            widget.onPressed();
-          },
-          onTapCancel: () => setState(() => _isPressed = false),
-          child: AnimatedScale(
-            scale: scale,
-            duration: MotionDurations.fast.safe,
-            curve: MotionCurves.emphasized,
-            child: Container(
-              width: 240,
-              height: 56,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _isFocused
-                      ? tokens.accent
-                      : (widget.isPrimary
-                            ? tokens.accent.withValues(alpha: 0.5)
-                            : (isDark
-                                  ? tokens.surface.withValues(alpha: 0.2)
-                                  : tokens.border)),
-                  width: _isFocused ? 3 : (widget.isPrimary ? 2 : 1.5),
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: scale,
+          duration: MotionDurations.fast.safe,
+          curve: MotionCurves.emphasized,
+          child: SizedBox(
+            width: 240,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: widget.onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.isPrimary
+                    ? tokens.primary
+                    : Colors.white,
+                foregroundColor: widget.isPrimary
+                    ? Colors.white
+                    : tokens.textPrimary,
+                elevation: widget.isPrimary ? 4 : 2,
+                shadowColor: widget.isPrimary
+                    ? tokens.primary.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                // Use AnimatedBuilder for shadow control instead of AnimatedContainer
-                boxShadow: [
-                  if (widget.isPrimary || _isHovered)
-                    BoxShadow(
-                      color: tokens.accent.withValues(alpha: shadowOpacity),
-                      blurRadius: shadowBlur,
-                      spreadRadius: shadowSpread,
-                    ),
-                  if (_isFocused)
-                    BoxShadow(
-                      color: tokens.accent.withValues(alpha: 0.5),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: AnimatedContainer(
-                    duration: MotionDurations.fast.safe,
-                    curve: MotionCurves.emphasized,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: widget.isPrimary
-                            ? [
-                                tokens.accent.withValues(
-                                  alpha: _isHovered ? 0.25 : 0.15,
-                                ),
-                                tokens.accent.withValues(
-                                  alpha: _isHovered ? 0.15 : 0.08,
-                                ),
-                              ]
-                            : [
-                                tokens.surface.withValues(
-                                  alpha: isDark
-                                      ? (_isHovered ? 0.15 : 0.1)
-                                      : (_isHovered ? 0.95 : 0.9),
-                                ),
-                                tokens.surface.withValues(
-                                  alpha: isDark
-                                      ? (_isHovered ? 0.1 : 0.05)
-                                      : (_isHovered ? 0.8 : 0.7),
-                                ),
-                              ],
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          widget.icon,
-                          size: 24,
-                          color: widget.isPrimary
-                              ? tokens.accent
-                              : tokens.textPrimary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          widget.label,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            letterSpacing: 2,
-                            color: widget.isPrimary
-                                ? tokens.accent
-                                : tokens.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: widget.isPrimary
+                        ? Colors.transparent
+                        : tokens.border,
+                    width: 1.5,
                   ),
                 ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(widget.icon, size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.label,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

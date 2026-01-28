@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme/game_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../data/models/literary_quote_model.dart';
 import '../data/repositories/quote_repository.dart';
 import '../providers/game_notifier.dart';
@@ -53,26 +53,15 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
         width: 500,
         height: 600,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              GameTheme.parchmentColor,
-              GameTheme.parchmentColor.withValues(alpha: 0.95),
-            ],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
           ],
-          border: Border.all(
-            color: GameTheme.goldAccent.withValues(alpha: 0.5),
-            width: 2,
-          ),
         ),
         child: Column(
           children: [
@@ -98,41 +87,37 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
   }
 
   Widget _buildHeader(int stars) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: GameTheme.copperAccent.withValues(alpha: 0.2),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-      ),
       child: Row(
         children: [
-          const Icon(Icons.store, color: GameTheme.copperAccent, size: 32),
+          Icon(Icons.store_rounded, color: Colors.amber, size: 28),
           const SizedBox(width: 12),
-          const Text(
-            'KIRAATHANe',
-            style: TextStyle(
+          Text(
+            'KIRAATHANE',
+            style: GoogleFonts.poppins(
               fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: GameTheme.textDark,
-              letterSpacing: 2,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: 1,
             ),
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: GameTheme.goldAccent,
+              color: Colors.amber,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
-                const Icon(Icons.star, color: Colors.white, size: 20),
+                Icon(Icons.star_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 6),
                 Text(
                   '$stars',
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
@@ -165,18 +150,19 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
       child: FilterChip(
         label: Text(
           label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : GameTheme.textDark,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          style: GoogleFonts.poppins(
+            color: isSelected ? Colors.white : Colors.black87,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
         selected: isSelected,
         onSelected: (selected) {
           setState(() => _selectedPeriod = selected ? period : null);
         },
-        selectedColor: GameTheme.copperAccent,
-        backgroundColor: Colors.white.withValues(alpha: 0.5),
+        selectedColor: Colors.amber,
+        backgroundColor: Colors.grey.shade100,
         checkmarkColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
@@ -185,10 +171,10 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
     final quotes = _filteredQuotes;
 
     if (quotes.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Bu dönemde söz bulunmuyor.',
-          style: TextStyle(color: GameTheme.textDark),
+          style: GoogleFonts.poppins(color: Colors.black54, fontSize: 16),
         ),
       );
     }
@@ -214,25 +200,26 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isOwned
-            ? Colors.green.withValues(alpha: 0.1)
-            : Colors.white.withValues(alpha: 0.7),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isOwned
-              ? Colors.green.withValues(alpha: 0.5)
-              : GameTheme.copperAccent.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
         title: Text(
           '"${quote.text}"',
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             fontSize: 14,
             fontStyle: FontStyle.italic,
-            color: isOwned ? Colors.grey : GameTheme.textDark,
+            color: Colors.black87,
+            fontWeight: FontWeight.w500,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -243,40 +230,52 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
             children: [
               Text(
                 '— ${quote.author}',
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isOwned ? Colors.grey : GameTheme.copperAccent,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: GameTheme.goldAccent.withValues(alpha: 0.2),
+                  color: Colors.amber.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(quote.period, style: const TextStyle(fontSize: 10)),
+                child: Text(
+                  quote.period,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.amber,
+                  ),
+                ),
               ),
             ],
           ),
         ),
         trailing: isOwned
-            ? const Icon(Icons.check_circle, color: Colors.green, size: 32)
+            ? Icon(Icons.check_circle_rounded, color: Colors.green, size: 28)
             : ElevatedButton(
                 onPressed: canAfford ? () => _purchaseQuote(quote) : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: GameTheme.goldAccent,
+                  backgroundColor: canAfford
+                      ? Colors.amber
+                      : Colors.grey.shade300,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, size: 16),
+                    Icon(Icons.star_rounded, size: 16, color: Colors.white),
                     const SizedBox(width: 4),
                     Text('${quote.starCost}'),
                   ],
@@ -293,7 +292,7 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${quote.author} sözü satın alındı!'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.amber,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -311,16 +310,20 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
             ref.read(gameProvider.notifier).closeShopDialog();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: GameTheme.copperAccent,
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.grey.shade200,
+            foregroundColor: Colors.black87,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
+          child: Text(
             'KAPAT',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
         ),
       ),

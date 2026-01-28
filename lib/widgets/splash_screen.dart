@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../core/theme/game_theme.dart';
 import 'main_menu_screen.dart';
 
 /// Premium splash screen with brand presentation and font preloading
@@ -71,16 +70,13 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: GameTheme.tableBackgroundColor,
+      backgroundColor: const Color(0xFFF5F5F5),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
-            colors: [
-              GameTheme.tableHighlightColor,
-              GameTheme.tableBackgroundColor,
-            ],
+            colors: [Color(0xFFFFFFFF), Color(0xFFF0F0F0)],
           ),
         ),
         child: Center(
@@ -114,21 +110,18 @@ class _SplashScreenState extends State<SplashScreen> {
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: GameTheme.goldAccent.withValues(alpha: 0.1),
+            color: Colors.amber.shade50,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: GameTheme.goldAccent.withValues(alpha: 0.3),
-              width: 2,
-            ),
+            border: Border.all(color: Colors.amber, width: 3),
             boxShadow: [
               BoxShadow(
-                color: GameTheme.goldAccent.withValues(alpha: 0.2),
-                blurRadius: 30,
-                spreadRadius: 5,
+                color: Colors.amber.withValues(alpha: 0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
               ),
             ],
           ),
-          child: Icon(Icons.menu_book, size: 50, color: GameTheme.goldAccent),
+          child: Icon(Icons.menu_book, size: 50, color: Colors.amber),
         )
         .animate()
         .fadeIn(duration: 1000.ms)
@@ -140,22 +133,15 @@ class _SplashScreenState extends State<SplashScreen> {
         );
   }
 
-  /// Main game title with gold styling
+  /// Main game title
   Widget _buildTitle() {
     return Text(
           "EDEBİNA",
-          style: GoogleFonts.playfairDisplay(
+          style: GoogleFonts.poppins(
             fontSize: 36,
             fontWeight: FontWeight.bold,
-            color: GameTheme.goldAccent,
+            color: Colors.black87,
             letterSpacing: 3,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 10,
-                offset: const Offset(2, 4),
-              ),
-            ],
           ),
         )
         .animate()
@@ -169,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen> {
       "Bilginizi Test Edin",
       style: GoogleFonts.poppins(
         fontSize: 16,
-        color: GameTheme.textDark.withValues(alpha: 0.7),
+        color: Colors.grey.shade600,
         letterSpacing: 1,
       ),
     ).animate().fadeIn(delay: 800.ms, duration: 600.ms);
@@ -184,18 +170,13 @@ class _SplashScreenState extends State<SplashScreen> {
           height: 32,
           child: CircularProgressIndicator(
             strokeWidth: 2.5,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              GameTheme.goldAccent.withValues(alpha: 0.8),
-            ),
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
           ),
         ),
         const SizedBox(height: 16),
         Text(
           "Yükleniyor...",
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: GameTheme.textDark.withValues(alpha: 0.5),
-          ),
+          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade500),
         ),
       ],
     ).animate().fadeIn(delay: 1200.ms, duration: 600.ms);
