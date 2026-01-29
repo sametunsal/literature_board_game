@@ -231,7 +231,14 @@ class _BoardViewState extends ConsumerState<BoardView> {
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.only(top: 60, right: 8),
-                child: _buildPauseButton(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildPauseButton(),
+                    const SizedBox(height: 8),
+                    _buildBotModeButton(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -327,6 +334,71 @@ class _BoardViewState extends ConsumerState<BoardView> {
           duration: MotionDurations.pulse.safe,
         )
         .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+  }
+
+  /// Build the bot mode toggle button
+  Widget _buildBotModeButton() {
+    final themeState = ref.watch(themeProvider);
+    final isDarkMode = themeState.isDarkMode;
+    final tokens = themeState.tokens;
+    final gameNotifier = ref.read(gameProvider.notifier);
+    final isBotPlaying = gameNotifier.isBotPlaying;
+
+    return GestureDetector(
+          onTap: () {
+            ref.read(gameProvider.notifier).toggleBotMode();
+            // Force rebuild to update button appearance
+            setState(() {});
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isBotPlaying
+                  ? Colors.green.withValues(alpha: 0.9)
+                  : tokens.surface.withValues(alpha: isDarkMode ? 0.15 : 0.85),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isBotPlaying
+                    ? Colors.greenAccent
+                    : tokens.surface.withValues(alpha: isDarkMode ? 0.2 : 0.5),
+                width: isBotPlaying ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isBotPlaying
+                      ? Colors.green.withValues(alpha: 0.4)
+                      : Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.smart_toy_rounded,
+              color: isBotPlaying ? Colors.white : tokens.accent,
+              size: 28,
+            ),
+          ),
+        )
+        .animate(
+          onPlay: (controller) {
+            if (isBotPlaying) {
+              controller.repeat();
+            }
+          },
+        )
+        .shimmer(
+          duration: const Duration(seconds: 2),
+          color: isBotPlaying
+              ? Colors.greenAccent.withValues(alpha: 0.5)
+              : Colors.transparent,
+        )
+        .scale(
+          begin: const Offset(0.9, 0.9),
+          end: const Offset(1, 1),
+          duration: const Duration(milliseconds: 200),
+        );
   }
 
   /// Build the pause menu overlay
