@@ -365,6 +365,17 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Colors.amber.shade300;
       case 16:
         return Colors.brown.shade300;
+      // RIGHT COLUMN TILES (17-21) - Vibrant colors for 3rd category occurrences
+      case 17:
+        return Colors.deepPurple.shade400; // edebiSanatlar (3rd)
+      case 18:
+        return Colors.cyan.shade400; // eserKarakter (3rd)
+      case 19:
+        return Colors.lime.shade400; // edebiyatAkimlari (3rd)
+      case 20:
+        return Colors.lightBlue.shade400; // benKimim (3rd)
+      case 21:
+        return Colors.pink.shade500; // tesvik (3rd) - Distinct vibrant pink
       default:
         return Colors.grey.shade200;
     }
