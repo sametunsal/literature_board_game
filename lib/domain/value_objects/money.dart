@@ -1,5 +1,6 @@
 /// Value object for game currency.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 class Money {
   final int value;

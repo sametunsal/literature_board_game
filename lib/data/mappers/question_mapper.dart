@@ -1,5 +1,6 @@
 /// Mapper for converting between QuestionModel (data layer) and Question (domain layer).
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/question.dart';
 import '../../models/game_enums.dart';

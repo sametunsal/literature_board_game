@@ -1,5 +1,6 @@
 /// Game enums for the Literature Quiz RPG
 /// This file contains all enum definitions used throughout the game
+library;
 
 /// Question categories for the Literature Quiz RPG
 enum QuestionCategory {

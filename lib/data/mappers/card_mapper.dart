@@ -1,5 +1,6 @@
 /// Mapper for converting between GameCard (domain layer) and JSON (data layer).
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/game_card.dart';
 import '../../models/game_enums.dart';

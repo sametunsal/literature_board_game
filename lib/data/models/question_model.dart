@@ -1,6 +1,7 @@
 /// Data Transfer Object for Question entity.
 /// Used for JSON serialization and persistence.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 enum QuestionCategoryModel {
   benKimim,

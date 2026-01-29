@@ -1,6 +1,7 @@
 /// Data Transfer Object for BoardTile entity.
 /// Used for JSON serialization and persistence.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 enum DifficultyModel { easy, medium, hard }
 

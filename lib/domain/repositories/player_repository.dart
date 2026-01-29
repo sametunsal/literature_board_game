@@ -1,5 +1,6 @@
 /// Repository interface for player data access.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/player.dart';
 

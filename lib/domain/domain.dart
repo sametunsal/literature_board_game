@@ -1,5 +1,6 @@
 /// Domain layer exports.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 // Entities (located in lib/models/)
 export '../models/player.dart';

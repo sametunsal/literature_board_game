@@ -1,10 +1,10 @@
 /// Use case for drawing chance/fate cards.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import 'dart:math';
 import '../../core/constants/game_constants.dart';
 import '../../models/game_card.dart';
-import '../../models/game_enums.dart';
 import '../../models/player.dart';
 import '../../models/tile_type.dart';
 

@@ -1,5 +1,6 @@
 /// Value object for board position.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../core/constants/game_constants.dart';
 

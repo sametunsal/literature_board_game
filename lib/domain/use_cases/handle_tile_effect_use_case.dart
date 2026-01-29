@@ -1,10 +1,9 @@
 /// Use case for handling tile effects.
 /// Pure Dart - no Flutter dependencies.
+library;
 
-import '../../core/constants/game_constants.dart';
 import '../../models/board_tile.dart';
 import '../../models/player.dart';
-import '../../models/game_enums.dart';
 import '../../models/tile_type.dart';
 import '../../models/difficulty.dart';
 

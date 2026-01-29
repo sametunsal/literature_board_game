@@ -1,11 +1,11 @@
-/// Game constants for the Literature Quiz RPG game.
+/// Game constants for Literature Quiz RPG game.
 /// Centralizes all magic numbers and game rules.
 class GameConstants {
   GameConstants._();
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // BOARD CONFIGURATION (RPG Style: 22 tiles)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════
   static const int boardSize = 22;
   static const int startPosition = 0;
 
@@ -14,27 +14,29 @@ class GameConstants {
   static const int fatePosition = 16; // KADER
   static const int shopPosition = 11; // KIRAATHANe
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // PENALTY SYSTEM (Library Watch)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   static const int jailPosition = 5; // Mapped to ŞANS for legacy code
   static const int jailTurns = 1;
+  static const int libraryPosition = 5; // KÜTÜPHANE
+  static const int signingDayPosition = 16; // İMZA GÜNÜ
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════
   // GAME RULES
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════
   static const int passingStartBonus = 50; // Stars awarded when passing start
   static const int maxConsecutiveDoubles = 3; // Maximum doubles before penalty
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // DICE CONFIGURATION
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   static const int diceMinRoll = 2;
   static const int diceMaxRoll = 12;
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════
   // MASTERY SYSTEM (Literature Quiz RPG)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════
   // Mastery System: 4 levels per category
   // Level 0: Novice (Hiçbir Şey Bilmiyor)
   // Level 1: Çırak (Apprentice) - Requires 3 Easy correct answers
@@ -56,14 +58,14 @@ class GameConstants {
   // Maximum level per category
   static const int maxLevelPerCategory = 3; // Maximum level (Usta)
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // WIN CONDITION
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════
   // Player wins when they have collected 50 quotes AND are Master in all 6 categories
   static const int quotesToCollect = 50; // Total quotes needed to win
   static const int totalCategories = 6; // Total number of categories
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // TIMERS (in seconds)
   // ═══════════════════════════════════════════════════════════════════════════
   static const int questionTimerSeconds = 45; // Standard category tiles
@@ -71,18 +73,18 @@ class GameConstants {
       60; // Extended for Chance/Fate cards
   static const int cardTimerSeconds = 60; // Şans/Kader card timer
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════
   // ANIMATION DURATIONS (milliseconds)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════════════
   static const int hopAnimationDelay = 150;
   static const int cardAnimationDelay = 500;
   static const int diceAnimationDelay = 1500;
   static const int turnChangeDelay = 1200;
   static const int diceResetDelay = 150;
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════════════════
   // ASSETS
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════════════════════
   static const int totalAvatars = 20;
   static String getAvatarPath(int index) =>
       'assets/images/avatar_${(index + 1).toString().padLeft(2, '0')}.png';

@@ -1,5 +1,6 @@
 /// Repository interface for game state persistence.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/player.dart';
 import '../../models/board_tile.dart';

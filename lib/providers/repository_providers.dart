@@ -1,5 +1,6 @@
 /// Provider definitions for repository implementations.
 /// Makes repositories injectable throughout the app.
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/repositories/game_repository.dart';

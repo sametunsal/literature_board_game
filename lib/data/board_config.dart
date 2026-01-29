@@ -1,3 +1,4 @@
+import '../core/constants/game_constants.dart';
 import '../models/board_tile.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
@@ -41,228 +42,144 @@ class BoardConfig {
     QuestionCategory.tesvik, // 6th: Teşvik
   ];
 
-  /// Get category display name in full Turkish
-  static String getCategoryDisplayName(QuestionCategory category) {
-    return category.displayName;
-  }
-
   /// Board geometry
   static const int boardWidth = 6; // Tiles across
   static const int boardHeight = 7; // Tiles down
   static const int boardSize = 22; // Total perimeter tiles
 
-  /// Corner positions
-  static const int startPosition = 0; // Bottom-Right (Başlangıç)
-  static const int libraryPosition = 5; // Bottom-Left (Kütüphane)
-  static const int shopPosition = 11; // Top-Left (Kıraathane)
-  static const int signingDayPosition = 16; // Top-Right (İmza Günü)
+  /// Corner positions (now using GameConstants)
+  static const int startPosition = GameConstants.startPosition;
+  static const int libraryPosition = GameConstants.libraryPosition;
+  static const int shopPosition = GameConstants.shopPosition;
+  static const int signingDayPosition = GameConstants.signingDayPosition;
 
   /// Helper to get category at position (cycles through 6 categories)
   static QuestionCategory _getCategoryAt(int categoryIndex) {
     return _categoryOrder[categoryIndex % 6];
   }
 
-  static List<BoardTile> tiles = [
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDEX 0: START (Bottom-Right Corner)
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: '0',
-      name: 'BAŞLANGIÇ',
-      position: 0,
-      type: TileType.start,
-    ),
+  static List<BoardTile> get tiles {
+    return _generateTiles();
+  }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDICES 1-4: Bottom Row (Right to Left) - 4 Category Tiles
-    // ═══════════════════════════════════════════════════════════════════════════
-    BoardTile(
-      id: '1',
-      name: getCategoryDisplayName(_getCategoryAt(0)),
-      position: 1,
-      type: TileType.category,
-      category: _getCategoryAt(0).name, // turkEdebiyatindaIlkler (1st)
-      difficulty: Difficulty.easy,
-    ),
-    BoardTile(
-      id: '2',
-      name: getCategoryDisplayName(_getCategoryAt(1)),
-      position: 2,
-      type: TileType.category,
-      category: _getCategoryAt(1).name, // edebiSanatlar (1st)
-      difficulty: Difficulty.easy,
-    ),
-    BoardTile(
-      id: '3',
-      name: getCategoryDisplayName(_getCategoryAt(2)),
-      position: 3,
-      type: TileType.category,
-      category: _getCategoryAt(2).name, // eserKarakter (1st)
-      difficulty: Difficulty.medium,
-    ),
-    BoardTile(
-      id: '4',
-      name: getCategoryDisplayName(_getCategoryAt(3)),
-      position: 4,
-      type: TileType.category,
-      category: _getCategoryAt(3).name, // edebiyatAkimlari (1st)
-      difficulty: Difficulty.medium,
-    ),
+  static List<BoardTile> _generateTiles() {
+    final tiles = <BoardTile>[];
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDEX 5: KÜTÜPHANE (Bottom-Left Corner) - Library (Penalty)
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: '5',
-      name: 'KÜTÜPHANE',
-      position: 5,
-      type: TileType.library,
-    ),
+    // Position 0: START (Başlangıç)
+    tiles.add(
+      BoardTile(
+        id: '0',
+        name: 'BAŞLANGIÇ',
+        position: 0,
+        type: TileType.start,
+        category: '',
+        difficulty: Difficulty.easy,
+      ),
+    );
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDICES 6-10: Left Column (Bottom to Top) - 5 Category Tiles
-    // ═══════════════════════════════════════════════════════════════════════════
-    BoardTile(
-      id: '6',
-      name: getCategoryDisplayName(_getCategoryAt(4)),
-      position: 6,
-      type: TileType.category,
-      category: _getCategoryAt(4).name, // benKimim (1st)
-      difficulty: Difficulty.hard,
-    ),
-    BoardTile(
-      id: '7',
-      name: getCategoryDisplayName(_getCategoryAt(5)),
-      position: 7,
-      type: TileType.category,
-      category: _getCategoryAt(5).name, // tesvik (1st)
-      difficulty: Difficulty.easy,
-    ),
-    BoardTile(
-      id: '8',
-      name: getCategoryDisplayName(_getCategoryAt(0)),
-      position: 8,
-      type: TileType.category,
-      category: _getCategoryAt(0).name, // turkEdebiyatindaIlkler (2nd)
-      difficulty: Difficulty.medium,
-    ),
-    BoardTile(
-      id: '9',
-      name: getCategoryDisplayName(_getCategoryAt(1)),
-      position: 9,
-      type: TileType.category,
-      category: _getCategoryAt(1).name, // edebiSanatlar (2nd)
-      difficulty: Difficulty.medium,
-    ),
-    BoardTile(
-      id: '10',
-      name: getCategoryDisplayName(_getCategoryAt(2)),
-      position: 10,
-      type: TileType.category,
-      category: _getCategoryAt(2).name, // eserKarakter (2nd)
-      difficulty: Difficulty.hard,
-    ),
+    // Positions 1-4: Category tiles (bottom row, going left)
+    for (int i = 0; i < 4; i++) {
+      final category = _getCategoryAt(i);
+      tiles.add(
+        BoardTile(
+          id: '${i + 1}',
+          name: category.displayName,
+          position: i + 1,
+          type: TileType.category,
+          category: category.name,
+          difficulty: Difficulty.easy,
+        ),
+      );
+    }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDEX 11: KIRAATHANe (Top-Left Corner) - SHOP
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: '11',
-      name: 'KIRAATHANe',
-      position: 11,
-      type: TileType.shop,
-    ),
+    // Position 5: ŞANS (Chance)
+    tiles.add(
+      BoardTile(
+        id: '5',
+        name: 'ŞANS',
+        position: 5,
+        type: TileType.corner,
+        category: '',
+        difficulty: Difficulty.medium,
+      ),
+    );
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDICES 12-15: Top Row (Left to Right) - 4 Category Tiles
-    // ═══════════════════════════════════════════════════════════════════════════
-    BoardTile(
-      id: '12',
-      name: getCategoryDisplayName(_getCategoryAt(3)),
-      position: 12,
-      type: TileType.category,
-      category: _getCategoryAt(3).name, // edebiyatAkimlari (2nd)
-      difficulty: Difficulty.hard,
-    ),
-    BoardTile(
-      id: '13',
-      name: getCategoryDisplayName(_getCategoryAt(4)),
-      position: 13,
-      type: TileType.category,
-      category: _getCategoryAt(4).name, // benKimim (2nd)
-      difficulty: Difficulty.easy,
-    ),
-    BoardTile(
-      id: '14',
-      name: getCategoryDisplayName(_getCategoryAt(5)),
-      position: 14,
-      type: TileType.category,
-      category: _getCategoryAt(5).name, // tesvik (2nd)
-      difficulty: Difficulty.medium,
-    ),
-    BoardTile(
-      id: '15',
-      name: getCategoryDisplayName(_getCategoryAt(0)),
-      position: 15,
-      type: TileType.category,
-      category: _getCategoryAt(0).name, // turkEdebiyatindaIlkler (3rd)
-      difficulty: Difficulty.hard,
-    ),
+    // Positions 6-10: Category tiles (left column, going up)
+    for (int i = 0; i < 5; i++) {
+      final category = _getCategoryAt(i + 4);
+      tiles.add(
+        BoardTile(
+          id: '${i + 6}',
+          name: category.displayName,
+          position: i + 6,
+          type: TileType.category,
+          category: category.name,
+          difficulty: Difficulty.medium,
+        ),
+      );
+    }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDEX 16: İMZA GÜNÜ (Top-Right Corner) - Signing Day
-    // ═══════════════════════════════════════════════════════════════════════════
-    const BoardTile(
-      id: '16',
-      name: 'İMZA GÜNÜ',
-      position: 16,
-      type: TileType.signingDay,
-    ),
+    // Position 11: KIRAATHANE (Shop)
+    tiles.add(
+      BoardTile(
+        id: '11',
+        name: 'KIRAATHANE',
+        position: 11,
+        type: TileType.shop,
+        category: '',
+        difficulty: Difficulty.medium,
+      ),
+    );
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INDICES 17-21: Right Column (Top to Bottom) - 5 Category Tiles
-    // ═══════════════════════════════════════════════════════════════════════════
-    BoardTile(
-      id: '17',
-      name: getCategoryDisplayName(_getCategoryAt(1)),
-      position: 17,
-      type: TileType.category,
-      category: _getCategoryAt(1).name, // edebiSanatlar (3rd)
-      difficulty: Difficulty.hard,
-    ),
-    BoardTile(
-      id: '18',
-      name: getCategoryDisplayName(_getCategoryAt(2)),
-      position: 18,
-      type: TileType.category,
-      category: _getCategoryAt(2).name, // eserKarakter (3rd)
-      difficulty: Difficulty.easy,
-    ),
-    BoardTile(
-      id: '19',
-      name: getCategoryDisplayName(_getCategoryAt(3)),
-      position: 19,
-      type: TileType.category,
-      category: _getCategoryAt(3).name, // edebiyatAkimlari (3rd)
-      difficulty: Difficulty.medium,
-    ),
-    BoardTile(
-      id: '20',
-      name: getCategoryDisplayName(_getCategoryAt(4)),
-      position: 20,
-      type: TileType.category,
-      category: _getCategoryAt(4).name, // benKimim (3rd)
-      difficulty: Difficulty.medium,
-    ),
-    BoardTile(
-      id: '21',
-      name: getCategoryDisplayName(_getCategoryAt(5)),
-      position: 21,
-      type: TileType.category,
-      category: _getCategoryAt(5).name, // tesvik (3rd)
-      difficulty: Difficulty.hard,
-    ),
-  ];
+    // Positions 12-15: Category tiles (top row, going right)
+    for (int i = 0; i < 4; i++) {
+      final category = _getCategoryAt(i + 9);
+      tiles.add(
+        BoardTile(
+          id: '${i + 12}',
+          name: category.displayName,
+          position: i + 12,
+          type: TileType.category,
+          category: category.name,
+          difficulty: Difficulty.medium,
+        ),
+      );
+    }
+
+    // Position 16: KADER (Fate)
+    tiles.add(
+      BoardTile(
+        id: '16',
+        name: 'KADER',
+        position: 16,
+        type: TileType.corner,
+        category: '',
+        difficulty: Difficulty.hard,
+      ),
+    );
+
+    // Positions 17-21: Category tiles (right column, going down)
+    for (int i = 0; i < 5; i++) {
+      final category = _getCategoryAt(i + 13);
+      tiles.add(
+        BoardTile(
+          id: '${i + 17}',
+          name: category.displayName,
+          position: i + 17,
+          type: TileType.category,
+          category: category.name,
+          difficulty: Difficulty.hard,
+        ),
+      );
+    }
+
+    return tiles;
+  }
+
+  /// Get list of category names for debugging
+  static List<String> getCategoryNames() {
+    return tiles.map((t) => t.category ?? '').toList();
+  }
 
   /// Get tile by ID
   static BoardTile getTile(int id) {
@@ -291,14 +208,18 @@ class BoardConfig {
     if (id < 0 || id >= 22) return null;
 
     // Corners
-    if (id == 0)
+    if (id == 0) {
       return TilePosition(row: 6, col: 5, isCorner: true); // Bottom-Right
-    if (id == 5)
+    }
+    if (id == 5) {
       return TilePosition(row: 6, col: 0, isCorner: true); // Bottom-Left
-    if (id == 11)
+    }
+    if (id == 11) {
       return TilePosition(row: 0, col: 0, isCorner: true); // Top-Left
-    if (id == 16)
+    }
+    if (id == 16) {
       return TilePosition(row: 0, col: 5, isCorner: true); // Top-Right
+    }
 
     // Bottom row (indices 1-4, going left from position 0)
     if (id >= 1 && id <= 4) {

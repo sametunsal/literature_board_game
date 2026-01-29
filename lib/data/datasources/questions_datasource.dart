@@ -1,11 +1,11 @@
 /// Data source for questions.
 /// Integrates with Firebase Firestore with auto-seeding from local JSON.
+library;
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/question.dart';
 import '../../models/game_enums.dart';
 import '../models/question_model.dart';
 

@@ -1,9 +1,9 @@
 /// Use case for property upgrade logic.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/board_tile.dart';
 import '../../models/player.dart';
-import '../../models/game_enums.dart';
 import '../../models/difficulty.dart';
 
 class UpgradePropertyUseCase {

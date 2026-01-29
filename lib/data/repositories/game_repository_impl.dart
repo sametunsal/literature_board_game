@@ -1,6 +1,7 @@
 /// Implementation of GameRepository.
 /// Uses SharedPreferences for persistence.
 /// Pure Dart - no Flutter dependencies (except SharedPreferences).
+library;
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';

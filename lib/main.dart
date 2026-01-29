@@ -6,8 +6,8 @@ import 'providers/game_notifier.dart';
 import 'providers/theme_notifier.dart';
 import 'providers/app_bootstrap.dart';
 import 'models/game_enums.dart';
-import 'widgets/splash_screen.dart';
-import 'widgets/board_view.dart';
+import 'presentation/screens/splash_screen.dart';
+import 'presentation/widgets/board_view.dart';
 import 'core/theme/game_theme.dart';
 
 /// Tracks if Firebase was initialized successfully

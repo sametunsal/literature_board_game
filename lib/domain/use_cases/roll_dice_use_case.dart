@@ -1,5 +1,6 @@
 /// Use case for rolling dice with doubles detection.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import 'dart:math';
 import '../../core/constants/game_constants.dart';

@@ -1,5 +1,6 @@
 /// Domain service for dice rolling.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import 'dart:math';
 import '../value_objects/dice_roll.dart';

@@ -1,5 +1,6 @@
 /// Data model for literary quotes used in the shop
 /// Pure Dart - no Flutter dependencies.
+library;
 
 class LiteraryQuoteModel {
   final String id;

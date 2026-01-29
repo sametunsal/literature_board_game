@@ -1,5 +1,6 @@
 /// Implementation of QuestionRepository.
 /// Uses QuestionsDataSource for loading questions from Firestore.
+library;
 
 import 'dart:math';
 import '../../models/question.dart';
@@ -30,7 +31,7 @@ class QuestionRepositoryImpl implements QuestionRepository {
     QuestionCategory category,
   ) async {
     final allQuestions = await getAllQuestions();
-    return allQuestions.where((q) => q?.category == category).toList();
+    return allQuestions.where((q) => q.category == category).toList();
   }
 
   @override

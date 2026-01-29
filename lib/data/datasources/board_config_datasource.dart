@@ -1,6 +1,7 @@
 /// Data source for board configuration.
 /// Wraps existing board_config.dart data.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/board_tile.dart';
 

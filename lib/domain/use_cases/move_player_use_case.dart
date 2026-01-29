@@ -1,5 +1,6 @@
 /// Use case for player movement logic.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../core/constants/game_constants.dart';
 import '../../models/player.dart';

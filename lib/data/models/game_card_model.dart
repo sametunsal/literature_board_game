@@ -1,6 +1,7 @@
 /// Data Transfer Object for GameCard entity.
 /// Used for JSON serialization and persistence.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 enum CardEffectTypeModel {
   moneyChange, // Para kazan/kaybet

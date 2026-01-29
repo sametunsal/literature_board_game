@@ -1,4 +1,5 @@
 /// Mapper for converting between Player (domain layer) and data layer.
+library;
 
 import 'package:flutter/material.dart';
 import '../../models/player.dart';

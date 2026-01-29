@@ -1,5 +1,6 @@
 /// Repository interface for question loading.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/question.dart';
 import '../../models/game_enums.dart';

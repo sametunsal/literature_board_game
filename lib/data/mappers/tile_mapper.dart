@@ -1,5 +1,6 @@
 /// Mapper for converting between BoardTile (domain layer) and data layer.
 /// Pure Dart - no Flutter dependencies.
+library;
 
 import '../../models/board_tile.dart';
 import '../../models/tile_type.dart';

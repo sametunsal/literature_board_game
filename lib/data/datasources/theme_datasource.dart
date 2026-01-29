@@ -1,6 +1,7 @@
 /// Data source for theme settings.
 /// Uses SharedPreferences for persistence.
 /// Pure Dart - no Flutter dependencies (except SharedPreferences).
+library;
 
 import 'package:shared_preferences/shared_preferences.dart';
 

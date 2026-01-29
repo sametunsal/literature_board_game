@@ -1,6 +1,7 @@
 /// Implementation of PlayerRepository.
 /// Uses SharedPreferences for persistence.
 /// Pure Dart - no Flutter dependencies (except SharedPreferences).
+library;
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,7 +35,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
   Future<void> updatePlayer(Player player) async {
     try {
       final players = await getPlayers();
-      final index = players.indexWhere((p) => p?.id == player.id);
+      final index = players.indexWhere((p) => p.id == player.id);
 
       if (index >= 0) {
         players[index] = player;
