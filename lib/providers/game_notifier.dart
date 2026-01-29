@@ -1728,6 +1728,58 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
+  /// DEBUG: Instantly trigger win for current player
+  /// Sets all 6 categories to Hard (Usta) and gives 50 dummy quotes
+  void debugTriggerWin() {
+    final player = state.currentPlayer;
+
+    debugPrint('🏆 DEBUG: Triggering Instant Win for ${player.name}');
+
+    // Create mastery map with all categories set to Hard (Usta)
+    final masteryLevels = <String, int>{
+      'turkEdebiyatindaIlkler': MasteryLevel.usta.value,
+      'edebiSanatlar': MasteryLevel.usta.value,
+      'eserKarakter': MasteryLevel.usta.value,
+      'edebiyatAkimlari': MasteryLevel.usta.value,
+      'benKimim': MasteryLevel.usta.value,
+      'tesvik': MasteryLevel.usta.value,
+    };
+
+    // Create category progress map with Hard difficulty set
+    final categoryProgress = <String, Map<String, int>>{
+      'turkEdebiyatindaIlkler': {'hard': 3},
+      'edebiSanatlar': {'hard': 3},
+      'eserKarakter': {'hard': 3},
+      'edebiyatAkimlari': {'hard': 3},
+      'benKimim': {'hard': 3},
+      'tesvik': {'hard': 3},
+    };
+
+    // Create 50 dummy quote IDs
+    final dummyQuoteIds = List<String>.generate(50, (i) => 'debug_quote_$i');
+
+    // Update player with all win conditions met
+    List<Player> newPlayers = List.from(state.players);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(
+      mainTitle: 'Ehil',
+      categoryLevels: masteryLevels,
+      categoryProgress: categoryProgress,
+      collectedQuotes: dummyQuoteIds,
+    );
+
+    // Update state with winner and game over
+    state = state.copyWith(
+      players: newPlayers,
+      winner: newPlayers[state.currentPlayerIndex],
+      phase: GamePhase.gameOver,
+    );
+
+    _addLog(
+      '🏆 DEBUG: ${player.name} EHİL oldu! (Instant Win Triggered)',
+      type: 'gameover',
+    );
+  }
+
   void handleKiraathaneLanding() {
     openShopDialog();
   }

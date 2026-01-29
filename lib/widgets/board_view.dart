@@ -237,6 +237,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
                     _buildPauseButton(),
                     const SizedBox(height: 8),
                     _buildBotModeButton(),
+                    const SizedBox(height: 8),
+                    _buildDebugWinButton(),
                   ],
                 ),
               ),
@@ -399,6 +401,38 @@ class _BoardViewState extends ConsumerState<BoardView> {
           end: const Offset(1, 1),
           duration: const Duration(milliseconds: 200),
         );
+  }
+
+  /// Build debug win button for testing victory logic
+  Widget _buildDebugWinButton() {
+    return GestureDetector(
+          onTap: () {
+            ref.read(gameProvider.notifier).debugTriggerWin();
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.amber,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.shade700, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(Icons.emoji_events, color: Colors.white, size: 28),
+          ),
+        )
+        .animate()
+        .fadeIn(
+          delay: MotionDurations.slow.safe,
+          duration: MotionDurations.pulse.safe,
+        )
+        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 
   /// Build the pause menu overlay
