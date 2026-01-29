@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,7 @@ import '../data/repositories/quote_repository.dart';
 import '../providers/game_notifier.dart';
 
 /// Shop dialog where players can spend stars to buy literary quotes
+/// Features rotating stock system - shows only 6 random unowned quotes each visit
 class ShopDialog extends ConsumerStatefulWidget {
   const ShopDialog({super.key});
 
@@ -15,7 +17,11 @@ class ShopDialog extends ConsumerStatefulWidget {
 
 class _ShopDialogState extends ConsumerState<ShopDialog> {
   final QuoteRepository _quoteRepo = QuoteRepository();
-  List<LiteraryQuoteModel> _quotes = [];
+  final _random = Random();
+
+  List<LiteraryQuoteModel> _allQuotes = [];
+  List<LiteraryQuoteModel> _dailyQuotes =
+      []; // Rotating stock - only 6 quotes shown
   String? _selectedPeriod;
   List<String> _periods = [];
   bool _isLoading = true;
@@ -29,16 +35,34 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
   Future<void> _loadQuotes() async {
     final quotes = await _quoteRepo.getAllQuotes();
     final periods = await _quoteRepo.getAllPeriods();
+
+    // Get current player to filter owned quotes
+    final state = ref.read(gameProvider);
+    final ownedIds = state.currentPlayer.collectedQuotes.toSet();
+
+    // Filter out already owned quotes
+    final availableQuotes = quotes
+        .where((q) => !ownedIds.contains(q.id))
+        .toList();
+
+    // Shuffle available quotes for randomness
+    availableQuotes.shuffle(_random);
+
+    // Take top 6 (or fewer if not enough available)
+    final dailyStock = availableQuotes.take(6).toList();
+
     setState(() {
-      _quotes = quotes;
+      _allQuotes = quotes;
+      _dailyQuotes = dailyStock;
       _periods = periods;
       _isLoading = false;
     });
   }
 
   List<LiteraryQuoteModel> get _filteredQuotes {
-    if (_selectedPeriod == null) return _quotes;
-    return _quotes.where((q) => q.period == _selectedPeriod).toList();
+    // Filter daily stock by period if selected
+    if (_selectedPeriod == null) return _dailyQuotes;
+    return _dailyQuotes.where((q) => q.period == _selectedPeriod).toList();
   }
 
   @override
@@ -67,6 +91,9 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
           children: [
             // Header
             _buildHeader(player.stars),
+
+            // Daily Selection Banner
+            _buildDailyBanner(),
 
             // Period Filter
             _buildPeriodFilter(),
@@ -129,6 +156,37 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
     );
   }
 
+  Widget _buildDailyBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.shade200, width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.auto_awesome_rounded,
+            color: Colors.purple.shade700,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '📚 Günün Nadide Eserleri',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.purple.shade900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPeriodFilter() {
     return Container(
       height: 50,
@@ -172,9 +230,38 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
 
     if (quotes.isEmpty) {
       return Center(
-        child: Text(
-          'Bu dönemde söz bulunmuyor.',
-          style: GoogleFonts.poppins(color: Colors.black54, fontSize: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.celebration_rounded,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tebrikler! Tüm eserleri topladın.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '🏆 EHİL oldun!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.amber.shade700,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
