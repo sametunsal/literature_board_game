@@ -5,8 +5,8 @@ import '../../models/player.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/motion/motion_constants.dart';
 
-/// Animated pawn widget with premium 3D appearance
-/// Features hopping animation with parabolic arc and squash & stretch effects
+/// Animated pawn widget with polished 2D appearance
+/// Features smooth slide animation with subtle scale pulse
 class PawnWidget extends StatefulWidget {
   final Player player;
   final double size;
@@ -26,130 +26,62 @@ class PawnWidget extends StatefulWidget {
 }
 
 class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
-  late AnimationController _hopController;
-  late Animation<double> _verticalArc;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   // Pulsating glow controller
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
 
-  // Movement juice states
+  // Movement state
   bool _isMoving = false;
-  bool _showImpactFlash = false;
-  bool _isSquashing = false;
-  Timer? _impactFlashTimer;
-  Timer? _squashTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // Hop animation - uses MotionDurations.pawn for consistent timing
-    _hopController = AnimationController(
+    // Pulse animation - subtle scale up when moving
+    _pulseController = AnimationController(
       duration: MotionDurations.pawn.safe,
       vsync: this,
     );
 
-    // Parabolic arc - smooth up and down with proper physics
-    _verticalArc = TweenSequence<double>([
-      // Quick rise (anticipation)
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0,
-          end: -24,
-        ).chain(CurveTween(curve: Curves.easeOutQuad)),
-        weight: 30,
-      ),
-      // Peak hang time (weightlessness)
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: -24,
-          end: -20,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 15,
-      ),
-      // Fall with gravity acceleration
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: -20,
-          end: 0,
-        ).chain(CurveTween(curve: Curves.easeInQuad)),
-        weight: 40,
-      ),
-      // Small settle bounce
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0,
-          end: -3,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 8,
-      ),
-      // Final settle
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: -3,
-          end: 0,
-        ).chain(CurveTween(curve: Curves.decelerate)),
-        weight: 7,
-      ),
-    ]).animate(_hopController);
-
-    // Scale squash/stretch effect - single animation value
-    // 1.0 = normal, >1.0 = stretch Y/squash X, <1.0 = squash Y/stretch X
-    _scaleAnimation = TweenSequence<double>([
-      // Stretch vertically on takeoff
+    // Simple scale pulse: 1.0 → 1.1 → 1.0
+    _pulseAnimation = TweenSequence<double>([
+      // Scale up quickly (pickup)
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 1.0,
-          end: 1.15,
+          end: 1.1,
         ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 15,
+        weight: 20,
       ),
-      // Normal at peak
+      // Hold at peak while sliding
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 1.15,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 45,
-      ),
-      // Compress just before impact
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 0.92,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 25,
-      ),
-      // Recover with spring
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.92,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 15,
-      ),
-    ]).animate(_hopController);
-
-    // Slight rotation during jump for dynamic feel
-    _rotationAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0,
-          end: -0.05,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: -0.05,
-          end: 0,
+          begin: 1.1,
+          end: 1.1,
         ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 60,
       ),
-    ]).animate(_hopController);
+      // Scale back down (place)
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.1,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 20,
+      ),
+    ]).animate(_pulseController);
+
+    // Pulse controller listener for movement state
+    _pulseController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() => _isMoving = false);
+        }
+      }
+    });
 
     // Pulsating glow animation - uses slow duration for gentle effect
     _glowController = AnimationController(
@@ -161,64 +93,21 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
       CurvedAnimation(parent: _glowController, curve: MotionCurves.standard),
     );
 
-    // Hop controller listener for movement juice
-    _hopController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        if (mounted) {
-          // Trigger squash effect on landing
-          _triggerSquashEffect();
-
-          // Landing impact flash
-          setState(() {
-            _isMoving = false;
-            _showImpactFlash = true;
-          });
-        }
-
-        // Reset impact flash after brief display
-        _impactFlashTimer?.cancel();
-        _impactFlashTimer = Timer(MotionDurations.fast, () {
-          if (mounted) {
-            setState(() => _showImpactFlash = false);
-          }
-        });
-      }
-    });
-
     if (widget.isCurrentTurn) {
       _glowController.repeat(reverse: true);
     }
-  }
-
-  /// Trigger the squash effect when landing
-  /// scaleY: 0.8, scaleX: 1.2 for 100ms then spring back
-  void _triggerSquashEffect() {
-    if (mounted) {
-      setState(() => _isSquashing = true);
-    }
-
-    _squashTimer?.cancel();
-    _squashTimer = Timer(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        setState(() => _isSquashing = false);
-      }
-    });
   }
 
   @override
   void didUpdateWidget(PawnWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Trigger hop on position change with movement juice
+    // Trigger pulse on position change
     if (oldWidget.player.position != widget.player.position) {
       if (mounted) {
-        setState(() {
-          _isMoving = true;
-          _showImpactFlash = false;
-          _isSquashing = false;
-        });
+        setState(() => _isMoving = true);
       }
-      _hopController.forward(from: 0);
+      _pulseController.forward(from: 0);
     }
 
     // Handle glow
@@ -232,9 +121,7 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _impactFlashTimer?.cancel();
-    _squashTimer?.cancel();
-    _hopController.dispose();
+    _pulseController.dispose();
     _glowController.dispose();
     super.dispose();
   }
@@ -242,38 +129,13 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_hopController, _glowController]),
+      animation: Listenable.merge([_pulseController, _glowController]),
       builder: (context, child) {
-        // Calculate squash/stretch values from single animation
-        // Volume preservation: if Y stretches, X compresses and vice versa
-        double scaleY = _scaleAnimation.value;
-        double scaleX = 1.0 + (1.0 - scaleY); // Inverse relationship
+        final scale = _pulseAnimation.value;
 
-        // Apply landing squash effect (overrides the animation values)
-        if (_isSquashing) {
-          scaleX = 1.2; // Widen
-          scaleY = 0.8; // Squash
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        // 2.5D BILLBOARDING: Counter-rotate pawn to stand up vertically
-        // The board is tilted by 1.0 radians (~57 degrees), so we rotate
-        // the pawn by -1.0 radians to make it face the camera
-        // ═══════════════════════════════════════════════════════════════
-        const boardTiltAngle = 1.0; // Must match board_view.dart tiltAngle
-
-        return Transform.translate(
-          offset: Offset(0, _verticalArc.value),
-          child: Transform(
-            alignment: Alignment.bottomCenter, // Pivot from the feet
-            transform: Matrix4.identity()
-              ..rotateX(
-                -boardTiltAngle,
-              ) // Counteract board's tilt (billboarding)
-              ..scaleByDouble(scaleX, scaleY, 1.0, 1.0)
-              ..rotateZ(_rotationAnimation.value),
-            child: child,
-          ),
+        return Transform.scale(
+          scale: scale,
+          child: child,
         );
       },
       child: _buildPawnToken(),
@@ -295,16 +157,16 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            // 3D gradient
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            // 2D gradient for polished appearance
+            gradient: RadialGradient(
+              center: const Alignment(-0.3, -0.3),
+              radius: 0.8,
               colors: [
                 Color.lerp(color, Colors.white, 0.35)!,
                 color,
-                Color.lerp(color, Colors.black, 0.25)!,
+                Color.lerp(color, Colors.black, 0.15)!,
               ],
-              stops: const [0.0, 0.45, 1.0],
+              stops: const [0.0, 0.5, 1.0],
             ),
             shape: BoxShape.circle,
             border: Border.all(
@@ -316,38 +178,18 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
             boxShadow: [
               // Drop shadow
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
-                blurRadius: 10,
-                offset: const Offset(2, 5),
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 8,
+                offset: const Offset(2, 3),
               ),
-              // Movement glow - soft shadow under pawn while moving
+              // Movement glow - enhanced while moving
               if (_isMoving)
                 BoxShadow(
-                  color: color.withValues(alpha: 0.25),
-                  blurRadius: 16,
-                  spreadRadius: 4,
-                ),
-              // Impact flash glow on landing
-              if (_showImpactFlash)
-                BoxShadow(
-                  color: color.withValues(alpha: 0.6),
-                  blurRadius: 20,
-                  spreadRadius: 6,
-                ),
-              if (_showImpactFlash)
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: color.withValues(alpha: 0.3),
                   blurRadius: 12,
-                  spreadRadius: 3,
+                  spreadRadius: 2,
                 ),
-              // Squash impact ring
-              if (_isSquashing)
-                BoxShadow(
-                  color: color.withValues(alpha: 0.4),
-                  blurRadius: 24,
-                  spreadRadius: 8,
-                ),
-              // Pulsating glow
+              // Pulsating glow for current turn
               if (isCurrentTurn)
                 BoxShadow(
                   color: color.withValues(alpha: 0.25 + (glowIntensity * 0.5)),
@@ -373,13 +215,13 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
             children: [
               // Highlight shine
               Positioned(
-                top: size * 0.08,
-                left: size * 0.12,
+                top: size * 0.1,
+                left: size * 0.15,
                 child: Container(
-                  width: size * 0.28,
-                  height: size * 0.16,
+                  width: size * 0.25,
+                  height: size * 0.15,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: Colors.white.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(size),
                   ),
                 ),
@@ -388,16 +230,16 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
               ClipOval(
                 child: Image.asset(
                   GameConstants.getAvatarPath(widget.player.iconIndex),
-                  width: size * 0.6,
-                  height: size * 0.6,
+                  width: size * 0.55,
+                  height: size * 0.55,
                   fit: BoxFit.contain,
                   color: widget.player.color,
                   colorBlendMode: BlendMode.srcIn,
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(
                       Icons.person,
-                      size: size * 0.52,
-                      color: Colors.white,
+                      size: size * 0.5,
+                      color: Colors.white.withValues(alpha: 0.9),
                     );
                   },
                 ),
@@ -411,7 +253,7 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
 }
 
 /// Container that smoothly moves pawn groups across the board
-/// Uses flutter_animate for natural sliding and bouncing feel
+/// Uses flutter_animate for natural sliding feel
 class AnimatedPawnContainer extends StatefulWidget {
   final Offset center;
   final double areaSize;
@@ -493,7 +335,7 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
       ),
     );
 
-    // Apply flutter_animate effects when position changes
+    // Apply smooth slide animation when position changes
     if (_justMoved && _previousCenter != null) {
       final dx = left - (_previousCenter!.dx - (widget.areaSize / 2));
       final dy = top - (_previousCenter!.dy - (widget.areaSize / 2));
@@ -504,21 +346,7 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
             begin: Offset(-dx, -dy),
             end: Offset.zero,
             duration: MotionDurations.pawn.safe,
-            curve: MotionCurves.standard,
-          )
-          .scale(
-            begin: const Offset(1.0, 1.0),
-            end: const Offset(1.15, 1.15),
-            duration: MotionDurations.fast.safe,
-            delay: MotionDurations.pawn.safe,
-            curve: MotionCurves.standard,
-          )
-          .then()
-          .scale(
-            begin: const Offset(1.15, 1.15),
-            end: const Offset(1.0, 1.0),
-            duration: MotionDurations.fast.safe,
-            curve: MotionCurves.decelerate,
+            curve: Curves.easeInOutCubic,
           );
     }
 

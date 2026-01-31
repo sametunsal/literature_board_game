@@ -131,8 +131,11 @@ class _GameOverDialogState extends ConsumerState<GameOverDialog>
         Center(
           child:
               Container(
-                    width: 420,
-                    constraints: const BoxConstraints(maxHeight: 600),
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    constraints: BoxConstraints(
+                      maxWidth: 420,
+                      maxHeight: MediaQuery.of(context).size.height * 0.9,
+                    ),
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
                       // Theme-aware gradient background

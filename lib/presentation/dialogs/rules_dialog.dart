@@ -17,8 +17,11 @@ class RulesDialog extends ConsumerWidget {
       insetPadding: const EdgeInsets.all(16),
       child: Center(
         child: Container(
-          width: 700,
-          height: 600,
+          width: MediaQuery.of(context).size.width * 0.95,
+          constraints: BoxConstraints(
+            maxWidth: 700,
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
           decoration: BoxDecoration(
             color: tokens.dialogBackground.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(24),
