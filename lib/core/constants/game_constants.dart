@@ -4,37 +4,41 @@ class GameConstants {
   GameConstants._();
 
   // ═══════════════════════════════════════════════════════════════
-  // BOARD CONFIGURATION (RPG Style: 22 tiles)
-  // ═════════════════════════════════════════════════════════
-  static const int boardSize = 22;
+  // BOARD CONFIGURATION (RPG Style: 26 tiles - expanded from 22)
+  // ═══════════════════════════════════════════════════════════════
+  static const int boardSize = 26; // Updated from 22 to 26
   static const int startPosition = 0;
 
-  // Corner Positions (new layout)
-  static const int chancePosition = 5; // ŞANS
-  static const int fatePosition = 16; // KADER
-  static const int shopPosition = 11; // KIRAATHANe
+  // Corner Positions (updated for 26-tile board)
+  static const int signingDayPosition = 6; // İMZA GÜNÜ (Bottom-Left corner)
+  static const int shopPosition = 12; // KIRAATHANE (Top-Left corner)
+  static const int libraryPosition = 18; // KÜTÜPHANE (Top-Right corner)
+
+  // Special Tile Positions (Şans and Kader)
+  static const int chancePosition = 3; // ŞANS (Bottom edge - between positions 2 and 4)
+  static const int chancePositionTop = 15; // ŞANS (Top edge - between positions 14 and 16)
+  static const int fatePosition = 9; // KADER (Left edge - between positions 8 and 10)
+  static const int fatePositionRight = 21; // KADER (Right edge - between positions 20 and 22)
 
   // ═══════════════════════════════════════════════════════════════
   // PENALTY SYSTEM (Library Watch)
   // ═══════════════════════════════════════════════════════════════
-  static const int jailPosition = 5; // Mapped to ŞANS for legacy code
+  static const int jailPosition = 18; // KÜTÜPHANE (Library) - updated position
   static const int jailTurns = 1;
-  static const int libraryPosition = 5; // KÜTÜPHANE
-  static const int signingDayPosition = 16; // İMZA GÜNÜ
 
-  // ═════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // GAME RULES
-  // ═════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   static const int passingStartBonus = 50; // Stars awarded when passing start
   static const int maxConsecutiveDoubles = 3; // Maximum doubles before penalty
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════
   // DICE CONFIGURATION
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════
   static const int diceMinRoll = 2;
   static const int diceMaxRoll = 12;
 
-  // ═════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════
   // MASTERY SYSTEM (Literature Quiz RPG)
   // ═══════════════════════════════════════════════════════════════════════
   // Mastery System: 4 levels per category
@@ -84,7 +88,7 @@ class GameConstants {
 
   // ═════════════════════════════════════════════════════════════════════════════════
   // ASSETS
-  // ═══════════════════════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════════════════════════════
   static const int totalAvatars = 20;
   static String getAvatarPath(int index) =>
       'assets/images/avatar_${(index + 1).toString().padLeft(2, '0')}.png';

@@ -122,6 +122,18 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           iconColor: Colors.purple.shade700,
           label: 'İMZA GÜNÜ',
         );
+      case TileType.chance:
+        return _buildCornerTileContent(
+          icon: Icons.casino,
+          iconColor: Colors.amber.shade700,
+          label: 'ŞANS',
+        );
+      case TileType.fate:
+        return _buildCornerTileContent(
+          icon: Icons.auto_awesome,
+          iconColor: Colors.deepPurple.shade700,
+          label: 'KADER',
+        );
       case TileType.corner:
         return _buildCornerTileContent(
           icon: Icons.star,
