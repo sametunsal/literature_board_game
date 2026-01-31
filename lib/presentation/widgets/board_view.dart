@@ -60,6 +60,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
   bool _showPauseMenu = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Dev Switch: Top-Down vs 3D Perspective
+  // Defaults to TRUE as per current milestone requirement
+  bool _isTopDown = true;
+
   // Landing pulse effect state
   int? _pulsingTileId;
   final Map<String, int> _lastPlayerPositions = {};
@@ -181,6 +185,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
                     _buildBotModeButton(),
                     const SizedBox(height: 8),
                     _buildDebugWinButton(),
+                    const SizedBox(height: 8),
+                    _buildViewToggle(),
                   ],
                 ),
               ),
@@ -383,6 +389,56 @@ class _BoardViewState extends ConsumerState<BoardView> {
         .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 
+  /// Build view toggle button (Top-Down vs 3D)
+  Widget _buildViewToggle() {
+    return GestureDetector(
+          onTap: () {
+            setState(() {
+              _isTopDown = !_isTopDown;
+            });
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _isTopDown
+                  ? Colors.cyan.shade700
+                  : Colors.deepPurple.shade700,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isTopDown ? Colors.cyanAccent : Colors.deepPurpleAccent,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (_isTopDown ? Colors.cyan : Colors.deepPurple)
+                      .withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              _isTopDown ? Icons.grid_view_rounded : Icons.view_in_ar_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        )
+        .animate(target: _isTopDown ? 1 : 0)
+        .scale(
+          begin: const Offset(1, 1),
+          end: const Offset(1.1, 1.1),
+          duration: 200.ms,
+        )
+        .then()
+        .scale(
+          begin: const Offset(1.1, 1.1),
+          end: const Offset(1, 1),
+          duration: 200.ms,
+        );
+  }
+
   /// Build the pause menu overlay
   Widget _buildPauseOverlay() {
     return Positioned.fill(
@@ -440,9 +496,11 @@ class _BoardViewState extends ConsumerState<BoardView> {
     const thicknessOffset = 8.0; // Visual thickness of the board
 
     return Transform(
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, perspectiveDepth) // Perspective depth
-            ..rotateX(tiltAngle), // Tilt backwards
+          transform: _isTopDown
+              ? Matrix4.identity() // Top-down view (flat)
+              : (Matrix4.identity()
+                  ..setEntry(3, 2, perspectiveDepth) // Perspective depth
+                  ..rotateX(tiltAngle)), // Tilt backwards
           alignment: Alignment.center,
           child: Stack(
             clipBehavior: Clip.none,
