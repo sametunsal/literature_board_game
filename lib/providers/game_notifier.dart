@@ -723,6 +723,18 @@ class GameNotifier extends StateNotifier<GameState> {
         // Generic corners - end turn
         endTurn();
         break;
+      case TileType.chance:
+        _logBot('Tile type: CHANCE (ŞANS)');
+        // ŞANS - Placeholder for chance card logic
+        _addLog('🎲 ${state.currentPlayer.name} ŞANS karesine geldi! (Kart mantığı yakında)');
+        endTurn();
+        break;
+      case TileType.fate:
+        _logBot('Tile type: FATE (KADER)');
+        // KADER - Placeholder for fate card logic
+        _addLog('⚡ ${state.currentPlayer.name} KADER karesine geldi! (Kart mantığı yakında)');
+        endTurn();
+        break;
     }
   }
 
