@@ -92,11 +92,11 @@ class BoardConfig {
       );
     }
 
-    // Position 5: ŞANS (Chance)
+    // Position 5: İMZA GÜNÜ (Signing Day)
     tiles.add(
       BoardTile(
         id: '5',
-        name: 'ŞANS',
+        name: 'İMZA GÜNÜ',
         position: 5,
         type: TileType.corner,
         category: '',
@@ -146,11 +146,11 @@ class BoardConfig {
       );
     }
 
-    // Position 16: KADER (Fate)
+    // Position 16: KÜTÜPHANE (Library)
     tiles.add(
       BoardTile(
         id: '16',
-        name: 'KADER',
+        name: 'KÜTÜPHANE',
         position: 16,
         type: TileType.corner,
         category: '',
