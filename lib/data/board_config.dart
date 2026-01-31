@@ -6,41 +6,34 @@ import '../models/game_enums.dart';
 
 /// Board configuration with 26 tiles for RPG-style Literature Board Game
 ///
-/// 6x7 RECTANGULAR GRID LAYOUT (26 tiles on perimeter):
+/// RECTANGULAR GRID LAYOUT (26 tiles on perimeter):
 ///
-///   Width: 6 tiles | Height: 7 tiles
+///   Tile Mapping (Clockwise from Bottom-Right):
 ///
-///   Grid Visual (indices shown):
+///   BOTTOM ROW (7 tiles): Index 0-6
+///   - Index 0: BAŞLANGIÇ (Start)
+///   - Indices 1-4: 4 Category tiles
+///   - Index 5: ŞANS (Chance) - SPECIAL TILE
+///   - Index 6: İMZA GÜNÜ (Signing Day) - CORNER
 ///
-///   [12-SHOP] [11-Cat] [10-Cat] [9-KADER] [8-Cat]  [7-Cat]   -- Top row (going right from left corner)
-///   [23-Cat ]                                         [18-Cat]
-///   [24-Cat ]                                         [19-Cat]
-///   [25-Cat ]           CENTER AREA                    [20-Cat]
-///   [0-START]           (empty)                        [21-KADER]
-///   [1-Cat  ]                                         [22-Cat]
-///   [2-Cat  ] [3-SANS] [4-Cat]  [5-Cat]  [6-IMZA]  [7-Cat]   -- Bottom row (going left from start)
+///   LEFT COLUMN (6 tiles, excluding shared corner): Index 7-12
+///   - Indices 7-10: 4 Category tiles
+///   - Index 11: KADER (Fate) - SPECIAL TILE
+///   - Index 12: KIRAATHANE (Shop) - CORNER
 ///
-/// Tile Mapping (Clockwise from Bottom-Right):
-///   - Index 0 (Bottom-Right): START (Başlangıç)
-///   - Indices 1-2 (Bottom row): 2 Category tiles
-///   - Index 3 (Bottom row): ŞANS (Chance) - SPECIAL TILE
-///   - Indices 4-5 (Bottom row): 2 Category tiles
-///   - Index 6 (Bottom-Left): İMZA GÜNÜ (Signing Day) - Corner
-///   - Indices 7-8 (Left column): 2 Category tiles
-///   - Index 9 (Left column): KADER (Fate) - SPECIAL TILE
-///   - Indices 10-11 (Left column): 2 Category tiles
-///   - Index 12 (Top-Left): KIRAATHANE (Shop) - Corner
-///   - Indices 13-14 (Top row): 2 Category tiles
-///   - Index 15 (Top row): ŞANS (Chance) - SPECIAL TILE
-///   - Indices 16-17 (Top row): 2 Category tiles
-///   - Index 18 (Top-Right): KÜTÜPHANE (Library) - Corner
-///   - Indices 19-20 (Right column): 2 Category tiles
-///   - Index 21 (Right column): KADER (Fate) - SPECIAL TILE
-///   - Indices 22-25 (Right column): 3 Category tiles back to start
+///   TOP ROW (6 tiles, excluding shared corner): Index 13-18
+///   - Indices 13-16: 4 Category tiles
+///   - Index 17: ŞANS (Chance) - SPECIAL TILE
+///   - Index 18: KÜTÜPHANE (Library) - CORNER
 ///
-/// Categories repeat 3+ times each (18 category tiles + 4 special tiles + 4 corners = 26 total)
+///   RIGHT COLUMN (7 tiles, excluding shared corner): Index 19-25
+///   - Indices 19-22: 4 Category tiles
+///   - Index 23: KADER (Fate) - SPECIAL TILE
+///   - Indices 24-25: 2 Category tiles back to start
+///
+///   Total: 26 tiles (18 category + 4 special + 3 corners + 1 start = 26)
 class BoardConfig {
-  /// The 6 question categories in specified order (repeats 3x on board)
+  /// The 6 question categories in specified order
   static final List<QuestionCategory> _categoryOrder = [
     QuestionCategory.turkEdebiyatindaIlkler, // 1st: Türk Edebiyatında İlkler
     QuestionCategory.edebiSanatlar, // 2nd: Edebi Sanatlar
@@ -51,21 +44,24 @@ class BoardConfig {
   ];
 
   /// Board geometry
-  static const int boardWidth = 6; // Tiles across
+  static const int boardWidth = 7; // Tiles across (increased for 26-tile board)
   static const int boardHeight = 7; // Tiles down
-  static const int boardSize = 26; // Total perimeter tiles (was 22, now 26)
+  static const int boardSize = 26; // Total perimeter tiles
 
   /// Corner positions (updated for 26-tile board)
-  static const int startPosition = GameConstants.startPosition;
-  static const int libraryPosition = GameConstants.libraryPosition;
-  static const int shopPosition = GameConstants.shopPosition;
-  static const int signingDayPosition = GameConstants.signingDayPosition;
+  static const int startPosition = 0;
+  static const int signingDayPosition = 6; // İMZA GÜNÜ (Bottom-Left corner)
+  static const int shopPosition = 12; // KIRAATHANE (Top-Left corner)
+  static const int libraryPosition = 18; // KÜTÜPHANE (Top-Right corner)
 
   /// Special tile positions (Şans and Kader)
-  static const int sansBottomEdge = 3; // ŞANS on bottom edge
-  static const int sansTopEdge = 15; // ŞANS on top edge
-  static const int kaderLeftEdge = 9; // KADER on left edge
-  static const int kaderRightEdge = 21; // KADER on right edge
+  static const int chancePosition1 = 5; // ŞANS on bottom edge
+  static const int chancePosition2 = 17; // ŞANS on top edge
+  static const int fatePosition1 = 11; // KADER on left edge
+  static const int fatePosition2 = 23; // KADER on right edge
+
+  /// All corner indices for easy reference
+  static const List<int> cornerIndices = [0, 6, 12, 18];
 
   /// Helper to get category at position (cycles through 6 categories)
   static QuestionCategory _getCategoryAt(int categoryIndex) {
@@ -79,6 +75,10 @@ class BoardConfig {
   static List<BoardTile> _generateTiles() {
     final tiles = <BoardTile>[];
 
+    // ═══════════════════════════════════════════════════════════════
+    // BOTTOM ROW (7 tiles): Indices 0-6
+    // ═══════════════════════════════════════════════════════════════
+
     // Position 0: START (Başlangıç)
     tiles.add(
       BoardTile(
@@ -91,8 +91,8 @@ class BoardConfig {
       ),
     );
 
-    // Positions 1-2: Category tiles (bottom row, first half)
-    for (int i = 0; i < 2; i++) {
+    // Positions 1-4: 4 Category tiles
+    for (int i = 0; i < 4; i++) {
       final category = _getCategoryAt(i);
       tiles.add(
         BoardTile(
@@ -106,47 +106,36 @@ class BoardConfig {
       );
     }
 
-    // Position 3: ŞANS (Chance) - NEW SPECIAL TILE
+    // Position 5: ŞANS (Chance) - SPECIAL TILE
     tiles.add(
       BoardTile(
-        id: '3',
+        id: '5',
         name: 'ŞANS',
-        position: 3,
+        position: 5,
         type: TileType.chance,
         category: '',
         difficulty: Difficulty.medium,
       ),
     );
 
-    // Positions 4-5: Category tiles (bottom row, second half)
-    for (int i = 0; i < 2; i++) {
-      final category = _getCategoryAt(i + 2);
-      tiles.add(
-        BoardTile(
-          id: '${i + 4}',
-          name: category.displayName,
-          position: i + 4,
-          type: TileType.category,
-          category: category.name,
-          difficulty: Difficulty.easy,
-        ),
-      );
-    }
-
-    // Position 6: İMZA GÜNÜ (Signing Day) - Corner
+    // Position 6: İMZA GÜNÜ (Signing Day) - CORNER
     tiles.add(
       BoardTile(
         id: '6',
         name: 'İMZA GÜNÜ',
         position: 6,
-        type: TileType.corner,
+        type: TileType.signingDay,
         category: '',
         difficulty: Difficulty.medium,
       ),
     );
 
-    // Positions 7-8: Category tiles (left column, first half)
-    for (int i = 0; i < 2; i++) {
+    // ═══════════════════════════════════════════════════════════════
+    // LEFT COLUMN (6 tiles, excluding shared corner): Indices 7-12
+    // ═══════════════════════════════════════════════════════════════
+
+    // Positions 7-10: 4 Category tiles
+    for (int i = 0; i < 4; i++) {
       final category = _getCategoryAt(i + 4);
       tiles.add(
         BoardTile(
@@ -160,34 +149,19 @@ class BoardConfig {
       );
     }
 
-    // Position 9: KADER (Fate) - NEW SPECIAL TILE
+    // Position 11: KADER (Fate) - SPECIAL TILE
     tiles.add(
       BoardTile(
-        id: '9',
+        id: '11',
         name: 'KADER',
-        position: 9,
+        position: 11,
         type: TileType.fate,
         category: '',
         difficulty: Difficulty.medium,
       ),
     );
 
-    // Positions 10-11: Category tiles (left column, second half)
-    for (int i = 0; i < 2; i++) {
-      final category = _getCategoryAt(i + 6);
-      tiles.add(
-        BoardTile(
-          id: '${i + 10}',
-          name: category.displayName,
-          position: i + 10,
-          type: TileType.category,
-          category: category.name,
-          difficulty: Difficulty.medium,
-        ),
-      );
-    }
-
-    // Position 12: KIRAATHANE (Shop) - Corner
+    // Position 12: KIRAATHANE (Shop) - CORNER
     tiles.add(
       BoardTile(
         id: '12',
@@ -199,8 +173,12 @@ class BoardConfig {
       ),
     );
 
-    // Positions 13-14: Category tiles (top row, first half)
-    for (int i = 0; i < 2; i++) {
+    // ═══════════════════════════════════════════════════════════════
+    // TOP ROW (6 tiles, excluding shared corner): Indices 13-18
+    // ═══════════════════════════════════════════════════════════════
+
+    // Positions 13-16: 4 Category tiles
+    for (int i = 0; i < 4; i++) {
       final category = _getCategoryAt(i + 8);
       tiles.add(
         BoardTile(
@@ -214,47 +192,36 @@ class BoardConfig {
       );
     }
 
-    // Position 15: ŞANS (Chance) - NEW SPECIAL TILE
+    // Position 17: ŞANS (Chance) - SPECIAL TILE
     tiles.add(
       BoardTile(
-        id: '15',
+        id: '17',
         name: 'ŞANS',
-        position: 15,
+        position: 17,
         type: TileType.chance,
         category: '',
         difficulty: Difficulty.medium,
       ),
     );
 
-    // Positions 16-17: Category tiles (top row, second half)
-    for (int i = 0; i < 2; i++) {
-      final category = _getCategoryAt(i + 10);
-      tiles.add(
-        BoardTile(
-          id: '${i + 16}',
-          name: category.displayName,
-          position: i + 16,
-          type: TileType.category,
-          category: category.name,
-          difficulty: Difficulty.medium,
-        ),
-      );
-    }
-
-    // Position 18: KÜTÜPHANE (Library) - Corner
+    // Position 18: KÜTÜPHANE (Library) - CORNER
     tiles.add(
       BoardTile(
         id: '18',
         name: 'KÜTÜPHANE',
         position: 18,
-        type: TileType.corner,
+        type: TileType.library,
         category: '',
         difficulty: Difficulty.hard,
       ),
     );
 
-    // Positions 19-20: Category tiles (right column, first half)
-    for (int i = 0; i < 2; i++) {
+    // ═══════════════════════════════════════════════════════════════
+    // RIGHT COLUMN (7 tiles, excluding shared corner): Indices 19-25
+    // ═══════════════════════════════════════════════════════════════
+
+    // Positions 19-22: 4 Category tiles
+    for (int i = 0; i < 4; i++) {
       final category = _getCategoryAt(i + 12);
       tiles.add(
         BoardTile(
@@ -268,26 +235,26 @@ class BoardConfig {
       );
     }
 
-    // Position 21: KADER (Fate) - NEW SPECIAL TILE
+    // Position 23: KADER (Fate) - SPECIAL TILE
     tiles.add(
       BoardTile(
-        id: '21',
+        id: '23',
         name: 'KADER',
-        position: 21,
+        position: 23,
         type: TileType.fate,
         category: '',
         difficulty: Difficulty.medium,
       ),
     );
 
-    // Positions 22-25: Category tiles (right column, back to start)
-    for (int i = 0; i < 4; i++) {
-      final category = _getCategoryAt(i + 14);
+    // Positions 24-25: 2 Category tiles back to start
+    for (int i = 0; i < 2; i++) {
+      final category = _getCategoryAt(i + 16);
       tiles.add(
         BoardTile(
-          id: '${i + 22}',
+          id: '${i + 24}',
           name: category.displayName,
-          position: i + 22,
+          position: i + 24,
           type: TileType.category,
           category: category.name,
           difficulty: Difficulty.hard,
@@ -314,34 +281,34 @@ class BoardConfig {
     return tiles.where((t) => t.category == category.name).toList();
   }
 
-  /// Get all corner tiles (updated positions for 26-tile board)
+  /// Get all corner tiles
   static List<BoardTile> getCornerTiles() {
     return [tiles[0], tiles[6], tiles[12], tiles[18]];
   }
 
-  /// Check if tile is a corner (updated positions for 26-tile board)
+  /// Check if tile is a corner
   static bool isCorner(int id) {
-    return id == 0 || id == 6 || id == 12 || id == 18;
+    return cornerIndices.contains(id);
   }
 
   /// Get all special tiles (Şans and Kader)
   static List<BoardTile> getSpecialTiles() {
-    return [tiles[3], tiles[9], tiles[15], tiles[21]];
+    return [tiles[5], tiles[11], tiles[17], tiles[23]];
   }
 
   /// Check if tile is a special Şans/Kader tile
   static bool isSpecialTile(int id) {
-    return id == 3 || id == 9 || id == 15 || id == 21;
+    return id == 5 || id == 11 || id == 17 || id == 23;
   }
 
   /// Get position info for a tile (row, column, isCorner)
-  /// Returns null for invalid IDs (updated for 26-tile board)
+  /// Returns null for invalid IDs
   static TilePosition? getTilePosition(int id) {
     if (id < 0 || id >= 26) return null;
 
     // Corners
     if (id == 0) {
-      return TilePosition(row: 6, col: 5, isCorner: true); // Bottom-Right (START)
+      return TilePosition(row: 6, col: 6, isCorner: true); // Bottom-Right (START)
     }
     if (id == 6) {
       return TilePosition(row: 6, col: 0, isCorner: true); // Bottom-Left (İMZA GÜNÜ)
@@ -350,12 +317,12 @@ class BoardConfig {
       return TilePosition(row: 0, col: 0, isCorner: true); // Top-Left (KIRAATHANE)
     }
     if (id == 18) {
-      return TilePosition(row: 0, col: 5, isCorner: true); // Top-Right (KÜTÜPHANE)
+      return TilePosition(row: 0, col: 6, isCorner: true); // Top-Right (KÜTÜPHANE)
     }
 
     // Bottom row (indices 1-5, going left from position 0)
     if (id >= 1 && id <= 5) {
-      return TilePosition(row: 6, col: 5 - id, isCorner: false);
+      return TilePosition(row: 6, col: 6 - id, isCorner: false);
     }
 
     // Left column (indices 7-11, going up from position 6)
@@ -370,7 +337,7 @@ class BoardConfig {
 
     // Right column (indices 19-25, going down from position 18)
     if (id >= 19 && id <= 25) {
-      return TilePosition(row: id - 18, col: 5, isCorner: false);
+      return TilePosition(row: id - 18, col: 6, isCorner: false);
     }
 
     return null;
@@ -380,7 +347,7 @@ class BoardConfig {
 /// Position of a tile in the grid
 class TilePosition {
   final int row; // 0-6 (top to bottom)
-  final int col; // 0-5 (left to right)
+  final int col; // 0-6 (left to right)
   final bool isCorner;
 
   const TilePosition({

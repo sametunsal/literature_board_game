@@ -4,9 +4,9 @@ class GameConstants {
   GameConstants._();
 
   // ═══════════════════════════════════════════════════════════════
-  // BOARD CONFIGURATION (RPG Style: 26 tiles - expanded from 22)
+  // BOARD CONFIGURATION (RPG Style: 26 tiles)
   // ═══════════════════════════════════════════════════════════════
-  static const int boardSize = 26; // Updated from 22 to 26
+  static const int boardSize = 26;
   static const int startPosition = 0;
 
   // Corner Positions (updated for 26-tile board)
@@ -15,15 +15,15 @@ class GameConstants {
   static const int libraryPosition = 18; // KÜTÜPHANE (Top-Right corner)
 
   // Special Tile Positions (Şans and Kader)
-  static const int chancePosition = 3; // ŞANS (Bottom edge - between positions 2 and 4)
-  static const int chancePositionTop = 15; // ŞANS (Top edge - between positions 14 and 16)
-  static const int fatePosition = 9; // KADER (Left edge - between positions 8 and 10)
-  static const int fatePositionRight = 21; // KADER (Right edge - between positions 20 and 22)
+  static const int chancePosition1 = 5; // ŞANS (Bottom edge)
+  static const int chancePosition2 = 17; // ŞANS (Top edge)
+  static const int fatePosition1 = 11; // KADER (Left edge)
+  static const int fatePosition2 = 23; // KADER (Right edge)
 
   // ═══════════════════════════════════════════════════════════════
   // PENALTY SYSTEM (Library Watch)
   // ═══════════════════════════════════════════════════════════════
-  static const int jailPosition = 18; // KÜTÜPHANE (Library) - updated position
+  static const int jailPosition = 18; // KÜTÜPHANE (Library)
   static const int jailTurns = 1;
 
   // ═══════════════════════════════════════════════════════════════════

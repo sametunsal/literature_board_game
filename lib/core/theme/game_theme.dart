@@ -110,16 +110,18 @@ class GameTheme {
     8: Color(0xFF00BCD4), // Cyan - tiles 36-39 (vibrant)
   };
 
-  /// Get the group color for a tile based on its ID
+  /// Get the group color for a tile based on its ID (26-tile board)
   static Color getGroupColor(int tileId) {
+    // Bottom row (excluding start and special tiles): 1-4
     if (tileId >= 1 && tileId <= 4) return _groupColors[1]!;
-    if (tileId >= 6 && tileId <= 9) return _groupColors[2]!;
-    if (tileId >= 11 && tileId <= 14) return _groupColors[3]!;
-    if (tileId >= 16 && tileId <= 19) return _groupColors[4]!;
-    if (tileId >= 21 && tileId <= 24) return _groupColors[5]!;
-    if (tileId >= 26 && tileId <= 29) return _groupColors[6]!;
-    if (tileId >= 31 && tileId <= 34) return _groupColors[7]!;
-    if (tileId >= 36 && tileId <= 39) return _groupColors[8]!;
+    // Left column category tiles: 7-10
+    if (tileId >= 7 && tileId <= 10) return _groupColors[2]!;
+    // Top row category tiles: 13-16
+    if (tileId >= 13 && tileId <= 16) return _groupColors[3]!;
+    // Right column category tiles (first part): 19-22
+    if (tileId >= 19 && tileId <= 22) return _groupColors[4]!;
+    // Right column category tiles (back to start): 24-25
+    if (tileId >= 24 && tileId <= 25) return _groupColors[5]!;
     return Colors.grey.shade400;
   }
 

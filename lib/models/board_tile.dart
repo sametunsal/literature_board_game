@@ -9,7 +9,7 @@ class BoardTile {
   /// Display name/title of the tile
   final String name;
 
-  /// Position on the board (0-21 for 22 tiles)
+  /// Position on the board (0-25 for 26 tiles)
   final int position;
 
   /// Type of tile (Corner, Category, Start, Shop, Collection)
