@@ -60,10 +60,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
   bool _showPauseMenu = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Dev Switch: Top-Down vs 3D Perspective
-  // Defaults to TRUE as per current milestone requirement
-  bool _isTopDown = true;
-
   // Landing pulse effect state
   int? _pulsingTileId;
   final Map<String, int> _lastPlayerPositions = {};
@@ -185,8 +181,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
                     _buildBotModeButton(),
                     const SizedBox(height: 8),
                     _buildDebugWinButton(),
-                    const SizedBox(height: 8),
-                    _buildViewToggle(),
                   ],
                 ),
               ),
@@ -389,56 +383,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
         .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 
-  /// Build view toggle button (Top-Down vs 3D)
-  Widget _buildViewToggle() {
-    return GestureDetector(
-          onTap: () {
-            setState(() {
-              _isTopDown = !_isTopDown;
-            });
-          },
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: _isTopDown
-                  ? Colors.cyan.shade700
-                  : Colors.deepPurple.shade700,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _isTopDown ? Colors.cyanAccent : Colors.deepPurpleAccent,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (_isTopDown ? Colors.cyan : Colors.deepPurple)
-                      .withValues(alpha: 0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              _isTopDown ? Icons.grid_view_rounded : Icons.view_in_ar_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-        )
-        .animate(target: _isTopDown ? 1 : 0)
-        .scale(
-          begin: const Offset(1, 1),
-          end: const Offset(1.1, 1.1),
-          duration: 200.ms,
-        )
-        .then()
-        .scale(
-          begin: const Offset(1.1, 1.1),
-          end: const Offset(1, 1),
-          duration: 200.ms,
-        );
-  }
-
   /// Build the pause menu overlay
   Widget _buildPauseOverlay() {
     return Positioned.fill(
@@ -484,102 +428,90 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   /// Main board container with all layers
-  /// Transformed to 2.5D isometric/perspective view
+  /// Rendered in Top-Down 2D View
   Widget _buildBoard(
     GameState state,
     BoardLayoutConfig layout,
     bool isDarkMode,
   ) {
-    // 2.5D Transform constants
-    const perspectiveDepth = 0.001;
-    const tiltAngle = 1.0; // ~57 degrees (isometric-like)
-    const thicknessOffset = 8.0; // Visual thickness of the board
+    // Visual thickness of the board (shadow offset)
+    const thicknessOffset = 8.0;
 
-    return Transform(
-          transform: _isTopDown
-              ? Matrix4.identity() // Top-down view (flat)
-              : (Matrix4.identity()
-                  ..setEntry(3, 2, perspectiveDepth) // Perspective depth
-                  ..rotateX(tiltAngle)), // Tilt backwards
+    return Stack(
           alignment: Alignment.center,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // ═══════════════════════════════════════════════════════════════
-              // LAYER 0: Board Thickness (Dark cardboard backing)
-              // ═══════════════════════════════════════════════════════════════
-              Positioned(
-                left: 0,
-                top: thicknessOffset,
-                child: Container(
-                  width: layout.actualWidth,
-                  height: layout.actualHeight,
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? const Color(0xFF3D2B1F) // Dark brown for dark mode
-                        : const Color(
-                            0xFF5D4037,
-                          ), // Medium brown for light mode
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ═══════════════════════════════════════════════════════════════
-              // LAYER 1: Main Board Surface
-              // ═══════════════════════════════════════════════════════════════
-              Container(
+          clipBehavior: Clip.none,
+          children: [
+            // ═══════════════════════════════════════════════════════════════
+            // LAYER 0: Board Thickness (Dark cardboard backing)
+            // ═══════════════════════════════════════════════════════════════
+            Positioned(
+              left: 0,
+              top: thicknessOffset,
+              child: Container(
                 width: layout.actualWidth,
                 height: layout.actualHeight,
-                decoration: GameTheme.boardDecorationFor(isDarkMode),
-                child: Stack(
-                  children: [
-                    // Layer 1: Center area background
-                    CenterArea(state: state, layout: layout),
-
-                    // Layer 2: All tiles (corners + edges)
-                    TileGrid(
-                      layout: layout,
-                      currentPlayerPosition: state.currentPlayer.position,
-                      pulsingTileId: _pulsingTileId,
-                      hoveredTileId: _hoveredTileId,
-                      onHoverEnter: (id) => setState(() => _hoveredTileId = id),
-                      onHoverExit: (id) =>
-                          setState(() => _hoveredTileId = null),
-                      onPulseComplete: () {
-                        if (mounted) {
-                          setState(() => _pulsingTileId = null);
-                        }
-                      },
-                    ),
-
-                    // Layer 3: Player pawns
-                    ..._buildPlayers(state.players, layout),
-
-                    // Layer 4: Effects and dialogs
-                    EffectsOverlay(
-                      state: state,
-                      layout: layout,
-                      confettiController: _confettiController,
-                      onQuestionConfirm: () {
-                        ref.read(gameProvider.notifier).answerQuestion(true);
-                      },
-                      onQuestionCancel: () {
-                        ref.read(gameProvider.notifier).answerQuestion(false);
-                      },
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xFF3D2B1F) // Dark brown for dark mode
+                      : const Color(0xFF5D4037), // Medium brown for light mode
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // ═══════════════════════════════════════════════════════════════
+            // LAYER 1: Main Board Surface
+            // ═══════════════════════════════════════════════════════════════
+            Container(
+              width: layout.actualWidth,
+              height: layout.actualHeight,
+              decoration: GameTheme.boardDecorationFor(isDarkMode),
+              child: Stack(
+                children: [
+                  // Layer 1: Center area background
+                  CenterArea(state: state, layout: layout),
+
+                  // Layer 2: All tiles (corners + edges)
+                  TileGrid(
+                    layout: layout,
+                    currentPlayerPosition: state.currentPlayer.position,
+                    pulsingTileId: _pulsingTileId,
+                    hoveredTileId: _hoveredTileId,
+                    onHoverEnter: (id) => setState(() => _hoveredTileId = id),
+                    onHoverExit: (id) => setState(() => _hoveredTileId = null),
+                    onPulseComplete: () {
+                      if (mounted) {
+                        setState(() => _pulsingTileId = null);
+                      }
+                    },
+                  ),
+
+                  // Layer 3: Player pawns
+                  ..._buildPlayers(state.players, layout),
+
+                  // Layer 4: Effects and dialogs
+                  EffectsOverlay(
+                    state: state,
+                    layout: layout,
+                    confettiController: _confettiController,
+                    onQuestionConfirm: () {
+                      ref.read(gameProvider.notifier).answerQuestion(true);
+                    },
+                    onQuestionCancel: () {
+                      ref.read(gameProvider.notifier).answerQuestion(false);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
         )
         .animate()
         .fadeIn(duration: MotionDurations.slow.safe)
@@ -590,24 +522,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
           curve: MotionCurves.standard,
         );
   }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // CENTER AREA - MOVED TO center_area.dart
-  // ════════════════════════════════════════════════════════════════════════════
-
-  // NOTE: _buildCenterArea moved to CenterArea widget in board/center_area.dart
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // TURN ORDER DIALOG - MOVED TO turn_order_dialog.dart
-  // ════════════════════════════════════════════════════════════════════════════
-
-  // NOTE: _buildTurnOrderDialog moved to TurnOrderDialog widget in board/turn_order_dialog.dart
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // TILE GENERATION - MOVED TO tile_grid.dart and tile_widget.dart
-  // ════════════════════════════════════════════════════════════════════════════
-
-  // NOTE: _buildAllTiles and _buildTile moved to TileGrid and TileWidget in board/
 
   // ════════════════════════════════════════════════════════════════════════════
   // CORNER SCOREBOARDS
@@ -667,18 +581,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // TURN ORDER DIALOG - MOVED TO turn_order_dialog.dart
-  // ════════════════════════════════════════════════════════════════════════════
-
-  // NOTE: _buildTurnOrderDialog moved to TurnOrderDialog widget
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // TILE GENERATION - MOVED TO tile_grid.dart and tile_widget.dart
-  // ════════════════════════════════════════════════════════════════════════════
-
-  // NOTE: _buildAllTiles and _buildTile moved to TileGrid and TileWidget
-
-  // ════════════════════════════════════════════════════════════════════════════
   // PLAYER PAWNS
   // ════════════════════════════════════════════════════════════════════════════
 
@@ -730,13 +632,6 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
     return widgets;
   }
-
-  // NOTE: _getTileCenter moved to BoardLayoutHelper.getTileCenter()
-  // NOTE: _buildEffectsAndDialogs moved to EffectsOverlay widget in board/effects_overlay.dart
-  // NOTE: _buildDialogOverlay moved to EffectsOverlay widget
-  // NOTE: _buildFloatingScore moved to EffectsOverlay widget
-  // NOTE: _getCategoryString moved to EffectsOverlay widget
-  // NOTE: _drawStar moved to EffectsOverlay widget
 
   /// Check for player position changes and trigger landing pulse
   void _handleLandingPulse(GameState state) {
