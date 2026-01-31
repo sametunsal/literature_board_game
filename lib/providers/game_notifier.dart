@@ -532,6 +532,7 @@ class GameNotifier extends StateNotifier<GameState> {
             ? const Duration(milliseconds: 300)
             : const Duration(milliseconds: 1500);
         await Future.delayed(delay);
+        _isProcessing = false; // Reset before calling endTurn() to prevent blocking
         endTurn();
         return;
       }
@@ -591,6 +592,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       // After movement, pass turn to next player
       _logBot('_handleMovementRoll() COMPLETED - calling endTurn()');
+      _isProcessing = false; // Reset before calling endTurn() to prevent blocking
       endTurn();
     } catch (e, stackTrace) {
       debugPrint('🚨 ERROR in _handleMovementRoll: $e');
