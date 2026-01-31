@@ -126,7 +126,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return _buildCornerTileContent(
           icon: Icons.star,
           iconColor: Colors.orange.shade700,
-          label: 'KÖŞE',
+          label: widget.tile.name,
         );
       default:
         break;
