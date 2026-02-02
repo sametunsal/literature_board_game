@@ -22,6 +22,7 @@ dependencies:
   google_fonts: ^6.1.0
   font_awesome_flutter: ^10.6.0
   uuid: ^4.3.3
+  auto_size_text: ^3.0.0
   flutter_animate: ^4.5.0
   confetti: ^0.7.0
   audioplayers: ^6.1.0
@@ -59,6 +60,8 @@ flutter:
   assets:
     # Image assets (Modern Dark Academia V2.5)
     - assets/images/
+    - assets/images/wooden_table_bg.png
+    # Explicit files to avoid Windows build issues
     # Data assets
     - assets/data/questions.json
     - assets/data/literary_quotes.json
