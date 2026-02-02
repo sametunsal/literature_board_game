@@ -6,50 +6,60 @@ import '../../core/theme/game_theme.dart';
 import '../../core/constants/game_constants.dart';
 import '../../data/models/literary_quote_model.dart';
 import '../../data/repositories/quote_repository.dart';
+import '../../models/player.dart';
 import '../../providers/theme_notifier.dart';
 
-/// Collection screen showing all quotes owned by a player, grouped by era
+/// Collection screen showing all quotes owned by players, grouped by era
+/// Uses Tabs to switch between players
 class CollectionScreen extends ConsumerStatefulWidget {
-  final List<String> collectedQuoteIds;
-  final String playerName;
+  final List<Player> players;
+  final int initialPlayerIndex;
 
   const CollectionScreen({
     super.key,
-    required this.collectedQuoteIds,
-    required this.playerName,
+    required this.players,
+    this.initialPlayerIndex = 0,
   });
 
   @override
   ConsumerState<CollectionScreen> createState() => _CollectionScreenState();
 }
 
-class _CollectionScreenState extends ConsumerState<CollectionScreen> {
+class _CollectionScreenState extends ConsumerState<CollectionScreen>
+    with SingleTickerProviderStateMixin {
   final QuoteRepository _quoteRepo = QuoteRepository();
-  Map<String, List<LiteraryQuoteModel>> _quotesByEra = {};
+  List<LiteraryQuoteModel> _allQuotes = [];
   bool _isLoading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: widget.players.length,
+      initialIndex: widget.initialPlayerIndex.clamp(
+        0,
+        widget.players.length - 1,
+      ),
+      vsync: this,
+    );
     _loadQuotes();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadQuotes() async {
     final allQuotes = await _quoteRepo.getAllQuotes();
-    final ownedQuotes = allQuotes
-        .where((q) => widget.collectedQuoteIds.contains(q.id))
-        .toList();
-
-    // Group by era
-    final Map<String, List<LiteraryQuoteModel>> grouped = {};
-    for (final quote in ownedQuotes) {
-      grouped.putIfAbsent(quote.period, () => []).add(quote);
+    if (mounted) {
+      setState(() {
+        _allQuotes = allQuotes;
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _quotesByEra = grouped;
-      _isLoading = false;
-    });
   }
 
   @override
@@ -58,9 +68,6 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
     final tokens = themeState.tokens;
     final isDark = themeState.isDarkMode;
 
-    final totalOwned = widget.collectedQuoteIds.length;
-    final progress = totalOwned / GameConstants.quotesToCollect;
-
     return Scaffold(
       backgroundColor: tokens.background,
       appBar: AppBar(
@@ -68,7 +75,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
         foregroundColor: tokens.textPrimary,
         elevation: 0,
         title: Text(
-          'Koleksiyonum',
+          'Koleksiyonlar',
           style: GoogleFonts.playfairDisplay(
             fontWeight: FontWeight.bold,
             color: tokens.accent,
@@ -78,26 +85,62 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: tokens.accent,
+          unselectedLabelColor: tokens.textSecondary,
+          indicatorColor: tokens.accent,
+          labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          tabs: widget.players.map((p) => Tab(text: p.name)).toList(),
+        ),
       ),
-      body: Column(
-        children: [
-          // Progress header
-          _buildProgressHeader(tokens, isDark, totalOwned, progress),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: widget.players.map((player) {
+                return _buildPlayerCollection(player, tokens, isDark);
+              }).toList(),
+            ),
+    );
+  }
 
-          // Quotes list
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _quotesByEra.isEmpty
-                ? _buildEmptyState(tokens)
-                : _buildQuotesList(tokens, isDark),
-          ),
-        ],
-      ),
+  Widget _buildPlayerCollection(
+    Player player,
+    ThemeTokens tokens,
+    bool isDark,
+  ) {
+    // Filter quotes for this player
+    final ownedQuotes = _allQuotes
+        .where((q) => player.collectedQuotes.contains(q.id))
+        .toList();
+
+    // Group by era
+    final Map<String, List<LiteraryQuoteModel>> quotesByEra = {};
+    for (final quote in ownedQuotes) {
+      quotesByEra.putIfAbsent(quote.period, () => []).add(quote);
+    }
+
+    final totalOwned = ownedQuotes.length;
+    final progress = totalOwned / GameConstants.quotesToCollect;
+
+    return Column(
+      children: [
+        // Progress header
+        _buildProgressHeader(player, tokens, isDark, totalOwned, progress),
+
+        // Quotes list
+        Expanded(
+          child: quotesByEra.isEmpty
+              ? _buildEmptyState(tokens, player.name)
+              : _buildQuotesList(quotesByEra, tokens, isDark),
+        ),
+      ],
     );
   }
 
   Widget _buildProgressHeader(
+    Player player,
     ThemeTokens tokens,
     bool isDark,
     int totalOwned,
@@ -123,7 +166,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
               Icon(Icons.collections_bookmark, color: tokens.accent, size: 28),
               const SizedBox(width: 12),
               Text(
-                '${widget.playerName} Koleksiyonu',
+                '${player.name} Koleksiyonu',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -188,7 +231,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
     );
   }
 
-  Widget _buildEmptyState(ThemeTokens tokens) {
+  Widget _buildEmptyState(ThemeTokens tokens, String playerName) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -200,7 +243,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Henüz söz toplamadın',
+            '$playerName henüz söz toplamadı',
             style: GoogleFonts.poppins(
               fontSize: 18,
               color: tokens.textSecondary,
@@ -208,7 +251,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Kıraathane\'den edebi söz satın alabilirsin!',
+            'Kıraathane\'den edebi söz satın alınabilir!',
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: tokens.textSecondary.withValues(alpha: 0.7),
@@ -219,15 +262,19 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
     );
   }
 
-  Widget _buildQuotesList(ThemeTokens tokens, bool isDark) {
-    final eras = _quotesByEra.keys.toList()..sort();
+  Widget _buildQuotesList(
+    Map<String, List<LiteraryQuoteModel>> quotesByEra,
+    ThemeTokens tokens,
+    bool isDark,
+  ) {
+    final eras = quotesByEra.keys.toList()..sort();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: eras.length,
       itemBuilder: (context, index) {
         final era = eras[index];
-        final quotes = _quotesByEra[era]!;
+        final quotes = quotesByEra[era]!;
         return _buildEraSection(era, quotes, tokens, isDark);
       },
     );

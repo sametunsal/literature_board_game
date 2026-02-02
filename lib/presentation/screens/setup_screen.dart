@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/motion/motion_constants.dart';
-import '../../core/constants/game_constants.dart';
-import '../../models/player.dart';
-import '../../providers/game_notifier.dart';
-import '../../core/theme/game_theme.dart';
-import '../../core/managers/sound_manager.dart';
-import '../widgets/board_view.dart';
-import 'main_menu_screen.dart';
 
-/// Premium styled setup screen with Literature theme
-/// Matches the visual polish of the main game board
+import '../../models/player.dart';
+import '../widgets/board_view.dart';
+import '../../providers/game_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
 
@@ -22,708 +14,650 @@ class SetupScreen extends ConsumerStatefulWidget {
 }
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
-  int playerCount = 4;
-  final List<TextEditingController> _controllers = [];
+  final List<TextEditingController> _nameControllers = [];
+  final List<Player> _players = [];
+  final int _maxPlayers = 4;
 
-  /// Available colors for player selection
-  static const List<Color> _colorPalette = [
-    Color(0xFFD32F2F), // Red
-    Color(0xFF1976D2), // Blue
-    Color(0xFF388E3C), // Green
-    Color(0xFFE64A19), // Orange
-    Color(0xFF7B1FA2), // Purple
-    Color(0xFF00796B), // Teal
-    Color(0xFFE91E63), // Pink
-    Color(0xFF795548), // Brown
-    Color(0xFF512DA8), // Deep Purple
-    Color(0xFF0097A7), // Cyan
+  // Available pawn colors
+  final List<Color> _playerColors = [
+    const Color(0xFFD32F2F), // Red
+    const Color(0xFF1976D2), // Blue
+    const Color(0xFF388E3C), // Green
+    const Color(0xFFFBC02D), // Yellow
+    const Color(0xFF8E24AA), // Purple
+    const Color(0xFFF4511E), // Deep Orange
+    const Color(0xFF00ACC1), // Cyan
+    const Color(0xFF5D4037), // Brown
   ];
 
-  /// Selected color index for each player
-  final List<int> _selectedColors = [];
-
-  /// Selected icon index for each player (now references avatar images)
-  final List<int> _selectedIcons = [];
+  // Available Icons
+  final List<IconData> _availableIcons = [
+    Icons.person,
+    Icons.face,
+    Icons.emoji_people,
+    Icons.sentiment_satisfied_alt,
+    Icons.catching_pokemon, // Fun icon for "catching" knowledge
+    Icons.psychology,
+    Icons.school,
+    Icons.auto_stories,
+    Icons.create,
+    Icons.favorite,
+    Icons.star,
+    Icons.pets,
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Allow all orientations on setup screen
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    _updateControllers();
+    _addPlayer();
+    _addPlayer(); // Start with 2 players
   }
 
-  void _updateControllers() {
-    for (final controller in _controllers) {
-      controller.dispose();
-    }
-    _controllers.clear();
-    _selectedIcons.clear();
-    _selectedColors.clear();
-    for (int i = 0; i < playerCount; i++) {
-      _controllers.add(TextEditingController(text: "Oyuncu ${i + 1}"));
-      _selectedIcons.add(i % GameConstants.totalAvatars);
-      _selectedColors.add(i % _colorPalette.length);
-    }
+  void _addPlayer() {
+    if (_players.length >= _maxPlayers) return;
+
+    final index = _players.length;
+    final controller = TextEditingController(text: "Oyuncu ${index + 1}");
+    _nameControllers.add(controller);
+
+    setState(() {
+      _players.add(
+        Player(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: controller.text,
+          color: _playerColors[index % _playerColors.length],
+          iconIndex: index,
+        ),
+      );
+    });
   }
 
-  @override
-  void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
+  void _removePlayer(int index) {
+    if (_players.length <= 2) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("En az 2 oyuncu gerekli!")));
+      return;
     }
-    super.dispose();
+
+    setState(() {
+      _players.removeAt(index);
+      _nameControllers[index].dispose();
+      _nameControllers.removeAt(index);
+    });
+  }
+
+  void _startGame() {
+    // Update player names from controllers
+    for (int i = 0; i < _players.length; i++) {
+      _players[i] = _players[i].copyWith(name: _nameControllers[i].text);
+    }
+
+    // Initialize Game
+    ref.read(gameProvider.notifier).initializeGame(_players);
+
+    // Navigate to Game Board
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const BoardView()),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MODALS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  void _showAvatarSelectionDialog(int playerIndex) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFFF9F7F2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Profil İkonu Seç",
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF00695C),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                alignment: WrapAlignment.center,
+                children: List.generate(_availableIcons.length, (index) {
+                  final isSelected = _players[playerIndex].iconIndex == index;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        // Update player logic to store icon index properly if needed
+                        // Currently we store index, but icon retrieval uses Modulo
+                        // Let's just update the stored index directly
+                        _players[playerIndex] = _players[playerIndex].copyWith(
+                          iconIndex: index,
+                        );
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? _players[playerIndex].color.withOpacity(0.1)
+                            : Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? _players[playerIndex].color
+                              : Colors.grey.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        _availableIcons[index],
+                        color: isSelected
+                            ? _players[playerIndex].color
+                            : Colors.grey,
+                        size: 28,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showColorSelectionDialog(int playerIndex) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFFF9F7F2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Renk Seç",
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF00695C),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                alignment: WrapAlignment.center,
+                children: _playerColors.map((color) {
+                  final isSelected =
+                      _players[playerIndex].color.value == color.value;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _players[playerIndex] = _players[playerIndex].copyWith(
+                          color: color,
+                        );
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.black.withOpacity(0.5)
+                              : Colors.transparent,
+                          width: isSelected ? 3 : 0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: isSelected
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 28,
+                            )
+                          : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Theme-aware tokens
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final tokens = GameTheme.getTokens(isDarkMode);
+    const bgColor = Color(0xFFF9F7F2); // Warm Cream
 
     return Scaffold(
-      // Clean modern background
-      body: Container(
-        decoration: BoxDecoration(color: tokens.background),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: _buildMainCard(tokens, isDarkMode),
-            ),
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF00695C),
           ),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-      ),
-    );
-  }
-
-  /// Main styled card container - theme-aware
-  Widget _buildMainCard(ThemeTokens tokens, bool isDarkMode) {
-    return Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: tokens.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: tokens.border.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: tokens.shadow.withValues(alpha: isDarkMode ? 0.4 : 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: tokens.accent.withValues(alpha: 0.1),
-                blurRadius: 30,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // HEADER
-              _buildHeader(tokens, isDarkMode),
-              const SizedBox(height: 24),
-
-              // PLAYER COUNT SELECTOR
-              _buildPlayerCountSelector(tokens, isDarkMode),
-              const SizedBox(height: 20),
-
-              // DIVIDER
-              _buildDivider(tokens),
-              const SizedBox(height: 20),
-
-              // PLAYER LIST
-              _buildPlayerList(tokens, isDarkMode),
-              const SizedBox(height: 24),
-
-              // START BUTTON
-              _buildStartButton(tokens, isDarkMode),
-              const SizedBox(height: 12),
-
-              // EXIT BUTTON
-              _buildExitButton(tokens),
-            ],
-          ),
-        )
-        .animate()
-        .fadeIn(duration: MotionDurations.medium.safe * 2)
-        .slideY(
-          begin: 0.2,
-          end: 0,
-          duration: MotionDurations.medium.safe * 2,
-          curve: MotionCurves.standard,
-        );
-  }
-
-  /// Header with decorative title - theme-aware
-  Widget _buildHeader(ThemeTokens tokens, bool isDarkMode) {
-    return Column(
-      children: [
-        // Decorative icon with glow
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: tokens.accent.withValues(alpha: 0.15),
-            boxShadow: [
-              BoxShadow(
-                color: tokens.accent.withValues(alpha: 0.2),
-                blurRadius: 12,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Icon(Icons.menu_book, size: 42, color: tokens.accent),
-        ),
-        const SizedBox(height: 16),
-
-        // Title
-        Text(
-          "OYUN KURULUMU",
-          style: GoogleFonts.poppins(
-            fontSize: 26,
+        title: Text(
+          "OYUNCU KAYDI",
+          style: GoogleFonts.cormorantGaramond(
             fontWeight: FontWeight.bold,
-            color: tokens.textPrimary,
+            color: const Color(0xFF00695C),
+            fontSize: 28,
             letterSpacing: 2,
           ),
         ),
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          // Pattern Background
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.05,
+              child: Image.asset(
+                'assets/images/wooden_table_bg.png', // Reusing texture if available, or just keeping clean
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(),
+              ),
+            ),
+          ),
 
-        const SizedBox(height: 8),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(24),
+                    itemCount: _players.length + 1,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      if (index == _players.length) {
+                        // Add Player Button (Dashed)
+                        if (_players.length < _maxPlayers) {
+                          return _buildAddPlayerButton();
+                        }
+                        return const SizedBox(height: 80); // Bottom padding
+                      }
 
-        // Subtitle
-        Text(
-          "Oyuncuları belirleyin",
-          style: GoogleFonts.poppins(fontSize: 14, color: tokens.textSecondary),
-        ),
-      ],
+                      return _buildPlayerCard(index);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Start Game FAB (Bottom Right)
+          Positioned(right: 24, bottom: 24, child: _buildStartButton()),
+        ],
+      ),
     );
   }
 
-  /// Elegant player count dropdown - theme-aware
-  Widget _buildPlayerCountSelector(ThemeTokens tokens, bool isDarkMode) {
+  Widget _buildPlayerCard(int index) {
+    final player = _players[index];
+    final controller = _nameControllers[index];
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: tokens.surfaceAlt,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: tokens.border.withValues(alpha: 0.5),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: tokens.shadow.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+      height: 140, // Provided enough height for the elements
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.centerLeft,
+        children: [
+          // 1. THE PARCHMENT CARD (The Container)
+          Container(
+            margin: const EdgeInsets.only(
+              right: 24,
+            ), // Space for Wax Seal overhang
+            decoration: BoxDecoration(
+              color: const Color(0xFFFDF6E3), // Aged Parchment
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                // Deep soft shadow for floating effect
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  offset: const Offset(0, 8),
+                  blurRadius: 16,
+                ),
+                // Subtle inner light/border to simulate paper thickness
+                BoxShadow(
+                  color: const Color(0xFFE6D6BC).withOpacity(0.5),
+                  offset: const Offset(0, -1),
+                  blurRadius: 0,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // 2. AVATAR MEDALLION (High Ergonomics)
+                GestureDetector(
+                  onTap: () => _showAvatarSelectionDialog(index),
+                  child: Container(
+                    width: 100, // Large touch target area
+                    height: 100,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          offset: const Offset(2, 4),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // The "Frame"
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFFDF6E3),
+                            border: Border.all(
+                              color: player.color, // Player Color Frame
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                        // The Avatar
+                        CircleAvatar(
+                          radius: 34,
+                          backgroundColor: player.color.withOpacity(0.1),
+                          child: Icon(
+                            _availableIcons[player.iconIndex %
+                                _availableIcons.length],
+                            color: player.color,
+                            size: 36,
+                          ),
+                        ),
+                        // Decorative Outer Ring (Simulating carved wood/metal)
+                        Container(
+                          width: 86,
+                          height: 86,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: player.color.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 3. TYPOGRAPHY (The Ink)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Antique Label
+                        Text(
+                          "OYUNCU ${index + 1}",
+                          style: GoogleFonts.cinzelDecorative(
+                            // Or Playfair Display SC
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF5D4037), // Dark Sepia
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Handwritten-style Input
+                        TextField(
+                          controller: controller,
+                          style: GoogleFonts.crimsonText(
+                            // Or Libre Baskerville
+                            fontSize: 26,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF212121), // Darkest Ink
+                            height: 1.0,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: "İsim Giriniz...",
+                            hintStyle: GoogleFonts.crimsonText(
+                              color: const Color(0xFFBCAAA4), // Faded Ink
+                              fontSize: 24,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                            isDense: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Spacer to keep text from going under the wax seal
+                const SizedBox(width: 60),
+              ],
+            ),
+          ),
+
+          // 4. WAX SEAL (Color Picker) - Massive & Hanging off edge
+          Positioned(
+            right: 0,
+            child: GestureDetector(
+              onTap: () => _showColorSelectionDialog(index),
+              child: Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: player.color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    // Deep stamped shadow
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      offset: const Offset(0, 6),
+                      blurRadius: 8,
+                    ),
+                    // Internal highlight (simulating wax sheen)
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.2),
+                      offset: const Offset(-2, -2),
+                      blurRadius: 4,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                  // Rough border simulation (optional, or kept clean for "modern" wax)
+                  border: Border.all(
+                    color: player.color.withOpacity(0.8), // Slightly darker rim
+                    width: 4,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Inner "Stamped" Ring
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.1),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    // Debossed Icon
+                    Icon(
+                      Icons.palette,
+                      color: Colors.black.withOpacity(0.2), // Engraved look
+                      size: 32,
+                    ),
+                    // Highlight on Icon
+                    Positioned(
+                      top: 20,
+                      left: 20,
+                      child: Icon(
+                        Icons.palette,
+                        color: Colors.white.withOpacity(0.15),
+                        size: 32,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 5. CANCELLATION STAMP (Remove Button)
+          Positioned(
+            top: 4,
+            right: 60, // Left of the wax seal
+            child: IconButton(
+              onPressed: () => _removePlayer(index),
+              icon: Transform.rotate(
+                angle: -0.2, // Tilted like a stamp
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: const Color(0xFFA1887F),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Color(0xFFA1887F),
+                  ),
+                ),
+              ),
+              tooltip: "Oyuncuyu Kaldır",
+            ),
           ),
         ],
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: playerCount,
-          icon: Icon(Icons.arrow_drop_down, color: tokens.primary),
-          dropdownColor: tokens.surface,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: tokens.textPrimary,
-          ),
-          items: [2, 3, 4, 5, 6]
-              .map((e) => DropdownMenuItem(value: e, child: Text("$e Oyuncu")))
-              .toList(),
-          onChanged: (val) {
-            if (val != null) {
-              setState(() {
-                playerCount = val;
-                _updateControllers();
-              });
-            }
-          },
-        ),
-      ),
     );
   }
 
-  /// Decorative divider - theme-aware
-  Widget _buildDivider(ThemeTokens tokens) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  tokens.border.withValues(alpha: 0.5),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: tokens.accent.withValues(alpha: 0.2),
-            ),
-            child: Icon(Icons.star, size: 14, color: tokens.accent),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  tokens.border.withValues(alpha: 0.5),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Player list with responsive grid layout (2-4 columns based on orientation)
-  Widget _buildPlayerList(ThemeTokens tokens, bool isDarkMode) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Determine column count based on available width
-        final isLandscape = constraints.maxWidth > constraints.maxHeight;
-        final crossAxisCount = isLandscape
-            ? (constraints.maxWidth > 600 ? 4 : 3)
-            : 2;
-        final aspectRatio = isLandscape ? 0.9 : 0.82;
-
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: aspectRatio,
-          ),
-          itemCount: playerCount,
-          itemBuilder: (context, index) =>
-              _buildPlayerCard(index, tokens, isDarkMode),
-        );
-      },
-    );
-  }
-
-  /// Individual player card - vertical layout for grid
-  Widget _buildPlayerCard(int index, ThemeTokens tokens, bool isDarkMode) {
-    final playerColor = _colorPalette[_selectedColors[index]];
-
-    return Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: tokens.surfaceAlt,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: playerColor.withValues(alpha: 0.4),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: playerColor.withValues(alpha: isDarkMode ? 0.15 : 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // AVATAR (centered) - Custom Image
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: tokens.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: playerColor, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: playerColor.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Padding(
-                    padding: const EdgeInsets.all(3),
-                    child: Image.asset(
-                      GameConstants.getAvatarPath(_selectedIcons[index]),
-                      fit: BoxFit.contain,
-                      color: playerColor,
-                      colorBlendMode: BlendMode.srcIn,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback to icon if image fails
-                        return Icon(Icons.person, color: playerColor, size: 24);
-                      },
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 5),
-
-              // NAME INPUT (full width, compact)
-              TextField(
-                controller: _controllers[index],
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Oyuncu ${index + 1}",
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 5,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: tokens.primary, width: 2),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 5),
-
-              // ICON SELECTOR
-              _buildSelectorLabel("Simge", tokens),
-              const SizedBox(height: 2),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(
-                      GameConstants.totalAvatars,
-                      (iconIndex) => _buildIconOption(
-                        index,
-                        iconIndex,
-                        tokens,
-                        isDarkMode,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 3),
-
-              // COLOR SELECTOR
-              _buildSelectorLabel("Renk", tokens),
-              const SizedBox(height: 2),
-              SizedBox(
-                height: 22,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(
-                      _colorPalette.length,
-                      (colorIndex) =>
-                          _buildColorOption(index, colorIndex, tokens),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )
-        .animate()
-        .fadeIn(delay: (50 * index).ms, duration: MotionDurations.fast.safe)
-        .scale(
-          begin: const Offset(0.9, 0.9),
-          end: const Offset(1, 1),
-          delay: (50 * index).ms,
-          duration: MotionDurations.fast.safe,
-        );
-  }
-
-  /// Build selector label (compact)
-  Widget _buildSelectorLabel(String label, ThemeTokens tokens) {
-    return Text(
-      label,
-      style: GoogleFonts.poppins(
-        fontSize: 9,
-        fontWeight: FontWeight.w600,
-        color: tokens.textSecondary,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  /// Build individual avatar option for horizontal selector - theme-aware
-  Widget _buildIconOption(
-    int playerIndex,
-    int iconIndex,
-    ThemeTokens tokens,
-    bool isDarkMode,
-  ) {
-    final isSelected = _selectedIcons[playerIndex] == iconIndex;
-
+  Widget _buildAddPlayerButton() {
     return GestureDetector(
-      onTap: () => setState(() => _selectedIcons[playerIndex] = iconIndex),
-      child: AnimatedContainer(
-        duration: MotionDurations.fast.safe,
-        curve: MotionCurves.standard,
-        margin: const EdgeInsets.only(right: 6),
-        width: isSelected ? 38 : 32,
-        height: isSelected ? 38 : 32,
+      onTap: _addPlayer,
+      child: Container(
+        height: 80,
         decoration: BoxDecoration(
-          color: tokens.surface,
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected
-                ? tokens.accent
-                : tokens.border.withValues(alpha: 0.3),
-            width: isSelected ? 2.5 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: tokens.accent.withValues(alpha: 0.4),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.all(2),
-            child: Image.asset(
-              GameConstants.getAvatarPath(iconIndex),
-              fit: BoxFit.contain,
-              color: _colorPalette[_selectedColors[playerIndex]],
-              colorBlendMode: BlendMode.srcIn,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.person,
-                  size: 16,
-                  color: tokens.textSecondary,
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Build individual color option for horizontal selector (compact)
-  Widget _buildColorOption(
-    int playerIndex,
-    int colorIndex,
-    ThemeTokens tokens,
-  ) {
-    final isSelected = _selectedColors[playerIndex] == colorIndex;
-    final color = _colorPalette[colorIndex];
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedColors[playerIndex] = colorIndex),
-      child: AnimatedContainer(
-        duration: MotionDurations.fast.safe,
-        curve: MotionCurves.standard,
-        margin: const EdgeInsets.only(right: 5),
-        width: isSelected ? 26 : 22,
-        height: isSelected ? 26 : 22,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: const Color(0xFF00695C).withOpacity(0.3),
             width: 2,
+            style: BorderStyle
+                .none, // Flutter doesn't support dashed easily via BorderStyle alone
           ),
+        ),
+        // Use CustomPaint for dashed border if strictly needed,
+        // simplified here to light opacity with icon
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF00695C).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF00695C).withOpacity(0.2)),
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.add_circle_outline, color: Color(0xFF00695C)),
+                const SizedBox(width: 8),
+                Text(
+                  "Yeni Oyuncu Ekle",
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF00695C),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStartButton() {
+    // 3D Isometric FAB Look
+    return GestureDetector(
+      onTap: _startGame,
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD4AF37), // Gold
+          borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: isSelected ? 0.5 : 0.25),
-              blurRadius: isSelected ? 6 : 3,
-              offset: const Offset(0, 1),
+              color: const Color(0xFFD4AF37).withOpacity(0.4),
+              offset: const Offset(0, 8),
+              blurRadius: 16,
             ),
           ],
-        ),
-        child: isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 12)
-            : null,
-      ),
-    );
-  }
-
-  /// Premium styled start button - theme-aware
-  Widget _buildStartButton(ThemeTokens tokens, bool isDarkMode) {
-    return Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [tokens.primary, tokens.accent],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: tokens.accent.withValues(alpha: 0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _startGame,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.play_arrow,
-                      size: 28,
-                      color: tokens.textOnAccent,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "OYUNA BAŞLA",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        )
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .shimmer(
-          delay: 2000.ms,
-          duration: 1500.ms,
-          color: Colors.white.withValues(alpha: 0.2),
-        );
-  }
-
-  /// Exit button to return to main menu - theme-aware
-  Widget _buildExitButton(ThemeTokens tokens) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: () {
-          debugPrint("Exit button pressed");
-          SoundManager.instance.playClick();
-          // Navigate back to main menu
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-            (route) => false,
-          );
-        },
-        style: OutlinedButton.styleFrom(
-          foregroundColor: tokens.textSecondary,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: BorderSide(color: tokens.border, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.exit_to_app, size: 22, color: tokens.textSecondary),
-            const SizedBox(width: 8),
             Text(
-              "ÇIKIŞ",
+              "OYUNU BAŞLAT",
               style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.0,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 1,
               ),
             ),
+            const SizedBox(width: 12),
+            const Icon(Icons.arrow_forward_rounded, color: Colors.white),
           ],
         ),
       ),
-    );
-  }
-
-  /// Initialize the game with configured players and navigate to board
-  void _startGame() {
-    SoundManager.instance.playClick();
-    // Validate minimum players
-    if (playerCount < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'En az 2 oyuncu gerekli!',
-            style: GameTheme.bodyFont.copyWith(color: Colors.white),
-          ),
-          backgroundColor: Colors.red.shade700,
-        ),
-      );
-      return;
-    }
-
-    // Create player list
-    List<Player> players = [];
-    for (int i = 0; i < playerCount; i++) {
-      players.add(
-        Player(
-          id: '${DateTime.now().millisecondsSinceEpoch}$i',
-          name: _controllers[i].text.trim().isEmpty
-              ? "Oyuncu ${i + 1}"
-              : _controllers[i].text.trim(),
-          color: _colorPalette[_selectedColors[i]],
-          iconIndex: _selectedIcons[i],
-        ),
-      );
-    }
-
-    // Initialize game state
-    ref.read(gameProvider.notifier).initializeGame(players);
-
-    // Navigate to BoardView
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const BoardView()),
     );
   }
 }

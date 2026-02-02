@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/player.dart';
 import '../../models/game_enums.dart';
 import '../../core/constants/game_constants.dart';
+import 'isometric_icon.dart';
 
 /// Compact corner scoreboard for displaying player stats
 /// Shows: Avatar, Name, Stars, and Mastery count
@@ -47,38 +48,67 @@ class PlayerScoreboard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: isCurrentPlayer
-            ? Colors.green.shade50.withValues(alpha: 0.95)
-            : isNext
-            ? Colors.amber.shade50.withValues(alpha: 0.95)
-            : Colors.white.withValues(alpha: 0.95),
+        // Gradient background for subtle depth
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isCurrentPlayer
+              ? [
+                  Colors.green.shade100.withValues(alpha: 0.98),
+                  Colors.green.shade50.withValues(alpha: 0.95),
+                ]
+              : isNext
+              ? [
+                  Colors.amber.shade100.withValues(alpha: 0.98),
+                  Colors.amber.shade50.withValues(alpha: 0.95),
+                ]
+              : [
+                  Colors.grey.shade100.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.98),
+                ],
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: isCurrentPlayer
-            ? [
-                BoxShadow(
-                  color: Colors.green.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : isNext
-            ? [
-                BoxShadow(
-                  color: Colors.amber.withValues(alpha: 0.25),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        // ═══════════════════════════════════════════════════════════════
+        // FAUX 3D CARD EFFECT - Elevated scoreboard
+        // ═══════════════════════════════════════════════════════════════
+        boxShadow: [
+          // Primary deep shadow - strong elevation
+          BoxShadow(
+            color: isCurrentPlayer
+                ? Colors.green.withValues(alpha: 0.35)
+                : isNext
+                ? Colors.amber.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.15),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+          // Secondary shadow - depth layer
+          BoxShadow(
+            color: isCurrentPlayer
+                ? Colors.green.withValues(alpha: 0.15)
+                : isNext
+                ? Colors.amber.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+          // Top highlight - light source effect
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.7),
+            blurRadius: 6,
+            offset: const Offset(0, -2),
+            spreadRadius: -1,
+          ),
+          // Inner glow for active player
+          if (isCurrentPlayer)
+            BoxShadow(
+              color: Colors.green.withValues(alpha: 0.1),
+              blurRadius: 12,
+              spreadRadius: 2,
+            ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -104,30 +134,66 @@ class PlayerScoreboard extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isCurrentPlayer ? Colors.amber.shade50 : Colors.grey.shade100,
-        border: Border.all(color: Colors.grey.shade300, width: 1.5),
+        border: Border.all(
+          color: isCurrentPlayer ? Colors.white : Colors.grey.shade300,
+          width: 2,
+        ),
+        // ═══════════════════════════════════════════════════════════════
+        // FAUX 3D ELEVATION - Neumorphic inspired depth
+        // ═══════════════════════════════════════════════════════════════
         boxShadow: [
+          // Primary drop shadow - elevation
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(3, 4),
+            spreadRadius: -2,
+          ),
+          // Secondary soft shadow - ambient
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: const Offset(1, 2),
+          ),
+          // Top highlight - light source from above-left
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.8),
+            blurRadius: 4,
+            offset: const Offset(-2, -2),
+            spreadRadius: -1,
           ),
         ],
       ),
-      child: ClipOval(
-        child: Image.asset(
-          GameConstants.getAvatarPath(player.iconIndex),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey.shade200,
-              child: Icon(
-                Icons.person_rounded,
-                color: Colors.grey.shade600,
-                size: 22,
+      child: Stack(
+        children: [
+          // Subtle inner gradient for 3D curvature effect
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  center: const Alignment(-0.3, -0.3),
+                  radius: 0.8,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.4),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 1.0],
+                ),
               ),
-            );
-          },
-        ),
+            ),
+          ),
+          Center(
+            child: IsometricIcon(
+              icon:
+                  GameConstants.iconPalette[player.iconIndex %
+                      GameConstants.iconPalette.length],
+              color: player.color, // Use player color for the icon
+              size: 24,
+              depth: 4,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -150,13 +216,32 @@ class PlayerScoreboard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            // Turn indicator badge
+            // Turn indicator badge with 3D effect
             if (isCurrentPlayer)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade500,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.green.shade400, Colors.green.shade600],
+                  ),
                   borderRadius: BorderRadius.circular(8),
+                  // ═══════════════════════════════════════════════════════════════
+                  // 3D BADGE EFFECT
+                  // ═══════════════════════════════════════════════════════════════
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
                 ),
                 child: Text(
                   'SIRA SENDE',
@@ -171,8 +256,24 @@ class PlayerScoreboard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade500,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.amber.shade400, Colors.amber.shade600],
+                  ),
                   borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
                 ),
                 child: Text(
                   'SIRADAKİ',
@@ -186,11 +287,23 @@ class PlayerScoreboard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        // Stars row
+        // Stars row with 3D icon effects
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+            // Star icon with 3D effect
+            Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.star_rounded, color: Colors.amber, size: 15),
+            ),
             const SizedBox(width: 4),
             Text(
               '${player.stars}',
@@ -201,11 +314,26 @@ class PlayerScoreboard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Masteries count
-            Icon(
-              Icons.emoji_events_rounded,
-              color: masteriesCount > 0 ? Colors.orange : Colors.grey.shade400,
-              size: 14,
+            // Trophy icon with 3D effect
+            Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: masteriesCount > 0
+                        ? Colors.orange.withValues(alpha: 0.5)
+                        : Colors.grey.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.emoji_events_rounded,
+                color: masteriesCount > 0
+                    ? Colors.orange
+                    : Colors.grey.shade400,
+                size: 15,
+              ),
             ),
             const SizedBox(width: 4),
             Text(

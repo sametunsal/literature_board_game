@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'main_menu_screen.dart';
 
-/// Premium splash screen with brand presentation and font preloading
-/// Displays the game logo with elegant animations before navigating to setup
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,169 +15,142 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeAndNavigate();
+    _navigateToHome();
   }
 
-  /// Wait for fonts to load and minimum display time, then navigate
-  Future<void> _initializeAndNavigate() async {
-    try {
-      // Preload the fonts we use with a timeout
-      // Note: We use a separate variable to avoid inference issues
-      final fontFuture =
-          GoogleFonts.pendingFonts([
-            GoogleFonts.playfairDisplay(),
-            GoogleFonts.poppins(),
-          ]).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              debugPrint('Font loading timed out - proceeding with fallback');
-              return [];
-            },
-          );
+  Future<void> _navigateToHome() async {
+    // Wait for animations and loading
+    await Future.delayed(const Duration(seconds: 4));
+    if (!mounted) return;
 
-      // Start both the font loading and minimum timer simultaneously
-      await Future.wait([
-        fontFuture,
-        // Minimum splash display time
-        Future.delayed(const Duration(milliseconds: 3000)),
-      ]);
-    } catch (e) {
-      debugPrint('Error during splash initialization: $e');
-      // If error occurs, wait a bit to ensure 3s minimum then proceed
-      await Future.delayed(const Duration(milliseconds: 3000));
-    } finally {
-      _navigateToMenu();
-    }
-  }
-
-  void _navigateToMenu() {
-    // Navigate to setup screen and remove splash from stack
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const MainMenuScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const MainMenuScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 800),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Theme Colors
+    const bgGradientStart = Color(0xFFF9F7F2); // Warm Cream
+    const bgGradientEnd = Color(0xFFF0EBE0); // Slightly darker beige
+    const textColor = Color(0xFF00695C); // Deep Teal
+    const accentColor = Color(0xFFD4AF37); // Metallic Gold
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.2,
-            colors: [Color(0xFFFFFFFF), Color(0xFFF0F0F0)],
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [bgGradientStart, bgGradientEnd],
           ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // LOGO/ICON
-              _buildLogo(),
-              const SizedBox(height: 32),
+              // 1. Logo Section
+              Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  // Main Text
+                  Text(
+                        'EDEBİNA',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 64,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                          letterSpacing: 8,
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 1000.ms, curve: Curves.easeOut)
+                      .scale(
+                        begin: const Offset(0.9, 0.9),
+                        end: const Offset(1.0, 1.0),
+                        duration: 1200.ms,
+                        curve: Curves.elasticOut,
+                      ),
 
-              // TITLE
-              _buildTitle(),
-              const SizedBox(height: 12),
+                  // Animated Quill Icon
+                  Positioned(
+                    right: -40,
+                    bottom: 0,
+                    child:
+                        const Icon(
+                              Icons.edit_outlined,
+                              size: 40,
+                              color: accentColor,
+                            )
+                            .animate()
+                            .fadeIn(delay: 500.ms, duration: 600.ms)
+                            .move(
+                              begin: const Offset(-20, -10),
+                              end: const Offset(0, 0),
+                              duration: 800.ms,
+                              curve: Curves.easeOutQuart,
+                            ),
+                  ),
+                ],
+              ),
 
-              // SUBTITLE
-              _buildSubtitle(),
-              const SizedBox(height: 48),
+              const SizedBox(height: 16),
 
-              // LOADING INDICATOR
-              _buildLoadingIndicator(),
+              // Subtitle / Tagline
+              Text(
+                    'Edebiyatın Derinliklerine Yolculuk',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: textColor.withOpacity(0.7),
+                      letterSpacing: 2,
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(delay: 800.ms, duration: 800.ms)
+                  .slideY(
+                    begin: 0.2,
+                    end: 0,
+                    duration: 800.ms,
+                    curve: Curves.easeOut,
+                  ),
+
+              const SizedBox(height: 60),
+
+              // 2. Loading Indicator (Minimalist Gold Line)
+              SizedBox(
+                width: 120,
+                child: Column(
+                  children: [
+                    const LinearProgressIndicator(
+                      backgroundColor: Color(0xFFE0E0E0),
+                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                      minHeight: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Yükleniyor...',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: textColor.withOpacity(0.5),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 1500.ms, duration: 500.ms),
             ],
           ),
         ),
       ),
     );
-  }
-
-  /// Animated book icon logo
-  Widget _buildLogo() {
-    return Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            color: Colors.amber.shade50,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.amber, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withValues(alpha: 0.2),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Icon(Icons.menu_book, size: 50, color: Colors.amber),
-        )
-        .animate()
-        .fadeIn(duration: 1000.ms)
-        .scale(
-          begin: const Offset(0.5, 0.5),
-          end: const Offset(1.0, 1.0),
-          duration: 1200.ms,
-          curve: Curves.elasticOut,
-        );
-  }
-
-  /// Main game title
-  Widget _buildTitle() {
-    return Text(
-          "EDEBİNA",
-          style: GoogleFonts.poppins(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-            letterSpacing: 3,
-          ),
-        )
-        .animate()
-        .fadeIn(delay: 400.ms, duration: 800.ms)
-        .slideY(begin: 0.3, end: 0, delay: 400.ms, duration: 800.ms);
-  }
-
-  /// Subtitle text
-  Widget _buildSubtitle() {
-    return Text(
-      "Bilginizi Test Edin",
-      style: GoogleFonts.poppins(
-        fontSize: 16,
-        color: Colors.grey.shade600,
-        letterSpacing: 1,
-      ),
-    ).animate().fadeIn(delay: 800.ms, duration: 600.ms);
-  }
-
-  /// Pulsating loading indicator
-  Widget _buildLoadingIndicator() {
-    return Column(
-      children: [
-        SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          "Yükleniyor...",
-          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade500),
-        ),
-      ],
-    ).animate().fadeIn(delay: 1200.ms, duration: 600.ms);
   }
 }

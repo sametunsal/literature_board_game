@@ -20,8 +20,8 @@ class DiceRoller extends ConsumerWidget {
     final tokens = themeState.tokens;
     final currentPlayerName = state.currentPlayer.name;
 
-    // Show rolling animation
-    if (state.isDiceRolling) {
+    // Show rolling animation (SKIP if rolling for order, as we show status in button)
+    if (state.isDiceRolling && state.phase != GamePhase.rollingForOrder) {
       return _buildRollingIndicator(tokens, currentPlayerName);
     }
 
@@ -237,13 +237,27 @@ class DiceRoller extends ConsumerWidget {
   ) {
     final phase = state.phase;
     final isDoubleTurn = state.isDoubleTurn;
+    final isTieBreaker = phase == GamePhase.tieBreaker;
+
+    // Check if current player is in pending tie-breaker list
+    final bool canRollInTieBreaker =
+        isTieBreaker &&
+        state.pendingTieBreakPlayers.any((p) => p.id == state.currentPlayer.id);
 
     // Determine button label based on phase and double turn
     final String buttonLabel;
     final Color buttonColor;
     if (phase == GamePhase.rollingForOrder) {
-      buttonLabel = "SIRALAMA İÇİN AT";
+      // If rolling/processing, show loading state
+      if (state.isDiceRolling) {
+        buttonLabel = "Belirleniyor...";
+      } else {
+        buttonLabel = "SIRALAMA BELİRLE";
+      }
       buttonColor = tokens.primary;
+    } else if (isTieBreaker) {
+      buttonLabel = "TEKRAR AT (Beraberlik)";
+      buttonColor = Colors.orange.shade600;
     } else if (isDoubleTurn) {
       buttonLabel = "ÇİFT GELDİ - TEKRAR AT";
       buttonColor = Colors.orange.shade600;
@@ -251,6 +265,9 @@ class DiceRoller extends ConsumerWidget {
       buttonLabel = "ZAR AT";
       buttonColor = tokens.primary;
     }
+
+    // Determine if button should be enabled
+    final bool buttonEnabled = !isTieBreaker || canRollInTieBreaker;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -261,6 +278,8 @@ class DiceRoller extends ConsumerWidget {
           decoration: BoxDecoration(
             color: phase == GamePhase.rollingForOrder
                 ? Colors.amber.withValues(alpha: 0.2)
+                : isTieBreaker
+                ? Colors.red.withValues(alpha: 0.15)
                 : isDoubleTurn
                 ? Colors.orange.withValues(alpha: 0.25)
                 : Colors.white.withValues(alpha: 0.15),
@@ -268,20 +287,30 @@ class DiceRoller extends ConsumerWidget {
             border: Border.all(
               color: phase == GamePhase.rollingForOrder
                   ? Colors.amber.withValues(alpha: 0.5)
+                  : isTieBreaker
+                  ? Colors.red.withValues(alpha: 0.5)
                   : isDoubleTurn
                   ? Colors.orange.withValues(alpha: 0.6)
                   : Colors.white.withValues(alpha: 0.3),
-              width: isDoubleTurn ? 2 : 1,
+              width: (isTieBreaker || isDoubleTurn) ? 2 : 1,
             ),
           ),
           child: Column(
             children: [
               Text(
-                'Sıra: $currentPlayerName',
+                isTieBreaker
+                    ? '🔄 Tie-Breaker! ${state.tieBreakRound}. Tur'
+                    : 'Sıra: $currentPlayerName',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: Colors.black87,
+                  shadows: [
+                    Shadow(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      blurRadius: 2,
+                    ),
+                  ],
                 ),
               ),
               if (phase == GamePhase.rollingForOrder)
@@ -290,7 +319,20 @@ class DiceRoller extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Colors.amber.shade200,
+                    color: Colors.black54,
+                  ),
+                )
+              else if (isTieBreaker)
+                Text(
+                  canRollInTieBreaker
+                      ? '$currentPlayerName için zar at!'
+                      : 'Diğer oyuncular zar atıyor...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: canRollInTieBreaker
+                        ? Colors.red.shade900
+                        : Colors.black54,
                   ),
                 )
               else if (isDoubleTurn)
@@ -299,42 +341,130 @@ class DiceRoller extends ConsumerWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Colors.orange.shade200,
+                    color: Colors.deepOrange.shade900,
                   ),
                 ),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () {
-            ref.read(gameProvider.notifier).rollDice();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: buttonColor,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shadowColor: buttonColor.withValues(alpha: 0.3),
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+        // Show pending tie-breaker players list
+        if (isTieBreaker && state.pendingTieBreakPlayers.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.red.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Beraber kalan oyuncular:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: state.pendingTieBreakPlayers
+                      .map(
+                        (p) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: p.id == state.currentPlayer.id
+                                ? Colors.orange.withValues(alpha: 0.3)
+                                : Colors.grey.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: p.id == state.currentPlayer.id
+                                  ? Colors.orange.withValues(alpha: 0.6)
+                                  : Colors.grey.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            p.name,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.casino_rounded, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                buttonLabel,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
+        // UI Lock Button: Checks if automated turn order is running
+        Builder(
+          builder: (context) {
+            // CHECK IF AUTOMATED TURN ORDER IS RUNNING - LOCK THE UI
+            final isTurnOrderInProgress = ref
+                .read(gameProvider.notifier)
+                .isTurnOrderProcessing;
+
+            return ElevatedButton(
+              onPressed:
+                  // LOCKED if automated turn order is running OR if button is not enabled
+                  (buttonEnabled &&
+                      !isTurnOrderInProgress &&
+                      (!state.isDiceRolling ||
+                          phase != GamePhase.rollingForOrder))
+                  ? () {
+                      if (phase == GamePhase.rollingForOrder) {
+                        ref
+                            .read(gameProvider.notifier)
+                            .startAutomatedTurnOrder();
+                      } else {
+                        ref.read(gameProvider.notifier).rollDice();
+                      }
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: buttonColor,
+                foregroundColor: Colors.white,
+                elevation: buttonEnabled ? 4 : 0,
+                shadowColor: buttonColor.withValues(alpha: 0.3),
+                disabledBackgroundColor: Colors.grey.shade400,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-            ],
-          ),
-        ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.casino_rounded, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    buttonLabel,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ); // Close ElevatedButton
+          }, // Close builder function
+        ), // Close Builder widget
       ],
     );
   }

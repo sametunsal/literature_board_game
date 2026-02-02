@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../models/player.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/motion/motion_constants.dart';
+import 'isometric_icon.dart';
 
 /// Animated pawn widget with polished 2D appearance
 /// Features smooth slide animation with subtle scale pulse
@@ -32,9 +33,6 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
   // Pulsating glow controller
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
-
-  // Movement state
-  bool _isMoving = false;
 
   @override
   void initState() {
@@ -74,15 +72,6 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
       ),
     ]).animate(_pulseController);
 
-    // Pulse controller listener for movement state
-    _pulseController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        if (mounted) {
-          setState(() => _isMoving = false);
-        }
-      }
-    });
-
     // Pulsating glow animation - uses slow duration for gentle effect
     _glowController = AnimationController(
       duration: MotionDurations.slow * 2,
@@ -104,9 +93,6 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
 
     // Trigger pulse on position change
     if (oldWidget.player.position != widget.player.position) {
-      if (mounted) {
-        setState(() => _isMoving = true);
-      }
       _pulseController.forward(from: 0);
     }
 
@@ -133,10 +119,7 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
       builder: (context, child) {
         final scale = _pulseAnimation.value;
 
-        return Transform.scale(
-          scale: scale,
-          child: child,
-        );
+        return Transform.scale(scale: scale, child: child);
       },
       child: _buildPawnToken(),
     );
@@ -145,7 +128,6 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
   Widget _buildPawnToken() {
     final size = widget.size;
     final isCurrentTurn = widget.isCurrentTurn;
-    final isActive = widget.isActive;
     final color = widget.player.color;
 
     return AnimatedBuilder(
@@ -153,99 +135,40 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
       builder: (context, child) {
         final glowIntensity = isCurrentTurn ? _glowAnimation.value : 0.0;
 
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            // 2D gradient for polished appearance
-            gradient: RadialGradient(
-              center: const Alignment(-0.3, -0.3),
-              radius: 0.8,
-              colors: [
-                Color.lerp(color, Colors.white, 0.35)!,
-                color,
-                Color.lerp(color, Colors.black, 0.15)!,
-              ],
-              stops: const [0.0, 0.5, 1.0],
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // Active turn glow (behind icon)
+            if (isCurrentTurn)
+              Container(
+                width: size * 1.5,
+                height: size * 1.5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(
+                        alpha: 0.4 + (glowIntensity * 0.4),
+                      ),
+                      blurRadius: 10 + (glowIntensity * 10),
+                      spreadRadius: 2 + (glowIntensity * 4),
+                    ),
+                  ],
+                ),
+              ),
+
+            Center(
+              child: IsometricIcon(
+                icon:
+                    GameConstants.iconPalette[widget.player.iconIndex %
+                        GameConstants.iconPalette.length],
+                color: color,
+                size: size,
+                depth: 5.0, // Fixed depth
+              ),
             ),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isCurrentTurn
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.85),
-              width: isCurrentTurn ? 3.0 : 2.5,
-            ),
-            boxShadow: [
-              // Drop shadow
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 8,
-                offset: const Offset(2, 3),
-              ),
-              // Movement glow - enhanced while moving
-              if (_isMoving)
-                BoxShadow(
-                  color: color.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              // Pulsating glow for current turn
-              if (isCurrentTurn)
-                BoxShadow(
-                  color: color.withValues(alpha: 0.25 + (glowIntensity * 0.5)),
-                  blurRadius: 14 + (glowIntensity * 10),
-                  spreadRadius: 3 + (glowIntensity * 5),
-                ),
-              if (isCurrentTurn)
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: glowIntensity * 0.35),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              if (isActive && !isCurrentTurn)
-                BoxShadow(
-                  color: color.withValues(alpha: 0.45),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Highlight shine
-              Positioned(
-                top: size * 0.1,
-                left: size * 0.15,
-                child: Container(
-                  width: size * 0.25,
-                  height: size * 0.15,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(size),
-                  ),
-                ),
-              ),
-              // Player icon - using custom avatar images
-              ClipOval(
-                child: Image.asset(
-                  GameConstants.getAvatarPath(widget.player.iconIndex),
-                  width: size * 0.55,
-                  height: size * 0.55,
-                  fit: BoxFit.contain,
-                  color: widget.player.color,
-                  colorBlendMode: BlendMode.srcIn,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.person,
-                      size: size * 0.5,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+          ],
         );
       },
     );
@@ -253,18 +176,21 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
 }
 
 /// Container that smoothly moves pawn groups across the board
-/// Uses flutter_animate for natural sliding feel
+/// Uses strict 2x3 Grid Layout (3 Rows, 2 Columns)
+/// Mapped for up to 6 players
 class AnimatedPawnContainer extends StatefulWidget {
   final Offset center;
-  final double areaSize;
+  final double width;
+  final double height;
   final List<Player> players;
   final String currentPlayerId;
-  final double pawnSize;
+  final double pawnSize; // Base size hint
 
   const AnimatedPawnContainer({
     super.key,
     required this.center,
-    required this.areaSize,
+    required this.width,
+    required this.height,
     required this.players,
     required this.currentPlayerId,
     required this.pawnSize,
@@ -288,7 +214,6 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
       _previousCenter = oldWidget.center;
       _justMoved = true;
 
-      // Reset "just moved" flag after animation completes
       _moveResetTimer?.cancel();
       _moveResetTimer = Timer(
         MotionDurations.pawn + MotionDurations.medium,
@@ -304,41 +229,101 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
   }
 
   @override
+  void dispose() {
+    _moveResetTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final left = widget.center.dx - (widget.areaSize / 2);
-    final top = widget.center.dy - (widget.areaSize / 2);
+    // Calculate top-left of the tile area
+    final left = widget.center.dx - (widget.width / 2);
+    final top = widget.center.dy - (widget.height / 2);
 
     Widget pawnContainer = Positioned(
       left: left,
       top: top,
       child: SizedBox(
-        width: widget.areaSize,
-        height: widget.areaSize,
-        child: Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
-            children: widget.players
-                .map(
-                  (p) => PawnWidget(
+        width: widget.width,
+        height: widget.height,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double w = constraints.maxWidth;
+            final double h = constraints.maxHeight;
+
+            // 2 Columns (Left, Right)
+            final double colWidth = w / 2;
+            // 3 Rows (Top, Middle, Bottom)
+            final double rowHeight = h / 3;
+
+            // Safe Pawn Size: min dimension * 0.8 (allows padding)
+            final double minDim = colWidth < rowHeight ? colWidth : rowHeight;
+            final double safePawnSize = minDim * 0.8;
+
+            // Calculate centering offsets within cell
+            final double offsetX = (colWidth - safePawnSize) / 2;
+            final double offsetY = (rowHeight - safePawnSize) / 2;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              // GUARANTEED UNIQUE MAPPING: Use List Index
+              // The `players` list contains only players on THIS tile.
+              // So mapping 0->TL, 1->TR etc. ensures perfect separation.
+              children: widget.players.asMap().entries.map((entry) {
+                final int index = entry.key;
+                final Player p = entry.value;
+
+                // Determine Slot based on List Index
+                // 0: TL, 1: TR
+                // 2: ML, 3: MR
+                // 4: BL, 5: BR
+                final int pos = index % 6;
+
+                double pLeft = 0;
+                double pTop = 0;
+
+                // Column Determination (Even=Left, Odd=Right)
+                if (pos % 2 == 0) {
+                  pLeft = 0; // Left Column
+                } else {
+                  pLeft = colWidth; // Right Column
+                }
+
+                // Row Determination
+                if (pos < 2) {
+                  pTop = 0; // Top Row
+                } else if (pos < 4) {
+                  pTop = rowHeight; // Middle Row
+                } else {
+                  pTop = rowHeight * 2; // Bottom Row
+                }
+
+                // Apply centering padding
+                pLeft += offsetX;
+                pTop += offsetY;
+
+                return Positioned(
+                  left: pLeft,
+                  top: pTop,
+                  child: PawnWidget(
                     key: ValueKey(p.id),
                     player: p,
-                    size: widget.pawnSize,
+                    size: safePawnSize,
                     isActive: p.id == widget.currentPlayerId,
                     isCurrentTurn: p.id == widget.currentPlayerId,
                   ),
-                )
-                .toList(),
-          ),
+                );
+              }).toList(),
+            );
+          },
         ),
       ),
     );
 
-    // Apply smooth slide animation when position changes
+    // Apply smooth slide animation
     if (_justMoved && _previousCenter != null) {
-      final dx = left - (_previousCenter!.dx - (widget.areaSize / 2));
-      final dy = top - (_previousCenter!.dy - (widget.areaSize / 2));
+      final dx = left - (_previousCenter!.dx - (widget.width / 2));
+      final dy = top - (_previousCenter!.dy - (widget.height / 2));
 
       return pawnContainer
           .animate(key: ValueKey('${widget.center.dx}_${widget.center.dy}'))
@@ -351,11 +336,5 @@ class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
     }
 
     return pawnContainer;
-  }
-
-  @override
-  void dispose() {
-    _moveResetTimer?.cancel();
-    super.dispose();
   }
 }

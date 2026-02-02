@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/board_layout_config.dart';
+import '../../../core/utils/board_layout_helper.dart';
 import 'tile_widget.dart';
 
-/// Grid widget containing all 22 tiles of the board
+/// Grid widget containing all 26 tiles of the board (Monopoly-style layout)
+///
+/// **HYBRID GEOMETRY:**
+/// - Corner tiles (0, 6, 13, 19): Square (kLong × kLong)
+/// - Bottom/Top middle: Vertical rectangles (kShort × kLong)
+/// - Left/Right middle: Horizontal rectangles (kLong × kShort)
 class TileGrid extends StatelessWidget {
   final BoardLayoutConfig layout;
   final int currentPlayerPosition;
@@ -25,183 +31,61 @@ class TileGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tiles = _buildAllTiles();
-    return Stack(children: tiles);
+    return Stack(children: _buildAllTiles());
   }
 
-  /// Generate all 22 tiles for 6x7 grid
+  /// Generate all 26 tiles with dynamic sizing
   List<Widget> _buildAllTiles() {
-    final T = layout.tileSize;
-    final W = layout.actualWidth;
-    final H = layout.actualHeight;
+    final List<Widget> tiles = [];
 
-    return [
-      // ═════════════════════════════════════════════════════════════════════
-      // BOTTOM ROW (IDs 0-5): Right to Left, from Start to Şans
-      // ═════════════════════════════════════════════════════════════════════
-      // 0: Start (Bottom-Right Corner)
-      _buildTile(
-        id: 0,
-        left: W - T,
-        top: H - T,
-        width: T,
-        height: T,
-        rotation: 0,
-      ),
-      // 1-4: Bottom edge tiles (going left)
-      _buildTile(
-        id: 1,
-        left: W - T * 2,
-        top: H - T,
-        width: T,
-        height: T,
-        rotation: 0,
-      ),
-      _buildTile(
-        id: 2,
-        left: W - T * 3,
-        top: H - T,
-        width: T,
-        height: T,
-        rotation: 0,
-      ),
-      _buildTile(
-        id: 3,
-        left: W - T * 4,
-        top: H - T,
-        width: T,
-        height: T,
-        rotation: 0,
-      ),
-      _buildTile(
-        id: 4,
-        left: W - T * 5,
-        top: H - T,
-        width: T,
-        height: T,
-        rotation: 0,
-      ),
-      // 5: Şans (Bottom-Left Corner)
-      _buildTile(id: 5, left: 0, top: H - T, width: T, height: T, rotation: 0),
+    for (int id = 0; id < 26; id++) {
+      // Get center position and size from layout helper
+      final center = BoardLayoutHelper.getTileCenter(id, layout);
+      final size = BoardLayoutHelper.getTileSize(id, layout);
 
-      // ═════════════════════════════════════════════════════════════════════
-      // LEFT COLUMN (IDs 6-10): Bottom to Top
-      // ═════════════════════════════════════════════════════════════════════
-      _buildTile(
-        id: 6,
-        left: 0,
-        top: H - T * 2,
-        width: T,
-        height: T,
-        rotation: 3,
-      ),
-      _buildTile(
-        id: 7,
-        left: 0,
-        top: H - T * 3,
-        width: T,
-        height: T,
-        rotation: 3,
-      ),
-      _buildTile(
-        id: 8,
-        left: 0,
-        top: H - T * 4,
-        width: T,
-        height: T,
-        rotation: 3,
-      ),
-      _buildTile(
-        id: 9,
-        left: 0,
-        top: H - T * 5,
-        width: T,
-        height: T,
-        rotation: 3,
-      ),
-      _buildTile(
-        id: 10,
-        left: 0,
-        top: H - T * 6,
-        width: T,
-        height: T,
-        rotation: 3,
-      ),
+      // Convert center to top-left for Positioned widget
+      final left = center.dx - size.width / 2;
+      final top = center.dy - size.height / 2;
 
-      // ═════════════════════════════════════════════════════════════════════
-      // TOP ROW (IDs 11-16): Left to Right, from Shop to Kader
-      // ═════════════════════════════════════════════════════════════════════
-      // 11: Shop/Kıraathane (Top-Left Corner)
-      _buildTile(id: 11, left: 0, top: 0, width: T, height: T, rotation: 2),
-      // 12-15: Top edge tiles (going right)
-      _buildTile(id: 12, left: T, top: 0, width: T, height: T, rotation: 2),
-      _buildTile(id: 13, left: T * 2, top: 0, width: T, height: T, rotation: 2),
-      _buildTile(id: 14, left: T * 3, top: 0, width: T, height: T, rotation: 2),
-      _buildTile(id: 15, left: T * 4, top: 0, width: T, height: T, rotation: 2),
-      // 16: Kader (Top-Right Corner)
-      _buildTile(id: 16, left: W - T, top: 0, width: T, height: T, rotation: 2),
+      // Get rotation based on which side the tile is on
+      final rotation = _getRotationQuarter(id);
 
-      // ═════════════════════════════════════════════════════════════════════
-      // RIGHT COLUMN (IDs 17-21): Top to Bottom
-      // ═════════════════════════════════════════════════════════════════════
-      _buildTile(id: 17, left: W - T, top: T, width: T, height: T, rotation: 1),
-      _buildTile(
-        id: 18,
-        left: W - T,
-        top: T * 2,
-        width: T,
-        height: T,
-        rotation: 1,
-      ),
-      _buildTile(
-        id: 19,
-        left: W - T,
-        top: T * 3,
-        width: T,
-        height: T,
-        rotation: 1,
-      ),
-      _buildTile(
-        id: 20,
-        left: W - T,
-        top: T * 4,
-        width: T,
-        height: T,
-        rotation: 1,
-      ),
-      _buildTile(
-        id: 21,
-        left: W - T,
-        top: T * 5,
-        width: T,
-        height: T,
-        rotation: 1,
-      ),
-    ];
+      tiles.add(
+        TileWidget(
+          id: id,
+          left: left,
+          top: top,
+          width: size.width,
+          height: size.height,
+          rotation: rotation,
+          isSelected: id == currentPlayerPosition,
+          isPulsing: pulsingTileId == id,
+          isHovered: hoveredTileId == id,
+          onHoverEnter: onHoverEnter != null ? () => onHoverEnter!(id) : null,
+          onHoverExit: onHoverExit != null ? () => onHoverExit!(id) : null,
+          onPulseComplete: onPulseComplete,
+        ),
+      );
+    }
+
+    return tiles;
   }
 
-  /// Build a single positioned tile using TileWidget
-  Widget _buildTile({
-    required int id,
-    required double left,
-    required double top,
-    required double width,
-    required double height,
-    required int rotation,
-  }) {
-    return TileWidget(
-      id: id,
-      left: left,
-      top: top,
-      width: width,
-      height: height,
-      rotation: rotation,
-      isSelected: id == currentPlayerPosition,
-      isPulsing: pulsingTileId == id,
-      isHovered: hoveredTileId == id,
-      onHoverEnter: onHoverEnter != null ? () => onHoverEnter!(id) : null,
-      onHoverExit: onHoverExit != null ? () => onHoverExit!(id) : null,
-      onPulseComplete: onPulseComplete,
-    );
+  /// Returns rotation quarter based on tile position:
+  /// - 0: Bottom row & corners (no rotation)
+  /// - 1: Right column (90° clockwise)
+  /// - 2: Top row (180°)
+  /// - 3: Left column (270° / -90°)
+  int _getRotationQuarter(int id) {
+    // Corners: no rotation
+    if ([0, 6, 13, 19].contains(id)) return 0;
+    // Bottom middle
+    if (id >= 1 && id <= 5) return 0;
+    // Left middle
+    if (id >= 7 && id <= 12) return 3;
+    // Top middle
+    if (id >= 14 && id <= 18) return 2;
+    // Right middle
+    return 1;
   }
 }

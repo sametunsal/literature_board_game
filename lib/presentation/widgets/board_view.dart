@@ -15,7 +15,7 @@ import 'pawn_widget.dart';
 import '../dialogs/pause_dialog.dart';
 import '../screens/settings_screen.dart';
 import '../screens/main_menu_screen.dart';
-import '../dialogs/game_over_dialog.dart';
+import '../screens/victory_screen.dart';
 import 'player_scoreboard.dart';
 import '../screens/collection_screen.dart';
 import '../../core/managers/sound_manager.dart';
@@ -27,22 +27,23 @@ import 'board/tile_grid.dart';
 import 'board/effects_overlay.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAYOUT CONFIGURATION - 6x7 RECTANGULAR GRID (22 tiles)
+// LAYOUT CONFIGURATION - 7x8 RECTANGULAR GRID (26 tiles)
 // ════════════════════════════════════════════════════════════════════════════
 
-/// Cached layout calculations for the 6x7 rectangular game board
+/// Cached layout calculations for the 7x8 rectangular game board
 ///
-/// Board Layout (22 tiles on perimeter):
+/// Board Layout (26 tiles on perimeter):
 ///
-///   [11-Shop] [12-Cat] [13-Cat] [14-Cat] [15-Cat] [16-Fate]  -- Top row
-///   [10-Cat ]                                     [17-Cat ]
-///   [9-Cat  ]                                     [18-Cat ]
-///   [8-Cat  ]         CENTER AREA                 [19-Cat ]
-///   [7-Cat  ]         (empty)                     [20-Cat ]
-///   [6-Cat  ]                                     [21-Cat ]
-///   [5-Şans ] [4-Cat ] [3-Cat ] [2-Cat ] [1-Cat ] [0-Start]  -- Bottom row
+///   [13-Shop] [14-Cat] [15-Cat] [16-Şans] [17-Cat] [18-Cat] [19-Cat]   -- Top row (up to corner)
+///   [12-Cat ]                                                  [20-Library] -- Top-Right Corner
+///   [11-Cat ]                                                  [21-Cat ]
+///   [10-Fate]                  CENTER AREA                      [22-Fate]
+///   [9-Cat  ]                    (5x6 empty)                    [23-Cat ]
+///   [8-Cat  ]                                                   [24-Cat ]
+///   [7-Imza ]                                                  [25-Cat ]   -- Bottom-Left Corner
+///   [6-Cat ] [5-Cat ] [4-Cat ] [3-Şans ] [2-Cat ] [1-Cat ] [0-Start]  -- Bottom row
 ///
-/// Corners: 0 (Start), 5 (Şans), 11 (Shop), 16 (Kader)
+/// Corners: 0 (Start/BR), 7 (Imza Günü/BL), 13 (Shop/TL), 20 (Library/TR)
 
 // ════════════════════════════════════════════════════════════════════════════
 // MAIN BOARD VIEW
@@ -108,6 +109,23 @@ class _BoardViewState extends ConsumerState<BoardView> {
           next.phase == GamePhase.gameOver) {
         _confettiController.play();
         SoundManager.instance.playVictory();
+
+        // Determine Winner
+        final sortedPlayers = List<Player>.from(next.players)
+          ..sort((a, b) => b.stars.compareTo(a.stars));
+        final winner = sortedPlayers.isNotEmpty
+            ? sortedPlayers.first
+            : next.players.first;
+
+        // Navigate to Victory Screen
+        // Using addPostFrameCallback to ensure context is stable
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => VictoryScreen(winner: winner),
+            ),
+          );
+        });
       }
     });
 
@@ -138,14 +156,35 @@ class _BoardViewState extends ConsumerState<BoardView> {
       body: Stack(
         children: [
           // ═══════════════════════════════════════════════════════════════
-          // LAYER 1: Base Background Color
+          // LAYER 1: Base Background Table Image
           // ═══════════════════════════════════════════════════════════════
-          Container(decoration: GameTheme.tableDecorationFor(isDarkMode)),
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/wooden_table_bg.png',
+              key: const ValueKey('bg_updated_v2'), // Force refresh
+              fit: BoxFit.cover,
+            ),
+          ),
+          // LAYER 2: Contrast Overlay
+          Positioned.fill(
+            child: Container(color: Colors.black.withValues(alpha: 0.3)),
+          ),
 
           // ═══════════════════════════════════════════════════════════════
-          // LAYER 2: Game Board Content
+          // LAYER 3: Game Board Content
           // ═══════════════════════════════════════════════════════════════
-          Center(child: _buildBoard(state, layout, isDarkMode)),
+          // FREEZE ANIMATIONS ON PAUSE
+          TickerMode(
+            enabled: !state.isGamePaused,
+            child: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildBoard(state, layout, isDarkMode),
+                ),
+              ),
+            ),
+          ),
 
           // NOTE: Sidebar removed for RPG mode - board takes center stage
           // Player stats are visible via corner tiles and dialogs
@@ -167,22 +206,18 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
 
           // PAUSE BUTTON (top-right) - moved to overlap with P2 scoreboard
+          // PAUSE BUTTON (top-right) - Buttons float below the P2 Profile Card
           Positioned(
-            top: 0,
-            right: 0,
+            top: 140, // Moved down to clear the player panel
+            right: 16,
             child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 60, right: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildPauseButton(),
-                    const SizedBox(height: 8),
-                    _buildBotModeButton(),
-                    const SizedBox(height: 8),
-                    _buildDebugWinButton(),
-                  ],
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildPauseButton(),
+                  const SizedBox(height: 8),
+                  _buildBotModeButton(),
+                ],
               ),
             ),
           ),
@@ -232,14 +267,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
               ),
             ),
 
-          // GAME OVER DIALOG (on top of confetti)
-          if (state.phase == GamePhase.gameOver)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.6),
-                child: const GameOverDialog(),
-              ),
-            ),
+          // GAME OVER DIALOG REMOVED - Handled by Navigation
         ],
       ),
     );
@@ -256,7 +284,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
     final tokens = themeState.tokens;
 
     return GestureDetector(
-          onTap: () => setState(() => _showPauseMenu = true),
+          onTap: () {
+            ref.read(gameProvider.notifier).pauseGame();
+            setState(() => _showPauseMenu = true);
+          },
           child: Container(
             width: 48,
             height: 48,
@@ -351,59 +382,31 @@ class _BoardViewState extends ConsumerState<BoardView> {
         );
   }
 
-  /// Build debug win button for testing victory logic
-  Widget _buildDebugWinButton() {
-    return GestureDetector(
-          onTap: () {
-            ref.read(gameProvider.notifier).debugTriggerWin();
-          },
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.amber,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.shade700, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withValues(alpha: 0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(Icons.emoji_events, color: Colors.white, size: 28),
-          ),
-        )
-        .animate()
-        .fadeIn(
-          delay: MotionDurations.slow.safe,
-          duration: MotionDurations.pulse.safe,
-        )
-        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
-  }
-
   /// Build the pause menu overlay
   Widget _buildPauseOverlay() {
     return Positioned.fill(
       child: Container(
         color: Colors.black.withValues(alpha: 0.6),
         child: PauseDialog(
-          onResume: () => setState(() => _showPauseMenu = false),
+          onResume: () {
+            ref.read(gameProvider.notifier).resumeGame();
+            setState(() => _showPauseMenu = false);
+          },
           onSettings: () {
             setState(() => _showPauseMenu = false);
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const SettingsScreen()),
             );
           },
+
           onCollection: () {
             setState(() => _showPauseMenu = false);
             final state = ref.read(gameProvider);
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => CollectionScreen(
-                  collectedQuoteIds: state.currentPlayer.collectedQuotes,
-                  playerName: state.currentPlayer.name,
+                  players: state.players,
+                  initialPlayerIndex: state.currentPlayerIndex,
                 ),
               ),
             );
@@ -586,7 +589,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
   /// Build positioned pawns for all players using AnimatedPawnContainer
   List<Widget> _buildPlayers(List<Player> players, BoardLayoutConfig layout) {
-    // Group players by position ONLY to calculate overlap offsets
+    // Group players by position (Tile ID)
     final Map<int, List<Player>> groupMap = {};
     for (final player in players) {
       groupMap.putIfAbsent(player.position, () => []).add(player);
@@ -598,37 +601,27 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
     final List<Widget> widgets = [];
 
-    // Render each player individually to ensure stable identity (Key) for movement animation
-    for (final player in players) {
-      final position = player.position;
-      final group = groupMap[position] ?? [player];
-      final indexInGroup = group.indexOf(player);
-      final count = group.length;
+    // Create ONE container per Tile Position
+    groupMap.forEach((tileIndex, tilePlayers) {
+      final center = BoardLayoutHelper.getTileCenter(tileIndex, layout);
 
-      var center = BoardLayoutHelper.getTileCenter(position, layout);
-
-      // Apply offset if multiple players on same tile to prevent exact overlap
-      if (count > 1) {
-        final offset = BoardLayoutHelper.calculatePlayerOffset(
-          indexInGroup,
-          count,
-          layout.normalSize,
-        );
-        center = center.translate(offset.dx, offset.dy);
-      }
+      // Get exact dimensions for this tile (Standard, Corner, or Rectangular)
+      final tileSize = BoardLayoutHelper.getTileSize(tileIndex, layout);
 
       widgets.add(
         AnimatedPawnContainer(
-          // STABLE KEY based on ID allows AnimatedPawnContainer to track movement
-          key: ValueKey('pawn_${player.id}'),
+          // Use Tile Index in Key to keep container stable for that tile
+          // Players will animate "into" this container's layout
+          key: ValueKey('pawn_group_$tileIndex'),
           center: center,
-          areaSize: layout.cornerSize,
-          players: [player], // Pass single player to container
+          width: tileSize.width,
+          height: tileSize.height,
+          players: tilePlayers, // Pass ALL players on this tile
           currentPlayerId: currentPlayerId,
           pawnSize: layout.normalSize * 0.45,
         ),
       );
-    }
+    });
 
     return widgets;
   }

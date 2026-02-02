@@ -57,28 +57,36 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
   }
 
   /// Handle correct answer - trigger confetti
-  void _handleCorrectAnswer() {
+  Future<void> _handleCorrectAnswer() async {
+    debugPrint('🟢 _handleCorrectAnswer called');
     _confettiController.play();
-    Future.delayed(MotionDurations.dice, () {
-      if (mounted) {
-        widget.onConfirm();
-      }
-    });
+    debugPrint('🟢 Confetti started, waiting MotionDurations.dice...');
+    await Future.delayed(MotionDurations.dice);
+    debugPrint('🟢 Delay complete, checking mounted: $mounted');
+    if (mounted) {
+      debugPrint('🟢 Calling widget.onConfirm() NOW');
+      widget.onConfirm();
+      debugPrint('🟢 widget.onConfirm() returned');
+    }
   }
 
   /// Handle wrong answer - trigger shake animation
-  void _handleWrongAnswer() {
+  Future<void> _handleWrongAnswer() async {
+    debugPrint('🔴 _handleWrongAnswer called');
     setState(() {
       _isShaking = true;
     });
-    Future.delayed(MotionDurations.slow, () {
-      if (mounted) {
-        setState(() {
-          _isShaking = false;
-        });
-        widget.onCancel();
-      }
-    });
+    debugPrint('🔴 Shake started, waiting MotionDurations.slow...');
+    await Future.delayed(MotionDurations.slow);
+    debugPrint('🔴 Delay complete, checking mounted: $mounted');
+    if (mounted) {
+      setState(() {
+        _isShaking = false;
+      });
+      debugPrint('🔴 Calling widget.onCancel() NOW');
+      widget.onCancel();
+      debugPrint('🔴 widget.onCancel() returned');
+    }
   }
 
   /// Get dynamic accent color based on category

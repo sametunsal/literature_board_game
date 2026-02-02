@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import '../../core/motion/motion_constants.dart';
 import '../../models/board_tile.dart';
 import '../../models/difficulty.dart';
@@ -223,28 +224,41 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   /// Build standard tile content with title and difficulty
   Widget _buildStandardTileContent() {
     return Padding(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Title - Centered, wraps naturally
-          Text(
-            widget.tile.name,
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-              height: 1.2,
+          // Title - AutoSizeText for better readability
+          Expanded(
+            child: Center(
+              child: AutoSizeText(
+                widget.tile.name == "Eser-Karakter"
+                    ? "Eser\nKarakter"
+                    : widget.tile.name,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: widget.tile.name == "Eser-Karakter"
+                      ? 12
+                      : 14, // Smaller font for Eser-Karakter
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                  height: 1.1,
+                ),
+                minFontSize: 8,
+                maxLines: 3,
+                stepGranularity: 0.5,
+                wrapWords: false, // Avoid breaking words if possible
+                softWrap: true,
+              ),
             ),
           ),
-          const SizedBox(height: 2),
+          // Small spacing
+          if (widget.tile.category != null) const SizedBox(height: 2),
+
           // Difficulty - if category tile
-          if (widget.tile.category != null) ...[
-            Text(
+          if (widget.tile.category != null)
+            AutoSizeText(
               widget.tile.difficulty.displayName,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -252,8 +266,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                 fontWeight: FontWeight.w600,
                 color: Colors.black54,
               ),
+              maxLines: 1,
+              minFontSize: 7,
             ),
-          ],
         ],
       ),
     );
@@ -363,17 +378,29 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Colors.amber.shade300;
       case 16:
         return Colors.brown.shade300;
-      // RIGHT COLUMN TILES (17-21) - Vibrant colors for 3rd category occurrences
-      case 17:
-        return Colors.deepPurple.shade400; // edebiSanatlar (3rd)
-      case 18:
-        return Colors.cyan.shade400; // eserKarakter (3rd)
-      case 19:
-        return Colors.lime.shade400; // edebiyatAkimlari (3rd)
+
+      // RIGHT COLUMN TILES (20-25) - Varied "Hard" Colors
       case 20:
-        return Colors.lightBlue.shade400; // benKimim (3rd)
+        return Colors.teal.shade600;
       case 21:
-        return Colors.pink.shade500; // tesvik (3rd) - Distinct vibrant pink
+        return Colors.indigo.shade500;
+      case 22:
+        return Colors.deepOrange.shade600;
+      case 23:
+        return Colors.pink.shade600;
+      case 24:
+        return Colors.green.shade600;
+      case 25:
+        return Colors.blueGrey.shade600;
+
+      // TOP ROW EDGE CASES (If any overlap occurs)
+      case 17:
+        return Colors.deepPurple.shade400;
+      case 18:
+        return Colors.cyan.shade400;
+      case 19:
+        return Colors.lime.shade400;
+
       default:
         return Colors.grey.shade200;
     }
