@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'difficulty.dart';
 import 'game_enums.dart';
+import '../core/constants/game_constants.dart';
 
 /// Mastery levels for categories
 enum MasteryLevel { novice, cirak, kalfa, usta }
@@ -193,7 +194,18 @@ class Player {
     return collectedQuotes.length;
   }
 
-  /// Check if player is "Usta" in all 6 categories
+  /// Count how many categories the player is "Usta" in
+  int get ustaCategoryCount {
+    int count = 0;
+    for (final category in QuestionCategory.values) {
+      if (getMasteryLevel(category.name) == MasteryLevel.usta) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /// Check if player is "Usta" in all 6 categories (legacy check)
   bool isUstaInAllCategories() {
     for (final category in QuestionCategory.values) {
       if (getMasteryLevel(category.name) != MasteryLevel.usta) {
@@ -204,9 +216,10 @@ class Player {
   }
 
   /// Check if player has won the game
-  /// Win condition: 50 quotes collected AND Usta in all 6 categories
+  /// Win condition (Sprint Mode): X quotes collected AND Usta in Y categories
   bool hasWon() {
-    return getTotalCollectedQuotes() >= 50 && isUstaInAllCategories();
+    return getTotalCollectedQuotes() >= GameConstants.quotesToCollect &&
+        ustaCategoryCount >= GameConstants.requiredMasteries;
   }
 
   /// Check if player qualifies for Ehil title

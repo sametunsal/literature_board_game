@@ -9,6 +9,7 @@ enum TileType {
   signingDay,
   chance, // ŞANS - Chance tile
   fate, // KADER - Fate tile
+  tesvik, // TEŞVİK - Incentive/Bonus tile
 }
 
 /// Extension to get display name for tile type
@@ -33,6 +34,8 @@ extension TileTypeExtension on TileType {
         return 'Şans';
       case TileType.fate:
         return 'Kader';
+      case TileType.tesvik:
+        return 'Teşvik';
     }
   }
 }

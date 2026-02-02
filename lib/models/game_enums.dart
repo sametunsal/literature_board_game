@@ -36,6 +36,7 @@ extension QuestionCategoryExtension on QuestionCategory {
 enum GamePhase {
   setup,
   rollingForOrder,
+  tieBreaker,
   playerTurn,
   questionPhase,
   cardPhase,

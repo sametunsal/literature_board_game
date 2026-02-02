@@ -2,8 +2,12 @@ import 'game_enums.dart';
 
 enum CardEffectType {
   moneyChange, // Para kazan/kaybet
-  move, // Bir yere git
-  jail, // Kütüphane nöbetine git
+  move, // Bir yere git (pozitif: ileri, negatif: geri)
+  moveRelative, // Göreceli hareket (örn: 2 kare ileri/geri)
+  jail, // Kütüphane nöbetine git (tur atla)
+  skipTurn, // Bir tur bekle
+  rollAgain, // Tekrar zar at
+  loseStarsPercentage, // Mevcut yıldızların yüzdesini kaybet
   globalMoney, // Diğer oyunculardan para al/ver (Kader kartı özelliği)
 }
 

@@ -2,106 +2,145 @@ import '../models/game_card.dart';
 import '../models/game_enums.dart';
 
 class GameCards {
-  // --- ŞANS KARTLARI (Kişisel Olaylar) ---
+  // --- ŞANS KARTLARI (Ödül Odaklı - Start-from-Zero Economy) ---
   static const List<GameCard> sansCards = [
+    // Telif ödülleri (düşük miktarlarda, 0'dan başlayan oyuncular için)
     GameCard(
       description:
-          "Romanın 'En Çok Satanlar' listesine girdi! 150 Yıldız telif kazandın.",
+          "Telif hakkı ödemesi aldın! +10 Yıldız kazandın.",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: 150,
+      value: 10,
     ),
     GameCard(
       description:
-          "İlham perilerin kaçtı, yazamıyorsun. Moral düzeltmek için 50 Yıldız harcadın.",
+          "Küçük bir edebi ödül kazandın. +15 Yıldız!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: -50,
+      value: 15,
     ),
     GameCard(
       description:
-          "Edebiyat dergisine yazdığın makale ödül aldı. 100 Yıldız kazandın.",
+          "Makalen dergide yayınlandı. +20 Yıldız kazandın.",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: 100,
-    ),
-    GameCard(
-      description:
-          "Kıraathanede çok gürültü yaptın! Doğruca Kıraathane Nöbetine git (Başlangıçtan geçsen bile para alamazsın).",
-      type: CardType.sans,
-      effectType: CardEffectType.jail,
-    ),
-    GameCard(
-      description:
-          "Yayınevi seni acil toplantıya çağırdı. 1. Yayınevi (5. Kare) kutusuna ilerle.",
-      type: CardType.sans,
-      effectType: CardEffectType.move,
-      value: 5,
-    ),
-    GameCard(
-      description: "Başlangıç noktasına ilerle.",
-      type: CardType.sans,
-      effectType: CardEffectType.move,
-      value: 0,
-    ),
-    GameCard(
-      description:
-          "Kitap fuarına davetlisin. İmza Günü (20. Kare) kutusuna ilerle.",
-      type: CardType.sans,
-      effectType: CardEffectType.move,
       value: 20,
     ),
     GameCard(
       description:
-          "Bilgisayarın bozuldu, yazdığın son bölüm silindi. Tamir masrafı: 80 Yıldız.",
+          "İlham perisi geldi! 2 kare ileri git.",
+      type: CardType.sans,
+      effectType: CardEffectType.moveRelative,
+      value: 2,
+    ),
+    GameCard(
+      description:
+          "Vakit nakittir! Tekrar zar at.",
+      type: CardType.sans,
+      effectType: CardEffectType.rollAgain,
+      value: 0,
+    ),
+    GameCard(
+      description:
+          "Eleştirmenlere karşı geçici bağışıklık kazandın. (Bir sonraki cezadan korunursun)",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: -80,
+      value: 5, // Small bonus as placeholder for protect effect
+    ),
+    GameCard(
+      description:
+          "Okuyucularından güzel mektuplar aldın. +10 Yıldız motivasyon!",
+      type: CardType.sans,
+      effectType: CardEffectType.moneyChange,
+      value: 10,
+    ),
+    GameCard(
+      description:
+          "Kütüphanede kıymetli bir eser buldun. 1 kare ileri!",
+      type: CardType.sans,
+      effectType: CardEffectType.moveRelative,
+      value: 1,
+    ),
+    GameCard(
+      description:
+          "Yayınevi送nden küçük bir avans geldi. +15 Yıldız!",
+      type: CardType.sans,
+      effectType: CardEffectType.moneyChange,
+      value: 15,
     ),
   ];
 
-  // --- KADER KARTLARI (Global/Toplumsal Olaylar) ---
+  // --- KADER KARTLARI (Durum ve Risk Odaklı - Start-from-Zero Economy) ---
   static const List<GameCard> kaderCards = [
+    // Tur cezaları (para yerine)
     GameCard(
       description:
-          "Kağıt fiyatlarına zam geldi! Matbaa masrafları için herkese 20 Yıldız öde.",
+          "Mürekkepin bitti. Bir tur bekle.",
       type: CardType.kader,
-      effectType: CardEffectType.globalMoney, // Herkese öde
-      value: -20,
+      effectType: CardEffectType.skipTurn,
+      value: 1,
     ),
     GameCard(
       description:
-          "Tüm yazarların kalemleri kırıldı, sadece senin kalemin sağlam. Her oyuncu sana 30 Yıldız öder.",
+          "Yazıcı tıkandı! Bir tur beklemek zorundasın.",
       type: CardType.kader,
-      effectType: CardEffectType.globalMoney, // Herkesten al
-      value: 30,
+      effectType: CardEffectType.skipTurn,
+      value: 1,
+    ),
+
+    // Geri hareket (konum kaybı)
+    GameCard(
+      description:
+          "Yanlış anlaşılma yüzünden tekzip yayınladın. 2 kare geri git.",
+      type: CardType.kader,
+      effectType: CardEffectType.moveRelative,
+      value: -2,
     ),
     GameCard(
       description:
-          "Korsan kitap baskını! Korsan kitapların toplatıldı. 100 Yıldız ceza öde.",
+          "Eserin eleştirildi. 3 kare geri çekil.",
+      type: CardType.kader,
+      effectType: CardEffectType.moveRelative,
+      value: -3,
+    ),
+
+    // Yüzdeli kayıplar (0 olduğunda güvenli)
+    GameCard(
+      description:
+          "Cüzdanını düşürdün. Mevcut yıldızlarının yarısını kaybettin.",
+      type: CardType.kader,
+      effectType: CardEffectType.loseStarsPercentage,
+      value: 50, // 50% kayıp
+    ),
+    GameCard(
+      description:
+          "Kötü bir yatırım yaptın. Yıldızlarının %40'ını kaybettin.",
+      type: CardType.kader,
+      effectType: CardEffectType.loseStarsPercentage,
+      value: 40, // 40% kayıp
+    ),
+
+    // Küçük düz cezalar (minimum 0 koruması ile)
+    GameCard(
+      description:
+          "Kahve faturası öde. 5 Yıldız. (Yıldızın yoksa 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
-      value: -100,
+      value: -5,
     ),
     GameCard(
       description:
-          "Kültür Bakanlığı'ndan teşvik fonu çıktı. 200 Yıldız hibe aldın.",
+          "Kırtasiye masrafı. 8 Yıldız öde. (Yetersiz bakiyede 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
-      value: 200,
-    ),
-    GameCard(
-      description: "Edebiyat Vakfı'na bağış yapman gerekiyor. 50 Yıldız öde.",
-      type: CardType.kader,
-      effectType: CardEffectType.moneyChange,
-      value: -50,
+      value: -8,
     ),
     GameCard(
       description:
-          "Yılın Yazarı seçildin! Her oyuncu seni tebrik etmek için 10 Yıldız verir.",
+          "Kütüphane cezası. 10 Yıldız öde. (Yetersiz bakiyede 0 olur)",
       type: CardType.kader,
-      effectType: CardEffectType.globalMoney,
-      value: 10,
+      effectType: CardEffectType.moneyChange,
+      value: -10,
     ),
   ];
 }
