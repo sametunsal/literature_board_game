@@ -6,7 +6,7 @@ import '../../../core/motion/motion_constants.dart';
 import '../../../core/theme/game_theme.dart';
 import '../../../core/utils/board_layout_config.dart';
 import '../../../core/utils/board_layout_helper.dart';
-import '../../../models/game_enums.dart';
+
 import '../../../providers/game_notifier.dart';
 import '../floating_score.dart';
 import '../../dialogs/modern_question_dialog.dart';
@@ -89,13 +89,17 @@ class EffectsOverlay extends StatelessWidget {
       if (state.showQuestionDialog && state.currentQuestion != null)
         _buildDialogOverlay(
           ModernQuestionDialog(
-            question: state.currentQuestion!.text,
-            answer: state
-                .currentQuestion!
-                .options[state.currentQuestion!.correctIndex],
-            category: _getCategoryString(state.currentQuestion!.category),
-            onConfirm: onQuestionConfirm ?? () {},
-            onCancel: onQuestionCancel ?? () {},
+            question: state.currentQuestion!,
+            onAnswer: (isCorrect) {
+              if (isCorrect) {
+                onQuestionConfirm?.call();
+              } else {
+                onQuestionCancel?.call();
+              }
+            },
+            onTimeExpired: () {
+              onQuestionCancel?.call();
+            },
           ),
         ),
 
@@ -160,24 +164,6 @@ class EffectsOverlay extends StatelessWidget {
         },
       ),
     );
-  }
-
-  /// Convert QuestionCategory enum to display string
-  String _getCategoryString(QuestionCategory category) {
-    switch (category) {
-      case QuestionCategory.benKimim:
-        return 'Ben Kimim?';
-      case QuestionCategory.turkEdebiyatindaIlkler:
-        return 'İlkler';
-      case QuestionCategory.edebiyatAkimlari:
-        return 'Edebi Akımlar';
-      case QuestionCategory.edebiSanatlar:
-        return 'Edebi Sanatlar';
-      case QuestionCategory.eserKarakter:
-        return 'Eser & Karakter';
-      case QuestionCategory.tesvik:
-        return 'Teşvik';
-    }
   }
 
   /// Custom star-shaped particle path for confetti
