@@ -10,11 +10,16 @@ import 'presentation/screens/splash_screen.dart';
 import 'presentation/widgets/board_view.dart';
 import 'core/theme/game_theme.dart';
 
+import 'core/managers/audio_manager.dart';
+
 /// Tracks if Firebase was initialized successfully
 bool _firebaseInitialized = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Audio Manager (starts BGM)
+  await AudioManager.instance.init();
 
   // Initialize Firebase with error handling - don't crash if it fails
   await _initializeFirebase();

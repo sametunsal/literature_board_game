@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/common/bouncing_button.dart';
 
 import '../../models/player.dart';
 import '../widgets/board_view.dart';
@@ -624,7 +625,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   Widget _buildStartButton() {
     // 3D Isometric FAB Look
-    return GestureDetector(
+    return BouncingButton(
       onTap: _startGame,
       child: Container(
         height: 64,
@@ -634,12 +635,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFD4AF37).withOpacity(0.4),
+              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
               offset: const Offset(0, 8),
               blurRadius: 16,
             ),
           ],
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

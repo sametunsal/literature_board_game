@@ -69,5 +69,7 @@ flutter:
     - assets/sounds/click.mp3
     - assets/sounds/dice.mp3
     - assets/sounds/victory.mp3
+    # Audio Assets (BGM & SFX)
+    - assets/audio/
     # Animation assets
     - assets/animations/dice.json

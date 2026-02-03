@@ -4,8 +4,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
 
 import 'setup_screen.dart';
-import 'settings_screen.dart';
+
 import '../dialogs/how_to_play_dialog.dart';
+import '../dialogs/settings_dialog.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -18,6 +19,36 @@ class MainMenuScreen extends StatelessWidget {
     const goldColor = Color(0xFFD4AF37); // Metallic Gold
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16, top: 8),
+            decoration: BoxDecoration(
+              color: bgColor.withValues(alpha: 0.8),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.settings_rounded, color: accentColor),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => const SettingsDialog(),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
       backgroundColor: bgColor,
       body: Stack(
         children: [
@@ -25,7 +56,7 @@ class MainMenuScreen extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(
               painter: LiteraturePatternPainter(
-                color: accentColor.withOpacity(0.03),
+                color: accentColor.withValues(alpha: 0.03),
               ),
             ),
           ),
@@ -37,7 +68,7 @@ class MainMenuScreen extends StatelessWidget {
                 gradient: RadialGradient(
                   center: Alignment.center,
                   radius: 1.5,
-                  colors: [Colors.transparent, bgColor.withOpacity(0.8)],
+                  colors: [Colors.transparent, bgColor.withValues(alpha: 0.8)],
                 ),
               ),
             ),
@@ -64,7 +95,7 @@ class MainMenuScreen extends StatelessWidget {
                                 letterSpacing: 4,
                                 shadows: [
                                   Shadow(
-                                    color: goldColor.withOpacity(0.3),
+                                    color: goldColor.withValues(alpha: 0.3),
                                     offset: const Offset(2, 2),
                                     blurRadius: 4,
                                   ),
@@ -80,7 +111,7 @@ class MainMenuScreen extends StatelessWidget {
                               style: GoogleFonts.cormorantGaramond(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w600,
-                                color: accentColor.withOpacity(0.7),
+                                color: accentColor.withValues(alpha: 0.7),
                                 letterSpacing: 6,
                               ),
                             )
@@ -98,7 +129,7 @@ class MainMenuScreen extends StatelessWidget {
                           Icon(
                                 Icons.edit_outlined,
                                 size: 36,
-                                color: goldColor.withOpacity(0.8),
+                                color: goldColor.withValues(alpha: 0.8),
                               )
                               .animate(onPlay: (c) => c.repeat(reverse: true))
                               .rotate(
@@ -153,25 +184,6 @@ class MainMenuScreen extends StatelessWidget {
                     )
                     .animate()
                     .fadeIn(delay: 700.ms, duration: 400.ms)
-                    .slideY(begin: 0.2, end: 0),
-
-                const SizedBox(height: 24),
-
-                _IsometricMenuButton(
-                      label: "AYARLAR",
-                      color: const Color(0xFFB0BEC5), // Pastel Grey
-                      sideColor: const Color(0xFF78909C),
-                      icon: Icons.settings_rounded,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
-                          ),
-                        );
-                      },
-                    )
-                    .animate()
-                    .fadeIn(delay: 800.ms, duration: 400.ms)
                     .slideY(begin: 0.2, end: 0),
               ],
             ),
@@ -286,14 +298,14 @@ class _IsometricMenuButtonState extends State<_IsometricMenuButton>
                     height: height,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(
-                          0.2 - (pressValue * 0.05),
+                        color: Colors.black.withValues(
+                          alpha: 0.2 - (pressValue * 0.05),
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(
-                              0.1 - (pressValue * 0.05),
+                            color: Colors.black.withValues(
+                              alpha: 0.1 - (pressValue * 0.05),
                             ),
                             blurRadius: 8 - (pressValue * 4),
                             offset: const Offset(0, 4),
@@ -328,13 +340,16 @@ class _IsometricMenuButtonState extends State<_IsometricMenuButton>
                         color: widget.color,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           width: 1,
                         ),
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [widget.color, widget.color.withOpacity(0.9)],
+                          colors: [
+                            widget.color,
+                            widget.color.withValues(alpha: 0.9),
+                          ],
                         ),
                       ),
                       child: Row(
@@ -388,7 +403,9 @@ class LiteraturePatternPainter extends CustomPainter {
         // Break lines occassionally for paragraph look via path
         // Simplified: just drawing dashed lines manually would be performant enough
         // but let's do simple lines for now with varying opacity
-        paint.color = color.withOpacity((math.sin(y) + 1) / 2 * 0.05 + 0.02);
+        paint.color = color.withValues(
+          alpha: (math.sin(y) + 1) / 2 * 0.05 + 0.02,
+        );
         canvas.drawLine(Offset(20, y), Offset(size.width - 20, y), paint);
       }
     }
@@ -401,7 +418,7 @@ class LiteraturePatternPainter extends CustomPainter {
       final double radius = 20 + random.nextDouble() * 50;
 
       paint.style = PaintingStyle.stroke;
-      paint.color = color.withOpacity(0.04);
+      paint.color = color.withValues(alpha: 0.04);
 
       canvas.drawCircle(Offset(x, y), radius, paint);
     }

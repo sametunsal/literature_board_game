@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/game_theme.dart';
 import '../../../providers/theme_notifier.dart';
+import '../../../core/managers/audio_manager.dart';
 
 enum GameButtonVariant { primary, secondary, danger, success }
 
@@ -45,7 +46,12 @@ class GameButton extends ConsumerWidget {
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
       child: ElevatedButton(
-        onPressed: isDisabled || isLoading ? null : onPressed,
+        onPressed: isDisabled || isLoading
+            ? null
+            : () {
+                AudioManager.instance.playSfx('audio/ui_click.wav');
+                onPressed();
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: foregroundColor,

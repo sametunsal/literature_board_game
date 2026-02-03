@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../widgets/quiz/option_button.dart';
 import '../../models/question.dart';
 import '../../models/game_enums.dart';
+import '../../core/managers/audio_manager.dart';
 
 /// "The Royal Bookmark" Question Dialog
 /// A vertical, elegant card that resembles a high-quality bookmark.
@@ -28,6 +30,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog>
     with TickerProviderStateMixin {
   int? _selectedIndex;
   bool _isLocked = false;
+  bool _isChecking = false;
   late AnimationController _timerController;
   late Animation<double> _timerAnimation;
   final GlobalKey<_ShakeWidgetState> _shakeKey = GlobalKey();
@@ -83,22 +86,36 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog>
     setState(() {
       _selectedIndex = index;
       _isLocked = true;
+      _isChecking = true; // Start suspense
     });
 
     _timerController.stop();
 
-    final isCorrect = index == widget.question.correctIndex;
+    // SUSPENSE PHASE (1 second)
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (!mounted) return;
 
-    if (!isCorrect) {
-      // Trigger Shake Animation
-      _shakeKey.currentState?.shake();
-    }
+      final isCorrect = index == widget.question.correctIndex;
 
-    // Wait and close
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        widget.onAnswer(isCorrect);
+      // REVEAL RESULT + PLAY SFX SIMULTANEOUSLY
+      setState(() {
+        _isChecking = false; // Reveal result (Green/Red)
+      });
+
+      // Play SFX exactly when color changes
+      AudioManager.instance.playSfx(isCorrect ? 'audio/correct.wav' : 'audio/wrong.wav');
+
+      if (!isCorrect) {
+        // Trigger Shake Animation
+        _shakeKey.currentState?.shake();
       }
+
+      // CLOSE PHASE (1.5 seconds after reveal)
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          widget.onAnswer(isCorrect);
+        }
+      });
     });
   }
 
@@ -221,10 +238,7 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog>
                               children: List.generate(
                                 widget.question.options.length,
                                 (index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: _buildOptionButton(index),
-                                  );
+                                  return _buildOptionButton(index);
                                 },
                               ),
                             ),
@@ -277,99 +291,38 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog>
   Widget _buildOptionButton(int index) {
     final isSelected = _selectedIndex == index;
     final isCorrect = index == widget.question.correctIndex;
-    final showResult = _isLocked && isSelected;
 
-    // Determine basic state styles
-    Color backgroundColor = Colors.white;
-    Color borderColor = Colors.grey.withOpacity(0.3);
-    Color textColor = const Color(0xFF2C2C2C);
-    IconData? icon;
+    OptionState state = OptionState.idle;
 
-    // Apply result styles
-    if (showResult) {
-      if (isCorrect) {
-        backgroundColor = const Color(0xFF2E7D32); // Emerald Green
-        borderColor = const Color(0xFF2E7D32);
-        textColor = Colors.white;
-        icon = Icons.check_circle;
+    if (_isLocked) {
+      if (_isChecking) {
+        // Suspense phase
+        if (isSelected) {
+          state = OptionState.checking;
+        } else {
+          state = OptionState.idle; // Disable others visually or keep idle
+        }
       } else {
-        backgroundColor = const Color(0xFFC62828); // Burnt Red
-        borderColor = const Color(0xFFC62828);
-        textColor = Colors.white;
-        icon = Icons.cancel;
-      }
-    } else if (_isLocked &&
-        !isSelected &&
-        isCorrect &&
-        _selectedIndex != null) {
-      // Show correct answer if user picked wrong one?
-      // Requirement says "Options List... Interaction... Lock Interaction"
-      // Usually good UX shows the correct answer if wrong.
-      // Let's keep it simple as per spec first: "Lock Interaction: Once an answer is selected, disable other buttons."
-      // Spec doesn't explicitly asking to reveal correct answer if wrong, but it is standard.
-      // "If Wrong: Option turns Red + X Icon".
-      // I will stick to highlighting only the selected option for now to follow strict spec,
-      // or maybe highlight the correct one cleanly.
-      // Let's highlight the correct one faintly if user picked wrong.
-      backgroundColor = Colors.white.withOpacity(0.5);
-      if (index == widget.question.correctIndex) {
-        borderColor = const Color(0xFF2E7D32).withOpacity(0.5);
-        textColor = const Color(0xFF2E7D32);
-        icon = Icons.check_circle_outline;
+        // Result phase
+        if (isSelected) {
+          state = isCorrect ? OptionState.correct : OptionState.wrong;
+        } else if (isCorrect) {
+          // Reveal correct answer if we were wrong
+          // User requested "If Wrong: Option turns Red".
+          // Standard UX: Also show Green on the correct one.
+          // OptionButton handles styles.
+          state = OptionState.correct;
+        }
       }
     }
 
-    return GestureDetector(
-      onTap: () => _handleOptionTap(index),
-      child:
-          AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor, width: 1.5),
-                  boxShadow: showResult || isSelected
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.question.options[index],
-                        style: GoogleFonts.inter(
-                          // Clean Sans-Serif
-                          fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                    if (icon != null) ...[
-                      const SizedBox(width: 8),
-                      Icon(icon, color: textColor, size: 20),
-                    ],
-                  ],
-                ),
-              )
-              .animate(target: isSelected ? 1 : 0)
-              .scale(
-                begin: const Offset(1, 1),
-                end: const Offset(0.98, 0.98),
-                duration: const Duration(milliseconds: 100),
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: OptionButton(
+        text: widget.question.options[index],
+        state: state,
+        onTap: () => _handleOptionTap(index),
+      ),
     );
   }
 }

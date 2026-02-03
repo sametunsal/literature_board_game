@@ -13,6 +13,7 @@ import '../data/board_config.dart';
 import '../data/game_cards.dart';
 import '../data/repositories/question_repository_impl.dart';
 import '../core/constants/game_constants.dart';
+import '../core/managers/audio_manager.dart';
 
 // Floating Effect Data Model
 class FloatingEffect {
@@ -429,13 +430,17 @@ class GameNotifier extends StateNotifier<GameState> {
           diceTotal: 0,
         );
 
-        // ... Animation Delay ...
-        state = state.copyWith(isDiceRolling: true);
-        await Future.delayed(const Duration(seconds: 1));
+        // Pre-roll delay (build anticipation)
+        await Future.delayed(const Duration(milliseconds: 500));
 
         while (state.isGamePaused) {
           await Future.delayed(const Duration(milliseconds: 500));
         }
+
+        // ... Animation Start ... (Sync SFX with visual roll)
+        state = state.copyWith(isDiceRolling: true);
+        AudioManager.instance.playSfx('audio/dice_roll.wav'); // ✅ Plays exactly when animation starts
+        await Future.delayed(const Duration(seconds: 1));
 
         // Roll
         final int d1 = _random.nextInt(6) + 1;
@@ -571,6 +576,7 @@ class GameNotifier extends StateNotifier<GameState> {
       // Start dice rolling animation
       state = state.copyWith(isDiceRolling: true);
       _logBot('Dice rolling started...');
+      AudioManager.instance.playSfx('audio/dice_roll.wav');
 
       // Wait for animation duration (2 seconds, faster in bot mode)
       final diceDelay = _isBotPlaying
@@ -1048,6 +1054,24 @@ class GameNotifier extends StateNotifier<GameState> {
         await Future.delayed(delay);
         await _movePlayer(roll);
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // LIBRARY PRIORITY: Landing on Library overrides Double Dice re-roll
+        // ═══════════════════════════════════════════════════════════════════════
+        if (state.showLibraryPenaltyDialog) {
+          // Library dialog is shown - it will end the turn when closed
+          _logBot('CASE B: Library dialog shown - deferring turn end to dialog closure');
+          return;
+        }
+
+        final playerAfterMove = state.currentPlayer;
+        if (playerAfterMove.turnsToSkip > 0 || playerAfterMove.inJail) {
+          // Player sent to jail via 3rd consecutive double
+          _logBot('CASE B: Player sent to Jail via 3rd double - ending turn');
+          _isProcessing = false;
+          endTurn();
+          return;
+        }
+
         // After movement, set up for re-roll (same player)
         state = state.copyWith(isDiceRolled: false, isDoubleTurn: true);
         _logBot('CASE B: Completed, ready for re-roll');
@@ -1151,6 +1175,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
         // Wait for hop animation (faster in bot mode)
         final hopDelay = _isBotPlaying ? 50 : GameConstants.hopAnimationDelay;
+        AudioManager.instance.playSfx('audio/pawn_step.wav');
         await Future.delayed(Duration(milliseconds: hopDelay));
       }
 
@@ -1343,10 +1368,10 @@ class GameNotifier extends StateNotifier<GameState> {
     if (_libraryPenaltyDialogCompleter != null &&
         !_libraryPenaltyDialogCompleter!.isCompleted) {
       _libraryPenaltyDialogCompleter!.complete();
-    } else if (_isBotPlaying) {
-      // Bot mode: end turn immediately
-      endTurn();
     }
+
+    // Library always ends the turn (overrides Double Dice)
+    endTurn();
   }
 
   /// Close İmza Günü dialog and end turn
@@ -1406,7 +1431,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // AUTO-DIFFICULTY: Get difficulty based on player's mastery level
     // For Teşvik tiles, use tesvik category for mastery calculation
-    final masteryCategoryName = tile.type == TileType.tesvik ? 'tesvik' : categoryNames.first;
+    final masteryCategoryName = tile.type == TileType.tesvik
+        ? 'tesvik'
+        : categoryNames.first;
     final masteryLevel = player.getMasteryLevel(masteryCategoryName);
     final targetDifficulty = _getDifficultyForMasteryLevel(masteryLevel);
     final difficultyFilter = switch (targetDifficulty) {
@@ -1815,6 +1842,7 @@ class GameNotifier extends StateNotifier<GameState> {
           'Doğru cevap! +$baseStars ⭐ ($difficultyName)',
           type: 'success',
         );
+        // SFX now plays in dialog during reveal phase
 
         if (promotionMessage.isNotEmpty) {
           _addLog(
@@ -1830,6 +1858,7 @@ class GameNotifier extends StateNotifier<GameState> {
         }
       } else if (!isCorrect) {
         _addLog("Yanlış cevap. Yıldız kazanamadın.", type: 'error');
+        // SFX now plays in dialog during reveal phase
         shouldEndTurn = true;
       } else {
         shouldEndTurn = true;
@@ -1924,6 +1953,7 @@ class GameNotifier extends StateNotifier<GameState> {
     _addLog(
       '🎲 ${state.currentPlayer.name} $cardName karesine geldi! Kart çekiliyor...',
     );
+    AudioManager.instance.playSfx('audio/card_flip.wav');
 
     // Create a completer to wait for dialog closure
     _cardDialogCompleter = Completer<void>();

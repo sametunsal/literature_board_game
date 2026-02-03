@@ -13,7 +13,7 @@ import '../../core/motion/motion_constants.dart';
 import 'game_log.dart';
 import 'pawn_widget.dart';
 import '../dialogs/pause_dialog.dart';
-import '../screens/settings_screen.dart';
+import '../dialogs/settings_dialog.dart';
 import '../screens/main_menu_screen.dart';
 import '../screens/victory_screen.dart';
 import 'player_scoreboard.dart';
@@ -393,9 +393,25 @@ class _BoardViewState extends ConsumerState<BoardView> {
             setState(() => _showPauseMenu = false);
           },
           onSettings: () {
-            setState(() => _showPauseMenu = false);
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+            // Keep pause menu hidden or shown?
+            // User requested: "Ensure... they see the EXACT same dialog"
+            // Since SettingsDialog is a dialog, we can show it on top.
+            // If we hide pause menu, we should confirm if we want to return to it.
+            // For now, let's keep it simple as requested: show the dialog.
+            // I will NOT hide the pause menu (_showPauseMenu = false) immediately if I want to keep context,
+            // BUT the original code hid it.
+            // If I hide it, the game is visible behind the settings dialog.
+            // If I don't hide it, the pause menu is behind the settings dialog.
+            // Original behavior: Hide pause menu, push SettingsScreen (full screen).
+            // New behavior: Show SettingsDialog (modal).
+            // I will hide the pause menu to match the previous logic of "leaving" the pause state partially,
+            // or I can keep it because it's a dialog on top of a dialog?
+            // SettingsDialog is transparent/modal.
+            // Getting specific: "Replace... with showDialog... SettingsDialog".
+            // I will do exactly that.
+            showDialog(
+              context: context,
+              builder: (context) => const SettingsDialog(),
             );
           },
 

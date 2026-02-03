@@ -1,7 +1,7 @@
-import 'package:audioplayers/audioplayers.dart';
+import 'audio_manager.dart';
 
-/// Singleton Sound Manager for game audio effects
-/// Provides all sound effects for immersive gameplay experience
+/// Legacy Sound Manager wrapper
+/// Delegates calls to the new AudioManager
 class SoundManager {
   // Private constructor
   SoundManager._();
@@ -9,129 +9,50 @@ class SoundManager {
   // Singleton instance
   static final SoundManager instance = SoundManager._();
 
-  // Audio player instance
-  final AudioPlayer _player = AudioPlayer();
-
-  bool _soundEnabled = true;
-  bool _musicEnabled = true;
-
-  bool get isSoundEnabled => _soundEnabled;
-  bool get isMusicEnabled => _musicEnabled;
+  bool get isSoundEnabled => AudioManager.instance.isSoundEnabled;
+  bool get isMusicEnabled => AudioManager.instance.isMusicEnabled;
 
   void setSoundEnabled(bool enabled) {
-    _soundEnabled = enabled;
+    AudioManager.instance.toggleSound(enabled);
   }
 
   void setMusicEnabled(bool enabled) {
-    _musicEnabled = enabled;
-  }
-
-  // Sound file paths (assets/sounds/)
-  // NOTE: Using existing assets - add custom sounds later for better experience
-  static const String _clickSound = 'sounds/click.mp3';
-  static const String _diceRollSound = 'sounds/dice.mp3'; // Existing dice sound
-  static const String _diceLandSound =
-      'sounds/click.mp3'; // Use click as thud placeholder
-  static const String _tileLandingSound =
-      'sounds/click.mp3'; // Use click as landing placeholder
-  static const String _correctAnswerSound =
-      'sounds/victory.mp3'; // Use victory for success
-  static const String _wrongAnswerSound =
-      'sounds/click.mp3'; // Use click as buzzer placeholder
-  static const String _purchaseSound =
-      'sounds/click.mp3'; // Use click as cash placeholder
-  static const String _victorySound = 'sounds/victory.mp3';
-  static const String _turnChangeSound =
-      'sounds/click.mp3'; // Use click as whoosh placeholder
-  static const String _timerTickSound =
-      'sounds/click.mp3'; // Use click as tick placeholder
-
-  /// Helper method to play sound with error handling
-  Future<void> _playSound(String path) async {
-    if (!_soundEnabled) {
-      return;
-    }
-    try {
-      await _player.stop(); // Prevent overlap
-      await _player.play(AssetSource(path));
-    } catch (e) {
-      // Silently fail if sound not available
-      // Sound assets may not exist yet - this is safe to ignore
-    }
+    AudioManager.instance.toggleMusic(enabled);
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // DICE SOUNDS
+  // DELEGATED METHODS
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Play dice roll animation sound
-  Future<void> playDiceRoll() async {
-    await _playSound(_diceRollSound);
-  }
+  Future<void> playDiceRoll() async =>
+      await AudioManager.instance.playDiceRoll();
 
-  /// Play dice landing "thud" sound
-  Future<void> playDiceLand() async {
-    await _playSound(_diceLandSound);
-  }
+  Future<void> playDiceLand() async =>
+      await AudioManager.instance.playSfx('sounds/click.mp3'); // Placeholder
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // TILE & MOVEMENT SOUNDS
-  // ════════════════════════════════════════════════════════════════════════════
+  Future<void> playTileLanding() async =>
+      await AudioManager.instance.playSfx('sounds/click.mp3'); // Placeholder
 
-  /// Play sound when pawn lands on a tile
-  Future<void> playTileLanding() async {
-    await _playSound(_tileLandingSound);
-  }
+  Future<void> playTurnChange() async =>
+      await AudioManager.instance.playSfx('sounds/click.mp3'); // Placeholder
 
-  /// Play turn change whoosh
-  Future<void> playTurnChange() async {
-    await _playSound(_turnChangeSound);
-  }
+  Future<void> playCorrectAnswer() async =>
+      await AudioManager.instance.playSfx('sounds/victory.mp3');
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // QUESTION & ANSWER SOUNDS
-  // ════════════════════════════════════════════════════════════════════════════
+  Future<void> playWrongAnswer() async =>
+      await AudioManager.instance.playSfx('sounds/click.mp3'); // Placeholder
 
-  /// Play correct answer celebration sound
-  Future<void> playCorrectAnswer() async {
-    await _playSound(_correctAnswerSound);
-  }
+  Future<void> playTimerTick() async =>
+      await AudioManager.instance.playSfx('sounds/click.mp3'); // Placeholder
 
-  /// Play wrong answer buzzer sound
-  Future<void> playWrongAnswer() async {
-    await _playSound(_wrongAnswerSound);
-  }
+  Future<void> playPurchase() async =>
+      await AudioManager.instance.playSfx('sounds/click.mp3'); // Placeholder
 
-  /// Play timer tick for countdown urgency
-  Future<void> playTimerTick() async {
-    await _playSound(_timerTickSound);
-  }
+  Future<void> playClick() async => await AudioManager.instance.playClick();
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // ECONOMY SOUNDS
-  // ════════════════════════════════════════════════════════════════════════════
+  Future<void> playVictory() async => await AudioManager.instance.playVictory();
 
-  /// Play purchase/buy sound (coins/cash register)
-  Future<void> playPurchase() async {
-    await _playSound(_purchaseSound);
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // UI SOUNDS
-  // ════════════════════════════════════════════════════════════════════════════
-
-  /// Play click sound for button taps
-  Future<void> playClick() async {
-    await _playSound(_clickSound);
-  }
-
-  /// Play victory fanfare for game end
-  Future<void> playVictory() async {
-    await _playSound(_victorySound);
-  }
-
-  /// Dispose of audio resources
   void dispose() {
-    _player.dispose();
+    // AudioManager disposes itself
   }
 }
