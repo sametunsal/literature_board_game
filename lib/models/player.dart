@@ -205,7 +205,7 @@ class Player {
     return count;
   }
 
-  /// Check if player is "Usta" in all 6 categories (legacy check)
+  /// Check if player is "Usta" in all categories (legacy check)
   bool isUstaInAllCategories() {
     for (final category in QuestionCategory.values) {
       if (getMasteryLevel(category.name) != MasteryLevel.usta) {

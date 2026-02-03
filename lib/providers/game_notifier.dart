@@ -1385,17 +1385,29 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> _triggerQuestion(BoardTile tile) async {
-    if (tile.category == null) {
+    // For Teşvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
+    // For other tiles, use the tile's category
+    List<String> categoryNames = [];
+    if (tile.type == TileType.tesvik) {
+      // Teşvik tiles pull from BOTH tesvik AND bonusBilgiler for maximum variety
+      categoryNames = ['tesvik', 'bonusBilgiler'];
+    } else if (tile.category != null) {
+      categoryNames = [tile.category!];
+    }
+
+    if (categoryNames.isEmpty) {
       _addLog('Bu karoda soru yok.', type: 'info');
       endTurn();
       return;
     }
 
-    final categoryName = tile.category!;
+    // Now uses categoryNames list instead of tile.category!
     final player = state.currentPlayer;
 
     // AUTO-DIFFICULTY: Get difficulty based on player's mastery level
-    final masteryLevel = player.getMasteryLevel(categoryName);
+    // For Teşvik tiles, use tesvik category for mastery calculation
+    final masteryCategoryName = tile.type == TileType.tesvik ? 'tesvik' : categoryNames.first;
+    final masteryLevel = player.getMasteryLevel(masteryCategoryName);
     final targetDifficulty = _getDifficultyForMasteryLevel(masteryLevel);
     final difficultyFilter = switch (targetDifficulty) {
       Difficulty.easy => 'easy',
@@ -1405,14 +1417,18 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Log the auto-selected difficulty
     final masteryName = masteryLevel.displayName;
+    final categoryDisplay = tile.type == TileType.tesvik
+        ? 'Teşvik/Bonus'
+        : _getCategoryDisplayName(categoryNames.first);
     _addLog(
-      '${_getCategoryDisplayName(categoryName)} kategorisinde $masteryName seviyesi: $difficultyFilter soru seçildi.',
+      '$categoryDisplay kategorisinde $masteryName seviyesi: $difficultyFilter soru seçildi.',
       type: 'info',
     );
 
     // BUG FIX: Filter out already asked questions to prevent repetition
+    // For Teşvik tiles, match against EITHER tesvik OR bonusBilgiler
     final filteredQuestions = _cachedQuestions.where((q) {
-      final matchesCategory = q.category.name == categoryName;
+      final matchesCategory = categoryNames.contains(q.category.name);
       final matchesDifficulty = q.difficulty == difficultyFilter;
       final notAskedBefore = !state.askedQuestionIds.contains(q.text);
       return matchesCategory && matchesDifficulty && notAskedBefore;
@@ -1432,7 +1448,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       // Get all questions for this category and difficulty (including previously asked)
       final allCategoryQuestions = _cachedQuestions.where((q) {
-        final matchesCategory = q.category.name == categoryName;
+        final matchesCategory = categoryNames.contains(q.category.name);
         final matchesDifficulty = q.difficulty == difficultyFilter;
         return matchesCategory && matchesDifficulty;
       }).toList();
@@ -1440,7 +1456,7 @@ class GameNotifier extends StateNotifier<GameState> {
       if (allCategoryQuestions.isEmpty) {
         // Fallback: any question from this category (any difficulty)
         final anyCategoryQuestions = _cachedQuestions
-            .where((q) => q.category.name == categoryName)
+            .where((q) => categoryNames.contains(q.category.name))
             .toList();
         if (anyCategoryQuestions.isEmpty) {
           _addLog('Bu kategoride soru bulunamadı!', type: 'error');
@@ -1868,6 +1884,8 @@ class GameNotifier extends StateNotifier<GameState> {
         return 'Ben Kimim?';
       case 'tesvik':
         return 'Teşvik';
+      case 'bonusBilgiler':
+        return 'Bonus Bilgi';
       default:
         return categoryName;
     }
@@ -2631,6 +2649,7 @@ class GameNotifier extends StateNotifier<GameState> {
       'edebiyatAkimlari': MasteryLevel.usta.value,
       'benKimim': MasteryLevel.usta.value,
       'tesvik': MasteryLevel.usta.value,
+      'bonusBilgiler': MasteryLevel.usta.value,
     };
 
     // Create category progress map with Hard difficulty set
@@ -2641,6 +2660,7 @@ class GameNotifier extends StateNotifier<GameState> {
       'edebiyatAkimlari': {'hard': 3},
       'benKimim': {'hard': 3},
       'tesvik': {'hard': 3},
+      'bonusBilgiler': {'hard': 3},
     };
 
     // Create 50 dummy quote IDs

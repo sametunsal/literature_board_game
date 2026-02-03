@@ -10,6 +10,7 @@ enum QuestionCategoryModel {
   edebiSanatlar,
   eserKarakter,
   tesvik,
+  bonusBilgiler,
 }
 
 enum QuestionDifficultyModel { easy, medium, hard }

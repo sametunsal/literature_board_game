@@ -1,490 +1,469 @@
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:confetti/confetti.dart';
-import '../../core/theme/game_theme.dart';
-import '../../core/motion/motion_constants.dart';
-import '../widgets/common/game_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../models/question.dart';
+import '../../models/game_enums.dart';
 
-/// Modern Question Dialog Widget - Flashcard Style
-/// Shows question, then reveals answer on user request.
-/// User self-assesses with BİLDİN / BİLEMEDİN buttons.
+/// "The Royal Bookmark" Question Dialog
+/// A vertical, elegant card that resembles a high-quality bookmark.
 class ModernQuestionDialog extends StatefulWidget {
-  final String question;
-  final String answer;
-  final String category;
-  final VoidCallback onConfirm;
-  final VoidCallback onCancel;
+  final Question question;
+  final Function(bool isCorrect) onAnswer;
+  final VoidCallback? onTimeExpired;
 
   const ModernQuestionDialog({
     super.key,
     required this.question,
-    required this.answer,
-    required this.category,
-    required this.onConfirm,
-    required this.onCancel,
+    required this.onAnswer,
+    this.onTimeExpired,
   });
 
   @override
   State<ModernQuestionDialog> createState() => _ModernQuestionDialogState();
 }
 
-class _ModernQuestionDialogState extends State<ModernQuestionDialog> {
-  late ConfettiController _confettiController;
-  bool _isShaking = false;
-  bool _isAnswerRevealed = false;
+class _ModernQuestionDialogState extends State<ModernQuestionDialog>
+    with TickerProviderStateMixin {
+  int? _selectedIndex;
+  bool _isLocked = false;
+  late AnimationController _timerController;
+  late Animation<double> _timerAnimation;
+  final GlobalKey<_ShakeWidgetState> _shakeKey = GlobalKey();
+
+  // Timer duration in seconds
+  static const int _kQuestionDuration = 20;
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(
-      duration: MotionDurations.confetti,
+
+    // Initialize Timer Animation (Golden Line)
+    _timerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: _kQuestionDuration),
     );
+
+    _timerAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _timerController, curve: Curves.linear));
+
+    _timerController.forward();
+
+    _timerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && !_isLocked) {
+        _handleTimeExpired();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _confettiController.dispose();
+    _timerController.dispose();
     super.dispose();
   }
 
-  /// Reveal the answer
-  void _revealAnswer() {
+  void _handleTimeExpired() {
+    if (_isLocked) return;
     setState(() {
-      _isAnswerRevealed = true;
+      _isLocked = true;
     });
-  }
-
-  /// Handle correct answer - trigger confetti
-  Future<void> _handleCorrectAnswer() async {
-    debugPrint('🟢 _handleCorrectAnswer called');
-    _confettiController.play();
-    debugPrint('🟢 Confetti started, waiting MotionDurations.dice...');
-    await Future.delayed(MotionDurations.dice);
-    debugPrint('🟢 Delay complete, checking mounted: $mounted');
-    if (mounted) {
-      debugPrint('🟢 Calling widget.onConfirm() NOW');
-      widget.onConfirm();
-      debugPrint('🟢 widget.onConfirm() returned');
+    if (widget.onTimeExpired != null) {
+      widget.onTimeExpired!();
+    } else {
+      widget.onAnswer(false);
     }
   }
 
-  /// Handle wrong answer - trigger shake animation
-  Future<void> _handleWrongAnswer() async {
-    debugPrint('🔴 _handleWrongAnswer called');
+  void _handleOptionTap(int index) {
+    if (_isLocked) return;
+
     setState(() {
-      _isShaking = true;
+      _selectedIndex = index;
+      _isLocked = true;
     });
-    debugPrint('🔴 Shake started, waiting MotionDurations.slow...');
-    await Future.delayed(MotionDurations.slow);
-    debugPrint('🔴 Delay complete, checking mounted: $mounted');
-    if (mounted) {
-      setState(() {
-        _isShaking = false;
-      });
-      debugPrint('🔴 Calling widget.onCancel() NOW');
-      widget.onCancel();
-      debugPrint('🔴 widget.onCancel() returned');
+
+    _timerController.stop();
+
+    final isCorrect = index == widget.question.correctIndex;
+
+    if (!isCorrect) {
+      // Trigger Shake Animation
+      _shakeKey.currentState?.shake();
+    }
+
+    // Wait and close
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        widget.onAnswer(isCorrect);
+      }
+    });
+  }
+
+  Color _getCategoryColor(QuestionCategory category) {
+    switch (category) {
+      case QuestionCategory.benKimim:
+        return const Color(0xFF7B1FA2); // Purple
+      case QuestionCategory.turkEdebiyatindaIlkler:
+        return const Color(0xFF1976D2); // Blue
+      case QuestionCategory.edebiyatAkimlari:
+        return const Color(0xFFD32F2F); // Red
+      case QuestionCategory.edebiSanatlar:
+        return const Color(0xFF388E3C); // Green
+      case QuestionCategory.eserKarakter:
+        return const Color(0xFFFF8C00); // Orange
+      case QuestionCategory.tesvik:
+        return const Color(0xFF9C27B0); // Magenta
+      case QuestionCategory.bonusBilgiler:
+        return const Color(0xFFE91E63); // Pink
     }
   }
 
-  /// Get dynamic accent color based on category
-  Color _getCategoryColor(String category) {
-    return switch (category.toLowerCase()) {
-      'ben kimim?' => const Color(0xFF7B1FA2),
-      'ilkler' => const Color(0xFF1976D2),
-      'edebi akımlar' => const Color(0xFFD32F2F),
-      'edebi sanatlar' => const Color(0xFF388E3C),
-      'eser & karakter' => const Color(0xFFFF8C00),
-      'tesvik' => const Color(0xFF9C27B0),
-      'teşvik' => const Color(0xFF9C27B0),
-      _ => GameTheme.goldAccent,
-    };
-  }
-
-  /// Get icon based on category
-  IconData _getCategoryIcon(String category) {
-    return switch (category.toLowerCase()) {
-      'ben kimim?' => Icons.person_search,
-      'ilkler' => Icons.emoji_events,
-      'edebi akımlar' => Icons.auto_stories,
-      'edebi sanatlar' => Icons.brush,
-      'eser & karakter' => Icons.menu_book,
-      'tesvik' => Icons.lightbulb,
-      'teşvik' => Icons.lightbulb,
-      _ => Icons.help_outline,
-    };
+  String _getCategoryTitle(QuestionCategory category) {
+    switch (category) {
+      case QuestionCategory.benKimim:
+        return "BEN KİMİM?";
+      case QuestionCategory.turkEdebiyatindaIlkler:
+        return "İLKLER";
+      case QuestionCategory.edebiyatAkimlari:
+        return "EDEBİ AKIMLAR";
+      case QuestionCategory.edebiSanatlar:
+        return "EDEBİ SANATLAR";
+      case QuestionCategory.eserKarakter:
+        return "ESER & KARAKTER";
+      case QuestionCategory.tesvik:
+        return "TEŞVİK";
+      case QuestionCategory.bonusBilgiler:
+        return "BONUS BİLGİ";
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = _getCategoryColor(widget.category);
-    final categoryIcon = _getCategoryIcon(widget.category);
+    final categoryColor = _getCategoryColor(widget.question.category);
+    final categoryTitle = _getCategoryTitle(widget.question.category);
 
-    Widget dialogContainer =
-        Container(
-              margin: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: categoryColor, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 24,
-                    spreadRadius: 4,
-                    offset: const Offset(0, 8),
-                  ),
-                  BoxShadow(
-                    color: categoryColor.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildHeader(categoryColor, categoryIcon),
-                    Flexible(child: _buildQuestionContent()),
-                    if (!_isAnswerRevealed)
-                      _buildRevealButton(categoryColor)
-                    else
-                      _buildAnswerRevealedSection(categoryColor),
-                  ],
-                ),
-              ),
-            )
-            .animate()
-            .fadeIn(
-              duration: MotionDurations.dialog.safe,
-              curve: MotionCurves.standard,
-            )
-            .slideY(
-              begin: 0.3,
-              end: 0,
-              duration: MotionDurations.dialog.safe,
-              curve: MotionCurves.standard,
-            )
-            .scale(
-              begin: const Offset(0.92, 0.92),
-              end: const Offset(1.0, 1.0),
-              duration: MotionDurations.dialog.safe,
-              curve: MotionCurves.emphasized,
-            );
-
-    if (_isShaking) {
-      dialogContainer = dialogContainer
-          .animate(key: const ValueKey('shake'))
-          .shake(
-            duration: MotionDurations.slow,
-            hz: 5,
-            curve: Curves.easeInOut,
-            offset: const Offset(10, 0),
-          );
-    }
-
-    return Stack(
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 580),
-            child: dialogContainer,
-          ),
-        ),
-        Align(
-          alignment: Alignment.center,
-          child: ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirectionality: BlastDirectionality.explosive,
-            emissionFrequency: 0.05,
-            numberOfParticles: 30,
-            maxBlastForce: 25,
-            minBlastForce: 10,
-            gravity: 0.2,
-            colors: const [
-              Color(0xFFFFD700),
-              Color(0xFF1E88E5),
-              Color(0xFFEC407A),
-              Color(0xFF43A047),
-              Color(0xFFFF9800),
-              Color(0xFF9C27B0),
-            ],
-            createParticlePath: _drawStar,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(Color categoryColor, IconData categoryIcon) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [categoryColor, categoryColor.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: categoryColor.withValues(alpha: 0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(categoryIcon, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          Text(
-            widget.category.toUpperCase(),
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuestionContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Icon(Icons.help_outline, color: GameTheme.goldAccent, size: 40),
-          const SizedBox(height: 16),
-          Text(
-            widget.question,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              height: 1.5,
-              color: Colors.black,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// "CEVABI GÖSTER" button - shown before answer is revealed
-  Widget _buildRevealButton(Color categoryColor) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Text(
-            "Cevabı düşün, hazır olunca aç:",
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: _revealAnswer,
-              icon: const Icon(Icons.visibility, size: 26),
-              label: Text(
-                "CEVABI GÖSTER",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  letterSpacing: 1,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: categoryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                elevation: 4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Answer revealed section - shows answer + BİLDİN/BİLEMEDİN buttons
-  Widget _buildAnswerRevealedSection(Color categoryColor) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // CORRECT ANSWER DISPLAY
-          Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 20,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF388E3C).withValues(alpha: 0.95),
-                      const Color(0xFF2E7D32).withValues(alpha: 0.95),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF388E3C).withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "DOĞRU CEVAP",
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
-                            letterSpacing: 2,
-                          ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: ShakeWidget(
+          key: _shakeKey,
+          child:
+              Container(
+                    width: MediaQuery.of(context).size.width * 0.85,
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    // Aspect ratio management via flexible container instead of fixed aspect ratio widget
+                    // to prevent overflow on smaller screens
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF9F6), // Cream / Off-White
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 20,
+                          offset: Offset(0, 10),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.answer,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.cinzel(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.3,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. HEADER (Category Indicator)
+                          ClipPath(
+                            clipper: ZigZagClipper(),
+                            child: Container(
+                              height: 80,
+                              color: categoryColor,
+                              alignment: Alignment.center,
+                              child: Text(
+                                categoryTitle,
+                                style: GoogleFonts.alegreyaSansSc(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 2. QUESTION BODY
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 100),
+                              child: Center(
+                                child: Text(
+                                  widget.question.text,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.crimsonText(
+                                    fontSize: 22,
+                                    color: const Color(0xFF2C2C2C), // Dark Ink
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 3. OPTIONS LIST
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            child: Column(
+                              children: List.generate(
+                                widget.question.options.length,
+                                (index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: _buildOptionButton(index),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 4. TIMER (Golden Ink Line)
+                          AnimatedBuilder(
+                            animation: _timerAnimation,
+                            builder: (context, child) {
+                              // Color transition: Gold -> Orange -> Red
+                              Color timerColor;
+                              if (_timerAnimation.value > 0.6) {
+                                timerColor = const Color(0xFFFFD700); // Gold
+                              } else if (_timerAnimation.value > 0.3) {
+                                timerColor = Colors.orange;
+                              } else {
+                                timerColor = Colors.red;
+                              }
+
+                              return Container(
+                                height: 4,
+                                width: double.infinity,
+                                alignment: Alignment.centerLeft,
+                                child: FractionallySizedBox(
+                                  widthFactor: _timerAnimation.value,
+                                  child: Container(color: timerColor),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 300.ms)
-              .scale(
-                begin: const Offset(0.9, 0.9),
-                end: const Offset(1.0, 1.0),
-                duration: 300.ms,
-                curve: Curves.easeOut,
-              ),
-
-          const SizedBox(height: 16),
-
-          Text(
-            "Doğru bildin mi?",
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.black,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // BİLDİN / BİLEMEDİN BUTTONS
-          Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: GameButton(
-                        label: 'BİLEMEDİN',
-                        icon: Icons.close,
-                        variant: GameButtonVariant.secondary,
-                        isFullWidth: true,
-                        isDisabled: _isShaking,
-                        customColor: const Color(0xFFD32F2F),
-                        customTextColor: Colors.white,
-                        onPressed: _handleWrongAnswer,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: GameButton(
-                        label: 'BİLDİN!',
-                        icon: Icons.check,
-                        variant: GameButtonVariant.primary,
-                        isFullWidth: true,
-                        isDisabled: _isShaking,
-                        customColor: const Color(0xFF388E3C),
-                        customTextColor: Colors.white,
-                        onPressed: _handleCorrectAnswer,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-              .animate()
-              .fadeIn(duration: 300.ms, delay: 150.ms)
-              .slideY(begin: 0.2, end: 0),
-        ],
+                  )
+                  .animate()
+                  .slideY(
+                    begin: 0.5,
+                    end: 0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutBack,
+                  )
+                  .fadeIn(duration: const Duration(milliseconds: 400)),
+        ),
       ),
     );
   }
 
-  Path _drawStar(Size size) {
-    final path = Path();
-    final double centerX = size.width / 2;
-    final double centerY = size.height / 2;
-    final double outerRadius = size.width / 2;
-    final double innerRadius = size.width / 4;
-    const int points = 5;
-    const double rotation = -math.pi / 2;
+  Widget _buildOptionButton(int index) {
+    final isSelected = _selectedIndex == index;
+    final isCorrect = index == widget.question.correctIndex;
+    final showResult = _isLocked && isSelected;
 
-    for (int i = 0; i < points * 2; i++) {
-      final double radius = i.isEven ? outerRadius : innerRadius;
-      final double angle = rotation + (i * math.pi / points);
-      final double x = centerX + radius * math.cos(angle);
-      final double y = centerY + radius * math.sin(angle);
+    // Determine basic state styles
+    Color backgroundColor = Colors.white;
+    Color borderColor = Colors.grey.withOpacity(0.3);
+    Color textColor = const Color(0xFF2C2C2C);
+    IconData? icon;
 
-      if (i == 0) {
-        path.moveTo(x, y);
+    // Apply result styles
+    if (showResult) {
+      if (isCorrect) {
+        backgroundColor = const Color(0xFF2E7D32); // Emerald Green
+        borderColor = const Color(0xFF2E7D32);
+        textColor = Colors.white;
+        icon = Icons.check_circle;
       } else {
-        path.lineTo(x, y);
+        backgroundColor = const Color(0xFFC62828); // Burnt Red
+        borderColor = const Color(0xFFC62828);
+        textColor = Colors.white;
+        icon = Icons.cancel;
+      }
+    } else if (_isLocked &&
+        !isSelected &&
+        isCorrect &&
+        _selectedIndex != null) {
+      // Show correct answer if user picked wrong one?
+      // Requirement says "Options List... Interaction... Lock Interaction"
+      // Usually good UX shows the correct answer if wrong.
+      // Let's keep it simple as per spec first: "Lock Interaction: Once an answer is selected, disable other buttons."
+      // Spec doesn't explicitly asking to reveal correct answer if wrong, but it is standard.
+      // "If Wrong: Option turns Red + X Icon".
+      // I will stick to highlighting only the selected option for now to follow strict spec,
+      // or maybe highlight the correct one cleanly.
+      // Let's highlight the correct one faintly if user picked wrong.
+      backgroundColor = Colors.white.withOpacity(0.5);
+      if (index == widget.question.correctIndex) {
+        borderColor = const Color(0xFF2E7D32).withOpacity(0.5);
+        textColor = const Color(0xFF2E7D32);
+        icon = Icons.check_circle_outline;
       }
     }
 
+    return GestureDetector(
+      onTap: () => _handleOptionTap(index),
+      child:
+          AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor, width: 1.5),
+                  boxShadow: showResult || isSelected
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.question.options[index],
+                        style: GoogleFonts.inter(
+                          // Clean Sans-Serif
+                          fontSize: 16,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                    if (icon != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(icon, color: textColor, size: 20),
+                    ],
+                  ],
+                ),
+              )
+              .animate(target: isSelected ? 1 : 0)
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(0.98, 0.98),
+                duration: const Duration(milliseconds: 100),
+              ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// HELPER WIDGETS
+// ---------------------------------------------------------------------------
+
+/// ZigZag / Scalloped Clipper for the header
+class ZigZagClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 10);
+
+    double x = 0;
+    double increment = 10;
+
+    // Create zigzag teeth
+    while (x < size.width) {
+      path.lineTo(x + increment / 2, size.height);
+      path.lineTo(x + increment, size.height - 10);
+      x += increment;
+    }
+
+    path.lineTo(size.width, 0);
     path.close();
     return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+/// Shake Widget Wrapper
+class ShakeWidget extends StatefulWidget {
+  final Widget child;
+
+  const ShakeWidget({super.key, required this.child});
+
+  @override
+  State<ShakeWidget> createState() => _ShakeWidgetState();
+}
+
+class _ShakeWidgetState extends State<ShakeWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _offsetAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    // Sine wave for shaking
+    _offsetAnimation = Tween<double>(
+      begin: 0.0,
+      end: 20.0,
+    ).chain(CurveTween(curve: Curves.elasticIn)).animate(_controller);
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _controller.reset();
+      }
+    });
+  }
+
+  void shake() {
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offsetAnimation,
+      child: widget.child,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(
+            math.sin(_controller.value * math.pi * 6) * 10,
+            0,
+          ), // Horizontal shake
+          child: child,
+        );
+      },
+    );
   }
 }

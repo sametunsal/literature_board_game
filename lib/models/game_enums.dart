@@ -10,6 +10,7 @@ enum QuestionCategory {
   edebiSanatlar,
   eserKarakter,
   tesvik,
+  bonusBilgiler,
 }
 
 /// Extension to get display name for QuestionCategory
@@ -28,6 +29,8 @@ extension QuestionCategoryExtension on QuestionCategory {
         return 'Eser-Karakter';
       case QuestionCategory.tesvik:
         return 'Teşvik';
+      case QuestionCategory.bonusBilgiler:
+        return 'Bonus Bilgi';
     }
   }
 }
