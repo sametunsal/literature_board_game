@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/game_theme.dart';
 import '../../core/motion/motion_constants.dart';
 import '../../providers/theme_notifier.dart';
-import '../../core/managers/sound_manager.dart';
+import '../../core/managers/audio_manager.dart';
 import '../widgets/common/game_button.dart';
 
 /// Pause menu dialog with resume, settings, end game, and exit options
@@ -124,7 +124,7 @@ class PauseDialog extends ConsumerWidget {
                   variant: GameButtonVariant.success,
                   isFullWidth: true,
                   onPressed: () {
-                    SoundManager.instance.playClick();
+                    AudioManager.instance.playClick();
                     onResume();
                   },
                 ),
@@ -137,7 +137,7 @@ class PauseDialog extends ConsumerWidget {
                   variant: GameButtonVariant.secondary,
                   isFullWidth: true,
                   onPressed: () {
-                    SoundManager.instance.playClick();
+                    AudioManager.instance.playClick();
                     onSettings();
                   },
                 ),
@@ -150,7 +150,7 @@ class PauseDialog extends ConsumerWidget {
                   variant: GameButtonVariant.secondary,
                   isFullWidth: true,
                   onPressed: () {
-                    SoundManager.instance.playClick();
+                    AudioManager.instance.playClick();
                     onCollection();
                   },
                 ),
@@ -163,7 +163,7 @@ class PauseDialog extends ConsumerWidget {
                   variant: GameButtonVariant.primary,
                   isFullWidth: true,
                   onPressed: () {
-                    SoundManager.instance.playClick();
+                    AudioManager.instance.playClick();
                     onEndGame();
                   },
                 ),
@@ -176,7 +176,7 @@ class PauseDialog extends ConsumerWidget {
                   variant: GameButtonVariant.danger,
                   isFullWidth: true,
                   onPressed: () {
-                    SoundManager.instance.playClick();
+                    AudioManager.instance.playClick();
                     onExit();
                   },
                 ),
@@ -270,7 +270,7 @@ class PauseDialog extends ConsumerWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        SoundManager.instance.playClick();
+        AudioManager.instance.playClick();
         onTap();
       },
       child: AnimatedContainer(

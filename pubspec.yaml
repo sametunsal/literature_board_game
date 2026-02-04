@@ -66,9 +66,7 @@ flutter:
     - assets/data/questions.json
     - assets/data/literary_quotes.json
     # Sound assets
-    - assets/sounds/click.mp3
-    - assets/sounds/dice.mp3
-    - assets/sounds/victory.mp3
+    # Sound assets (Migrated to active audio system)
     # Audio Assets (BGM & SFX)
     - assets/audio/
     # Animation assets

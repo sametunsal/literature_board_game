@@ -18,7 +18,7 @@ import '../screens/main_menu_screen.dart';
 import '../screens/victory_screen.dart';
 
 import '../screens/collection_screen.dart';
-import '../../core/managers/sound_manager.dart';
+import '../../core/managers/audio_manager.dart';
 import '../../core/utils/board_layout_config.dart';
 import '../../core/utils/board_layout_helper.dart';
 import 'board/turn_order_dialog.dart';
@@ -107,7 +107,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
       if (previous?.phase != GamePhase.gameOver &&
           next.phase == GamePhase.gameOver) {
         _confettiController.play();
-        SoundManager.instance.playVictory();
+        AudioManager.instance.playVictory();
 
         // Determine Winner
         final sortedPlayers = List<Player>.from(next.players)
