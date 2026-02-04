@@ -1,8 +1,8 @@
 [![English](https://img.shields.io/badge/Lang-English-blue)](README.md)
 
-# 📚 Edebina: Türk Edebiyatı Tabu Oyunu
+# 📚 Edebina: Türk Edebiyatı Masa Oyunu
 
-**Edebina**, Türk Edebiyatı dönemlerini, yazarlarını ve eserlerini öğrenmeyi interaktif ve eğlenceli hale getirmek için **Flutter** ile geliştirilmiş, etkileyici bir çok oyunculu mobil masaüstü oyunudur. Klasik Monopoly tarzı mekanikleri eğitici测验ler, "Şans/Kader" kartları ve zengin işitsel-görsel deneyimle birleştirir.
+**Edebina**, Türk Edebiyatı dönemlerini, yazarlarını ve eserlerini öğrenmeyi interaktif ve eğlenceli hale getirmek için **Flutter** ile geliştirilmiş, etkileyici bir çok oyunculu mobil masa oyunudur. Klasik Monopoly tarzı mekanikleri eğitici quizler, "Şans/Kader" kartları ve zengin işitsel-görsel deneyimle birleştirir.
 
 ## 🚀 Temel Özellikler
 
