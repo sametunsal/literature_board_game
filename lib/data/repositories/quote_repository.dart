@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../models/literary_quote_model.dart';
+import '../../core/utils/logger.dart';
 
 /// Repository for loading and managing literary quotes
 class QuoteRepository {
@@ -20,7 +21,7 @@ class QuoteRepository {
           .toList();
       return _cachedQuotes!;
     } catch (e) {
-      print('Error loading quotes: $e');
+      safePrint('Error loading quotes: $e');
       return [];
     }
   }

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,8 @@ import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/game_card.dart';
 import '../models/question.dart';
+import '../../providers/theme_notifier.dart';
+import '../../core/utils/logger.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
 import '../data/board_config.dart';
@@ -42,14 +44,14 @@ class GameState {
   // Floating Effect (Visual)
   final FloatingEffect? floatingEffect;
 
-  // Dialog Durumları
+  // Dialog DurumlarÄ±
   final Question? currentQuestion;
   final bool showQuestionDialog;
   final bool showCardDialog;
   final bool showLibraryPenaltyDialog;
   final bool showImzaGunuDialog;
   final bool showTurnSkippedDialog;
-  final bool showShopDialog; // Kıraathane shop dialog
+  final bool showShopDialog; // KÄ±raathane shop dialog
   final bool showTurnOrderDialog; // Turn order result dialog
 
   // Pause State
@@ -245,9 +247,9 @@ class GameNotifier extends StateNotifier<GameState> {
       (state.phase == GamePhase.rollingForOrder ||
           state.phase == GamePhase.tieBreaker);
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // PAUSE MECHANISM
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Pause the game logic
   void pauseGame() {
@@ -272,20 +274,20 @@ class GameNotifier extends StateNotifier<GameState> {
     _logBot('Execution resumed');
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // VERBOSE BOT LOGGING
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Helper method for verbose bot logging with timestamp
   void _logBot(String message) {
     if (!_isBotPlaying) return;
     final timestamp = DateTime.now().toIso8601String().substring(11, 23);
-    debugPrint('[BOT 🤖] $timestamp - $message');
+    safePrint('[BOT ğŸ¤–] $timestamp - $message');
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // WATCHDOG TIMER (Anti-Freeze Protection)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Start or restart the watchdog timer
   void _startWatchdog() {
@@ -297,20 +299,20 @@ class GameNotifier extends StateNotifier<GameState> {
     // Start new watchdog with 4 second timeout
     _botWatchdog = Timer(const Duration(seconds: 4), () {
       if (_isBotPlaying) {
-        _logBot('🚨 WATCHDOG: Bot stuck! Forcing recovery...');
-        debugPrint('[BOT 🤖] WATCHDOG TRIGGERED - Current state:');
-        debugPrint('  - _isProcessing: $_isProcessing');
-        debugPrint('  - isDiceRolling: ${state.isDiceRolling}');
-        debugPrint('  - showQuestionDialog: ${state.showQuestionDialog}');
-        debugPrint('  - showCardDialog: ${state.showCardDialog}');
-        debugPrint(
+        _logBot('ğŸš¨ WATCHDOG: Bot stuck! Forcing recovery...');
+        safePrint('[BOT ğŸ¤–] WATCHDOG TRIGGERED - Current state:');
+        safePrint('  - _isProcessing: $_isProcessing');
+        safePrint('  - isDiceRolling: ${state.isDiceRolling}');
+        safePrint('  - showQuestionDialog: ${state.showQuestionDialog}');
+        safePrint('  - showCardDialog: ${state.showCardDialog}');
+        safePrint(
           '  - showLibraryPenaltyDialog: ${state.showLibraryPenaltyDialog}',
         );
-        debugPrint('  - showImzaGunuDialog: ${state.showImzaGunuDialog}');
-        debugPrint('  - showShopDialog: ${state.showShopDialog}');
-        debugPrint('  - showTurnOrderDialog: ${state.showTurnOrderDialog}');
-        debugPrint('  - phase: ${state.phase}');
-        debugPrint('  - currentPlayer: ${state.currentPlayer.name}');
+        safePrint('  - showImzaGunuDialog: ${state.showImzaGunuDialog}');
+        safePrint('  - showShopDialog: ${state.showShopDialog}');
+        safePrint('  - showTurnOrderDialog: ${state.showTurnOrderDialog}');
+        safePrint('  - phase: ${state.phase}');
+        safePrint('  - currentPlayer: ${state.currentPlayer.name}');
 
         // Force reset processing flag
         _isProcessing = false;
@@ -326,7 +328,7 @@ class GameNotifier extends StateNotifier<GameState> {
           _logBot('Watchdog: Closing stuck library dialog');
           closeLibraryPenaltyDialog();
         } else if (state.showImzaGunuDialog) {
-          _logBot('Watchdog: Closing stuck imza günü dialog');
+          _logBot('Watchdog: Closing stuck imza gÃ¼nÃ¼ dialog');
           closeImzaGunuDialog();
         } else if (state.showShopDialog) {
           _logBot('Watchdog: Closing stuck shop dialog');
@@ -356,9 +358,9 @@ class GameNotifier extends StateNotifier<GameState> {
     _logBot('Watchdog cancelled');
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 1. OYUN BAŞLATMA & KURULUM
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // 1. OYUN BAÅLATMA & KURULUM
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Initialize game with player list
   void initializeGame(List<Player> players) async {
@@ -386,26 +388,26 @@ class GameNotifier extends StateNotifier<GameState> {
       players: uniquePlayers,
       tiles: BoardConfig.tiles,
       phase: GamePhase.rollingForOrder,
-      lastAction: 'Sıra belirlemek için zar atın...',
+      lastAction: 'SÄ±ra belirlemek iÃ§in zar atÄ±n...',
     );
 
-    _addLog("Oyun başlatıldı! ${uniquePlayers.length} oyuncu katıldı.");
+    _addLog("Oyun baÅŸlatÄ±ldÄ±! ${uniquePlayers.length} oyuncu katÄ±ldÄ±.");
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // TURN ORDER DETERMINATION - Iron-Clad State Machine (v2.0)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //
   // This is a FULLY AUTOMATED system. No manual dice button presses.
   // Phase 1: All players auto-roll
   // Phase 2: Evaluate & detect ties
   // Phase 3: Recursive tie-break (fully automated)
   //
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // SERVICE HELPERS (Exposed for TurnOrderService)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   GameState get currentState => state;
   void updateState(GameState newState) => state = newState;
@@ -415,9 +417,9 @@ class GameNotifier extends StateNotifier<GameState> {
   Future<void> checkPauseStatus() => _checkPauseStatus();
   void setProcessing(bool value) => _isProcessing = value;
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // TURN ORDER DETERMINATION (Delegated to TurnOrderService)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Delegated to TurnOrderService
   Future<void> startAutomatedTurnOrder({
@@ -442,15 +444,15 @@ class GameNotifier extends StateNotifier<GameState> {
       players: sortedPlayers,
       phase: GamePhase.playerTurn,
       orderRolls: rolls,
-      lastAction: 'Sıra belirlendi! ${sortedPlayers.first.name} başlıyor.',
+      lastAction: 'SÄ±ra belirlendi! ${sortedPlayers.first.name} baÅŸlÄ±yor.',
     );
 
-    _addLog("Sıra belirlendi! ${sortedPlayers.first.name} başlıyor.");
+    _addLog("SÄ±ra belirlendi! ${sortedPlayers.first.name} baÅŸlÄ±yor.");
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // 2. ZAR ATMA & HAREKET (Dice Rolling & Movement)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Roll dice - handles MOVEMENT rolls during playerTurn phase.
   /// NOTE: Turn order rolls are handled automatically by startAutomatedTurnOrder().
@@ -501,13 +503,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
         if (remaining > 0) {
           _addLog(
-            "📚 ${player.name} Kütüphanede! Kalan ceza turu: $remaining",
+            "ğŸ“š ${player.name} KÃ¼tÃ¼phanede! Kalan ceza turu: $remaining",
             type: 'error',
           );
           state = state.copyWith(showTurnSkippedDialog: true);
         } else {
           _addLog(
-            "✅ ${player.name} Kütüphane cezasını tamamladı! Sıradaki turda zar atabilir.",
+            "âœ… ${player.name} KÃ¼tÃ¼phane cezasÄ±nÄ± tamamladÄ±! SÄ±radaki turda zar atabilir.",
             type: 'success',
           );
         }
@@ -550,17 +552,17 @@ class GameNotifier extends StateNotifier<GameState> {
         _logBot(
           'WARNING: Unexpected phase ${state.phase} - ignoring dice roll',
         );
-        debugPrint(
-          '🚨 WARNING: Dice rolled in unexpected phase: ${state.phase}',
+        safePrint(
+          'ğŸš¨ WARNING: Dice rolled in unexpected phase: ${state.phase}',
         );
       }
       _logBot('rollDice() COMPLETED successfully');
     } catch (e, stackTrace) {
       // SAFETY: Catch any error and log it
-      debugPrint('🚨 ERROR in rollDice: $e');
-      debugPrint('Stack trace: $stackTrace');
-      _addLog('Hata oluştu: $e', type: 'error');
-      _logBot('🚨 ERROR in rollDice: $e');
+      safePrint('ğŸš¨ ERROR in rollDice: $e');
+      safePrint('Stack trace: $stackTrace');
+      _addLog('Hata oluÅŸtu: $e', type: 'error');
+      _logBot('ğŸš¨ ERROR in rollDice: $e');
       // Try to recover
       _scheduleBotTurn();
     } finally {
@@ -588,9 +590,9 @@ class GameNotifier extends StateNotifier<GameState> {
       '_handleMovementRoll() START - roll: $roll, isDouble: $isDouble, phase: ${state.phase}',
     );
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // DEFENSIVE CHECK: Ensure doubles logic only applies during playerTurn phase
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     if (state.phase != GamePhase.playerTurn) {
       _logBot(
         'WARNING: _handleMovementRoll called in wrong phase (${state.phase}) - disabling doubles logic',
@@ -607,7 +609,7 @@ class GameNotifier extends StateNotifier<GameState> {
       if (newConsecutive >= 3) {
         _logBot('CASE A: 3rd consecutive double -> Jail');
         _addLog(
-          "🚨 3. Kez Çift! Kütüphaneye (Hapse) gidiyorsun.",
+          "ğŸš¨ 3. Kez Ã‡ift! KÃ¼tÃ¼phaneye (Hapse) gidiyorsun.",
           type: 'error',
         );
 
@@ -642,7 +644,7 @@ class GameNotifier extends StateNotifier<GameState> {
       if (isDouble) {
         _logBot('CASE B: Double roll (1st or 2nd)');
         _addLog(
-          "🎲 Çift Attın ($newConsecutive. Kez)! Tekrar oyna.",
+          "ğŸ² Ã‡ift AttÄ±n ($newConsecutive. Kez)! Tekrar oyna.",
           type: 'dice',
         );
 
@@ -662,9 +664,9 @@ class GameNotifier extends StateNotifier<GameState> {
         await Future.delayed(delay);
         await _movePlayer(roll);
 
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // LIBRARY PRIORITY: Landing on Library overrides Double Dice re-roll
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         if (state.showLibraryPenaltyDialog) {
           // Library dialog is shown - it will end the turn when closed
           _logBot(
@@ -691,7 +693,7 @@ class GameNotifier extends StateNotifier<GameState> {
       // CASE C: Normal Roll (Not Double)
       _logBot('CASE C: Normal roll');
       _addLog(
-        "${state.currentPlayer.name} $roll ($d1-$d2) attı. Sıra geçiyor.",
+        "${state.currentPlayer.name} $roll ($d1-$d2) attÄ±. SÄ±ra geÃ§iyor.",
         type: 'dice',
       );
 
@@ -717,10 +719,10 @@ class GameNotifier extends StateNotifier<GameState> {
           false; // Reset before calling endTurn() to prevent blocking
       endTurn();
     } catch (e, stackTrace) {
-      debugPrint('🚨 ERROR in _handleMovementRoll: $e');
-      debugPrint('Stack trace: $stackTrace');
-      _addLog('Hareket hatası: $e', type: 'error');
-      _logBot('🚨 ERROR in _handleMovementRoll: $e');
+      safePrint('ğŸš¨ ERROR in _handleMovementRoll: $e');
+      safePrint('Stack trace: $stackTrace');
+      _addLog('Hareket hatasÄ±: $e', type: 'error');
+      _logBot('ğŸš¨ ERROR in _handleMovementRoll: $e');
       // Ensure turn ends even on error
       endTurn();
     } finally {
@@ -745,9 +747,9 @@ class GameNotifier extends StateNotifier<GameState> {
           List<Player> newPlayers = List.from(state.players);
           newPlayers[state.currentPlayerIndex] = player.copyWith(inJail: false);
           state = state.copyWith(players: newPlayers);
-          _addLog("Nöbetten erken çıktın!", type: 'success');
+          _addLog("NÃ¶betten erken Ã§Ä±ktÄ±n!", type: 'success');
         } else {
-          _addLog("Hâlâ nöbettesin. Tur geçti.", type: 'error');
+          _addLog("HÃ¢lÃ¢ nÃ¶bettesin. Tur geÃ§ti.", type: 'error');
           endTurn();
           return;
         }
@@ -770,7 +772,7 @@ class GameNotifier extends StateNotifier<GameState> {
           player = state.currentPlayer;
 
           _addLog(
-            "Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız",
+            "BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z",
             type: 'purchase',
           );
         }
@@ -797,10 +799,10 @@ class GameNotifier extends StateNotifier<GameState> {
 
       await _handleTileArrival(tile);
     } catch (e, stackTrace) {
-      debugPrint('🚨 ERROR in _movePlayer: $e');
-      debugPrint('Stack trace: $stackTrace');
-      _addLog('Hareket hatası: $e', type: 'error');
-      _logBot('🚨 ERROR in _movePlayer: $e');
+      safePrint('ğŸš¨ ERROR in _movePlayer: $e');
+      safePrint('Stack trace: $stackTrace');
+      _addLog('Hareket hatasÄ±: $e', type: 'error');
+      _logBot('ğŸš¨ ERROR in _movePlayer: $e');
       endTurn();
     }
   }
@@ -817,8 +819,8 @@ class GameNotifier extends StateNotifier<GameState> {
         }
         break;
       case TileType.tesvik:
-        _logBot('Tile type: TEŞVİK');
-        // Teşvik tiles always trigger a bonus question
+        _logBot('Tile type: TEÅVÄ°K');
+        // TeÅŸvik tiles always trigger a bonus question
         await _triggerQuestion(tile);
         break;
       case TileType.start:
@@ -828,17 +830,17 @@ class GameNotifier extends StateNotifier<GameState> {
         break;
       case TileType.shop:
         _logBot('Tile type: SHOP');
-        // Kıraathane - Open shop
+        // KÄ±raathane - Open shop
         await handleKiraathaneLanding();
         break;
       case TileType.library:
         _logBot('Tile type: LIBRARY');
-        // Kütüphane - Apply 2-turn penalty
+        // KÃ¼tÃ¼phane - Apply 2-turn penalty
         await _handleLibraryLanding();
         break;
       case TileType.signingDay:
         _logBot('Tile type: SIGNING_DAY');
-        // İmza Günü - Show dialog, no penalty
+        // Ä°mza GÃ¼nÃ¼ - Show dialog, no penalty
         await _handleSigningDayLanding();
         break;
       case TileType.corner:
@@ -852,8 +854,8 @@ class GameNotifier extends StateNotifier<GameState> {
         endTurn();
         break;
       case TileType.chance:
-        _logBot('Tile type: CHANCE (ŞANS)');
-        // ŞANS - Draw a chance card
+        _logBot('Tile type: CHANCE (ÅANS)');
+        // ÅANS - Draw a chance card
         await _drawCardAndApply(CardType.sans);
         break;
       case TileType.fate:
@@ -877,7 +879,7 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(players: newPlayers);
 
     _addLog(
-      "🏁 ${player.name} Başlangıç'tan geçti! +$salaryAmount Yıldız kazandı!",
+      "ğŸ ${player.name} BaÅŸlangÄ±Ã§'tan geÃ§ti! +$salaryAmount YÄ±ldÄ±z kazandÄ±!",
       type: 'success',
     );
 
@@ -889,7 +891,7 @@ class GameNotifier extends StateNotifier<GameState> {
     endTurn();
   }
 
-  /// Handle Kütüphane (Library) landing - Apply 2-turn penalty
+  /// Handle KÃ¼tÃ¼phane (Library) landing - Apply 2-turn penalty
   Future<void> _handleLibraryLanding() async {
     final player = state.currentPlayer;
     const libraryPenaltyTurns = 2;
@@ -903,7 +905,7 @@ class GameNotifier extends StateNotifier<GameState> {
     if (_isBotPlaying) {
       state = state.copyWith(players: newPlayers);
       _addLog(
-        "🤖 Bot: 📚 ${player.name} Kütüphanede! $libraryPenaltyTurns tur ceza.",
+        "ğŸ¤– Bot: ğŸ“š ${player.name} KÃ¼tÃ¼phanede! $libraryPenaltyTurns tur ceza.",
         type: 'error',
       );
       await Future.delayed(const Duration(milliseconds: 300), () {
@@ -917,7 +919,7 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(players: newPlayers, showLibraryPenaltyDialog: true);
 
     _addLog(
-      "📚 ${player.name} Kütüphanede! Sessizlik lazım, $libraryPenaltyTurns tur bekle.",
+      "ğŸ“š ${player.name} KÃ¼tÃ¼phanede! Sessizlik lazÄ±m, $libraryPenaltyTurns tur bekle.",
       type: 'error',
     );
 
@@ -926,14 +928,14 @@ class GameNotifier extends StateNotifier<GameState> {
     _libraryPenaltyDialogCompleter = null;
   }
 
-  /// Handle İmza Günü (Signing Day) landing - Show dialog, no penalty
+  /// Handle Ä°mza GÃ¼nÃ¼ (Signing Day) landing - Show dialog, no penalty
   Future<void> _handleSigningDayLanding() async {
     final player = state.currentPlayer;
 
     // BOT MODE: Auto-close dialog after short delay
     if (_isBotPlaying) {
       _addLog(
-        "🤖 Bot: ✍️ ${player.name} İmza Günü'nde okurlarıyla buluştu!",
+        "ğŸ¤– Bot: âœï¸ ${player.name} Ä°mza GÃ¼nÃ¼'nde okurlarÄ±yla buluÅŸtu!",
         type: 'success',
       );
       await Future.delayed(const Duration(milliseconds: 300), () {
@@ -947,7 +949,7 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(showImzaGunuDialog: true);
 
     _addLog(
-      "✍️ ${player.name} İmza Günü'nde okurlarıyla buluştu!",
+      "âœï¸ ${player.name} Ä°mza GÃ¼nÃ¼'nde okurlarÄ±yla buluÅŸtu!",
       type: 'success',
     );
 
@@ -970,7 +972,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     _addLog(
-      "${player.name} ${GameConstants.jailTurns} tur ceza aldı!",
+      "${player.name} ${GameConstants.jailTurns} tur ceza aldÄ±!",
       type: 'error',
     );
 
@@ -984,7 +986,7 @@ class GameNotifier extends StateNotifier<GameState> {
     endTurn();
   }
 
-  /// Close İmza Günü dialog and end turn
+  /// Close Ä°mza GÃ¼nÃ¼ dialog and end turn
   void closeImzaGunuDialog() {
     state = state.copyWith(showImzaGunuDialog: false);
 
@@ -998,13 +1000,13 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 3. SORU & MASTERY SİSTEMİ
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // 3. SORU & MASTERY SÄ°STEMÄ°
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Auto-select difficulty based on player's mastery level
   /// - Novice -> Easy
-  /// - Çırak -> Medium
+  /// - Ã‡Ä±rak -> Medium
   /// - Kalfa -> Hard
   /// - Usta -> Hard (for farming rewards)
   Difficulty _getDifficultyForMasteryLevel(MasteryLevel level) {
@@ -1020,11 +1022,11 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> _triggerQuestion(BoardTile tile) async {
-    // For Teşvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
+    // For TeÅŸvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
     // For other tiles, use the tile's category
     List<String> categoryNames = [];
     if (tile.type == TileType.tesvik) {
-      // Teşvik tiles pull from BOTH tesvik AND bonusBilgiler for maximum variety
+      // TeÅŸvik tiles pull from BOTH tesvik AND bonusBilgiler for maximum variety
       categoryNames = ['tesvik', 'bonusBilgiler'];
     } else if (tile.category != null) {
       categoryNames = [tile.category!];
@@ -1040,7 +1042,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final player = state.currentPlayer;
 
     // AUTO-DIFFICULTY: Get difficulty based on player's mastery level
-    // For Teşvik tiles, use tesvik category for mastery calculation
+    // For TeÅŸvik tiles, use tesvik category for mastery calculation
     final masteryCategoryName = tile.type == TileType.tesvik
         ? 'tesvik'
         : categoryNames.first;
@@ -1055,15 +1057,15 @@ class GameNotifier extends StateNotifier<GameState> {
     // Log the auto-selected difficulty
     final masteryName = masteryLevel.displayName;
     final categoryDisplay = tile.type == TileType.tesvik
-        ? 'Teşvik'
+        ? 'TeÅŸvik'
         : _getCategoryDisplayName(categoryNames.first);
     _addLog(
-      '$categoryDisplay kategorisinde $masteryName seviyesi: $difficultyFilter soru seçildi.',
+      '$categoryDisplay kategorisinde $masteryName seviyesi: $difficultyFilter soru seÃ§ildi.',
       type: 'info',
     );
 
     // BUG FIX: Filter out already asked questions to prevent repetition
-    // For Teşvik tiles, match against EITHER tesvik OR bonusBilgiler
+    // For TeÅŸvik tiles, match against EITHER tesvik OR bonusBilgiler
     final filteredQuestions = _cachedQuestions.where((q) {
       final matchesCategory = categoryNames.contains(q.category.name);
       final matchesDifficulty = q.difficulty == difficultyFilter;
@@ -1078,7 +1080,7 @@ class GameNotifier extends StateNotifier<GameState> {
       // All questions in this category/difficulty have been asked
       // Reset and recycle questions
       _addLog(
-        '⚠ Bu kategorideki tüm sorular soruldu. Liste sıfırlanıyor...',
+        'âš  Bu kategorideki tÃ¼m sorular soruldu. Liste sÄ±fÄ±rlanÄ±yor...',
         type: 'info',
       );
       shouldResetAskedIds = true;
@@ -1096,11 +1098,11 @@ class GameNotifier extends StateNotifier<GameState> {
             .where((q) => categoryNames.contains(q.category.name))
             .toList();
         if (anyCategoryQuestions.isEmpty) {
-          // FALLBACK FOR TEŞVIK TILES: Create a synthetic bonus reward question
+          // FALLBACK FOR TEÅVIK TILES: Create a synthetic bonus reward question
           // This proves the tile logic works even when the database is empty
           if (tile.type == TileType.tesvik) {
             _addLog(
-              '🎁 Teşvik karesi - Bonus ödülü kazandınız!',
+              'ğŸ TeÅŸvik karesi - Bonus Ã¶dÃ¼lÃ¼ kazandÄ±nÄ±z!',
               type: 'success',
             );
 
@@ -1113,7 +1115,7 @@ class GameNotifier extends StateNotifier<GameState> {
             );
             state = state.copyWith(
               players: newPlayers,
-              floatingEffect: FloatingEffect('+$bonusStars ⭐', Colors.amber),
+              floatingEffect: FloatingEffect('+$bonusStars â­', Colors.amber),
             );
 
             // Clear floating effect after delay
@@ -1122,14 +1124,14 @@ class GameNotifier extends StateNotifier<GameState> {
             });
 
             _addLog(
-              '${player.name} Teşvik bonusu kazandı: +$bonusStars ⭐',
+              '${player.name} TeÅŸvik bonusu kazandÄ±: +$bonusStars â­',
               type: 'success',
             );
             endTurn();
             return;
           }
 
-          _addLog('Bu kategoride soru bulunamadı!', type: 'error');
+          _addLog('Bu kategoride soru bulunamadÄ±!', type: 'error');
           endTurn();
           return;
         }
@@ -1137,14 +1139,14 @@ class GameNotifier extends StateNotifier<GameState> {
         anyCategoryQuestions.shuffle(_random);
         selectedQuestion = anyCategoryQuestions.first;
         _addLog(
-          '⚠ $difficultyFilter zorlu soru bulunamadı, rastgele soru seçildi.',
+          'âš  $difficultyFilter zorlu soru bulunamadÄ±, rastgele soru seÃ§ildi.',
           type: 'info',
         );
       } else {
         // Shuffle and pick random from the recycled pool
         allCategoryQuestions.shuffle(_random);
         selectedQuestion = allCategoryQuestions.first;
-        _addLog('🔄 Soru havuzu yenilendi, yeni soru seçiliyor.', type: 'info');
+        _addLog('ğŸ”„ Soru havuzu yenilendi, yeni soru seÃ§iliyor.', type: 'info');
       }
     } else {
       // Shuffle the filtered list for true randomness, then pick first
@@ -1154,7 +1156,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // BOT MODE: Auto-answer question without showing dialog
     if (_isBotPlaying) {
-      _addLog('🤖 Bot: Soru cevaplandı (${selectedQuestion.category.name})');
+      _addLog('ğŸ¤– Bot: Soru cevaplandÄ± (${selectedQuestion.category.name})');
       // Track this question as asked even in bot mode
       final updatedAskedIds = Set<String>.from(state.askedQuestionIds);
       updatedAskedIds.add(selectedQuestion.text);
@@ -1228,28 +1230,28 @@ class GameNotifier extends StateNotifier<GameState> {
           newMastery = MasteryLevel.cirak;
           promotionReward = GameConstants.promotionBaseReward * 1;
           promotionMessage =
-              '🏆 ${_getCategoryDisplayName(categoryName)} kategorisinde Çırak oldun!';
+              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Ã‡Ä±rak oldun!';
         } else if (currentMastery == MasteryLevel.cirak &&
             difficulty == Difficulty.medium &&
             newAnswerCount >= GameConstants.answersRequiredForPromotion) {
           newMastery = MasteryLevel.kalfa;
           promotionReward = GameConstants.promotionBaseReward * 2;
           promotionMessage =
-              '🏆 ${_getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
+              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
         } else if (currentMastery == MasteryLevel.kalfa &&
             difficulty == Difficulty.hard &&
             newAnswerCount >= GameConstants.answersRequiredForPromotion) {
           newMastery = MasteryLevel.usta;
           promotionReward = GameConstants.promotionBaseReward * 3;
           promotionMessage =
-              '🏆 ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
+              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
         }
 
         int totalStars = baseStars + promotionReward;
 
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // CATCH-UP MECHANIC (Underdog Bonus) - Bot version
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         final leaderStars = state.players
             .map((p) => p.stars)
             .reduce((a, b) => a > b ? a : b);
@@ -1262,19 +1264,19 @@ class GameNotifier extends StateNotifier<GameState> {
                   .round()
                   .clamp(GameConstants.underdogBonusStars, baseStars);
           totalStars += underdogBonus;
-          _addLog('🔥 Bot: Mazlum Bonusu! +$underdogBonus ⭐', type: 'success');
+          _addLog('ğŸ”¥ Bot: Mazlum Bonusu! +$underdogBonus â­', type: 'success');
         }
 
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // QUOTE DROP RATE (Progression Bonus) - Bot version
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         var updatedPlayer = player;
         if (difficulty == Difficulty.hard &&
             _random.nextDouble() < GameConstants.hardQuestionQuoteDropRate) {
           final randomQuoteId = 'quote_${_random.nextInt(100)}';
           updatedPlayer = player.collectQuote(randomQuoteId);
           _addLog(
-            '📜 Bot: Zor soru bonusu! Söz kartı kazandı!',
+            'ğŸ“œ Bot: Zor soru bonusu! SÃ¶z kartÄ± kazandÄ±!',
             type: 'success',
           );
         } else {
@@ -1313,43 +1315,43 @@ class GameNotifier extends StateNotifier<GameState> {
         state = state.copyWith(players: newPlayers);
 
         _addLog(
-          '🤖 Bot: Doğru cevap! +$baseStars ⭐ ($difficultyName)',
+          'ğŸ¤– Bot: DoÄŸru cevap! +$baseStars â­ ($difficultyName)',
           type: 'success',
         );
 
         if (promotionMessage.isNotEmpty) {
           _addLog(
-            '🤖 Bot: $promotionMessage (+$promotionReward ⭐ bonus)',
+            'ğŸ¤– Bot: $promotionMessage (+$promotionReward â­ bonus)',
             type: 'success',
           );
         }
 
         _checkWinCondition();
       } else if (!isCorrect) {
-        _addLog("🤖 Bot: Yanlış cevap. Yıldız kazanamadın.", type: 'error');
+        _addLog("ğŸ¤– Bot: YanlÄ±ÅŸ cevap. YÄ±ldÄ±z kazanamadÄ±n.", type: 'error');
       }
 
       // Wait a short delay then end turn
       await Future.delayed(const Duration(milliseconds: 500));
       endTurn();
     } catch (e, stackTrace) {
-      debugPrint('🚨 ERROR in _botAnswerQuestion: $e');
-      debugPrint('Stack trace: $stackTrace');
+      safePrint('ğŸš¨ ERROR in _botAnswerQuestion: $e');
+      safePrint('Stack trace: $stackTrace');
       endTurn();
     }
   }
 
   /// Answer question and handle mastery progression
   /// Mastery System:
-  /// - 3 Easy answers → Çırak (1x reward)
-  /// - 3 Medium answers → Kalfa (2x reward) [requires Çırak]
-  /// - 3 Hard answers → Usta (3x reward) [requires Kalfa]
+  /// - 3 Easy answers â†’ Ã‡Ä±rak (1x reward)
+  /// - 3 Medium answers â†’ Kalfa (2x reward) [requires Ã‡Ä±rak]
+  /// - 3 Hard answers â†’ Usta (3x reward) [requires Kalfa]
   Future<void> answerQuestion(bool isCorrect) async {
-    debugPrint('🔷 answerQuestion called: isCorrect=$isCorrect');
+    safePrint('ğŸ”· answerQuestion called: isCorrect=$isCorrect');
 
     // NOTE: Removed _isProcessing guard - question answering is independent of dice rolling
     if (state.currentQuestion == null) {
-      debugPrint('🔷 EARLY RETURN - no currentQuestion!');
+      safePrint('ğŸ”· EARLY RETURN - no currentQuestion!');
       return;
     }
 
@@ -1360,9 +1362,9 @@ class GameNotifier extends StateNotifier<GameState> {
       final categoryName = tile?.category;
       final difficulty = tile?.difficulty ?? Difficulty.medium;
 
-      // ═══════════════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       // STEP 1: IMMEDIATE LOGIC - Calculate score/stars (dialog still visible)
-      // ═══════════════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       if (isCorrect && categoryName != null) {
         final player = state.currentPlayer;
 
@@ -1392,28 +1394,28 @@ class GameNotifier extends StateNotifier<GameState> {
           newMastery = MasteryLevel.cirak;
           promotionReward = GameConstants.promotionBaseReward * 1;
           promotionMessage =
-              '🏆 ${_getCategoryDisplayName(categoryName)} kategorisinde Çırak oldun!';
+              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Ã‡Ä±rak oldun!';
         } else if (currentMastery == MasteryLevel.cirak &&
             difficulty == Difficulty.medium &&
             newAnswerCount >= GameConstants.answersRequiredForPromotion) {
           newMastery = MasteryLevel.kalfa;
           promotionReward = GameConstants.promotionBaseReward * 2;
           promotionMessage =
-              '🏆 ${_getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
+              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
         } else if (currentMastery == MasteryLevel.kalfa &&
             difficulty == Difficulty.hard &&
             newAnswerCount >= GameConstants.answersRequiredForPromotion) {
           newMastery = MasteryLevel.usta;
           promotionReward = GameConstants.promotionBaseReward * 3;
           promotionMessage =
-              '🏆 ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
+              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
         }
 
         int totalStars = baseStars + promotionReward;
 
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // CATCH-UP MECHANIC (Underdog Bonus)
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Get leader's star count
         final leaderStars = state.players
             .map((p) => p.stars)
@@ -1429,7 +1431,7 @@ class GameNotifier extends StateNotifier<GameState> {
                   .clamp(GameConstants.underdogBonusStars, baseStars);
           totalStars += underdogBonus;
           _addLog(
-            '🔥 Mazlum Bonusu! +$underdogBonus ⭐ (Geriden gelme bonusu)',
+            'ğŸ”¥ Mazlum Bonusu! +$underdogBonus â­ (Geriden gelme bonusu)',
             type: 'success',
           );
         }
@@ -1438,16 +1440,16 @@ class GameNotifier extends StateNotifier<GameState> {
         List<Player> newPlayers = List.from(state.players);
         var updatedPlayer = player;
 
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // QUOTE DROP RATE (Progression Bonus)
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         if (difficulty == Difficulty.hard &&
             _random.nextDouble() < GameConstants.hardQuestionQuoteDropRate) {
           // Generate a random quote ID
           final randomQuoteId = 'quote_${_random.nextInt(100)}';
           updatedPlayer = updatedPlayer.collectQuote(randomQuoteId);
           _addLog(
-            '📜 Zor soru bonusu! Rastgele bir söz kartı kazandın!',
+            'ğŸ“œ Zor soru bonusu! Rastgele bir sÃ¶z kartÄ± kazandÄ±n!',
             type: 'success',
           );
         }
@@ -1476,20 +1478,20 @@ class GameNotifier extends StateNotifier<GameState> {
 
         newPlayers[state.currentPlayerIndex] = updatedPlayer;
 
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // STEP 2: TRIGGER ANIMATION - Update state to show confetti/feedback
-        // ═══════════════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         state = state.copyWith(players: newPlayers);
 
         _addLog(
-          'Doğru cevap! +$baseStars ⭐ ($difficultyName)',
+          'DoÄŸru cevap! +$baseStars â­ ($difficultyName)',
           type: 'success',
         );
         // SFX now plays in dialog during reveal phase
 
         if (promotionMessage.isNotEmpty) {
           _addLog(
-            '$promotionMessage (+$promotionReward ⭐ bonus)',
+            '$promotionMessage (+$promotionReward â­ bonus)',
             type: 'success',
           );
         }
@@ -1500,39 +1502,39 @@ class GameNotifier extends StateNotifier<GameState> {
           shouldEndTurn = true;
         }
       } else if (!isCorrect) {
-        _addLog("Yanlış cevap. Yıldız kazanamadın.", type: 'error');
+        _addLog("YanlÄ±ÅŸ cevap. YÄ±ldÄ±z kazanamadÄ±n.", type: 'error');
         // SFX now plays in dialog during reveal phase
         shouldEndTurn = true;
       } else {
         shouldEndTurn = true;
       }
 
-      // ═══════════════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       // STEP 3: TEARDOWN - Close dialog immediately
       // NOTE: Animation already played in the dialog widget before callback was called.
       // No additional delay needed here.
-      // ═══════════════════════════════════════════════════════════════════════
-      debugPrint('🔷 TEARDOWN: Setting showQuestionDialog=false');
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      safePrint('ğŸ”· TEARDOWN: Setting showQuestionDialog=false');
       state = state.copyWith(showQuestionDialog: false, currentQuestion: null);
     } catch (e, stack) {
-      debugPrint('🔷 ERROR in answerQuestion: $e');
-      debugPrint('🔷 Stack: $stack');
+      safePrint('ğŸ”· ERROR in answerQuestion: $e');
+      safePrint('ğŸ”· Stack: $stack');
     } finally {
       // SAFETY FALLBACK: Always reset processing flag and complete completer
       _isProcessing = false;
-      debugPrint('🔷 FINALLY: _isProcessing reset to false');
+      safePrint('ğŸ”· FINALLY: _isProcessing reset to false');
 
       // Unblock the flow - safely complete the completer
-      debugPrint(
-        '🔷 Completer status: ${_questionDialogCompleter != null ? (_questionDialogCompleter!.isCompleted ? "completed" : "pending") : "null"}',
+      safePrint(
+        'ğŸ”· Completer status: ${_questionDialogCompleter != null ? (_questionDialogCompleter!.isCompleted ? "completed" : "pending") : "null"}',
       );
       if (_questionDialogCompleter != null &&
           !_questionDialogCompleter!.isCompleted) {
-        debugPrint('🔷 Completing _questionDialogCompleter NOW');
+        safePrint('ğŸ”· Completing _questionDialogCompleter NOW');
         _questionDialogCompleter!.complete();
       }
       _questionDialogCompleter = null;
-      debugPrint('🔷 FINALLY complete, dialog should be closed now');
+      safePrint('ğŸ”· FINALLY complete, dialog should be closed now');
     }
 
     // End turn after everything is cleaned up
@@ -1545,17 +1547,17 @@ class GameNotifier extends StateNotifier<GameState> {
   String _getCategoryDisplayName(String categoryName) {
     switch (categoryName) {
       case 'turkEdebiyatindaIlkler':
-        return 'Türk Edebiyatında İlkler';
+        return 'TÃ¼rk EdebiyatÄ±nda Ä°lkler';
       case 'edebiSanatlar':
         return 'Edebi Sanatlar';
       case 'eserKarakter':
         return 'Eser-Karakter';
       case 'edebiyatAkimlari':
-        return 'Edebiyat Akımları';
+        return 'Edebiyat AkÄ±mlarÄ±';
       case 'benKimim':
         return 'Ben Kimim?';
       case 'tesvik':
-        return 'Teşvik';
+        return 'TeÅŸvik';
       case 'bonusBilgiler':
         return 'Bonus Bilgi';
       default:
@@ -1563,14 +1565,14 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  /// Draw a card from Şans or Kader deck
+  /// Draw a card from Åans or Kader deck
   /// Note: Currently unused - cards are handled through other mechanisms
   // ignore: unused_element
   Future<void> _drawCard(CardType cardType) async {
     await _drawCardAndApply(cardType);
   }
 
-  /// Draw a card from Şans or Kader deck and apply its effect
+  /// Draw a card from Åans or Kader deck and apply its effect
   /// For human players: Shows card dialog, effect applied when dialog is closed
   /// For bot players: Auto-applies effect without showing dialog
   Future<void> _drawCardAndApply(CardType cardType) async {
@@ -1583,18 +1585,18 @@ class GameNotifier extends StateNotifier<GameState> {
     final isSans = cardType == CardType.sans;
     final deck = isSans ? GameCards.sansCards : GameCards.kaderCards;
     final card = deck[_random.nextInt(deck.length)];
-    final cardName = isSans ? "ŞANS" : "KADER";
+    final cardName = isSans ? "ÅANS" : "KADER";
 
     // BOT MODE: Auto-apply card effect without showing dialog
     if (_isBotPlaying) {
-      _addLog('🤖 Bot: $cardName kartı çekildi');
+      _addLog('ğŸ¤– Bot: $cardName kartÄ± Ã§ekildi');
       await _botApplyCardEffect(card);
       return;
     }
 
     // Human mode: Show card dialog and wait for it to close
     _addLog(
-      '🎲 ${state.currentPlayer.name} $cardName karesine geldi! Kart çekiliyor...',
+      'ğŸ² ${state.currentPlayer.name} $cardName karesine geldi! Kart Ã§ekiliyor...',
     );
     AudioManager.instance.playSfx('audio/card_flip.wav');
 
@@ -1614,7 +1616,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       switch (card.effectType) {
         case CardEffectType.moneyChange:
-          // Borçlanma Koruması (Debt Protection): Balance never goes below 0
+          // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
           final originalStars = player.stars;
           final rawNewStars = player.stars + card.value;
           final newStars = rawNewStars.clamp(0, double.infinity).toInt();
@@ -1629,20 +1631,20 @@ class GameNotifier extends StateNotifier<GameState> {
             );
             state = state.copyWith(players: penaltyPlayers);
             _addLog(
-              "🤖 Bot: ⚠️ ${player.name} ödeyemedi! Yıldızlar 0'a düştü + 1 tur ceza!",
+              "ğŸ¤– Bot: âš ï¸ ${player.name} Ã¶deyemedi! YÄ±ldÄ±zlar 0'a dÃ¼ÅŸtÃ¼ + 1 tur ceza!",
               type: 'error',
             );
           } else {
             _updateStars(player, newStars);
             if (card.value > 0) {
               _addLog(
-                "🤖 Bot: 💰 ${player.name} +${card.value} yıldız kazandı!",
+                "ğŸ¤– Bot: ğŸ’° ${player.name} +${card.value} yÄ±ldÄ±z kazandÄ±!",
                 type: 'success',
               );
             } else {
               final lost = originalStars - newStars;
               _addLog(
-                "🤖 Bot: 💸 ${player.name} $lost yıldız kaybetti!",
+                "ğŸ¤– Bot: ğŸ’¸ ${player.name} $lost yÄ±ldÄ±z kaybetti!",
                 type: 'error',
               );
             }
@@ -1659,7 +1661,7 @@ class GameNotifier extends StateNotifier<GameState> {
           if (passedStart && targetPos != BoardConfig.startPosition) {
             newStars += GameConstants.passingStartBonus;
             _addLog(
-              "🤖 Bot: 🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!",
+              "ğŸ¤– Bot: ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
               type: 'success',
             );
           }
@@ -1669,7 +1671,7 @@ class GameNotifier extends StateNotifier<GameState> {
             stars: newStars,
           );
           state = state.copyWith(players: newPlayers);
-          _addLog("🤖 Bot: 🎯 ${player.name} $targetPos. kareye taşındı!");
+          _addLog("ğŸ¤– Bot: ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
           break;
 
         case CardEffectType.moveRelative:
@@ -1685,7 +1687,7 @@ class GameNotifier extends StateNotifier<GameState> {
           if (card.value > 0 && targetPos < currentPos) {
             newStars += GameConstants.passingStartBonus;
             _addLog(
-              "🤖 Bot: 🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!",
+              "ğŸ¤– Bot: ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
               type: 'success',
             );
           }
@@ -1697,9 +1699,9 @@ class GameNotifier extends StateNotifier<GameState> {
           state = state.copyWith(players: newPlayers);
 
           if (card.value > 0) {
-            _addLog("🤖 Bot: ➡️ ${player.name} $targetPos. kareye ilerledi!");
+            _addLog("ğŸ¤– Bot: â¡ï¸ ${player.name} $targetPos. kareye ilerledi!");
           } else {
-            _addLog("🤖 Bot: ⬅️ ${player.name} $targetPos. kareye geri gitti!");
+            _addLog("ğŸ¤– Bot: â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
           }
           break;
 
@@ -1711,7 +1713,7 @@ class GameNotifier extends StateNotifier<GameState> {
           );
           state = state.copyWith(players: temp);
           _addLog(
-            "🤖 Bot: ⛔ ${player.name} kütüphane nöbetine yollandı!",
+            "ğŸ¤– Bot: â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
             type: 'error',
           );
           break;
@@ -1723,13 +1725,13 @@ class GameNotifier extends StateNotifier<GameState> {
           );
           state = state.copyWith(players: temp);
           _addLog(
-            "🤖 Bot: ⏸️ ${player.name} ${card.value} tur ceza aldı!",
+            "ğŸ¤– Bot: â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
             type: 'error',
           );
           break;
 
         case CardEffectType.rollAgain:
-          _addLog("🤖 Bot: 🎲 ${player.name} tekrar zar atıyor!", type: 'info');
+          _addLog("ğŸ¤– Bot: ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
           // Don't end turn, let the bot roll again
           return;
 
@@ -1739,7 +1741,7 @@ class GameNotifier extends StateNotifier<GameState> {
           int newStars = player.stars - loss;
           _updateStars(player, newStars);
           _addLog(
-            "🤖 Bot: 📉 ${player.name} yıldızlarının %%$percentage'ini kaybetti! (-$loss ⭐)",
+            "ğŸ¤– Bot: ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
             type: 'error',
           );
           break;
@@ -1783,12 +1785,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
           if (card.value > 0) {
             _addLog(
-              "🤖 Bot: 🏆 ${player.name} herkesten toplam $totalTransfer ⭐ aldı!",
+              "ğŸ¤– Bot: ğŸ† ${player.name} herkesten toplam $totalTransfer â­ aldÄ±!",
               type: 'success',
             );
           } else {
             _addLog(
-              "🤖 Bot: 💸 ${player.name} herkese toplam $totalTransfer ⭐ ödedi!",
+              "ğŸ¤– Bot: ğŸ’¸ ${player.name} herkese toplam $totalTransfer â­ Ã¶dedi!",
               type: 'error',
             );
           }
@@ -1799,8 +1801,8 @@ class GameNotifier extends StateNotifier<GameState> {
       await Future.delayed(const Duration(milliseconds: 500));
       endTurn();
     } catch (e, stackTrace) {
-      debugPrint('🚨 ERROR in _botApplyCardEffect: $e');
-      debugPrint('Stack trace: $stackTrace');
+      safePrint('ğŸš¨ ERROR in _botApplyCardEffect: $e');
+      safePrint('Stack trace: $stackTrace');
       endTurn();
     }
   }
@@ -1812,7 +1814,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       switch (card.effectType) {
         case CardEffectType.moneyChange:
-          // Borçlanma Koruması (Debt Protection): Balance never goes below 0
+          // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
           final originalStars = player.stars;
           final rawNewStars = player.stars + card.value;
           final newStars = rawNewStars.clamp(0, double.infinity).toInt();
@@ -1827,20 +1829,20 @@ class GameNotifier extends StateNotifier<GameState> {
             );
             state = state.copyWith(players: penaltyPlayers);
             _addLog(
-              "⚠️ ${player.name} ödeyemedi! Yıldızlar 0'a düştü + 1 tur ceza!",
+              "âš ï¸ ${player.name} Ã¶deyemedi! YÄ±ldÄ±zlar 0'a dÃ¼ÅŸtÃ¼ + 1 tur ceza!",
               type: 'error',
             );
           } else {
             _updateStars(player, newStars);
             if (card.value > 0) {
               _addLog(
-                "💰 ${player.name} +${card.value} yıldız kazandı!",
+                "ğŸ’° ${player.name} +${card.value} yÄ±ldÄ±z kazandÄ±!",
                 type: 'success',
               );
             } else {
               final lost = originalStars - newStars;
               _addLog(
-                "💸 ${player.name} $lost yıldız kaybetti!",
+                "ğŸ’¸ ${player.name} $lost yÄ±ldÄ±z kaybetti!",
                 type: 'error',
               );
             }
@@ -1857,7 +1859,7 @@ class GameNotifier extends StateNotifier<GameState> {
           if (passedStart && targetPos != BoardConfig.startPosition) {
             newStars += GameConstants.passingStartBonus;
             _addLog(
-              "🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!",
+              "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
               type: 'success',
             );
           }
@@ -1867,7 +1869,7 @@ class GameNotifier extends StateNotifier<GameState> {
             stars: newStars,
           );
           state = state.copyWith(players: newPlayers);
-          _addLog("🎯 ${player.name} $targetPos. kareye taşındı!");
+          _addLog("ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
           break;
 
         case CardEffectType.moveRelative:
@@ -1883,7 +1885,7 @@ class GameNotifier extends StateNotifier<GameState> {
           if (card.value > 0 && targetPos < currentPos) {
             newStars += GameConstants.passingStartBonus;
             _addLog(
-              "🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!",
+              "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
               type: 'success',
             );
           }
@@ -1895,9 +1897,9 @@ class GameNotifier extends StateNotifier<GameState> {
           state = state.copyWith(players: newPlayers);
 
           if (card.value > 0) {
-            _addLog("➡️ ${player.name} $targetPos. kareye ilerledi!");
+            _addLog("â¡ï¸ ${player.name} $targetPos. kareye ilerledi!");
           } else {
-            _addLog("⬅️ ${player.name} $targetPos. kareye geri gitti!");
+            _addLog("â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
           }
           break;
 
@@ -1909,7 +1911,7 @@ class GameNotifier extends StateNotifier<GameState> {
           );
           state = state.copyWith(players: temp);
           _addLog(
-            "⛔ ${player.name} kütüphane nöbetine yollandı!",
+            "â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
             type: 'error',
           );
           break;
@@ -1921,13 +1923,13 @@ class GameNotifier extends StateNotifier<GameState> {
           );
           state = state.copyWith(players: temp);
           _addLog(
-            "⏸️ ${player.name} ${card.value} tur ceza aldı!",
+            "â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
             type: 'error',
           );
           break;
 
         case CardEffectType.rollAgain:
-          _addLog("🎲 ${player.name} tekrar zar atıyor!", type: 'info');
+          _addLog("ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
           // Don't end turn, let the player roll again
           state = state.copyWith(
             showCardDialog: false,
@@ -1942,7 +1944,7 @@ class GameNotifier extends StateNotifier<GameState> {
           int newStars = player.stars - loss;
           _updateStars(player, newStars);
           _addLog(
-            "📉 ${player.name} yıldızlarının %%$percentage'ini kaybetti! (-$loss ⭐)",
+            "ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
             type: 'error',
           );
           break;
@@ -1986,12 +1988,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
           if (card.value > 0) {
             _addLog(
-              "🏆 ${player.name} herkesten toplam $totalTransfer ⭐ aldı!",
+              "ğŸ† ${player.name} herkesten toplam $totalTransfer â­ aldÄ±!",
               type: 'success',
             );
           } else {
             _addLog(
-              "💸 ${player.name} herkese toplam $totalTransfer ⭐ ödedi!",
+              "ğŸ’¸ ${player.name} herkese toplam $totalTransfer â­ Ã¶dedi!",
               type: 'error',
             );
           }
@@ -2022,7 +2024,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     state = state.copyWith(winner: winner, phase: GamePhase.gameOver);
-    _addLog("🏆 OYUN BİTTİ! Kazanan: ${winner.name}", type: 'gameover');
+    _addLog("ğŸ† OYUN BÄ°TTÄ°! Kazanan: ${winner.name}", type: 'gameover');
   }
 
   void endTurn() async {
@@ -2071,9 +2073,9 @@ class GameNotifier extends StateNotifier<GameState> {
       );
 
       if (isSkipped) {
-        _addLog("${nextPlayer.name} cezalı! Tur atlanıyor.", type: 'error');
+        _addLog("${nextPlayer.name} cezalÄ±! Tur atlanÄ±yor.", type: 'error');
       } else {
-        _addLog("Sıra ${state.players[next].name} oyuncusunda.", type: 'turn');
+        _addLog("SÄ±ra ${state.players[next].name} oyuncusunda.", type: 'turn');
       }
 
       _logBot(
@@ -2085,9 +2087,9 @@ class GameNotifier extends StateNotifier<GameState> {
         _scheduleBotTurn();
       }
     } catch (e, stackTrace) {
-      debugPrint('🚨 ERROR in endTurn: $e');
-      debugPrint('Stack trace: $stackTrace');
-      _logBot('🚨 ERROR in endTurn: $e');
+      safePrint('ğŸš¨ ERROR in endTurn: $e');
+      safePrint('Stack trace: $stackTrace');
+      _logBot('ğŸš¨ ERROR in endTurn: $e');
       _scheduleBotTurn();
     } finally {
       _isProcessing = false;
@@ -2095,20 +2097,20 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // BOT MODE METHODS
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Toggle bot mode on/off
   void toggleBotMode() {
     _isBotPlaying = !_isBotPlaying;
     if (_isBotPlaying) {
-      _addLog('🤖 Bot Modu AKTİF! Oyun otomatik oynanıyor...', type: 'info');
+      _addLog('ğŸ¤– Bot Modu AKTÄ°F! Oyun otomatik oynanÄ±yor...', type: 'info');
       _logBot('=== BOT MODE ACTIVATED ===');
       // Start the bot game loop
       _scheduleBotTurn();
     } else {
-      _addLog('🤖 Bot Modu KAPALI. Manuel oynamaya dönüldü.', type: 'info');
+      _addLog('ğŸ¤– Bot Modu KAPALI. Manuel oynamaya dÃ¶nÃ¼ldÃ¼.', type: 'info');
       _logBot('=== BOT MODE DEACTIVATED ===');
       _cancelWatchdog();
     }
@@ -2222,15 +2224,15 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // SHOP (KIRAATHANE) METHODS
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   Future<void> openShopDialog() async {
     // BOT MODE: Auto-close dialog after short delay
     if (_isBotPlaying) {
       state = state.copyWith(showShopDialog: true);
-      _addLog('🤖 Bot: Kıraathane\'ye hoş geldiniz!', type: 'info');
+      _addLog('ğŸ¤– Bot: KÄ±raathane\'ye hoÅŸ geldiniz!', type: 'info');
       await Future.delayed(const Duration(milliseconds: 500), () {
         closeShopDialog();
       });
@@ -2240,7 +2242,7 @@ class GameNotifier extends StateNotifier<GameState> {
     // Human mode: Create completer to wait for dialog closure (Async Barrier)
     _shopDialogCompleter = Completer<void>();
     state = state.copyWith(showShopDialog: true);
-    _addLog('Kıraathane\'ye hoş geldiniz!', type: 'info');
+    _addLog('KÄ±raathane\'ye hoÅŸ geldiniz!', type: 'info');
 
     // Await the completer to wait for user to close dialog
     await _shopDialogCompleter!.future;
@@ -2263,12 +2265,12 @@ class GameNotifier extends StateNotifier<GameState> {
     final player = state.currentPlayer;
 
     if (player.collectedQuotes.contains(quoteId)) {
-      _addLog('Bu söz zaten koleksiyonunda!', type: 'error');
+      _addLog('Bu sÃ¶z zaten koleksiyonunda!', type: 'error');
       return;
     }
 
     if (player.stars < cost) {
-      _addLog('Yeterli yıldızın yok!', type: 'error');
+      _addLog('Yeterli yÄ±ldÄ±zÄ±n yok!', type: 'error');
       return;
     }
 
@@ -2283,7 +2285,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     state = state.copyWith(players: newPlayers);
-    _addLog('Söz satın alındı! (-$cost ⭐)', type: 'purchase');
+    _addLog('SÃ¶z satÄ±n alÄ±ndÄ±! (-$cost â­)', type: 'purchase');
 
     _checkWinCondition();
   }
@@ -2303,7 +2305,7 @@ class GameNotifier extends StateNotifier<GameState> {
         phase: GamePhase.gameOver,
       );
 
-      _addLog('🏆 ${player.name} EHİL oldu! Oyun bitti!', type: 'gameover');
+      _addLog('ğŸ† ${player.name} EHÄ°L oldu! Oyun bitti!', type: 'gameover');
     }
   }
 
@@ -2312,7 +2314,7 @@ class GameNotifier extends StateNotifier<GameState> {
   void debugTriggerWin() {
     final player = state.currentPlayer;
 
-    debugPrint('🏆 DEBUG: Triggering Instant Win for ${player.name}');
+    safePrint('ğŸ† DEBUG: Triggering Instant Win for ${player.name}');
 
     // Create mastery map with all categories set to Hard (Usta)
     final masteryLevels = <String, int>{
@@ -2356,7 +2358,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     _addLog(
-      '🏆 DEBUG: ${player.name} EHİL oldu! (Instant Win Triggered)',
+      'ğŸ† DEBUG: ${player.name} EHÄ°L oldu! (Instant Win Triggered)',
       type: 'gameover',
     );
   }
@@ -2365,9 +2367,9 @@ class GameNotifier extends StateNotifier<GameState> {
     await openShopDialog();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // LOGGING
-  // ═══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   void _addLog(String message, {String type = 'info'}) {
     final timestamp = DateTime.now().toIso8601String().substring(11, 19);

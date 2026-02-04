@@ -12,6 +12,7 @@ import 'presentation/widgets/board_view.dart';
 import 'core/theme/game_theme.dart';
 
 import 'core/managers/audio_manager.dart';
+import 'core/utils/logger.dart';
 
 /// Tracks if Firebase was initialized successfully
 bool _firebaseInitialized = false;
@@ -43,10 +44,10 @@ Future<void> _initializeFirebase() async {
       );
     }
     _firebaseInitialized = true;
-    debugPrint('Firebase initialized successfully');
+    safePrint('Firebase initialized successfully');
   } catch (e) {
     _firebaseInitialized = false;
-    debugPrint('Firebase initialization failed (app will continue): $e');
+    safePrint('Firebase initialization failed (app will continue): $e');
     // Don't rethrow - let the app run without Firebase
   }
 }
@@ -73,9 +74,9 @@ class _MyAppState extends ConsumerState<MyApp> {
   Future<void> _runBootstrap() async {
     try {
       await ref.read(appBootstrapProvider.future);
-      debugPrint('Bootstrap completed successfully');
+      safePrint('Bootstrap completed successfully');
     } catch (e) {
-      debugPrint('Bootstrap error (non-blocking): $e');
+      safePrint('Bootstrap error (non-blocking): $e');
     }
   }
 

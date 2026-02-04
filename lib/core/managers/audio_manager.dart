@@ -1,6 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
+import '../utils/logger.dart';
 import 'package:flutter/foundation.dart';
 
 /// Audio context for different game states
@@ -40,9 +41,9 @@ class AudioManager {
   int _currentBgmIndex = 0;
   AudioContext _currentContext = AudioContext.menu;
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // CONTEXT-AWARE PLAYLISTS
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Menu BGM Playlist - Used in Main Menu, Settings, How to Play
   final List<String> _menuPlaylist = [
@@ -80,9 +81,9 @@ class AudioManager {
   double get sfxVolume => _sfxVolume;
   AudioContext get currentContext => _currentContext;
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // VOLUME CONTROLS
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Set BGM volume with validation (0.0 to 1.0)
   /// [value] is the slider position (0.0 - 1.0), stored for UI display
@@ -92,7 +93,7 @@ class AudioManager {
     _bgmVolume = sliderValue; // Store raw slider position for UI
     final actualVolume = sliderValue * _maxBgmGain; // Apply gain reduction
     await _bgmPlayer.setVolume(actualVolume);
-    debugPrint('🎵 BGM Volume: slider=$sliderValue, actual=$actualVolume');
+    safePrint('ğŸµ BGM Volume: slider=$sliderValue, actual=$actualVolume');
   }
 
   /// Set SFX volume with validation (0.0 to 1.0)
@@ -100,16 +101,18 @@ class AudioManager {
   void setSfxVolume(double value) {
     final clampedValue = value.clamp(0.0, 1.0);
     _sfxVolume = clampedValue;
-    debugPrint('🔊 SFX Volume set to: $clampedValue');
+    safePrint('ğŸ”Š SFX Volume set to: $clampedValue');
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // FADE CONTROLS
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Fade in BGM from 0.0 to target volume over [duration]
   /// [duration] defaults to 2 seconds for smooth, subtle entrance
-  Future<void> _fadeInBgm({Duration duration = const Duration(seconds: 2)}) async {
+  Future<void> _fadeInBgm({
+    Duration duration = const Duration(seconds: 2),
+  }) async {
     // Cancel any existing fade operation
     _fadeTimer?.cancel();
 
@@ -120,7 +123,9 @@ class AudioManager {
     final stepDuration = duration.inMilliseconds ~/ stepCount;
     final volumeStep = targetVolume / stepCount;
 
-    debugPrint('🎵 Fading in BGM: 0.0 → $targetVolume over ${duration.inSeconds}s');
+    safePrint(
+      'ğŸµ Fading in BGM: 0.0 â†’ $targetVolume over ${duration.inSeconds}s',
+    );
 
     // Start at 0 volume
     await _bgmPlayer.setVolume(0.0);
@@ -128,9 +133,9 @@ class AudioManager {
     try {
       final track = _activePlaylist[_currentBgmIndex];
       await _bgmPlayer.play(AssetSource(track));
-      debugPrint('🎵 Playing: $track (context: $_currentContext)');
+      safePrint('ğŸµ Playing: $track (context: $_currentContext)');
     } catch (e) {
-      debugPrint('🚨 Error playing BGM: $e');
+      safePrint('ğŸš¨ Error playing BGM: $e');
       return;
     }
 
@@ -143,7 +148,7 @@ class AudioManager {
 
       if (currentStep >= stepCount) {
         timer.cancel();
-        debugPrint('🎵 Fade in complete');
+        safePrint('ğŸµ Fade in complete');
       }
     });
   }
@@ -151,7 +156,9 @@ class AudioManager {
   /// Fade out BGM from current volume to 0.0 over [duration]
   /// [duration] defaults to 1 second for quick but smooth exit
   /// Stops playback only when volume reaches 0
-  Future<void> _fadeOutBgm({Duration duration = const Duration(seconds: 1)}) async {
+  Future<void> _fadeOutBgm({
+    Duration duration = const Duration(seconds: 1),
+  }) async {
     // Cancel any existing fade operation
     _fadeTimer?.cancel();
 
@@ -166,26 +173,33 @@ class AudioManager {
     final stepDuration = duration.inMilliseconds ~/ stepCount;
     final volumeStep = currentVolume / stepCount;
 
-    debugPrint('🎵 Fading out BGM: $currentVolume → 0.0 over ${duration.inSeconds}s');
+    safePrint(
+      'ğŸµ Fading out BGM: $currentVolume â†’ 0.0 over ${duration.inSeconds}s',
+    );
 
     // Gradually decrease volume
     int currentStep = 0;
-    _fadeTimer = Timer.periodic(Duration(milliseconds: stepDuration), (timer) async {
+    _fadeTimer = Timer.periodic(Duration(milliseconds: stepDuration), (
+      timer,
+    ) async {
       currentStep++;
-      final newVolume = (currentVolume - (volumeStep * currentStep)).clamp(0.0, currentVolume);
+      final newVolume = (currentVolume - (volumeStep * currentStep)).clamp(
+        0.0,
+        currentVolume,
+      );
       await _bgmPlayer.setVolume(newVolume);
 
       if (currentStep >= stepCount) {
         timer.cancel();
         await _bgmPlayer.stop();
-        debugPrint('🎵 Fade out complete');
+        safePrint('ğŸµ Fade out complete');
       }
     });
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // INITIALIZATION
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Initialize and start Menu BGM
   Future<void> init() async {
@@ -198,9 +212,9 @@ class AudioManager {
     await _fadeInBgm();
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // CONTEXT-AWARE BGM CONTROLS
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Play Menu BGM (Main Menu, Settings, How to Play)
   /// Seamlessly transitions from game music if needed
@@ -209,11 +223,11 @@ class AudioManager {
     // Seamless: If already in menu context and music is playing, do nothing
     if (_currentContext == AudioContext.menu &&
         _bgmPlayer.state == PlayerState.playing) {
-      debugPrint('🎵 Already in menu context with music playing - seamless');
+      safePrint('ğŸµ Already in menu context with music playing - seamless');
       return;
     }
 
-    debugPrint('🎵 Switching to Menu BGM...');
+    safePrint('ğŸµ Switching to Menu BGM...');
     _currentContext = AudioContext.menu;
 
     if (_bgmPlayer.state == PlayerState.playing) {
@@ -236,11 +250,11 @@ class AudioManager {
     // Seamless: If already in game context and music is playing, do nothing
     if (_currentContext == AudioContext.game &&
         _bgmPlayer.state == PlayerState.playing) {
-      debugPrint('🎵 Already in game context with music playing - seamless');
+      safePrint('ğŸµ Already in game context with music playing - seamless');
       return;
     }
 
-    debugPrint('🎵 Switching to In-Game BGM...');
+    safePrint('ğŸµ Switching to In-Game BGM...');
     _currentContext = AudioContext.game;
 
     if (_bgmPlayer.state == PlayerState.playing) {
@@ -262,9 +276,9 @@ class AudioManager {
     _fadeInBgm();
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // LEGACY BGM CONTROLS (Deprecated - use context-aware methods)
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Start playing BGM from current index with fade-in
   /// @deprecated Use playMenuBgm() or playInGameBgm() for context-aware music
@@ -303,9 +317,9 @@ class AudioManager {
     }
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // SFX CONTROLS
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Play a sound effect
   /// [fileName] should be relative to assets/ (e.g., 'audio/click.wav')
@@ -323,7 +337,7 @@ class AudioManager {
       await _sfxPlayer.setVolume(_sfxVolume);
       await _sfxPlayer.play(AssetSource(fileName));
     } catch (e) {
-      debugPrint('🚨 Error playing SFX: $e');
+      safePrint('ğŸš¨ Error playing SFX: $e');
     }
   }
 
@@ -332,9 +346,9 @@ class AudioManager {
     _isSoundEnabled = enabled;
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // PRESET SFX HELPERS
-  // ════════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   Future<void> playClick() => playSfx('audio/ui_click.wav');
   Future<void> playDiceRoll() => playSfx('audio/dice_roll.wav');

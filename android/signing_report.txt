@@ -1,0 +1,135 @@
+﻿> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :audioplayers_android
+Warning: The plugin audioplayers_android requires Android SDK version 35 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+
+> Configure project :path_provider_android
+Warning: The plugin path_provider_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+
+> Configure project :shared_preferences_android
+Warning: The plugin shared_preferences_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+
+> Task :app:signingReport
+Variant: debug
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+Variant: release
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+Variant: profile
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+> Task :audioplayers_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+> Task :cloud_firestore:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+> Task :firebase_auth:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+> Task :firebase_core:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+> Task :path_provider_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+> Task :shared_preferences_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\samet\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: 79:25:10:AC:C5:54:84:9E:8F:46:E8:4C:B9:26:E2:4E
+SHA1: 71:B7:79:D7:D2:FE:48:13:C5:7F:E1:2E:B1:97:58:67:6B:18:6A:0D
+SHA-256: A5:FE:19:7A:F8:20:EA:D6:70:42:16:BA:B6:A9:D6:E5:79:0A:6E:48:6C:74:A5:D6:67:3D:A7:03:0F:46:A0:5D
+Valid until: 19 Aral─▒k 2055 Pazar
+----------
+
+[Incubating] Problems report is available at: file:///D:/proje/edebina_3d/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 7s
+11 actionable tasks: 7 executed, 4 up-to-date
