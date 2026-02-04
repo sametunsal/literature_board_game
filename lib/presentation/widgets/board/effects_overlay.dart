@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/motion/motion_constants.dart';
+import '../../widgets/animations/card_deal_transition.dart';
 import '../../../core/theme/game_theme.dart';
 import '../../../core/utils/board_layout_config.dart';
 import '../../../core/utils/board_layout_helper.dart';
@@ -104,7 +105,14 @@ class EffectsOverlay extends StatelessWidget {
         ),
 
       if (state.showCardDialog && state.currentCard != null)
-        _buildDialogOverlay(CardDialog(card: state.currentCard!)),
+        Container(
+          color: GameTheme.dialogOverlayColor,
+          child: Center(
+            child: CardDealTransition(
+              child: CardDialog(card: state.currentCard!),
+            ),
+          ),
+        ),
 
       // Notification dialogs
       if (state.showLibraryPenaltyDialog)

@@ -17,7 +17,7 @@ class SetupScreen extends ConsumerStatefulWidget {
 class _SetupScreenState extends ConsumerState<SetupScreen> {
   final List<TextEditingController> _nameControllers = [];
   final List<Player> _players = [];
-  final int _maxPlayers = 4;
+  final int _maxPlayers = 6;
 
   // Available pawn colors
   final List<Color> _playerColors = [

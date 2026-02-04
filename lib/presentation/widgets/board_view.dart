@@ -16,7 +16,7 @@ import '../dialogs/pause_dialog.dart';
 import '../dialogs/settings_dialog.dart';
 import '../screens/main_menu_screen.dart';
 import '../screens/victory_screen.dart';
-import 'player_scoreboard.dart';
+
 import '../screens/collection_screen.dart';
 import '../../core/managers/sound_manager.dart';
 import '../../core/utils/board_layout_config.dart';
@@ -25,6 +25,7 @@ import 'board/turn_order_dialog.dart';
 import 'board/center_area.dart';
 import 'board/tile_grid.dart';
 import 'board/effects_overlay.dart';
+import 'board/player_hud.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
 // LAYOUT CONFIGURATION - 7x8 RECTANGULAR GRID (26 tiles)
@@ -223,9 +224,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
           ),
 
           // ═══════════════════════════════════════════════════════════════
-          // CORNER SCOREBOARDS - Player stats at 4 corners
           // ═══════════════════════════════════════════════════════════════
-          ..._buildCornerScoreboards(state),
+          // PERIMETER PLAYER HUD (Corners & Sides)
+          // ═══════════════════════════════════════════════════════════════
+          ..._buildPlayerHuds(context, state),
 
           // PAUSE MENU OVERLAY
           if (_showPauseMenu) _buildPauseOverlay(),
@@ -543,65 +545,138 @@ class _BoardViewState extends ConsumerState<BoardView> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // CORNER SCOREBOARDS
+  // PERIMETER HUD LAYOUT (2-6 Players)
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Build corner scoreboards for all players (2-4 players supported)
-  List<Widget> _buildCornerScoreboards(GameState state) {
+  /// Build player HUDS positioned around the perimeter of the board
+  /// Rules:
+  /// <= 4 Players: Corners only (TL, TR, BR, BL)
+  /// > 4 Players: Corners + Middle Sides (TL, TR, MR, BR, BL, ML)
+  List<Widget> _buildPlayerHuds(BuildContext context, GameState state) {
     final players = state.players;
     if (players.isEmpty) return [];
 
-    // Corner positions: [TopLeft, TopRight, BottomLeft, BottomRight]
-    const alignments = [
-      Alignment.topLeft,
-      Alignment.topRight,
-      Alignment.bottomLeft,
-      Alignment.bottomRight,
-    ];
+    final isMoreThanFour = players.length > 4;
+    final currentPlayerId = state.players.isNotEmpty
+        ? state.players[state.currentPlayerIndex].id
+        : '';
+    final nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    final nextPlayerId = state.players.isNotEmpty
+        ? state.players[nextIndex].id
+        : '';
 
-    return List.generate(players.length.clamp(0, 4), (index) {
+    return List.generate(players.length, (index) {
       final player = players[index];
-      final isCurrentPlayer = index == state.currentPlayerIndex;
-      // Calculate next player index (wraps around)
-      final nextPlayerIndex =
-          (state.currentPlayerIndex + 1) % state.players.length;
-      final isNext = index == nextPlayerIndex;
-      final alignment = alignments[index];
+      final isCurrent = player.id == currentPlayerId;
+      final isNext = player.id == nextPlayerId;
 
-      // Position based on alignment
+      // Determine Position based on Rules
+      double? top, bottom, left, right;
+
+      // Default corner logic (Index 0-3)
+      // 0: TL, 1: TR, 2: BR/MR, 3: BL/BR
+
+      if (!isMoreThanFour) {
+        // STANDARD CORNER LAYOUT (<= 4 Players)
+        switch (index) {
+          case 0: // Top-Left
+            top = 0;
+            left = 0;
+            break;
+          case 1: // Top-Right
+            top = 0;
+            right = 0;
+            break;
+          case 2: // Bottom-Right
+            bottom = 0;
+            right = 0;
+            break;
+          case 3: // Bottom-Left
+            bottom = 0;
+            left = 0;
+            break;
+        }
+      } else {
+        // PERIMETER 6-POINT LAYOUT (> 4 Players)
+        switch (index) {
+          case 0: // Top-Left
+            top = 0;
+            left = 0;
+            break;
+          case 1: // Top-Right
+            top = 0;
+            right = 0;
+            break;
+          case 2: // Middle-Right
+            // Vertical centering handled via Alignment in Positioned.fill/Align combo below
+            top = 0;
+            bottom = 0;
+            right = 0;
+            break;
+          case 3: // Bottom-Right
+            bottom = 0;
+            right = 0;
+            break;
+          case 4: // Bottom-Left
+            bottom = 0;
+            left = 0;
+            break;
+          case 5: // Middle-Left
+            // Vertical centering handled via Alignment below
+            top = 0;
+            bottom = 0;
+            left = 0;
+            break;
+        }
+      }
+
+      // Safe Area flags
+      bool safeTop = (top == 0 && bottom == 0) ? false : (top == 0);
+      bool safeBottom = (top == 0 && bottom == 0) ? false : (bottom == 0);
+
+      // Special handling for Middle slots (Index 2 & 5 when > 4)
+      if (isMoreThanFour && (index == 2 || index == 5)) {
+        return Positioned(
+          top: 0,
+          bottom: 0,
+          left: index == 5 ? 0 : null,
+          right: index == 2 ? 0 : null,
+          child: Align(
+            alignment: index == 2
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            child: Padding(
+              // Add vertical offset to Middle-Right (Index 2) to avoid PAUSE buttons if needed
+              // Pushing down by 80px to clear the top-right button area
+              padding: EdgeInsets.only(top: index == 2 ? 100 : 0),
+              child: PlayerHud(
+                player: player,
+                isCurrentPlayer: isCurrent,
+                isNextPlayer: isNext,
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Standard Corner Positioning
       return Positioned(
-        top: alignment == Alignment.topLeft || alignment == Alignment.topRight
-            ? 0
-            : null,
-        bottom:
-            alignment == Alignment.bottomLeft ||
-                alignment == Alignment.bottomRight
-            ? 0
-            : null,
-        left:
-            alignment == Alignment.topLeft || alignment == Alignment.bottomLeft
-            ? 0
-            : null,
-        right:
-            alignment == Alignment.topRight ||
-                alignment == Alignment.bottomRight
-            ? 0
-            : null,
+        top: top,
+        bottom: bottom,
+        left: left,
+        right: right,
         child: SafeArea(
-          child: PlayerScoreboard(
+          top: safeTop,
+          bottom: safeBottom,
+          child: PlayerHud(
             player: player,
-            isCurrentPlayer: isCurrentPlayer,
-            isNext: isNext,
-            alignment: alignment,
+            isCurrentPlayer: isCurrent,
+            isNextPlayer: isNext,
           ),
         ),
       );
     });
   }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // PLAYER PAWNS
-  // ════════════════════════════════════════════════════════════════════════════
 
   /// Build positioned pawns for all players using AnimatedPawnContainer
   List<Widget> _buildPlayers(List<Player> players, BoardLayoutConfig layout) {
@@ -654,7 +729,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
         if (_pulsingTileId == null) {
           // Haptic feedback for tile landing
           HapticFeedback.mediumImpact();
-          SoundManager.instance.playTileLanding(); // Tile landing sound
+          // Audio now handled in GameNotifier._movePlayer() with pawn_step.wav
 
           // Schedule pulse on next frame to avoid setState during build
           WidgetsBinding.instance.addPostFrameCallback((_) {

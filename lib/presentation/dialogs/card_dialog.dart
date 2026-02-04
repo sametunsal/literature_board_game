@@ -178,29 +178,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                     ],
                   ),
                 ),
-              )
-              .animate()
-              .move(
-                begin: isSans
-                    ? const Offset(-200, -200)
-                    : const Offset(200, 200),
-                end: Offset.zero,
-                duration: 600.ms,
-                curve: Curves.easeOutCubic,
-              )
-              .scale(
-                begin: const Offset(0.2, 0.2),
-                end: const Offset(1.0, 1.0),
-                duration: 600.ms,
-                curve: Curves.easeOutBack,
-              )
-              .rotate(
-                begin: isSans ? -0.2 : 0.2,
-                end: 0,
-                duration: 600.ms,
-                curve: Curves.easeOut,
-              )
-              .fadeIn(duration: 200.ms),
+              ),
     );
   }
 }

@@ -115,7 +115,7 @@ class GameConstants {
   // ═══════════════════════════════════════════════════════════════════════
   // ANIMATION DURATIONS (milliseconds)
   // ═══════════════════════════════════════════════════════════════════════════════════
-  static const int hopAnimationDelay = 150;
+  static const int hopAnimationDelay = 450; // Slower, rhythmic pace for pawn steps (matches SFX)
   static const int cardAnimationDelay = 500;
   static const int diceAnimationDelay = 1500;
   static const int turnChangeDelay = 1200;

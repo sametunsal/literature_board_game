@@ -7,7 +7,9 @@
       "Bash(flutter test:*)",
       "Bash(dart:*)",
       "Bash(flutter:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(dir:*)",
+      "Bash(git add:*)"
     ]
   }
 }

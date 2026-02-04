@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../models/player.dart';
 import '../screens/main_menu_screen.dart';
+import '../../core/managers/audio_manager.dart';
 
 class VictoryScreen extends StatefulWidget {
   final Player winner;
@@ -369,13 +370,18 @@ class _VictoryScreenState extends State<VictoryScreen>
     return GestureDetector(
           onTap:
               widget.onReturnToMenu ??
-              () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const MainMenuScreen(),
-                  ),
-                  (route) => false,
-                );
+              () async {
+                // Switch to menu BGM before navigating
+                await AudioManager.instance.playMenuBgm();
+
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) => const MainMenuScreen(),
+                    ),
+                    (route) => false,
+                  );
+                }
               },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),

@@ -116,10 +116,10 @@ class PlayerScoreboard extends StatelessWidget {
             ? [
                 _buildAvatar(),
                 const SizedBox(width: 10),
-                _buildInfo(masteriesCount),
+                Expanded(child: _buildInfo(masteriesCount)),
               ]
             : [
-                _buildInfo(masteriesCount),
+                Expanded(child: _buildInfo(masteriesCount)),
                 const SizedBox(width: 10),
                 _buildAvatar(),
               ],
@@ -207,12 +207,16 @@ class PlayerScoreboard extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              player.name,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.grey.shade900,
+            Flexible(
+              child: Text(
+                player.name,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade900,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             const SizedBox(width: 6),
