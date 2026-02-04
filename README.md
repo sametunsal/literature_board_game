@@ -1,3 +1,5 @@
+[![Türkçe](https://img.shields.io/badge/Lang-Türkçe-red)](README.tr.md)
+
 # 📚 Edebina: Turkish Literature Board Game
 
 **Edebina** is an immersive, multiplayer mobile board game built with **Flutter**, designed to make learning Turkish Literature periods, authors, and works interactive and fun. It combines classic monopoly-style mechanics with educational quizzes, "Chance/Fate" cards, and a rich audiovisual experience.
