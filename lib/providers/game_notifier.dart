@@ -14,6 +14,7 @@ import '../data/game_cards.dart';
 import '../data/repositories/question_repository_impl.dart';
 import '../core/constants/game_constants.dart';
 import '../core/managers/audio_manager.dart';
+import '../core/services/turn_order_service.dart';
 
 // Floating Effect Data Model
 class FloatingEffect {
@@ -204,6 +205,7 @@ class GameState {
 }
 
 class GameNotifier extends StateNotifier<GameState> {
+  final TurnOrderService _turnOrderService = TurnOrderService();
   final _random = Random();
   Timer? _animationTimer;
   bool _isProcessing = false;
@@ -401,237 +403,31 @@ class GameNotifier extends StateNotifier<GameState> {
   //
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Start the fully automated turn order determination.
-  /// This method handles EVERYTHING - initial rolls, tie detection, and recursive tie-breaks.
-  /// No user interaction required until the final order is displayed.
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SERVICE HELPERS (Exposed for TurnOrderService)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  GameState get currentState => state;
+  void updateState(GameState newState) => state = newState;
+  void addLog(String message, {String? type}) =>
+      _addLog(message, type: type ?? 'info');
+  void logBot(String message) => _logBot(message);
+  Future<void> checkPauseStatus() => _checkPauseStatus();
+  void setProcessing(bool value) => _isProcessing = value;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TURN ORDER DETERMINATION (Delegated to TurnOrderService)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Delegated to TurnOrderService
   Future<void> startAutomatedTurnOrder({
     List<Player>? playersToRoll,
     int depth = 0,
   }) async {
-    // Prevent re-entry at root level
-    if (_isProcessing && depth == 0) {
-      _logBot('startAutomatedTurnOrder() BLOCKED - already processing');
-      return;
-    }
-    if (depth == 0) _isProcessing = true;
-
-    try {
-      final candidates = playersToRoll ?? state.players;
-      final isRootCall = depth == 0;
-      final isTieBreak = depth > 0;
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // PHASE 1: LOG START & SWITCH TO GAME BGM
-      // ═══════════════════════════════════════════════════════════════════════
-      if (isRootCall) {
-        // Switch to in-game BGM (seamless transition from menu music)
-        await AudioManager.instance.playInGameBgm();
-
-        _addLog('🎲 Otomatik sıra belirleme başlıyor...', type: 'dice');
-        state = state.copyWith(
-          phase: GamePhase.rollingForOrder,
-          orderRolls: {},
-          lastAction: 'Sıra belirleniyor - Tüm oyuncular zar atıyor...',
-        );
-      } else {
-        final tiedNames = candidates.map((p) => p.name).join(', ');
-        _addLog(
-          '🔄 Beraberlik! $tiedNames için $depth. tie-break turu...',
-          type: 'warning',
-        );
-        state = state.copyWith(
-          phase: GamePhase.tieBreaker,
-          tieBreakRound: depth,
-          lastAction: '🔄 Tie-break: $tiedNames tekrar atıyor...',
-        );
-      }
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // PHASE 2: AUTO-ROLL ALL CANDIDATES (Sequential with Animation)
-      // ═══════════════════════════════════════════════════════════════════════
-      final Map<String, int> roundRolls = {}; // Rolls for THIS round only
-
-      for (int i = 0; i < candidates.length; i++) {
-        final player = candidates[i];
-
-        // PAUSE GUARD: Wait if game is paused
-        await _checkPauseStatus();
-
-        // Highlight current player
-        final playerGlobalIndex = state.players.indexOf(player);
-        state = state.copyWith(
-          currentPlayerIndex: playerGlobalIndex >= 0 ? playerGlobalIndex : 0,
-          isDiceRolled: false,
-          isDiceRolling: false,
-          diceTotal: 0,
-          dice1: 0,
-          dice2: 0,
-        );
-
-        // Pre-roll delay (build anticipation) - shorter in bot mode
-        final preDelay = _isBotPlaying
-            ? const Duration(milliseconds: 200)
-            : const Duration(milliseconds: 600);
-        await Future.delayed(preDelay);
-
-        // ═══════════════════════════════════════════════════════════════════
-        // ANIMATION: Start dice rolling
-        // ═══════════════════════════════════════════════════════════════════
-        state = state.copyWith(isDiceRolling: true);
-        AudioManager.instance.playSfx('audio/dice_roll.wav');
-
-        // Animation duration - shorter in bot mode
-        final animDelay = _isBotPlaying
-            ? const Duration(milliseconds: 400)
-            : const Duration(milliseconds: 1200);
-        await Future.delayed(animDelay);
-
-        // PAUSE GUARD
-        await _checkPauseStatus();
-
-        // ═══════════════════════════════════════════════════════════════════
-        // ROLL: Generate dice values
-        // ═══════════════════════════════════════════════════════════════════
-        final int d1 = _random.nextInt(6) + 1;
-        final int d2 = _random.nextInt(6) + 1;
-        final int roll = d1 + d2;
-
-        // Store roll for this round
-        roundRolls[player.id] = roll;
-
-        // Update global orderRolls (for final sorting)
-        final updatedGlobalRolls = Map<String, int>.from(state.orderRolls);
-        updatedGlobalRolls[player.id] = roll;
-
-        // Update state with results
-        state = state.copyWith(
-          isDiceRolling: false,
-          isDiceRolled: true,
-          diceTotal: roll,
-          dice1: d1,
-          dice2: d2,
-          orderRolls: updatedGlobalRolls,
-        );
-
-        _addLog(
-          '${player.name}: $roll ($d1+$d2)',
-          type: isTieBreak ? 'warning' : 'success',
-        );
-
-        // Post-roll display delay - shorter in bot mode
-        final postDelay = _isBotPlaying
-            ? const Duration(milliseconds: 300)
-            : const Duration(milliseconds: 800);
-        await Future.delayed(postDelay);
-      }
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // PHASE 3: EVALUATION - Find max roll and detect ties
-      // ═══════════════════════════════════════════════════════════════════════
-      int maxRoll = 0;
-      for (final roll in roundRolls.values) {
-        if (roll > maxRoll) maxRoll = roll;
-      }
-
-      // Find all players tied for the maximum roll
-      final List<Player> tiedForMax = [];
-      for (final player in candidates) {
-        if ((roundRolls[player.id] ?? 0) == maxRoll) {
-          tiedForMax.add(player);
-        }
-      }
-
-      _logBot(
-        'Evaluation: Max roll = $maxRoll, Winners = ${tiedForMax.length} (${tiedForMax.map((p) => p.name).join(", ")})',
-      );
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // PHASE 4: DECISION - Single winner or recurse for tie-break
-      // ═══════════════════════════════════════════════════════════════════════
-      if (tiedForMax.length > 1) {
-        // CASE B: Multiple winners - RECURSE for tie-break
-        _addLog(
-          '⚖️ Beraberlik: ${tiedForMax.map((p) => p.name).join(", ")} ($maxRoll)',
-          type: 'warning',
-        );
-
-        // Brief pause before tie-break
-        await Future.delayed(const Duration(milliseconds: 1000));
-
-        // RECURSIVE CALL - only tied players re-roll
-        await startAutomatedTurnOrder(
-          playersToRoll: tiedForMax,
-          depth: depth + 1,
-        );
-        return; // Exit after recursion completes
-      }
-
-      // CASE A: Single winner (or all players unique after root call)
-      // Only finalize at root level (depth == 0)
-      if (isRootCall) {
-        await _finalizeTurnOrderFromRolls(state.orderRolls);
-      }
-      // For tie-break calls (depth > 0), the winner is now known
-      // The root call will handle finalization
-    } catch (e, stackTrace) {
-      debugPrint('🚨 ERROR in startAutomatedTurnOrder: $e');
-      debugPrint('Stack trace: $stackTrace');
-      _addLog('Sıra belirleme hatası: $e', type: 'error');
-      _logBot('🚨 ERROR in startAutomatedTurnOrder: $e');
-    } finally {
-      if (depth == 0) {
-        _isProcessing = false;
-        _logBot('startAutomatedTurnOrder() COMPLETED - processing flag reset');
-      }
-    }
-  }
-
-  /// Finalize turn order from collected rolls.
-  /// Sorts all players by their roll values (descending) and transitions to playerTurn phase.
-  Future<void> _finalizeTurnOrderFromRolls(Map<String, int> rolls) async {
-    _logBot('_finalizeTurnOrderFromRolls() - Finalizing order');
-
-    // Sort players by roll (highest first)
-    final sortedPlayers = List<Player>.from(state.players);
-    sortedPlayers.sort((a, b) {
-      final rollA = rolls[a.id] ?? 0;
-      final rollB = rolls[b.id] ?? 0;
-      return rollB.compareTo(rollA);
-    });
-
-    // Build order summary for log
-    final orderSummary = StringBuffer();
-    for (int i = 0; i < sortedPlayers.length; i++) {
-      final player = sortedPlayers[i];
-      final roll = rolls[player.id] ?? 0;
-      orderSummary.writeln('  ${i + 1}. ${player.name} ($roll)');
-    }
-
-    _addLog('✅ Sıra belirlendi!');
-    _addLog(orderSummary.toString());
-
-    // Transition to playerTurn phase
-    state = state.copyWith(
-      players: sortedPlayers,
-      currentPlayerIndex: 0,
-      phase: GamePhase.playerTurn,
-      isDiceRolled: false,
-      isDiceRolling: false,
-      diceTotal: 0,
-      dice1: 0,
-      dice2: 0,
-      showTurnOrderDialog: true,
-      lastAction: 'Sıra belirlendi! ${sortedPlayers.first.name} başlıyor.',
-      // Clear tie-breaker state
-      finalizedOrder: [],
-      pendingTieBreakPlayers: [],
-      tieBreakerGroups: {},
-      tieBreakRound: 0,
-      tieBreakRoundRolls: {},
-    );
-
-    _logBot(
-      '_finalizeTurnOrderFromRolls() COMPLETED - First player: ${sortedPlayers.first.name}',
+    await _turnOrderService.execute(
+      this,
+      playersToRoll: playersToRoll,
+      depth: depth,
     );
   }
 
@@ -1259,7 +1055,7 @@ class GameNotifier extends StateNotifier<GameState> {
     // Log the auto-selected difficulty
     final masteryName = masteryLevel.displayName;
     final categoryDisplay = tile.type == TileType.tesvik
-        ? 'Teşvik/Bonus'
+        ? 'Teşvik'
         : _getCategoryDisplayName(categoryNames.first);
     _addLog(
       '$categoryDisplay kategorisinde $masteryName seviyesi: $difficultyFilter soru seçildi.',

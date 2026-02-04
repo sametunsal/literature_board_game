@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/common/bouncing_button.dart';
@@ -50,6 +51,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   void initState() {
     super.initState();
+    // Enforce Portrait Mode for Setup
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _addPlayer();
     _addPlayer(); // Start with 2 players
   }
@@ -588,7 +594,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFF00695C).withOpacity(0.3),
+            color: const Color(0xFF00695C).withValues(alpha: 0.3),
             width: 2,
             style: BorderStyle
                 .none, // Flutter doesn't support dashed easily via BorderStyle alone
@@ -598,9 +604,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         // simplified here to light opacity with icon
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF00695C).withOpacity(0.05),
+            color: const Color(0xFF00695C).withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF00695C).withOpacity(0.2)),
+            border: Border.all(
+              color: const Color(0xFF00695C).withValues(alpha: 0.2),
+            ),
           ),
           child: Center(
             child: Row(

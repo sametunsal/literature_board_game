@@ -150,8 +150,7 @@ lib/
 | Edebiyat Akımları | Literary Movements | Art movements and periods |
 | Edebi Sanatlar | Literary Arts | Poetry, prose, and techniques |
 | Eser-Karakter | Work-Character | Book and character identification |
-| Teşvik | Encouragement | Bonus rewards |
-| Bonus Bilgi | Bonus Knowledge | Extra trivia |
+| Teşvik | Encouragement | Bonus rewards & trivia |
 
 ## 🎲 Game Mechanics
 
