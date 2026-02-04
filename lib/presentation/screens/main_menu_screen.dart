@@ -5,10 +5,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
 
 import 'setup_screen.dart';
-
 import '../dialogs/how_to_play_dialog.dart';
 import '../dialogs/settings_dialog.dart';
+import '../widgets/common/scholar_button.dart';
+import '../widgets/common/ottoman_background.dart';
+import '../../core/theme/game_theme.dart';
+import '../../core/motion/motion_constants.dart';
 
+/// Main Menu Screen - "The Scholar's Desk Entry"
+/// Ottoman Scholar themed with aged paper, gold accents, and library atmosphere
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
 
@@ -16,7 +21,10 @@ class MainMenuScreen extends StatefulWidget {
   State<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends State<MainMenuScreen> {
+class _MainMenuScreenState extends State<MainMenuScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ambientController;
+
   @override
   void initState() {
     super.initState();
@@ -25,421 +33,338 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    // Theme Colors
-    const bgColor = Color(0xFFF9F7F2);
-    const accentColor = Color(0xFF00695C); // Deep Teal
-    const goldColor = Color(0xFFD4AF37); // Metallic Gold
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 8),
-            decoration: BoxDecoration(
-              color: bgColor.withValues(alpha: 0.8),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.settings_rounded, color: accentColor),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => const SettingsDialog(),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: bgColor,
-      body: Stack(
-        children: [
-          // 1. Rich Background Pattern (Literature Theme)
-          Positioned.fill(
-            child: CustomPaint(
-              painter: LiteraturePatternPainter(
-                color: accentColor.withValues(alpha: 0.03),
-              ),
-            ),
-          ),
-
-          // Vignette effect for focus
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.5,
-                  colors: [Colors.transparent, bgColor.withValues(alpha: 0.8)],
-                ),
-              ),
-            ),
-          ),
-
-          // 2. Menu Content
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // LOGO SECTION
-                Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                              'EDEBİNA',
-                              style: GoogleFonts.cinzelDecorative(
-                                fontSize: 56,
-                                fontWeight: FontWeight.w900,
-                                color: accentColor,
-                                letterSpacing: 4,
-                                shadows: [
-                                  Shadow(
-                                    color: goldColor.withValues(alpha: 0.3),
-                                    offset: const Offset(2, 2),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            )
-                            .animate()
-                            .fadeIn(duration: 800.ms)
-                            .scale(curve: Curves.easeOutBack, duration: 800.ms),
-
-                        Text(
-                              'ANA MENÜ',
-                              style: GoogleFonts.cormorantGaramond(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                                color: accentColor.withValues(alpha: 0.7),
-                                letterSpacing: 6,
-                              ),
-                            )
-                            .animate()
-                            .fadeIn(delay: 400.ms, duration: 600.ms)
-                            .slideY(begin: 0.5, end: 0),
-                      ],
-                    ),
-
-                    // Animated Quill Decor
-                    Positioned(
-                      top: 10,
-                      right: -30,
-                      child:
-                          Icon(
-                                Icons.edit_outlined,
-                                size: 36,
-                                color: goldColor.withValues(alpha: 0.8),
-                              )
-                              .animate(onPlay: (c) => c.repeat(reverse: true))
-                              .rotate(
-                                begin: 0,
-                                end: 0.1,
-                                duration: 2.seconds,
-                                curve: Curves.easeInOut,
-                              )
-                              .moveY(
-                                begin: 0,
-                                end: -5,
-                                duration: 2.seconds,
-                                curve: Curves.easeInOut,
-                              ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 80),
-
-                // Isometric Menu Buttons
-                _IsometricMenuButton(
-                      label: "OYNA",
-                      color: const Color(0xFF4DB6AC), // Sage Green
-                      sideColor: const Color(0xFF00897B),
-                      icon: Icons.play_arrow_rounded,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const SetupScreen(),
-                          ),
-                        );
-                      },
-                    )
-                    .animate()
-                    .fadeIn(delay: 600.ms, duration: 400.ms)
-                    .slideY(begin: 0.2, end: 0),
-
-                const SizedBox(height: 24),
-
-                _IsometricMenuButton(
-                      label: "NASIL OYNANIR",
-                      color: const Color(0xFF64B5F6), // Pastel Blue
-                      sideColor: const Color(0xFF1E88E5),
-                      icon: Icons.menu_book_rounded,
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const HowToPlayDialog(),
-                        );
-                      },
-                    )
-                    .animate()
-                    .fadeIn(delay: 700.ms, duration: 400.ms)
-                    .slideY(begin: 0.2, end: 0),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// WIDGETS
-// ═════════════════════════════════════════════════════════════════════════════
-
-class _IsometricMenuButton extends StatefulWidget {
-  final String label;
-  final Color color;
-  final Color sideColor;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _IsometricMenuButton({
-    required this.label,
-    required this.color,
-    required this.sideColor,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<_IsometricMenuButton> createState() => _IsometricMenuButtonState();
-}
-
-class _IsometricMenuButtonState extends State<_IsometricMenuButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _pressAnimation; // Controls Y translation and shadow
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
+    // Ambient animation controller
+    _ambientController = AnimationController(
+      duration: MotionDurations.ambientGradient.safe,
       vsync: this,
-      duration: const Duration(milliseconds: 100), // Quick press
-      reverseDuration: const Duration(milliseconds: 150), // Bouncy release
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.98,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    _pressAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ambientController.dispose();
     super.dispose();
-  }
-
-  void _handleTapDown(TapDownDetails _) {
-    _controller.forward();
-  }
-
-  void _handleTapUp(TapUpDetails _) {
-    _controller.reverse();
-    // Small delay to let animation start reversing before action
-    Future.delayed(const Duration(milliseconds: 100), widget.onTap);
-  }
-
-  void _handleTapCancel() {
-    _controller.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
-    const double width = 280;
-    const double height = 64;
-    const double maxDepth = 8;
-
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final pressValue = _pressAnimation.value;
-          final currentDepth =
-              maxDepth *
-              (1 - pressValue * 0.5); // Depth doesn't disappear fully
-          final topOffset = maxDepth - currentDepth; // Moves down visualy
-
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: SizedBox(
-              width: width,
-              height: height + maxDepth,
-              child: Stack(
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: _buildAppBar(),
+      body: OttomanBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Layer 1: Shadow
-                  // Shadow shrinks and becomes sharper as button is pressed
-                  Positioned(
-                    bottom: 2 + (pressValue * 2), // Moves up slightly
-                    left: 4 + (pressValue * 2),
-                    right: 4 + (pressValue * 2),
-                    height: height,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(
-                          alpha: 0.2 - (pressValue * 0.05),
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: 0.1 - (pressValue * 0.05),
-                            ),
-                            blurRadius: 8 - (pressValue * 4),
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 40),
 
-                  // Layer 2: 3D Side (Bottom Block)
-                  Positioned(
-                    top: topOffset + currentDepth,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: height,
-                      decoration: BoxDecoration(
-                        color: widget.sideColor,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
+                  // LOGO & TITLE SECTION
+                  _buildLogoSection(),
 
-                  // Layer 3: Top Face
-                  Positioned(
-                    top: topOffset,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: height,
-                      decoration: BoxDecoration(
-                        color: widget.color,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            widget.color,
-                            widget.color.withValues(alpha: 0.9),
-                          ],
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(widget.icon, color: Colors.white, size: 24),
-                          const SizedBox(width: 12),
-                          Text(
-                            widget.label,
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 60),
+
+                  // MENU BUTTONS
+                  _buildMenuButtons(),
+
+                  const SizedBox(height: 40),
+
+                  // DECORATIVE ELEMENTS
+                  _buildDecorativeElements(),
                 ],
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
-}
 
-// ═════════════════════════════════════════════════════════════════════════════
-// PAINTERS
-// ═════════════════════════════════════════════════════════════════════════════
-
-class LiteraturePatternPainter extends CustomPainter {
-  final Color color;
-
-  LiteraturePatternPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    // Draw subtle horizontal lines resembling notebook paper or book text
-    const double lineHeight = 20;
-    for (double y = 0; y < size.height; y += lineHeight) {
-      if (y % 60 == 0) {
-        // Break lines occassionally for paragraph look via path
-        // Simplified: just drawing dashed lines manually would be performant enough
-        // but let's do simple lines for now with varying opacity
-        paint.color = color.withValues(
-          alpha: (math.sin(y) + 1) / 2 * 0.05 + 0.02,
-        );
-        canvas.drawLine(Offset(20, y), Offset(size.width - 20, y), paint);
-      }
-    }
-
-    // Draw visual flourish curves (abstract letters)
-    final random = math.Random(42); // fixed seed
-    for (int i = 0; i < 10; i++) {
-      final double x = random.nextDouble() * size.width;
-      final double y = random.nextDouble() * size.height;
-      final double radius = 20 + random.nextDouble() * 50;
-
-      paint.style = PaintingStyle.stroke;
-      paint.color = color.withValues(alpha: 0.04);
-
-      canvas.drawCircle(Offset(x, y), radius, paint);
-    }
+  /// App Bar with settings button (ornate keyhole style)
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 16, top: 8),
+          decoration: BoxDecoration(
+            color: GameTheme.ottomanBackground,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: GameTheme.ottomanGold,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: GameTheme.ottomanGoldShadow.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.settings_rounded,
+              color: GameTheme.ottomanAccent,
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const SettingsDialog(),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  /// Logo section with animated quill decoration
+  Widget _buildLogoSection() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsive title sizing
+        final titleSize = constraints.maxWidth < 350 ? 42.0 : 60.0;
+        final subtitleSize = constraints.maxWidth < 350 ? 18.0 : 24.0;
+
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              children: [
+                // Main Title: EDEBİNA
+                Text(
+                  'EDEBİNA',
+                  style: GoogleFonts.cinzelDecorative(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w900,
+                    color: GameTheme.ottomanAccent,
+                    letterSpacing: 4,
+                    height: 1.0,
+                    shadows: [
+                      Shadow(
+                        color: GameTheme.ottomanGold.withValues(alpha: 0.4),
+                        offset: const Offset(3, 3),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                )
+                    .animate()
+                    .fadeIn(duration: 800.ms)
+                    .scale(
+                      begin: const Offset(0.8, 0.8),
+                      end: const Offset(1.0, 1.0),
+                      curve: Curves.easeOutBack,
+                      duration: 800.ms,
+                    ),
+
+                const SizedBox(height: 8),
+
+                // Drop Cap Decorative Element
+                _buildDropCapDecoration(),
+
+                const SizedBox(height: 12),
+
+                // Subtitle: ANA MENÜ
+                Text(
+                  'ANA MENÜ',
+                  style: GoogleFonts.cormorantGaramond(
+                    fontSize: subtitleSize,
+                    fontWeight: FontWeight.w600,
+                    color: GameTheme.ottomanAccent.withValues(alpha: 0.7),
+                    letterSpacing: 6,
+                    height: 1.0,
+                  ),
+                )
+                    .animate()
+                    .fadeIn(delay: 400.ms, duration: 600.ms)
+                    .slideY(begin: 0.3, end: 0),
+              ],
+            ),
+
+            // Animated Quill Pen Decoration
+            Positioned(
+              top: constraints.maxWidth < 350 ? -5 : 10,
+              right: constraints.maxWidth < 350 ? -20 : -30,
+              child: AnimatedBuilder(
+                animation: _ambientController,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: math.sin(_ambientController.value * 2 * math.pi) *
+                        0.1,
+                    child: Transform.translate(
+                      offset: Offset(
+                        0,
+                        math.sin(_ambientController.value * 2 * math.pi) * -5,
+                      ),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        size: constraints.maxWidth < 350 ? 28 : 36,
+                        color: GameTheme.ottomanGold.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Drop Cap-style decorative element
+  Widget _buildDropCapDecoration() {
+    return Container(
+      width: 60,
+      height: 3,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            GameTheme.ottomanGold.withValues(alpha: 0.3),
+            GameTheme.ottomanGold,
+            GameTheme.ottomanGold.withValues(alpha: 0.3),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    )
+        .animate()
+        .shimmer(
+          duration: 2000.ms,
+          color: GameTheme.ottomanGoldLight,
+          angle: 0,
+        );
+  }
+
+  /// Menu buttons with staggered animation
+  Widget _buildMenuButtons() {
+    return Column(
+      children: [
+        // Primary CTA: OYNA
+        ScholarButton(
+          label: "OYNA",
+          icon: Icons.play_arrow_rounded,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SetupScreen(),
+              ),
+            );
+          },
+          isFullWidth: true,
+        )
+            .animate()
+            .fadeIn(delay: 600.ms, duration: 400.ms)
+            .slideY(begin: 0.2, end: 0),
+
+        const SizedBox(height: 20),
+
+        // Secondary: NASIL OYNANIR
+        ScholarButton(
+          label: "NASIL OYNANIR",
+          icon: Icons.menu_book_rounded,
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => const HowToPlayDialog(),
+            );
+          },
+          isPrimary: false,
+          isFullWidth: true,
+        )
+            .animate()
+            .fadeIn(delay: 700.ms, duration: 400.ms)
+            .slideY(begin: 0.2, end: 0),
+      ],
+    );
+  }
+
+  /// Decorative desk elements
+  Widget _buildDecorativeElements() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Opacity(
+        opacity: 0.4,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildInkwellDecoration(),
+            _buildScrollDecoration(),
+            _buildQuillDecoration(),
+          ],
+        )
+            .animate()
+            .fadeIn(delay: 1000.ms, duration: 600.ms),
+      ),
+    );
+  }
+
+  /// Small inkwell decoration
+  Widget _buildInkwellDecoration() {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: GameTheme.ottomanAccent.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: GameTheme.ottomanAccent.withValues(alpha: 0.3),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: GameTheme.ottomanAccent.withValues(alpha: 0.4),
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Small scroll decoration
+  Widget _buildScrollDecoration() {
+    return Container(
+      width: 40,
+      height: 24,
+      decoration: BoxDecoration(
+        color: GameTheme.ottomanBackgroundAlt,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: GameTheme.ottomanSepia.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 30,
+          height: 2,
+          decoration: BoxDecoration(
+            color: GameTheme.ottomanSepia.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Small quill decoration
+  Widget _buildQuillDecoration() {
+    return Icon(
+      Icons.edit,
+      size: 28,
+      color: GameTheme.ottomanGold.withValues(alpha: 0.5),
+    );
+  }
 }

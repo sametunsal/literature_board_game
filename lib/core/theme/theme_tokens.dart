@@ -201,6 +201,41 @@ class ThemeTokens {
     dialogOverlay: Color(0x66000000), // Black @ 40%
   );
 
+  /// Ottoman Scholar preset - Warm Library Light + Dark Academia theme
+  /// Aged paper background with Ottoman inkwell teal and gold leaf accents
+  static const ottomanScholar = ThemeTokens(
+    // Background - Aged Ottoman Paper
+    background: Color(0xFFF5F1E8), // Aged Ottoman Paper
+    backgroundHighlight: Color(0xFFEDE8DC), // Paper edge/gradient shadow
+    // Surfaces - Parchment tones
+    surface: Color(0xFFFFFBF0), // Fresh Parchment (inner page)
+    surfaceAlt: Color(0xFFF2EAD6), // Aged Parchment
+    // Text - Ottoman Sepia/Ink tones
+    textPrimary: Color(0xFF3D3B35), // Dried Sepia (warm dark brown)
+    textSecondary: Color(0xFF8B7355), // Muted Sepia
+    textOnAccent: Color(0xFFFFFFFF), // White on gold buttons
+    // Accents - Ottoman Teal & Gold
+    primary: Color(0xFF1A4D42), // Deep Ink/Teal (Ottoman inkwell)
+    secondary: Color(0xFF8B4513), // Sepia Brown (aged paper edges)
+    accent: Color(0xFFC9A227), // Antique Gold (brushed metal feel)
+    // Semantic - Traditional Ottoman colors
+    success: Color(0xFF2D5A3D), // Malachite Green
+    warning: Color(0xFFD4AF37), // Polished Gold
+    danger: Color(0xFFA83F39), // Cinnabar Red (traditional Ottoman)
+    // UI Elements - Parchment borders
+    border: Color(0xFFD4C4A8), // Aged Edge
+    shadow: Color(0x1A3D3B35), // Sepia-tinted shadow
+    // Tiles - Parchment variations
+    tileBase: Color(0xFFFFFBF0), // Fresh Parchment
+    tileHighlight: Color(0xFFF5F1E8), // Aged Paper
+    tileOwned: Color(0xFFE8DED0), // Wood tone tint
+    tileCorrect: Color(0xFFE8F5E9), // Light green tint
+    tileWrong: Color(0xFFFFEBEE), // Light red tint
+    // Dialogs
+    dialogBackground: Color(0xFFFFFBF0), // Parchment
+    dialogOverlay: Color(0x80000000), // Black @ 50%
+  );
+
   // ════════════════════════════════════════════════════════════════════════════
   // HELPER METHODS
   // ════════════════════════════════════════════════════════════════════════════
@@ -209,6 +244,9 @@ class ThemeTokens {
   static ThemeTokens forMode(bool isDarkMode) {
     return isDarkMode ? modernMinimalistDark : modernMinimalistLight;
   }
+
+  /// Get Ottoman Scholar theme (for non-gameplay screens)
+  static ThemeTokens get ottoman => ottomanScholar;
 
   /// Check if this is a dark theme
   bool get isDark => this == modernMinimalistDark;

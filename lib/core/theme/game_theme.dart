@@ -154,6 +154,46 @@ class GameTheme {
   };
 
   // ════════════════════════════════════════════════════════════════════════════
+  // OTTOMAN SCHOLAR COLORS (For non-gameplay screens)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Ottoman Scholar: Aged Ottoman Paper background
+  static const Color ottomanBackground = Color(0xFFF5F1E8);
+
+  /// Ottoman Scholar: Paper edge/gradient shadow
+  static const Color ottomanBackgroundAlt = Color(0xFFEDE8DC);
+
+  /// Ottoman Scholar: Deep Ink/Teal (Ottoman inkwell)
+  static const Color ottomanAccent = Color(0xFF1A4D42);
+
+  /// Ottoman Scholar: Sepia Brown (aged paper edges)
+  static const Color ottomanSepia = Color(0xFF8B4513);
+
+  /// Ottoman Scholar: Antique Gold (brushed metal feel)
+  static const Color ottomanGold = Color(0xFFC9A227);
+
+  /// Ottoman Scholar: Polished Gold (hover state)
+  static const Color ottomanGoldLight = Color(0xFFD4AF37);
+
+  /// Ottoman Scholar: Aged Gold shadow
+  static const Color ottomanGoldShadow = Color(0xFF8B6914);
+
+  /// Ottoman Scholar: Dried Sepia (primary text)
+  static const Color ottomanText = Color(0xFF3D3B35);
+
+  /// Ottoman Scholar: Muted Sepia (secondary text)
+  static const Color ottomanTextSecondary = Color(0xFF8B7355);
+
+  /// Ottoman Scholar: Signature line (input underline)
+  static const Color ottomanSignatureLine = Color(0xFF8B7355);
+
+  /// Ottoman Scholar: Aged Edge border
+  static const Color ottomanBorder = Color(0xFFD4C4A8);
+
+  /// Ottoman Scholar: Cinnabar Red (traditional Ottoman)
+  static const Color ottomanCinnabar = Color(0xFFA83F39);
+
+  // ════════════════════════════════════════════════════════════════════════════
   // TYPOGRAPHY - BASE FONTS (ALL SANS-SERIF)
   // ════════════════════════════════════════════════════════════════════════════
 
@@ -162,6 +202,71 @@ class GameTheme {
 
   /// Body font - Poppins for readable UI text
   static TextStyle get bodyFont => GoogleFonts.poppins();
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // OTTOMAN SCHOLAR TYPOGRAPHY (For non-gameplay screens)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /// Ottoman Scholar: Main Title (EDEBİNA) - Cinzel Decorative, 60sp
+  static TextStyle get ottomanTitle => GoogleFonts.cinzelDecorative(
+        fontSize: 60,
+        fontWeight: FontWeight.w900,
+        color: ottomanAccent,
+        letterSpacing: 4,
+        height: 1.0,
+      );
+
+  /// Ottoman Scholar: Subtitle (ANA MENÜ) - Cormorant Garamond, 24sp
+  static TextStyle get ottomanSubtitle => GoogleFonts.cormorantGaramond(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: ottomanAccent.withValues(alpha: 0.7),
+        letterSpacing: 6,
+        height: 1.0,
+      );
+
+  /// Ottoman Scholar: Header Labels - Crimson Text, Bold
+  static TextStyle get ottomanHeader => GoogleFonts.crimsonText(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: ottomanAccent,
+        letterSpacing: 2,
+        height: 1.2,
+      );
+
+  /// Ottoman Scholar: Button Text - Crimson Text, SemiBold
+  static TextStyle get ottomanButtonText => GoogleFonts.crimsonText(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+        letterSpacing: 1.5,
+        height: 1.0,
+      );
+
+  /// Ottoman Scholar: Body Text - Crimson Text, Medium
+  static TextStyle get ottomanBody => GoogleFonts.crimsonText(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: ottomanText,
+        height: 1.4,
+      );
+
+  /// Ottoman Scholar: Handwriting/Signature Style - Amiri
+  static TextStyle get ottomanSignature => GoogleFonts.amiri(
+        fontSize: 26,
+        fontWeight: FontWeight.w400,
+        color: ottomanText,
+        height: 1.0,
+      );
+
+  /// Ottoman Scholar: Player Label - Cinzel Decorative, Small
+  static TextStyle get ottomanPlayerLabel => GoogleFonts.cinzelDecorative(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: ottomanTextSecondary,
+        letterSpacing: 2.0,
+        height: 1.0,
+      );
 
   // ════════════════════════════════════════════════════════════════════════════
   // HUD TYPOGRAPHY HIERARCHY

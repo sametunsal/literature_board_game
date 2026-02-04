@@ -314,12 +314,15 @@ class DiceRoller extends ConsumerWidget {
                 ),
               ),
               if (phase == GamePhase.rollingForOrder)
-                Text(
-                  'Sıralama için zar atılıyor...',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Sıralama için zar atılıyor...',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
+                    ),
                   ),
                 )
               else if (isTieBreaker)
@@ -453,11 +456,16 @@ class DiceRoller extends ConsumerWidget {
                 children: [
                   const Icon(Icons.casino_rounded, size: 24),
                   const SizedBox(width: 8),
-                  Text(
-                    buttonLabel,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        buttonLabel,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
                     ),
                   ),
                 ],
