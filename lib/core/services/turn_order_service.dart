@@ -187,7 +187,10 @@ class TurnOrderService {
 
         // RECURSIVE CALL - only tied players re-roll
         await execute(notifier, playersToRoll: tiedForMax, depth: depth + 1);
-        return; // Exit after recursion completes
+
+        // Eğer bu bir alt çağrıysa (recursive) çıkış yap,
+        // ama ana çağrıysa (root call) aşağıya devam edip _finalizeTurnOrderFromRolls'u tetikle.
+        if (!isRootCall) return;
       }
 
       // CASE A: Single winner (or all players unique after root call)

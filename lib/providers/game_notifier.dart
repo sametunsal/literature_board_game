@@ -422,8 +422,16 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Roll dice - handles MOVEMENT rolls during playerTurn phase.
   /// NOTE: Turn order rolls are handled automatically by startAutomatedTurnOrder().
   Future<void> rollDice() async {
+    // DIAGNOSTIC: Always print flag states for deadlock tracing
+    safePrint(
+      '🎲 rollDice() ENTRY - _isProcessingAction: $_isProcessingAction, _isProcessing: $_isProcessing, isDiceRolling: ${state.isDiceRolling}, phase: ${state.phase}',
+    );
+
     // UI Race Condition Guard
     if (_isProcessingAction || state.isDiceRolling) {
+      safePrint(
+        '🎲 rollDice() BLOCKED - _isProcessingAction: $_isProcessingAction, isDiceRolling: ${state.isDiceRolling}',
+      );
       _logBot(
         'rollDice() BLOCKED - _isProcessingAction active or dice rolling',
       );
@@ -487,6 +495,8 @@ class GameNotifier extends StateNotifier<GameState> {
         }
 
         // CRITICAL: End turn immediately, DO NOT allow dice roll
+        _isProcessing =
+            false; // Reset before calling endTurn() to prevent blocking
         endTurn();
         return;
       }
@@ -667,6 +677,8 @@ class GameNotifier extends StateNotifier<GameState> {
       _addLog('Hareket hatasÄ±: $e', type: 'error');
       _logBot('ðŸš¨ ERROR in _handleMovementRoll: $e');
       // Ensure turn ends even on error
+      _isProcessing =
+          false; // Reset before calling endTurn() to prevent blocking
       endTurn();
     } finally {
       // SAFETY: Always reset processing flag to prevent freezing
