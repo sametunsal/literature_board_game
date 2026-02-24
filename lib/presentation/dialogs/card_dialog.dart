@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/game_card.dart';
 import '../../models/game_enums.dart';
@@ -69,6 +68,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
   @override
   Widget build(BuildContext context) {
     final card = widget.card;
+    final isDarkMode = ref.watch(themeProvider).isDarkMode;
     final isSans = card.type == CardType.sans;
     final cardColor = isSans
         ? const Color(0xFFE91E63)
@@ -78,107 +78,103 @@ class _CardDialogState extends ConsumerState<CardDialog> {
 
     return GestureDetector(
       onTap: _cancelTimerAndDismiss,
-      child:
-          ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 320,
-                  maxHeight: 450,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320, maxHeight: 450),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: GameTheme.cardDecorationFor(
+            isDarkMode,
+          ).copyWith(color: GameTheme.parchmentColor),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // PROGRESS BAR (auto-dismiss indicator)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: _progress,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: AlwaysStoppedAnimation<Color>(cardColor),
+                  minHeight: 4,
                 ),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: GameTheme.cardDecorationFor(
-                    ref.watch(themeProvider).isDarkMode,
-                  ).copyWith(color: GameTheme.parchmentColor),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // PROGRESS BAR (auto-dismiss indicator)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: _progress,
-                          backgroundColor: Colors.grey.shade300,
-                          valueColor: AlwaysStoppedAnimation<Color>(cardColor),
-                          minHeight: 4,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+              ),
+              const SizedBox(height: 16),
 
-                      // CARD ICON with glow effect
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: cardColor.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: cardColor.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Icon(cardIcon, size: 50, color: cardColor),
-                      ),
-                      const SizedBox(height: 16),
+              // CARD ICON with glow effect
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: cardColor.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Icon(cardIcon, size: 50, color: cardColor),
+              ),
+              const SizedBox(height: 16),
 
-                      // TITLE with styled badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          cardTitle,
-                          style: GoogleFonts.playfairDisplay(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // DESCRIPTION
-                      Flexible(
-                        child: SingleChildScrollView(
-                          child: Text(
-                            card.description,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              color: GameTheme.textDark,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // TAP TO DISMISS HINT
-                      Text(
-                        "Kapatmak için dokun",
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: GameTheme.textDark.withValues(alpha: 0.5),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
+              // TITLE with styled badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  cardTitle,
+                  style: GoogleFonts.playfairDisplay(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.white,
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // DESCRIPTION
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Text(
+                    card.description,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: GameTheme.textDark,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // TAP TO DISMISS HINT
+              Text(
+                "Kapatmak için dokun",
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: GameTheme.textDark.withValues(alpha: 0.5),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

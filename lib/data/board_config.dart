@@ -1,8 +1,8 @@
-import '../core/constants/game_constants.dart';
 import '../models/board_tile.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
 import '../models/game_enums.dart';
+import '../core/utils/logger.dart';
 
 class BoardConfig {
   static final List<QuestionCategory> _categoryOrder = [
@@ -317,8 +317,16 @@ class BoardConfig {
       _categoryOrder[index % 6];
   static List<String> getCategoryNames() =>
       tiles.map((t) => t.category ?? '').toList();
-  static BoardTile getTile(int id) =>
-      (id < 0 || id >= tiles.length) ? tiles[0] : tiles[id];
+  static BoardTile getTile(int id) {
+    if (id < 0 || id >= tiles.length) {
+      safePrint(
+        '⚠️ ERROR: OOB Tile Access in BoardConfig.getTile! Requested index: $id, Max: ${tiles.length - 1}',
+      );
+      return tiles[0];
+    }
+    return tiles[id];
+  }
+
   static List<BoardTile> getCornerTiles() => [
     tiles[0],
     tiles[6],

@@ -41,17 +41,20 @@ class GameConstants {
   static const int rewardEasy = 3; // REWARD_EASY - Motivasyon için en az 3
   static const int rewardMedium = 5; // REWARD_MEDIUM
   static const int rewardHard = 8; // REWARD_HARD
-  static const int rewardTesvik = 10; // REWARD_TESVIK - Bonus sorular değerli olmalı
+  static const int rewardTesvik =
+      10; // REWARD_TESVIK - Bonus sorular değerli olmalı
 
   // Penalties & Costs
   static const int hintCost = 1; // HINT_COST - Ucuz olsun ki kullanılsın
-  static const int wrongAnswerPenalty = 0; // WRONG_ANSWER_PENALTY - 0 puandayken eksiye düşürme
+  static const int wrongAnswerPenalty =
+      0; // WRONG_ANSWER_PENALTY - 0 puandayken eksiye düşürme
   static const int jailFee = 5; // JAIL_FEE - Hapisten çıkma bedeli
 
   // ═══════════════════════════════════════════════════════════════════
   // GAME RULES
   // ═══════════════════════════════════════════════════════════════════
-  static const int passingStartBonus = 5; // Stars awarded when passing start (reduced from 50)
+  static const int passingStartBonus =
+      5; // Stars awarded when passing start (reduced from 50)
   static const int maxConsecutiveDoubles = 3; // Maximum doubles before penalty
 
   // ═════════════════════════════════════════════════════════════════════
@@ -88,21 +91,26 @@ class GameConstants {
   // WIN CONDITION (Sprint Mode - ~15 min games)
   // ═════════════════════════════════════════════════════════════════════
   // Player wins when they have collected X quotes AND are Master in Y categories
-  static const int quotesToCollect = 20; // Total quotes needed to win (reduced from 50)
-  static const int requiredMasteries = 3; // Number of categories to master (reduced from 6)
+  static const int quotesToCollect =
+      20; // Total quotes needed to win (reduced from 50)
+  static const int requiredMasteries =
+      3; // Number of categories to master (reduced from 6)
   static const int totalCategories = 6; // Total number of categories
 
   // ═══════════════════════════════════════════════════════════════════
   // CATCH-UP MECHANIC (Underdog Bonus)
   // ═══════════════════════════════════════════════════════════════════
-  static const double underdogThreshold = 0.5; // Player gets bonus if stars < leader * threshold
+  static const double underdogThreshold =
+      0.5; // Player gets bonus if stars < leader * threshold
   static const int underdogBonusStars = 3; // Fixed bonus for underdog
-  static const double underdogMultiplier = 1.5; // Reward multiplier for underdog
+  static const double underdogMultiplier =
+      1.5; // Reward multiplier for underdog
 
   // ═══════════════════════════════════════════════════════════════════
   // QUOTE DROP RATE (Progression Bonus)
   // ═══════════════════════════════════════════════════════════════════
-  static const double hardQuestionQuoteDropRate = 0.3; // 30% chance to get quote on Hard correct
+  static const double hardQuestionQuoteDropRate =
+      0.3; // 30% chance to get quote on Hard correct
 
   // ═══════════════════════════════════════════════════════════════════
   // TIMERS (in seconds)
@@ -115,11 +123,17 @@ class GameConstants {
   // ═══════════════════════════════════════════════════════════════════════
   // ANIMATION DURATIONS (milliseconds)
   // ═══════════════════════════════════════════════════════════════════════════════════
-  static const int hopAnimationDelay = 450; // Slower, rhythmic pace for pawn steps (matches SFX)
+  static const int hopAnimationDelay =
+      450; // Slower, rhythmic pace for pawn steps (matches SFX)
   static const int cardAnimationDelay = 500;
   static const int diceAnimationDelay = 1500;
   static const int turnChangeDelay = 1200;
   static const int diceResetDelay = 150;
+  static const int botDialogAutoCloseDelay = 500;
+  static const int botPenaltyDialogAutoCloseDelay = 300;
+  static const int botTurnScheduleDelay = 800;
+  static const int pauseCheckInterval = 500;
+  static const int floatingEffectDurationSeconds = 2;
 
   // ═════════════════════════════════════════════════════════════════════════════════
   // ASSETS

@@ -1,8 +1,7 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import '../utils/logger.dart';
-import 'package:flutter/foundation.dart';
 
 /// Audio context for different game states
 enum AudioContext {

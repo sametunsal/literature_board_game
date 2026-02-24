@@ -21,8 +21,18 @@ void main() {
     test('GameState correctly stores turn order data', () {
       // Arrange
       final players = [
-        const Player(id: 'p1', name: 'Alice', color: Color(0xFF0000FF), iconIndex: 0),
-        const Player(id: 'p2', name: 'Bob', color: Color(0xFFFF0000), iconIndex: 1),
+        const Player(
+          id: 'p1',
+          name: 'Alice',
+          color: Color(0xFF0000FF),
+          iconIndex: 0,
+        ),
+        const Player(
+          id: 'p2',
+          name: 'Bob',
+          color: Color(0xFFFF0000),
+          iconIndex: 1,
+        ),
       ];
       final rolls = {'p1': 10, 'p2': 7};
 
@@ -31,7 +41,6 @@ void main() {
         players: players,
         phase: GamePhase.playerTurn,
         orderRolls: rolls,
-        showTurnOrderDialog: true,
       );
 
       // Assert
@@ -39,40 +48,52 @@ void main() {
       expect(state.orderRolls['p1'], 10);
       expect(state.orderRolls['p2'], 7);
       expect(state.phase, GamePhase.playerTurn);
-      expect(state.showTurnOrderDialog, true);
     });
 
     test('GameState copyWith preserves turn order state', () {
       // Arrange
       final initialState = GameState(
         players: const [
-          Player(id: 'p1', name: 'Alice', color: Color(0xFF0000FF), iconIndex: 0),
+          Player(
+            id: 'p1',
+            name: 'Alice',
+            color: Color(0xFF0000FF),
+            iconIndex: 0,
+          ),
         ],
         phase: GamePhase.rollingForOrder,
         orderRolls: {'p1': 8},
       );
 
       // Act
-      final updatedState = initialState.copyWith(
-        phase: GamePhase.playerTurn,
-        showTurnOrderDialog: true,
-      );
+      final updatedState = initialState.copyWith(phase: GamePhase.playerTurn);
 
       // Assert
       expect(updatedState.phase, GamePhase.playerTurn);
-      expect(updatedState.showTurnOrderDialog, true);
       expect(updatedState.orderRolls['p1'], 8); // Preserved
       expect(updatedState.players.first.id, 'p1'); // Preserved
     });
 
     test('GameState stores all tie-breaker related fields', () {
       // Arrange
-      final tieGroups = {12: ['p1', 'p2']};
+      final tieGroups = {
+        12: ['p1', 'p2'],
+      };
       final finalized = [
-        const Player(id: 'p3', name: 'Charlie', color: Color(0xFF00FF00), iconIndex: 2),
+        const Player(
+          id: 'p3',
+          name: 'Charlie',
+          color: Color(0xFF00FF00),
+          iconIndex: 2,
+        ),
       ];
       final pending = [
-        const Player(id: 'p1', name: 'Alice', color: Color(0xFF0000FF), iconIndex: 0),
+        const Player(
+          id: 'p1',
+          name: 'Alice',
+          color: Color(0xFF0000FF),
+          iconIndex: 0,
+        ),
       ];
 
       // Act
@@ -100,7 +121,12 @@ void main() {
       // Act
       final state = GameState(
         players: const [
-          Player(id: 'p1', name: 'Alice', color: Color(0xFF0000FF), iconIndex: 0),
+          Player(
+            id: 'p1',
+            name: 'Alice',
+            color: Color(0xFF0000FF),
+            iconIndex: 0,
+          ),
         ],
       );
 
@@ -111,14 +137,18 @@ void main() {
       expect(state.pendingTieBreakPlayers, isEmpty);
       expect(state.tieBreakRound, 0);
       expect(state.tieBreakRoundRolls, isEmpty);
-      expect(state.showTurnOrderDialog, false);
     });
 
     test('GameState stores currentPlayerIndex for turn tracking', () {
       // Act
       final state = GameState(
         players: const [
-          Player(id: 'p1', name: 'Alice', color: Color(0xFF0000FF), iconIndex: 0),
+          Player(
+            id: 'p1',
+            name: 'Alice',
+            color: Color(0xFF0000FF),
+            iconIndex: 0,
+          ),
           Player(id: 'p2', name: 'Bob', color: Color(0xFFFF0000), iconIndex: 1),
         ],
         currentPlayerIndex: 1,
@@ -191,12 +221,23 @@ void main() {
     test('Players can be sorted by properties for turn order', () {
       // Arrange
       final players = [
-        const Player(id: 'p2', name: 'Bob', color: Color(0xFFFF0000), iconIndex: 1),
-        const Player(id: 'p1', name: 'Alice', color: Color(0xFF0000FF), iconIndex: 0),
+        const Player(
+          id: 'p2',
+          name: 'Bob',
+          color: Color(0xFFFF0000),
+          iconIndex: 1,
+        ),
+        const Player(
+          id: 'p1',
+          name: 'Alice',
+          color: Color(0xFF0000FF),
+          iconIndex: 0,
+        ),
       ];
 
       // Act - sort by name
-      final sortedPlayers = List.from(players)..sort((a, b) => a.name.compareTo(b.name));
+      final sortedPlayers = List.from(players)
+        ..sort((a, b) => a.name.compareTo(b.name));
 
       // Assert
       expect(sortedPlayers.first.id, 'p1');

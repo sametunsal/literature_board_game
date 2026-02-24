@@ -257,7 +257,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     final player = _players[index];
     final controller = _nameControllers[index];
 
-    return Container(
+    return SizedBox(
       height: 120,
       child: Stack(
         clipBehavior: Clip.none,

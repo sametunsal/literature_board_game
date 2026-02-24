@@ -18,6 +18,17 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateToHome();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preload heavy image assets globally to prevent UI stuttering
+    // Note: paper_noise.png was replaced with CustomPainter but wooden_table_bg.png is 6MB
+    precacheImage(
+      const AssetImage('assets/images/wooden_table_bg.png'),
+      context,
+    );
+  }
+
   Future<void> _navigateToHome() async {
     // Wait for animations and loading
     await Future.delayed(const Duration(seconds: 4));

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +7,6 @@ import '../models/board_tile.dart';
 import '../models/game_enums.dart';
 import '../models/game_card.dart';
 import '../models/question.dart';
-import '../../providers/theme_notifier.dart';
 import '../../core/utils/logger.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
@@ -17,6 +16,9 @@ import '../data/repositories/question_repository_impl.dart';
 import '../core/constants/game_constants.dart';
 import '../core/managers/audio_manager.dart';
 import '../core/services/turn_order_service.dart';
+import '../core/services/dice_service.dart';
+import '../core/services/movement_service.dart';
+import 'dialog_provider.dart';
 
 // Floating Effect Data Model
 class FloatingEffect {
@@ -44,23 +46,12 @@ class GameState {
   // Floating Effect (Visual)
   final FloatingEffect? floatingEffect;
 
-  // Dialog DurumlarÄ±
-  final Question? currentQuestion;
-  final bool showQuestionDialog;
-  final bool showCardDialog;
-  final bool showLibraryPenaltyDialog;
-  final bool showImzaGunuDialog;
-  final bool showTurnSkippedDialog;
-  final bool showShopDialog; // KÄ±raathane shop dialog
-  final bool showTurnOrderDialog; // Turn order result dialog
-
   // Pause State
   final bool isGamePaused;
 
   final bool isDoubleTurn; // Indicates if current turn is a double roll bonus
 
   final BoardTile? currentTile;
-  final GameCard? currentCard;
   final Player? winner;
   final String? setupMessage;
 
@@ -101,17 +92,8 @@ class GameState {
     this.phase = GamePhase.setup,
     this.logs = const [],
     this.floatingEffect,
-    this.currentQuestion,
-    this.showQuestionDialog = false,
-    this.showCardDialog = false,
-    this.showLibraryPenaltyDialog = false,
-    this.showImzaGunuDialog = false,
-    this.showTurnSkippedDialog = false,
-    this.showShopDialog = false,
-    this.showTurnOrderDialog = false,
     this.isDoubleTurn = false,
     this.currentTile,
-    this.currentCard,
     this.winner,
     this.setupMessage,
     this.orderRolls = const {},
@@ -142,17 +124,8 @@ class GameState {
     GamePhase? phase,
     List<String>? logs,
     FloatingEffect? floatingEffect,
-    Question? currentQuestion,
-    bool? showQuestionDialog,
-    bool? showCardDialog,
-    bool? showLibraryPenaltyDialog,
-    bool? showImzaGunuDialog,
-    bool? showTurnSkippedDialog,
-    bool? showShopDialog,
-    bool? showTurnOrderDialog,
     bool? isDoubleTurn,
     BoardTile? currentTile,
-    GameCard? currentCard,
     Player? winner,
     String? setupMessage,
     Map<String, int>? orderRolls,
@@ -178,19 +151,8 @@ class GameState {
       phase: phase ?? this.phase,
       logs: logs ?? this.logs,
       floatingEffect: floatingEffect,
-      currentQuestion: currentQuestion ?? this.currentQuestion,
-      showQuestionDialog: showQuestionDialog ?? this.showQuestionDialog,
-      showCardDialog: showCardDialog ?? this.showCardDialog,
-      showLibraryPenaltyDialog:
-          showLibraryPenaltyDialog ?? this.showLibraryPenaltyDialog,
-      showImzaGunuDialog: showImzaGunuDialog ?? this.showImzaGunuDialog,
-      showTurnSkippedDialog:
-          showTurnSkippedDialog ?? this.showTurnSkippedDialog,
-      showShopDialog: showShopDialog ?? this.showShopDialog,
-      showTurnOrderDialog: showTurnOrderDialog ?? this.showTurnOrderDialog,
       isDoubleTurn: isDoubleTurn ?? this.isDoubleTurn,
       currentTile: currentTile ?? this.currentTile,
-      currentCard: currentCard ?? this.currentCard,
       winner: winner ?? this.winner,
       setupMessage: setupMessage ?? this.setupMessage,
       orderRolls: orderRolls ?? this.orderRolls,
@@ -207,10 +169,17 @@ class GameState {
 }
 
 class GameNotifier extends StateNotifier<GameState> {
+  final Ref ref;
   final TurnOrderService _turnOrderService = TurnOrderService();
+  final DiceService _diceService = DiceService();
+  final MovementService _movementService = MovementService();
   final _random = Random();
   Timer? _animationTimer;
+  final List<Timer> _activeTimers = [];
   bool _isProcessing = false;
+
+  /// Global action lock to prevent race conditions from rapid UI tapping
+  bool _isProcessingAction = false;
 
   // Bot mode variables
   bool _isBotPlaying = false;
@@ -228,16 +197,9 @@ class GameNotifier extends StateNotifier<GameState> {
   Completer<void>? _shopDialogCompleter;
 
   // Dialog lock flag - prevents turn actions while dialog is open
-  bool get _isDialogOpen =>
-      state.showQuestionDialog ||
-      state.showCardDialog ||
-      state.showLibraryPenaltyDialog ||
-      state.showImzaGunuDialog ||
-      state.showShopDialog ||
-      state.showTurnOrderDialog ||
-      state.showTurnSkippedDialog;
+  bool get _isDialogOpen => ref.read(dialogProvider).isAnyDialogOpen;
 
-  GameNotifier() : super(GameState(players: []));
+  GameNotifier(this.ref) : super(GameState(players: []));
 
   bool get isProcessing => _isProcessing;
 
@@ -269,7 +231,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _logBot('Execution halted (Paused)...');
     while (state.isGamePaused) {
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(
+        const Duration(milliseconds: GameConstants.pauseCheckInterval),
+      );
     }
     _logBot('Execution resumed');
   }
@@ -299,18 +263,19 @@ class GameNotifier extends StateNotifier<GameState> {
     // Start new watchdog with 4 second timeout
     _botWatchdog = Timer(const Duration(seconds: 4), () {
       if (_isBotPlaying) {
+        final dialog = ref.read(dialogProvider);
         _logBot('ğŸš¨ WATCHDOG: Bot stuck! Forcing recovery...');
         safePrint('[BOT ğŸ¤–] WATCHDOG TRIGGERED - Current state:');
         safePrint('  - _isProcessing: $_isProcessing');
         safePrint('  - isDiceRolling: ${state.isDiceRolling}');
-        safePrint('  - showQuestionDialog: ${state.showQuestionDialog}');
-        safePrint('  - showCardDialog: ${state.showCardDialog}');
+        safePrint('  - showQuestionDialog: ${dialog.showQuestionDialog}');
+        safePrint('  - showCardDialog: ${dialog.showCardDialog}');
         safePrint(
-          '  - showLibraryPenaltyDialog: ${state.showLibraryPenaltyDialog}',
+          '  - showLibraryPenaltyDialog: ${dialog.showLibraryPenaltyDialog}',
         );
-        safePrint('  - showImzaGunuDialog: ${state.showImzaGunuDialog}');
-        safePrint('  - showShopDialog: ${state.showShopDialog}');
-        safePrint('  - showTurnOrderDialog: ${state.showTurnOrderDialog}');
+        safePrint('  - showImzaGunuDialog: ${dialog.showImzaGunuDialog}');
+        safePrint('  - showShopDialog: ${dialog.showShopDialog}');
+        safePrint('  - showTurnOrderDialog: ${dialog.showTurnOrderDialog}');
         safePrint('  - phase: ${state.phase}');
         safePrint('  - currentPlayer: ${state.currentPlayer.name}');
 
@@ -318,26 +283,26 @@ class GameNotifier extends StateNotifier<GameState> {
         _isProcessing = false;
 
         // Try to recover by forcing next action
-        if (state.showQuestionDialog) {
+        if (dialog.showQuestionDialog) {
           _logBot('Watchdog: Closing stuck question dialog');
           answerQuestion(_random.nextBool());
-        } else if (state.showCardDialog) {
+        } else if (dialog.showCardDialog) {
           _logBot('Watchdog: Closing stuck card dialog');
           closeCardDialog();
-        } else if (state.showLibraryPenaltyDialog) {
+        } else if (dialog.showLibraryPenaltyDialog) {
           _logBot('Watchdog: Closing stuck library dialog');
           closeLibraryPenaltyDialog();
-        } else if (state.showImzaGunuDialog) {
+        } else if (dialog.showImzaGunuDialog) {
           _logBot('Watchdog: Closing stuck imza gÃ¼nÃ¼ dialog');
           closeImzaGunuDialog();
-        } else if (state.showShopDialog) {
+        } else if (dialog.showShopDialog) {
           _logBot('Watchdog: Closing stuck shop dialog');
           closeShopDialog();
-        } else if (state.showTurnOrderDialog) {
+        } else if (dialog.showTurnOrderDialog) {
           _logBot('Watchdog: Closing stuck turn order dialog');
           closeTurnOrderDialog();
           _scheduleBotTurn();
-        } else if (state.showTurnSkippedDialog) {
+        } else if (dialog.showTurnSkippedDialog) {
           _logBot('Watchdog: Closing stuck turn skipped dialog');
           closeTurnSkippedDialog();
         } else {
@@ -457,37 +422,44 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Roll dice - handles MOVEMENT rolls during playerTurn phase.
   /// NOTE: Turn order rolls are handled automatically by startAutomatedTurnOrder().
   Future<void> rollDice() async {
-    _logBot(
-      'rollDice() START - ${_isProcessing ? "BLOCKED (processing)" : "OK"}',
-    );
-
-    if (_isProcessing || state.isDiceRolling) {
+    // UI Race Condition Guard
+    if (_isProcessingAction || state.isDiceRolling) {
       _logBot(
-        'rollDice() BLOCKED - isProcessing: $_isProcessing, isDiceRolling: ${state.isDiceRolling}',
+        'rollDice() BLOCKED - _isProcessingAction active or dice rolling',
       );
       return;
     }
-
-    // CRITICAL: Block roll if ANY dialog is open (Async Barrier)
-    if (_isDialogOpen) {
-      _logBot('rollDice() BLOCKED - Dialog is open (_isDialogOpen=true)');
-      return;
-    }
-
-    // CRITICAL: Turn order rolls are handled by startAutomatedTurnOrder()
-    // Skip manual dice if we're in rollingForOrder or tieBreaker phase
-    if (state.phase == GamePhase.rollingForOrder ||
-        state.phase == GamePhase.tieBreaker) {
-      _logBot(
-        'rollDice() BLOCKED - Phase ${state.phase} uses automated rolling',
-      );
-      return;
-    }
-
-    _isProcessing = true;
-    _startWatchdog(); // Start watchdog for this operation
+    _isProcessingAction = true;
 
     try {
+      _logBot(
+        'rollDice() START - ${_isProcessing ? "BLOCKED (processing)" : "OK"}',
+      );
+
+      if (_isProcessing) {
+        _logBot('rollDice() BLOCKED - isProcessing: $_isProcessing');
+        return;
+      }
+
+      // CRITICAL: Block roll if ANY dialog is open (Async Barrier)
+      if (_isDialogOpen) {
+        _logBot('rollDice() BLOCKED - Dialog is open (_isDialogOpen=true)');
+        return;
+      }
+
+      // CRITICAL: Turn order rolls are handled by startAutomatedTurnOrder()
+      // Skip manual dice if we're in rollingForOrder or tieBreaker phase
+      if (state.phase == GamePhase.rollingForOrder ||
+          state.phase == GamePhase.tieBreaker) {
+        _logBot(
+          'rollDice() BLOCKED - Phase ${state.phase} uses automated rolling',
+        );
+        return;
+      }
+
+      _isProcessing = true;
+      _startWatchdog(); // Start watchdog for this operation
+
       // Check if player has turns to skip (library penalty) - only in playerTurn phase
       if (state.phase == GamePhase.playerTurn &&
           state.currentPlayer.turnsToSkip > 0) {
@@ -503,13 +475,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
         if (remaining > 0) {
           _addLog(
-            "ğŸ“š ${player.name} KÃ¼tÃ¼phanede! Kalan ceza turu: $remaining",
+            "📚 ${player.name} Kütüphanede! Kalan ceza turu: $remaining",
             type: 'error',
           );
-          state = state.copyWith(showTurnSkippedDialog: true);
+          ref.read(dialogProvider.notifier).showTurnSkipped();
         } else {
           _addLog(
-            "âœ… ${player.name} KÃ¼tÃ¼phane cezasÄ±nÄ± tamamladÄ±! SÄ±radaki turda zar atabilir.",
+            "✅ ${player.name} Kütüphane cezasını tamamladı! Sıradaki turda zar atabilir.",
             type: 'success',
           );
         }
@@ -519,62 +491,33 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
-      // Start dice rolling animation
-      state = state.copyWith(isDiceRolling: true);
-      _logBot('Dice rolling started...');
-      AudioManager.instance.playSfx('audio/dice_roll.wav');
-
-      // Wait for animation duration (2 seconds, faster in bot mode)
-      final diceDelay = _isBotPlaying
-          ? const Duration(milliseconds: 500)
-          : const Duration(seconds: 2);
-      await Future.delayed(diceDelay);
-      await _checkPauseStatus(); // PAUSE GUARD
-
-      // Generate two independent dice
-      int d1 = _random.nextInt(6) + 1;
-      int d2 = _random.nextInt(6) + 1;
-      int roll = d1 + d2;
-      bool isDouble = d1 == d2;
-
-      _logBot('Dice rolled: $d1 + $d2 = $roll (Double: $isDouble)');
-
-      // Stop rolling animation and show results
-      state = state.copyWith(isDiceRolling: false);
-
-      // Handle based on game phase (only playerTurn should reach here now)
-      if (state.phase == GamePhase.playerTurn) {
-        // Doubles mechanic during movement
-        _logBot('Phase: playerTurn - Doubles mechanic ACTIVE');
-        await _handleMovementRoll(d1, d2, roll, isDouble);
-      } else {
-        // Unexpected phase - log and handle safely
-        _logBot(
-          'WARNING: Unexpected phase ${state.phase} - ignoring dice roll',
-        );
-        safePrint(
-          'ğŸš¨ WARNING: Dice rolled in unexpected phase: ${state.phase}',
-        );
-      }
-      _logBot('rollDice() COMPLETED successfully');
+      await _diceService.executeRoll(
+        notifier: this,
+        state: state,
+        isBotPlaying: _isBotPlaying,
+        onMovementRoll: (d1, d2, roll, isDouble) async {
+          await _handleMovementRoll(d1, d2, roll, isDouble);
+        },
+      );
     } catch (e, stackTrace) {
       // SAFETY: Catch any error and log it
-      safePrint('ğŸš¨ ERROR in rollDice: $e');
+      safePrint('🚨 ERROR in rollDice: $e');
       safePrint('Stack trace: $stackTrace');
-      _addLog('Hata oluÅŸtu: $e', type: 'error');
-      _logBot('ğŸš¨ ERROR in rollDice: $e');
+      _addLog('Hata oluştu: $e', type: 'error');
+      _logBot('🚨 ERROR in rollDice: $e');
       // Try to recover
       _scheduleBotTurn();
     } finally {
       // SAFETY: Always reset processing flag to prevent freezing
       _isProcessing = false;
+      _isProcessingAction = false; // Reset action guard
       _logBot('rollDice() finally - _isProcessing reset to false');
     }
   }
 
   /// Close turn order dialog and start the game
   void closeTurnOrderDialog() {
-    state = state.copyWith(showTurnOrderDialog: false);
+    ref.read(dialogProvider.notifier).hideTurnOrder();
   }
 
   /// Handle normal movement roll with strict double logic
@@ -590,9 +533,9 @@ class GameNotifier extends StateNotifier<GameState> {
       '_handleMovementRoll() START - roll: $roll, isDouble: $isDouble, phase: ${state.phase}',
     );
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // DEFENSIVE CHECK: Ensure doubles logic only applies during playerTurn phase
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     if (state.phase != GamePhase.playerTurn) {
       _logBot(
         'WARNING: _handleMovementRoll called in wrong phase (${state.phase}) - disabling doubles logic',
@@ -609,7 +552,7 @@ class GameNotifier extends StateNotifier<GameState> {
       if (newConsecutive >= 3) {
         _logBot('CASE A: 3rd consecutive double -> Jail');
         _addLog(
-          "ğŸš¨ 3. Kez Ã‡ift! KÃ¼tÃ¼phaneye (Hapse) gidiyorsun.",
+          "ðŸš¨ 3. Kez Ã‡ift! KÃ¼tÃ¼phaneye (Hapse) gidiyorsun.",
           type: 'error',
         );
 
@@ -644,7 +587,7 @@ class GameNotifier extends StateNotifier<GameState> {
       if (isDouble) {
         _logBot('CASE B: Double roll (1st or 2nd)');
         _addLog(
-          "ğŸ² Ã‡ift AttÄ±n ($newConsecutive. Kez)! Tekrar oyna.",
+          "ðŸŽ² Ã‡ift AttÄ±n ($newConsecutive. Kez)! Tekrar oyna.",
           type: 'dice',
         );
 
@@ -664,10 +607,10 @@ class GameNotifier extends StateNotifier<GameState> {
         await Future.delayed(delay);
         await _movePlayer(roll);
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // LIBRARY PRIORITY: Landing on Library overrides Double Dice re-roll
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        if (state.showLibraryPenaltyDialog) {
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        if (ref.read(dialogProvider).showLibraryPenaltyDialog) {
           // Library dialog is shown - it will end the turn when closed
           _logBot(
             'CASE B: Library dialog shown - deferring turn end to dialog closure',
@@ -719,10 +662,10 @@ class GameNotifier extends StateNotifier<GameState> {
           false; // Reset before calling endTurn() to prevent blocking
       endTurn();
     } catch (e, stackTrace) {
-      safePrint('ğŸš¨ ERROR in _handleMovementRoll: $e');
+      safePrint('ðŸš¨ ERROR in _handleMovementRoll: $e');
       safePrint('Stack trace: $stackTrace');
       _addLog('Hareket hatasÄ±: $e', type: 'error');
-      _logBot('ğŸš¨ ERROR in _handleMovementRoll: $e');
+      _logBot('ðŸš¨ ERROR in _handleMovementRoll: $e');
       // Ensure turn ends even on error
       endTurn();
     } finally {
@@ -734,77 +677,16 @@ class GameNotifier extends StateNotifier<GameState> {
 
   /// Move player step-by-step with hopping animation
   Future<void> _movePlayer(int steps) async {
-    _logBot('_movePlayer() START - steps: $steps');
-    try {
-      var player = state.currentPlayer;
-      _logBot(
-        'Current position: ${player.position}, target: ${(player.position + steps) % BoardConfig.boardSize}',
-      );
-
-      if (player.inJail) {
-        _logBot('Player is in jail');
-        if (_random.nextBool()) {
-          List<Player> newPlayers = List.from(state.players);
-          newPlayers[state.currentPlayerIndex] = player.copyWith(inJail: false);
-          state = state.copyWith(players: newPlayers);
-          _addLog("NÃ¶betten erken Ã§Ä±ktÄ±n!", type: 'success');
-        } else {
-          _addLog("HÃ¢lÃ¢ nÃ¶bettesin. Tur geÃ§ti.", type: 'error');
-          endTurn();
-          return;
-        }
-      }
-
-      // Step-by-step hopping movement
-      int currentPos = player.position;
-
-      for (int i = 0; i < steps; i++) {
-        currentPos = (currentPos + 1) % BoardConfig.boardSize;
-
-        // Check if passed start
-        if (currentPos == BoardConfig.startPosition) {
-          // Award stars for passing start
-          List<Player> startPlayers = List.from(state.players);
-          startPlayers[state.currentPlayerIndex] = player.copyWith(
-            stars: player.stars + GameConstants.passingStartBonus,
-          );
-          state = state.copyWith(players: startPlayers);
-          player = state.currentPlayer;
-
-          _addLog(
-            "BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z",
-            type: 'purchase',
-          );
-        }
-
-        // Update position for each step
-        List<Player> stepPlayers = List.from(state.players);
-        stepPlayers[state.currentPlayerIndex] = player.copyWith(
-          position: currentPos,
-        );
-        state = state.copyWith(players: stepPlayers);
-        player = state.currentPlayer;
-
-        // Wait for hop animation (faster in bot mode)
-        final hopDelay = _isBotPlaying ? 50 : GameConstants.hopAnimationDelay;
-        AudioManager.instance.playSfx('audio/pawn_step.wav');
-        await Future.delayed(Duration(milliseconds: hopDelay));
-      }
-
-      final tile = state.tiles[currentPos];
-
-      state = state.copyWith(currentTile: tile);
-      _addLog("${tile.name} karesine gelindi.");
-      _logBot('Landed on tile: ${tile.name} (type: ${tile.type})');
-
-      await _handleTileArrival(tile);
-    } catch (e, stackTrace) {
-      safePrint('ğŸš¨ ERROR in _movePlayer: $e');
-      safePrint('Stack trace: $stackTrace');
-      _addLog('Hareket hatasÄ±: $e', type: 'error');
-      _logBot('ğŸš¨ ERROR in _movePlayer: $e');
-      endTurn();
-    }
+    await _movementService.executeMovement(
+      notifier: this,
+      state: state,
+      steps: steps,
+      isBotPlaying: _isBotPlaying,
+      onTileArrival: (tile) async {
+        await _handleTileArrival(tile);
+      },
+      endTurn: endTurn,
+    );
   }
 
   Future<void> _handleTileArrival(BoardTile tile) async {
@@ -854,8 +736,8 @@ class GameNotifier extends StateNotifier<GameState> {
         endTurn();
         break;
       case TileType.chance:
-        _logBot('Tile type: CHANCE (ÅANS)');
-        // ÅANS - Draw a chance card
+        _logBot('Tile type: CHANCE (ÅžANS)');
+        // ÅžANS - Draw a chance card
         await _drawCardAndApply(CardType.sans);
         break;
       case TileType.fate:
@@ -908,23 +790,37 @@ class GameNotifier extends StateNotifier<GameState> {
         "ğŸ¤– Bot: ğŸ“š ${player.name} KÃ¼tÃ¼phanede! $libraryPenaltyTurns tur ceza.",
         type: 'error',
       );
-      await Future.delayed(const Duration(milliseconds: 300), () {
-        closeLibraryPenaltyDialog();
-      });
+      _activeTimers.add(
+        Timer(
+          const Duration(
+            milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay,
+          ),
+          () {
+            closeLibraryPenaltyDialog();
+          },
+        ),
+      );
       return;
     }
 
     // Human mode: Create completer to wait for dialog closure (Async Barrier)
     _libraryPenaltyDialogCompleter = Completer<void>();
-    state = state.copyWith(players: newPlayers, showLibraryPenaltyDialog: true);
+    ref.read(dialogProvider.notifier).showLibraryPenalty();
 
     _addLog(
-      "ğŸ“š ${player.name} KÃ¼tÃ¼phanede! Sessizlik lazÄ±m, $libraryPenaltyTurns tur bekle.",
+      "📚 ${player.name} Kütüphanede! Sessizlik lazım, $libraryPenaltyTurns tur bekle.",
       type: 'error',
     );
 
+    // Release global action guard so user can close dialog
+    final wasLocked = _isProcessingAction;
+    _isProcessingAction = false;
+
     // Await the completer to wait for user to close dialog
     await _libraryPenaltyDialogCompleter!.future;
+
+    // Reacquire lock
+    if (wasLocked) _isProcessingAction = true;
     _libraryPenaltyDialogCompleter = null;
   }
 
@@ -938,23 +834,37 @@ class GameNotifier extends StateNotifier<GameState> {
         "ğŸ¤– Bot: âœï¸ ${player.name} Ä°mza GÃ¼nÃ¼'nde okurlarÄ±yla buluÅŸtu!",
         type: 'success',
       );
-      await Future.delayed(const Duration(milliseconds: 300), () {
-        closeImzaGunuDialog();
-      });
+      _activeTimers.add(
+        Timer(
+          const Duration(
+            milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay,
+          ),
+          () {
+            closeImzaGunuDialog();
+          },
+        ),
+      );
       return;
     }
 
     // Human mode: Create completer to wait for dialog closure (Async Barrier)
     _imzaGunuDialogCompleter = Completer<void>();
-    state = state.copyWith(showImzaGunuDialog: true);
+    ref.read(dialogProvider.notifier).showImzaGunu();
 
     _addLog(
-      "âœï¸ ${player.name} Ä°mza GÃ¼nÃ¼'nde okurlarÄ±yla buluÅŸtu!",
+      "✍️ ${player.name} İmza Günü'nde okurlarıyla buluştu!",
       type: 'success',
     );
 
+    // Release global action guard so user can close dialog
+    final wasLocked = _isProcessingAction;
+    _isProcessingAction = false;
+
     // Await the completer to wait for user to close dialog
     await _imzaGunuDialogCompleter!.future;
+
+    // Reacquire lock
+    if (wasLocked) _isProcessingAction = true;
     _imzaGunuDialogCompleter = null;
   }
 
@@ -966,10 +876,7 @@ class GameNotifier extends StateNotifier<GameState> {
       turnsToSkip: GameConstants.jailTurns,
     );
 
-    state = state.copyWith(
-      players: newPlayers,
-      showLibraryPenaltyDialog: false,
-    );
+    ref.read(dialogProvider.notifier).hideLibraryPenalty();
 
     _addLog(
       "${player.name} ${GameConstants.jailTurns} tur ceza aldÄ±!",
@@ -988,7 +895,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   /// Close Ä°mza GÃ¼nÃ¼ dialog and end turn
   void closeImzaGunuDialog() {
-    state = state.copyWith(showImzaGunuDialog: false);
+    ref.read(dialogProvider.notifier).hideImzaGunu();
 
     // Complete the completer if waiting for dialog to close
     if (_imzaGunuDialogCompleter != null &&
@@ -1000,9 +907,9 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // 3. SORU & MASTERY SÄ°STEMÄ°
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Auto-select difficulty based on player's mastery level
   /// - Novice -> Easy
@@ -1098,7 +1005,7 @@ class GameNotifier extends StateNotifier<GameState> {
             .where((q) => categoryNames.contains(q.category.name))
             .toList();
         if (anyCategoryQuestions.isEmpty) {
-          // FALLBACK FOR TEÅVIK TILES: Create a synthetic bonus reward question
+          // FALLBACK FOR TEÅžVIK TILES: Create a synthetic bonus reward question
           // This proves the tile logic works even when the database is empty
           if (tile.type == TileType.tesvik) {
             _addLog(
@@ -1119,9 +1026,16 @@ class GameNotifier extends StateNotifier<GameState> {
             );
 
             // Clear floating effect after delay
-            Future.delayed(const Duration(seconds: 2), () {
-              state = state.copyWith(floatingEffect: null);
-            });
+            _activeTimers.add(
+              Timer(
+                const Duration(
+                  seconds: GameConstants.floatingEffectDurationSeconds,
+                ),
+                () {
+                  state = state.copyWith(floatingEffect: null);
+                },
+              ),
+            );
 
             _addLog(
               '${player.name} TeÅŸvik bonusu kazandÄ±: +$bonusStars â­',
@@ -1146,7 +1060,10 @@ class GameNotifier extends StateNotifier<GameState> {
         // Shuffle and pick random from the recycled pool
         allCategoryQuestions.shuffle(_random);
         selectedQuestion = allCategoryQuestions.first;
-        _addLog('ğŸ”„ Soru havuzu yenilendi, yeni soru seÃ§iliyor.', type: 'info');
+        _addLog(
+          'ğŸ”„ Soru havuzu yenilendi, yeni soru seÃ§iliyor.',
+          type: 'info',
+        );
       }
     } else {
       // Shuffle the filtered list for true randomness, then pick first
@@ -1180,17 +1097,23 @@ class GameNotifier extends StateNotifier<GameState> {
     updatedAskedIds.add(selectedQuestion.text);
 
     state = state.copyWith(
-      showQuestionDialog: true,
-      currentQuestion: selectedQuestion,
-      currentTile: tile,
       askedQuestionIds: shouldResetAskedIds
           ? {selectedQuestion.text}
           : updatedAskedIds,
     );
 
+    ref.read(dialogProvider.notifier).showQuestion(selectedQuestion);
+
+    // Release global action guard so user can answer
+    final wasLocked = _isProcessingAction;
+    _isProcessingAction = false;
+
     // CRITICAL: Await the completer to wait for user to answer
     // The dialog will call answerQuestion() which will complete this completer
     await _questionDialogCompleter!.future;
+
+    // Reacquire lock
+    if (wasLocked) _isProcessingAction = true;
     _questionDialogCompleter = null;
   }
 
@@ -1249,9 +1172,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
         int totalStars = baseStars + promotionReward;
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // CATCH-UP MECHANIC (Underdog Bonus) - Bot version
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         final leaderStars = state.players
             .map((p) => p.stars)
             .reduce((a, b) => a > b ? a : b);
@@ -1264,12 +1187,15 @@ class GameNotifier extends StateNotifier<GameState> {
                   .round()
                   .clamp(GameConstants.underdogBonusStars, baseStars);
           totalStars += underdogBonus;
-          _addLog('ğŸ”¥ Bot: Mazlum Bonusu! +$underdogBonus â­', type: 'success');
+          _addLog(
+            'ğŸ”¥ Bot: Mazlum Bonusu! +$underdogBonus â­',
+            type: 'success',
+          );
         }
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // QUOTE DROP RATE (Progression Bonus) - Bot version
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         var updatedPlayer = player;
         if (difficulty == Difficulty.hard &&
             _random.nextDouble() < GameConstants.hardQuestionQuoteDropRate) {
@@ -1328,7 +1254,10 @@ class GameNotifier extends StateNotifier<GameState> {
 
         _checkWinCondition();
       } else if (!isCorrect) {
-        _addLog("ğŸ¤– Bot: YanlÄ±ÅŸ cevap. YÄ±ldÄ±z kazanamadÄ±n.", type: 'error');
+        _addLog(
+          "ğŸ¤– Bot: YanlÄ±ÅŸ cevap. YÄ±ldÄ±z kazanamadÄ±n.",
+          type: 'error',
+        );
       }
 
       // Wait a short delay then end turn
@@ -1347,24 +1276,22 @@ class GameNotifier extends StateNotifier<GameState> {
   /// - 3 Medium answers â†’ Kalfa (2x reward) [requires Ã‡Ä±rak]
   /// - 3 Hard answers â†’ Usta (3x reward) [requires Kalfa]
   Future<void> answerQuestion(bool isCorrect) async {
-    safePrint('ğŸ”· answerQuestion called: isCorrect=$isCorrect');
-
-    // NOTE: Removed _isProcessing guard - question answering is independent of dice rolling
-    if (state.currentQuestion == null) {
-      safePrint('ğŸ”· EARLY RETURN - no currentQuestion!');
-      return;
-    }
+    // UI Race Condition Guard
+    if (_isProcessingAction) return;
+    _isProcessingAction = true;
 
     bool shouldEndTurn = false;
 
     try {
+      safePrint('🔹 answerQuestion called: isCorrect=$isCorrect');
+
       final tile = state.currentTile;
       final categoryName = tile?.category;
       final difficulty = tile?.difficulty ?? Difficulty.medium;
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       // STEP 1: IMMEDIATE LOGIC - Calculate score/stars (dialog still visible)
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       if (isCorrect && categoryName != null) {
         final player = state.currentPlayer;
 
@@ -1413,9 +1340,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
         int totalStars = baseStars + promotionReward;
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // CATCH-UP MECHANIC (Underdog Bonus)
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Get leader's star count
         final leaderStars = state.players
             .map((p) => p.stars)
@@ -1440,9 +1367,9 @@ class GameNotifier extends StateNotifier<GameState> {
         List<Player> newPlayers = List.from(state.players);
         var updatedPlayer = player;
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // QUOTE DROP RATE (Progression Bonus)
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         if (difficulty == Difficulty.hard &&
             _random.nextDouble() < GameConstants.hardQuestionQuoteDropRate) {
           // Generate a random quote ID
@@ -1478,9 +1405,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
         newPlayers[state.currentPlayerIndex] = updatedPlayer;
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // STEP 2: TRIGGER ANIMATION - Update state to show confetti/feedback
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         state = state.copyWith(players: newPlayers);
 
         _addLog(
@@ -1509,19 +1436,20 @@ class GameNotifier extends StateNotifier<GameState> {
         shouldEndTurn = true;
       }
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       // STEP 3: TEARDOWN - Close dialog immediately
       // NOTE: Animation already played in the dialog widget before callback was called.
       // No additional delay needed here.
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       safePrint('ğŸ”· TEARDOWN: Setting showQuestionDialog=false');
-      state = state.copyWith(showQuestionDialog: false, currentQuestion: null);
+      ref.read(dialogProvider.notifier).hideQuestion();
     } catch (e, stack) {
       safePrint('ğŸ”· ERROR in answerQuestion: $e');
       safePrint('ğŸ”· Stack: $stack');
     } finally {
       // SAFETY FALLBACK: Always reset processing flag and complete completer
       _isProcessing = false;
+      _isProcessingAction = false; // Reset action guard
       safePrint('ğŸ”· FINALLY: _isProcessing reset to false');
 
       // Unblock the flow - safely complete the completer
@@ -1565,14 +1493,14 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  /// Draw a card from Åans or Kader deck
+  /// Draw a card from Åžans or Kader deck
   /// Note: Currently unused - cards are handled through other mechanisms
   // ignore: unused_element
   Future<void> _drawCard(CardType cardType) async {
     await _drawCardAndApply(cardType);
   }
 
-  /// Draw a card from Åans or Kader deck and apply its effect
+  /// Draw a card from Åžans or Kader deck and apply its effect
   /// For human players: Shows card dialog, effect applied when dialog is closed
   /// For bot players: Auto-applies effect without showing dialog
   Future<void> _drawCardAndApply(CardType cardType) async {
@@ -1585,7 +1513,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final isSans = cardType == CardType.sans;
     final deck = isSans ? GameCards.sansCards : GameCards.kaderCards;
     final card = deck[_random.nextInt(deck.length)];
-    final cardName = isSans ? "ÅANS" : "KADER";
+    final cardName = isSans ? "ÅžANS" : "KADER";
 
     // BOT MODE: Auto-apply card effect without showing dialog
     if (_isBotPlaying) {
@@ -1600,12 +1528,19 @@ class GameNotifier extends StateNotifier<GameState> {
     );
     AudioManager.instance.playSfx('audio/card_flip.wav');
 
-    // Create a completer to wait for dialog closure
+    // Create a completer to wait
     _cardDialogCompleter = Completer<void>();
-    state = state.copyWith(showCardDialog: true, currentCard: card);
+    ref.read(dialogProvider.notifier).showCard(card);
+
+    // Release global action guard so user can interact
+    final wasLocked = _isProcessingAction;
+    _isProcessingAction = false;
 
     // Wait for the dialog to be closed (completed in closeCardDialog)
     await _cardDialogCompleter!.future;
+
+    // Reacquire lock
+    if (wasLocked) _isProcessingAction = true;
     _cardDialogCompleter = null;
   }
 
@@ -1671,7 +1606,9 @@ class GameNotifier extends StateNotifier<GameState> {
             stars: newStars,
           );
           state = state.copyWith(players: newPlayers);
-          _addLog("ğŸ¤– Bot: ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
+          _addLog(
+            "ğŸ¤– Bot: ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!",
+          );
           break;
 
         case CardEffectType.moveRelative:
@@ -1699,9 +1636,13 @@ class GameNotifier extends StateNotifier<GameState> {
           state = state.copyWith(players: newPlayers);
 
           if (card.value > 0) {
-            _addLog("ğŸ¤– Bot: â¡ï¸ ${player.name} $targetPos. kareye ilerledi!");
+            _addLog(
+              "ğŸ¤– Bot: âž¡ï¸ ${player.name} $targetPos. kareye ilerledi!",
+            );
           } else {
-            _addLog("ğŸ¤– Bot: â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
+            _addLog(
+              "ğŸ¤– Bot: â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!",
+            );
           }
           break;
 
@@ -1731,7 +1672,10 @@ class GameNotifier extends StateNotifier<GameState> {
           break;
 
         case CardEffectType.rollAgain:
-          _addLog("ğŸ¤– Bot: ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
+          _addLog(
+            "ğŸ¤– Bot: ğŸ² ${player.name} tekrar zar atÄ±yor!",
+            type: 'info',
+          );
           // Don't end turn, let the bot roll again
           return;
 
@@ -1808,211 +1752,212 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void closeCardDialog() {
-    if (state.currentCard != null) {
-      final card = state.currentCard!;
-      final player = state.currentPlayer;
+    try {
+      final card = ref.read(dialogProvider).currentCard;
+      if (card != null) {
+        final player = state.currentPlayer;
 
-      switch (card.effectType) {
-        case CardEffectType.moneyChange:
-          // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
-          final originalStars = player.stars;
-          final rawNewStars = player.stars + card.value;
-          final newStars = rawNewStars.clamp(0, double.infinity).toInt();
+        switch (card.effectType) {
+          case CardEffectType.moneyChange:
+            // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
+            final originalStars = player.stars;
+            final rawNewStars = player.stars + card.value;
+            final newStars = rawNewStars.clamp(0, double.infinity).toInt();
 
-          // Check if player couldn't afford the full payment
-          if (card.value < 0 && rawNewStars < 0) {
-            // Player went into debt (before clamp) - apply alternative penalty
-            List<Player> penaltyPlayers = List.from(state.players);
-            penaltyPlayers[state.currentPlayerIndex] = player.copyWith(
+            // Check if player couldn't afford the full payment
+            if (card.value < 0 && rawNewStars < 0) {
+              // Player went into debt (before clamp) - apply alternative penalty
+              List<Player> penaltyPlayers = List.from(state.players);
+              penaltyPlayers[state.currentPlayerIndex] = player.copyWith(
+                stars: newStars,
+                turnsToSkip: player.turnsToSkip + 1, // Alternative: 1 turn wait
+              );
+              state = state.copyWith(players: penaltyPlayers);
+              _addLog(
+                "âš ï¸ ${player.name} Ã¶deyemedi! YÄ±ldÄ±zlar 0'a dÃ¼ÅŸtÃ¼ + 1 tur ceza!",
+                type: 'error',
+              );
+            } else {
+              _updateStars(player, newStars);
+              if (card.value > 0) {
+                _addLog(
+                  "ğŸ’° ${player.name} +${card.value} yÄ±ldÄ±z kazandÄ±!",
+                  type: 'success',
+                );
+              } else {
+                final lost = originalStars - newStars;
+                _addLog(
+                  "ğŸ’¸ ${player.name} $lost yÄ±ldÄ±z kaybetti!",
+                  type: 'error',
+                );
+              }
+            }
+            break;
+
+          case CardEffectType.move:
+            int targetPos = card.value % BoardConfig.boardSize;
+            bool passedStart = targetPos < player.position;
+
+            List<Player> newPlayers = List.from(state.players);
+            int newStars = player.stars;
+
+            if (passedStart && targetPos != BoardConfig.startPosition) {
+              newStars += GameConstants.passingStartBonus;
+              _addLog(
+                "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
+                type: 'success',
+              );
+            }
+
+            newPlayers[state.currentPlayerIndex] = player.copyWith(
+              position: targetPos,
               stars: newStars,
-              turnsToSkip: player.turnsToSkip + 1, // Alternative: 1 turn wait
             );
-            state = state.copyWith(players: penaltyPlayers);
+            state = state.copyWith(players: newPlayers);
+            _addLog("ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
+            break;
+
+          case CardEffectType.moveRelative:
+            // Move forward/backward by relative amount
+            int currentPos = player.position;
+            int targetPos = (currentPos + card.value) % BoardConfig.boardSize;
+            if (targetPos < 0) targetPos += BoardConfig.boardSize;
+
+            List<Player> newPlayers = List.from(state.players);
+            int newStars = player.stars;
+
+            // Check if passed start (moving forward wraps around)
+            if (card.value > 0 && targetPos < currentPos) {
+              newStars += GameConstants.passingStartBonus;
+              _addLog(
+                "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
+                type: 'success',
+              );
+            }
+
+            newPlayers[state.currentPlayerIndex] = player.copyWith(
+              position: targetPos,
+              stars: newStars,
+            );
+            state = state.copyWith(players: newPlayers);
+
+            if (card.value > 0) {
+              _addLog("âž¡ï¸ ${player.name} $targetPos. kareye ilerledi!");
+            } else {
+              _addLog("â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
+            }
+            break;
+
+          case CardEffectType.jail:
+            List<Player> temp = List.from(state.players);
+            temp[state.currentPlayerIndex] = player.copyWith(
+              position: BoardConfig.shopPosition,
+              turnsToSkip: GameConstants.jailTurns,
+            );
+            state = state.copyWith(players: temp);
             _addLog(
-              "âš ï¸ ${player.name} Ã¶deyemedi! YÄ±ldÄ±zlar 0'a dÃ¼ÅŸtÃ¼ + 1 tur ceza!",
+              "â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
               type: 'error',
             );
-          } else {
+            break;
+
+          case CardEffectType.skipTurn:
+            List<Player> temp = List.from(state.players);
+            temp[state.currentPlayerIndex] = player.copyWith(
+              turnsToSkip: player.turnsToSkip + card.value,
+            );
+            state = state.copyWith(players: temp);
+            _addLog(
+              "â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
+              type: 'error',
+            );
+            break;
+
+          case CardEffectType.rollAgain:
+            _addLog("ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
+            // Don't end turn, let the player roll again
+            ref.read(dialogProvider.notifier).hideCard();
+            return;
+
+          case CardEffectType.loseStarsPercentage:
+            int percentage = card.value; // e.g., 50 means 50%
+            int loss = (player.stars * percentage / 100).round();
+            int newStars = player.stars - loss;
             _updateStars(player, newStars);
+            _addLog(
+              "ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
+              type: 'error',
+            );
+            break;
+
+          case CardEffectType.globalMoney:
+            List<Player> updatedPlayers = List.from(state.players);
+            final currentIdx = state.currentPlayerIndex;
+            int totalTransfer = 0;
+
+            for (int i = 0; i < updatedPlayers.length; i++) {
+              if (i != currentIdx) {
+                if (card.value > 0) {
+                  int amount = card.value;
+                  if (updatedPlayers[i].stars < amount) {
+                    amount = updatedPlayers[i].stars > 0
+                        ? updatedPlayers[i].stars
+                        : 0;
+                  }
+                  updatedPlayers[i] = updatedPlayers[i].copyWith(
+                    stars: updatedPlayers[i].stars - amount,
+                  );
+                  totalTransfer += amount;
+                } else {
+                  int amount = -card.value;
+                  updatedPlayers[i] = updatedPlayers[i].copyWith(
+                    stars: updatedPlayers[i].stars + amount,
+                  );
+                  totalTransfer += amount;
+                }
+              }
+            }
+
+            int finalStars = card.value > 0
+                ? player.stars + totalTransfer
+                : player.stars - totalTransfer;
+            updatedPlayers[currentIdx] = updatedPlayers[currentIdx].copyWith(
+              stars: finalStars,
+            );
+
+            state = state.copyWith(players: updatedPlayers);
+
             if (card.value > 0) {
               _addLog(
-                "ğŸ’° ${player.name} +${card.value} yÄ±ldÄ±z kazandÄ±!",
+                "ğŸ† ${player.name} herkesten toplam $totalTransfer â­ aldÄ±!",
                 type: 'success',
               );
             } else {
-              final lost = originalStars - newStars;
               _addLog(
-                "ğŸ’¸ ${player.name} $lost yÄ±ldÄ±z kaybetti!",
+                "ğŸ’¸ ${player.name} herkese toplam $totalTransfer â­ Ã¶dedi!",
                 type: 'error',
               );
             }
-          }
-          break;
-
-        case CardEffectType.move:
-          int targetPos = card.value % BoardConfig.boardSize;
-          bool passedStart = targetPos < player.position;
-
-          List<Player> newPlayers = List.from(state.players);
-          int newStars = player.stars;
-
-          if (passedStart && targetPos != BoardConfig.startPosition) {
-            newStars += GameConstants.passingStartBonus;
-            _addLog(
-              "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
-              type: 'success',
-            );
-          }
-
-          newPlayers[state.currentPlayerIndex] = player.copyWith(
-            position: targetPos,
-            stars: newStars,
-          );
-          state = state.copyWith(players: newPlayers);
-          _addLog("ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
-          break;
-
-        case CardEffectType.moveRelative:
-          // Move forward/backward by relative amount
-          int currentPos = player.position;
-          int targetPos = (currentPos + card.value) % BoardConfig.boardSize;
-          if (targetPos < 0) targetPos += BoardConfig.boardSize;
-
-          List<Player> newPlayers = List.from(state.players);
-          int newStars = player.stars;
-
-          // Check if passed start (moving forward wraps around)
-          if (card.value > 0 && targetPos < currentPos) {
-            newStars += GameConstants.passingStartBonus;
-            _addLog(
-              "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
-              type: 'success',
-            );
-          }
-
-          newPlayers[state.currentPlayerIndex] = player.copyWith(
-            position: targetPos,
-            stars: newStars,
-          );
-          state = state.copyWith(players: newPlayers);
-
-          if (card.value > 0) {
-            _addLog("â¡ï¸ ${player.name} $targetPos. kareye ilerledi!");
-          } else {
-            _addLog("â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
-          }
-          break;
-
-        case CardEffectType.jail:
-          List<Player> temp = List.from(state.players);
-          temp[state.currentPlayerIndex] = player.copyWith(
-            position: BoardConfig.shopPosition,
-            turnsToSkip: GameConstants.jailTurns,
-          );
-          state = state.copyWith(players: temp);
-          _addLog(
-            "â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
-            type: 'error',
-          );
-          break;
-
-        case CardEffectType.skipTurn:
-          List<Player> temp = List.from(state.players);
-          temp[state.currentPlayerIndex] = player.copyWith(
-            turnsToSkip: player.turnsToSkip + card.value,
-          );
-          state = state.copyWith(players: temp);
-          _addLog(
-            "â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
-            type: 'error',
-          );
-          break;
-
-        case CardEffectType.rollAgain:
-          _addLog("ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
-          // Don't end turn, let the player roll again
-          state = state.copyWith(
-            showCardDialog: false,
-            currentCard: null,
-            isDiceRolled: false,
-          );
-          return;
-
-        case CardEffectType.loseStarsPercentage:
-          int percentage = card.value; // e.g., 50 means 50%
-          int loss = (player.stars * percentage / 100).round();
-          int newStars = player.stars - loss;
-          _updateStars(player, newStars);
-          _addLog(
-            "ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
-            type: 'error',
-          );
-          break;
-
-        case CardEffectType.globalMoney:
-          List<Player> updatedPlayers = List.from(state.players);
-          final currentIdx = state.currentPlayerIndex;
-          int totalTransfer = 0;
-
-          for (int i = 0; i < updatedPlayers.length; i++) {
-            if (i != currentIdx) {
-              if (card.value > 0) {
-                int amount = card.value;
-                if (updatedPlayers[i].stars < amount) {
-                  amount = updatedPlayers[i].stars > 0
-                      ? updatedPlayers[i].stars
-                      : 0;
-                }
-                updatedPlayers[i] = updatedPlayers[i].copyWith(
-                  stars: updatedPlayers[i].stars - amount,
-                );
-                totalTransfer += amount;
-              } else {
-                int amount = -card.value;
-                updatedPlayers[i] = updatedPlayers[i].copyWith(
-                  stars: updatedPlayers[i].stars + amount,
-                );
-                totalTransfer += amount;
-              }
-            }
-          }
-
-          int finalStars = card.value > 0
-              ? player.stars + totalTransfer
-              : player.stars - totalTransfer;
-          updatedPlayers[currentIdx] = updatedPlayers[currentIdx].copyWith(
-            stars: finalStars,
-          );
-
-          state = state.copyWith(players: updatedPlayers);
-
-          if (card.value > 0) {
-            _addLog(
-              "ğŸ† ${player.name} herkesten toplam $totalTransfer â­ aldÄ±!",
-              type: 'success',
-            );
-          } else {
-            _addLog(
-              "ğŸ’¸ ${player.name} herkese toplam $totalTransfer â­ Ã¶dedi!",
-              type: 'error',
-            );
-          }
-          break;
+            break;
+        }
       }
-    }
-    state = state.copyWith(showCardDialog: false, currentCard: null);
+      ref.read(dialogProvider.notifier).hideCard();
 
-    // Complete the completer if waiting for card dialog to close
-    if (_cardDialogCompleter != null && !_cardDialogCompleter!.isCompleted) {
-      _cardDialogCompleter!.complete();
-    } else if (_isBotPlaying) {
-      // Bot mode: end turn immediately
-      endTurn();
+      // Complete the completer if waiting for card dialog to close
+      if (_cardDialogCompleter != null && !_cardDialogCompleter!.isCompleted) {
+        _cardDialogCompleter!.complete();
+      } else if (_isBotPlaying) {
+        // Bot mode: end turn immediately
+        endTurn();
+      }
+    } finally {
+      // Release action guard
+      _isProcessingAction = false;
     }
   }
 
   void closeDialogs() {
-    state = state.copyWith(showCardDialog: false);
+    ref.read(dialogProvider.notifier).hideCard();
     endTurn();
   }
 
@@ -2061,16 +2006,7 @@ class GameNotifier extends StateNotifier<GameState> {
         );
       }
 
-      state = state.copyWith(
-        players: updatedPlayers,
-        currentPlayerIndex: next,
-        isDiceRolled: false,
-        isDoubleTurn: false,
-        consecutiveDoubles: 0, // Reset
-        showQuestionDialog: false,
-        showCardDialog: false,
-        showTurnSkippedDialog: isSkipped,
-      );
+      ref.read(dialogProvider.notifier).hideCard();
 
       if (isSkipped) {
         _addLog("${nextPlayer.name} cezalÄ±! Tur atlanÄ±yor.", type: 'error');
@@ -2097,20 +2033,26 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // BOT MODE METHODS
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Toggle bot mode on/off
   void toggleBotMode() {
     _isBotPlaying = !_isBotPlaying;
     if (_isBotPlaying) {
-      _addLog('ğŸ¤– Bot Modu AKTÄ°F! Oyun otomatik oynanÄ±yor...', type: 'info');
+      _addLog(
+        'ğŸ¤– Bot Modu AKTÄ°F! Oyun otomatik oynanÄ±yor...',
+        type: 'info',
+      );
       _logBot('=== BOT MODE ACTIVATED ===');
       // Start the bot game loop
       _scheduleBotTurn();
     } else {
-      _addLog('ğŸ¤– Bot Modu KAPALI. Manuel oynamaya dÃ¶nÃ¼ldÃ¼.', type: 'info');
+      _addLog(
+        'ğŸ¤– Bot Modu KAPALI. Manuel oynamaya dÃ¶nÃ¼ldÃ¼.',
+        type: 'info',
+      );
       _logBot('=== BOT MODE DEACTIVATED ===');
       _cancelWatchdog();
     }
@@ -2129,27 +2071,32 @@ class GameNotifier extends StateNotifier<GameState> {
     _startWatchdog(); // Start watchdog before scheduling
 
     // Use a microtask to avoid blocking and allow UI updates
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (_isBotPlaying && state.phase != GamePhase.gameOver) {
-        _logBot('_scheduleBotTurn() executing check...');
-        // Check if any dialogs are open
-        if (!state.showQuestionDialog &&
-            !state.showCardDialog &&
-            !state.showLibraryPenaltyDialog &&
-            !state.showImzaGunuDialog &&
-            !state.showShopDialog &&
-            !state.showTurnOrderDialog &&
-            !state.isDiceRolling &&
-            !_isProcessing) {
-          _logBot('No dialogs/blockers, calling rollDice()');
-          rollDice();
-        } else if (_isBotPlaying) {
-          _logBot('Dialogs/blockers detected, handling them');
-          // If a dialog is open, close it automatically
-          _handleBotDialog();
-        }
-      }
-    });
+    _activeTimers.add(
+      Timer(
+        const Duration(milliseconds: GameConstants.botTurnScheduleDelay),
+        () {
+          if (_isBotPlaying && state.phase != GamePhase.gameOver) {
+            _logBot('_scheduleBotTurn() executing check...');
+            // Check if any dialogs are open
+            if (!ref.read(dialogProvider).showQuestionDialog &&
+                !ref.read(dialogProvider).showCardDialog &&
+                !ref.read(dialogProvider).showLibraryPenaltyDialog &&
+                !ref.read(dialogProvider).showImzaGunuDialog &&
+                !ref.read(dialogProvider).showShopDialog &&
+                !ref.read(dialogProvider).showTurnOrderDialog &&
+                !state.isDiceRolling &&
+                !_isProcessing) {
+              _logBot('No dialogs/blockers, calling rollDice()');
+              rollDice();
+            } else if (_isBotPlaying) {
+              _logBot('Dialogs/blockers detected, handling them');
+              // If a dialog is open, close it automatically
+              _handleBotDialog();
+            }
+          }
+        },
+      ),
+    );
   }
 
   /// Handle dialogs in bot mode - auto-close them
@@ -2159,27 +2106,27 @@ class GameNotifier extends StateNotifier<GameState> {
     _logBot('_handleBotDialog() - checking dialogs...');
     await Future.delayed(const Duration(milliseconds: 500));
 
-    if (state.showTurnOrderDialog) {
+    if (ref.read(dialogProvider).showTurnOrderDialog) {
       _logBot('Closing TurnOrderDialog');
       closeTurnOrderDialog();
       _scheduleBotTurn();
-    } else if (state.showLibraryPenaltyDialog) {
+    } else if (ref.read(dialogProvider).showLibraryPenaltyDialog) {
       _logBot('Closing LibraryPenaltyDialog');
       closeLibraryPenaltyDialog();
-    } else if (state.showImzaGunuDialog) {
+    } else if (ref.read(dialogProvider).showImzaGunuDialog) {
       _logBot('Closing ImzaGunuDialog');
       closeImzaGunuDialog();
-    } else if (state.showTurnSkippedDialog) {
+    } else if (ref.read(dialogProvider).showTurnSkippedDialog) {
       _logBot('Closing TurnSkippedDialog');
       closeTurnSkippedDialog();
-    } else if (state.showShopDialog) {
+    } else if (ref.read(dialogProvider).showShopDialog) {
       _logBot('Closing ShopDialog');
       // Bot doesn't buy quotes, just close the shop
       closeShopDialog();
-    } else if (state.showQuestionDialog) {
+    } else if (ref.read(dialogProvider).showQuestionDialog) {
       _logBot('Closing QuestionDialog with random answer');
       answerQuestion(_random.nextBool());
-    } else if (state.showCardDialog) {
+    } else if (ref.read(dialogProvider).showCardDialog) {
       _logBot('Closing CardDialog');
       closeCardDialog();
     } else {
@@ -2197,7 +2144,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void closeTurnSkippedDialog() {
-    state = state.copyWith(showTurnSkippedDialog: false);
+    ref.read(dialogProvider.notifier).hideTurnSkipped();
     endTurn();
   }
 
@@ -2224,33 +2171,45 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // SHOP (KIRAATHANE) METHODS
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   Future<void> openShopDialog() async {
     // BOT MODE: Auto-close dialog after short delay
     if (_isBotPlaying) {
-      state = state.copyWith(showShopDialog: true);
+      ref.read(dialogProvider.notifier).showShop();
       _addLog('ğŸ¤– Bot: KÄ±raathane\'ye hoÅŸ geldiniz!', type: 'info');
-      await Future.delayed(const Duration(milliseconds: 500), () {
-        closeShopDialog();
-      });
+      _activeTimers.add(
+        Timer(
+          const Duration(milliseconds: GameConstants.botDialogAutoCloseDelay),
+          () {
+            closeShopDialog();
+          },
+        ),
+      );
       return;
     }
 
     // Human mode: Create completer to wait for dialog closure (Async Barrier)
     _shopDialogCompleter = Completer<void>();
-    state = state.copyWith(showShopDialog: true);
-    _addLog('KÄ±raathane\'ye hoÅŸ geldiniz!', type: 'info');
+    ref.read(dialogProvider.notifier).showShop();
+    _addLog('Kıraathane\'ye hoş geldiniz!', type: 'info');
+
+    // Release global action guard so user can interact
+    final wasLocked = _isProcessingAction;
+    _isProcessingAction = false;
 
     // Await the completer to wait for user to close dialog
     await _shopDialogCompleter!.future;
+
+    // Reacquire lock
+    if (wasLocked) _isProcessingAction = true;
     _shopDialogCompleter = null;
   }
 
   void closeShopDialog() {
-    state = state.copyWith(showShopDialog: false);
+    ref.read(dialogProvider.notifier).hideShop();
 
     // Complete the completer if waiting for dialog to close
     if (_shopDialogCompleter != null && !_shopDialogCompleter!.isCompleted) {
@@ -2392,5 +2351,5 @@ class GameNotifier extends StateNotifier<GameState> {
 }
 
 final gameProvider = StateNotifierProvider<GameNotifier, GameState>(
-  (ref) => GameNotifier(),
+  (ref) => GameNotifier(ref),
 );

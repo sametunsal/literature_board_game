@@ -1,11 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import '../../models/player.dart';
 import '../../models/game_enums.dart';
 import '../../core/utils/logger.dart';
 import '../managers/audio_manager.dart';
 import '../../providers/game_notifier.dart';
+import '../../providers/dialog_provider.dart';
 
 class TurnOrderService {
   final _random = Random();
@@ -40,7 +40,10 @@ class TurnOrderService {
         // Switch to in-game BGM (seamless transition from menu music)
         await AudioManager.instance.playInGameBgm();
 
-        notifier.addLog('ğŸ² Otomatik sÄ±ra belirleme baÅŸlÄ±yor...', type: 'dice');
+        notifier.addLog(
+          'ğŸ² Otomatik sÄ±ra belirleme baÅŸlÄ±yor...',
+          type: 'dice',
+        );
         state = state.copyWith(
           phase: GamePhase.rollingForOrder,
           orderRolls: {},
@@ -251,7 +254,6 @@ class TurnOrderService {
       diceTotal: 0,
       dice1: 0,
       dice2: 0,
-      showTurnOrderDialog: true,
       lastAction: 'SÄ±ra belirlendi! ${sortedPlayers.first.name} baÅŸlÄ±yor.',
       // Clear tie-breaker state
       finalizedOrder: [],
@@ -261,6 +263,8 @@ class TurnOrderService {
       tieBreakRoundRolls: {},
     );
     notifier.updateState(state);
+    // Show Dialog
+    notifier.ref.read(dialogProvider.notifier).showTurnOrder();
 
     notifier.logBot(
       '_finalizeTurnOrderFromRolls() COMPLETED - First player: ${sortedPlayers.first.name}',

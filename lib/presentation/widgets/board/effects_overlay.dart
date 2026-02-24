@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/motion/motion_constants.dart';
@@ -9,14 +10,17 @@ import '../../../core/utils/board_layout_config.dart';
 import '../../../core/utils/board_layout_helper.dart';
 
 import '../../../providers/game_notifier.dart';
+import '../../../providers/dialog_provider.dart';
 import '../floating_score.dart';
 import '../../dialogs/modern_question_dialog.dart';
 import '../../dialogs/card_dialog.dart';
 import '../../dialogs/notification_dialogs.dart';
 import '../../dialogs/shop_dialog.dart';
+import '../../../models/game_card.dart';
+import '../../../models/game_enums.dart';
 
 /// Overlay widget containing all effects and dialogs
-class EffectsOverlay extends StatelessWidget {
+class EffectsOverlay extends ConsumerWidget {
   final GameState state;
   final BoardLayoutConfig layout;
   final ConfettiController confettiController;
@@ -33,12 +37,16 @@ class EffectsOverlay extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(children: _buildEffectsAndDialogs(context));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dialog = ref.watch(dialogProvider);
+    return Stack(children: _buildEffectsAndDialogs(context, dialog));
   }
 
   /// Build all overlay effects and modal dialogs
-  List<Widget> _buildEffectsAndDialogs(BuildContext context) {
+  List<Widget> _buildEffectsAndDialogs(
+    BuildContext context,
+    DialogState dialog,
+  ) {
     return [
       // Confetti effect - shoots from bottom center with celebratory colors
       Align(
@@ -87,10 +95,10 @@ class EffectsOverlay extends StatelessWidget {
       ),
 
       // Modal dialogs
-      if (state.showQuestionDialog && state.currentQuestion != null)
+      if (dialog.showQuestionDialog && dialog.currentQuestion != null)
         _buildDialogOverlay(
           ModernQuestionDialog(
-            question: state.currentQuestion!,
+            question: dialog.currentQuestion!,
             onAnswer: (isCorrect) {
               if (isCorrect) {
                 onQuestionConfirm?.call();
@@ -104,27 +112,34 @@ class EffectsOverlay extends StatelessWidget {
           ),
         ),
 
-      if (state.showCardDialog && state.currentCard != null)
+      if (dialog.showCardDialog && dialog.currentCard != null)
         Container(
           color: GameTheme.dialogOverlayColor,
-          child: Center(
-            child: CardDealTransition(
-              child: CardDialog(card: state.currentCard!),
+          child: CardDealTransition(
+            child: CardDialog(
+              card:
+                  dialog.currentCard ??
+                  const GameCard(
+                    description: '',
+                    effectType: CardEffectType.move,
+                    type: CardType.sans,
+                  ),
             ),
           ),
         ),
 
       // Notification dialogs
-      if (state.showLibraryPenaltyDialog)
+      if (dialog.showLibraryPenaltyDialog)
         _buildDialogOverlay(const LibraryPenaltyDialog()),
 
-      if (state.showTurnSkippedDialog)
+      if (dialog.showTurnSkippedDialog)
         _buildDialogOverlay(const TurnSkippedDialog()),
 
-      if (state.showImzaGunuDialog) _buildDialogOverlay(const ImzaGunuDialog()),
+      if (dialog.showImzaGunuDialog)
+        _buildDialogOverlay(const ImzaGunuDialog()),
 
       // Shop Dialog (Kıraathane)
-      if (state.showShopDialog) _buildDialogOverlay(const ShopDialog()),
+      if (dialog.showShopDialog) _buildDialogOverlay(const ShopDialog()),
 
       // Floating Score Effect (stars changes)
       if (state.floatingEffect != null) _buildFloatingScore(state),

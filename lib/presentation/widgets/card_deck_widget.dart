@@ -21,7 +21,7 @@ class CardDeckWidget extends StatelessWidget {
 
     return Transform.rotate(
       angle: rotation,
-      child: Container(
+      child: SizedBox(
         width: size,
         height: size * 1.1,
         // No decoration/shadows for clean sharp look
