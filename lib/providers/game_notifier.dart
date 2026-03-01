@@ -328,7 +328,7 @@ class GameNotifier extends StateNotifier<GameState> {
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   /// Initialize game with player list
-  void initializeGame(List<Player> players) async {
+  Future<void> initializeGame(List<Player> players) async {
     if (players.isEmpty) return;
 
     // SANITIZE: Ensure unique IDs to prevent logic/UI collisions
@@ -346,8 +346,13 @@ class GameNotifier extends StateNotifier<GameState> {
       uniquePlayers.add(p);
     }
 
-    // Load questions from repository
-    _cachedQuestions = await QuestionRepositoryImpl().getAllQuestions();
+    // Load questions from repository (non-blocking: game starts even if Firestore fails)
+    try {
+      _cachedQuestions = await QuestionRepositoryImpl().getAllQuestions();
+    } catch (e) {
+      safePrint('⚠️ Question loading failed: $e - continuing with empty list');
+      _cachedQuestions = [];
+    }
 
     state = GameState(
       players: uniquePlayers,
@@ -357,6 +362,9 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     _addLog("Oyun baÅŸlatÄ±ldÄ±! ${uniquePlayers.length} oyuncu katÄ±ldÄ±.");
+
+    // Auto-start turn order determination
+    startAutomatedTurnOrder();
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

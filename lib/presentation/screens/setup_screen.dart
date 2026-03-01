@@ -105,19 +105,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     });
   }
 
-  void _startGame() {
+  Future<void> _startGame() async {
     // Update player names from controllers
     for (int i = 0; i < _players.length; i++) {
       _players[i] = _players[i].copyWith(name: _nameControllers[i].text);
     }
 
-    // Initialize Game
-    ref.read(gameProvider.notifier).initializeGame(_players);
+    // Initialize Game (await ensures state is set before navigation)
+    await ref.read(gameProvider.notifier).initializeGame(_players);
 
     // Navigate to Game Board
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const BoardView()),
-    );
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const BoardView()),
+      );
+    }
   }
 
   @override
@@ -186,10 +188,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         decoration: BoxDecoration(
           color: GameTheme.ottomanBackground,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: GameTheme.ottomanGold,
-            width: 1.5,
-          ),
+          border: Border.all(color: GameTheme.ottomanGold, width: 1.5),
           boxShadow: [
             BoxShadow(
               color: GameTheme.ottomanGoldShadow.withValues(alpha: 0.2),
@@ -269,10 +268,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             decoration: BoxDecoration(
               color: GameTheme.ottomanBackgroundAlt.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: GameTheme.ottomanBorder,
-                width: 1,
-              ),
+              border: Border.all(color: GameTheme.ottomanBorder, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -292,10 +288,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: player.color,
-                        width: 3,
-                      ),
+                      border: Border.all(color: player.color, width: 3),
                       boxShadow: [
                         BoxShadow(
                           color: player.color.withValues(alpha: 0.3),
@@ -306,8 +299,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     child: CircleAvatar(
                       backgroundColor: player.color.withValues(alpha: 0.15),
                       child: Icon(
-                        _availableIcons[
-                            player.iconIndex % _availableIcons.length],
+                        _availableIcons[player.iconIndex %
+                            _availableIcons.length],
                         color: player.color,
                         size: 32,
                       ),
@@ -346,8 +339,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           decoration: InputDecoration(
                             hintText: "İmza atınız...",
                             hintStyle: GoogleFonts.amiri(
-                              color: GameTheme.ottomanTextSecondary
-                                  .withValues(alpha: 0.5),
+                              color: GameTheme.ottomanTextSecondary.withValues(
+                                alpha: 0.5,
+                              ),
                               fontSize: 20,
                               fontStyle: FontStyle.italic,
                             ),
@@ -381,42 +375,43 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           // WAX SEAL (Color Picker)
           Positioned(
             right: 0,
-            child: GestureDetector(
-              onTap: () => _showColorSelectionDialog(index),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: player.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: player.color.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+            child:
+                GestureDetector(
+                      onTap: () => _showColorSelectionDialog(index),
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: player.color,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: player.color.withValues(alpha: 0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: player.color.withValues(alpha: 0.8),
+                            width: 3,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.palette,
+                          color: Colors.black.withValues(alpha: 0.2),
+                          size: 24,
+                        ),
+                      ),
+                    )
+                    .animate(
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scale(
+                      begin: const Offset(1.0, 1.0),
+                      end: const Offset(1.05, 1.05),
+                      duration: 2000.ms,
+                      curve: Curves.easeInOut,
                     ),
-                  ],
-                  border: Border.all(
-                    color: player.color.withValues(alpha: 0.8),
-                    width: 3,
-                  ),
-                ),
-                child: Icon(
-                  Icons.palette,
-                  color: Colors.black.withValues(alpha: 0.2),
-                  size: 24,
-                ),
-              ),
-            )
-                .animate(
-                  onPlay: (controller) => controller.repeat(reverse: true),
-                )
-                .scale(
-                  begin: const Offset(1.0, 1.0),
-                  end: const Offset(1.05, 1.05),
-                  duration: 2000.ms,
-                  curve: Curves.easeInOut,
-                ),
           ),
 
           // REMOVE STAMP
@@ -501,15 +496,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   Widget _buildStartFAB() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, right: 16),
-      child: ScholarButton(
-        label: "OYUNU BAŞLAT",
-        icon: Icons.arrow_forward_rounded,
-        onTap: _startGame,
-        isSmall: true,
-      )
-          .animate()
-          .fadeIn(delay: 800.ms, duration: 400.ms)
-          .slideY(begin: 0.3, end: 0),
+      child:
+          ScholarButton(
+                label: "OYUNU BAŞLAT",
+                icon: Icons.arrow_forward_rounded,
+                onTap: _startGame,
+                isSmall: true,
+              )
+              .animate()
+              .fadeIn(delay: 800.ms, duration: 400.ms)
+              .slideY(begin: 0.3, end: 0),
     );
   }
 
@@ -522,8 +518,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: GameTheme.ottomanBackground,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: OttomanGlassOverlay(
           opacity: 0.95,
           child: Padding(
@@ -545,13 +540,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   runSpacing: 12,
                   alignment: WrapAlignment.center,
                   children: List.generate(_availableIcons.length, (index) {
-                    final isSelected =
-                        _players[playerIndex].iconIndex == index;
+                    final isSelected = _players[playerIndex].iconIndex == index;
                     return GestureDetector(
                       onTap: () {
                         setState(() {
-                          _players[playerIndex] =
-                              _players[playerIndex].copyWith(iconIndex: index);
+                          _players[playerIndex] = _players[playerIndex]
+                              .copyWith(iconIndex: index);
                         });
                         Navigator.pop(context);
                       },
@@ -559,8 +553,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? _players[playerIndex].color
-                                  .withValues(alpha: 0.15)
+                              ? _players[playerIndex].color.withValues(
+                                  alpha: 0.15,
+                                )
                               : Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -594,8 +589,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: GameTheme.ottomanBackground,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: OttomanGlassOverlay(
           opacity: 0.95,
           child: Padding(
@@ -617,13 +611,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   runSpacing: 12,
                   alignment: WrapAlignment.center,
                   children: _waxSealColors.map((color) {
-                    final isSelected =
-                        _players[playerIndex].color == color;
+                    final isSelected = _players[playerIndex].color == color;
                     return GestureDetector(
                       onTap: () {
                         setState(() {
-                          _players[playerIndex] =
-                              _players[playerIndex].copyWith(color: color);
+                          _players[playerIndex] = _players[playerIndex]
+                              .copyWith(color: color);
                         });
                         Navigator.pop(context);
                       },
@@ -648,11 +641,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           ],
                         ),
                         child: isSelected
-                            ? Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 24,
-                              )
+                            ? Icon(Icons.check, color: Colors.white, size: 24)
                             : null,
                       ),
                     );

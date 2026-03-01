@@ -58,8 +58,10 @@ class QuestionRepositoryImpl implements QuestionRepository {
 
   @override
   Future<void> loadQuestions() async {
-    // Fetch from Firestore (with auto-seed on first run)
-    final models = await _dataSource.fetchQuestionsFromFirestore();
+    // Load from local JSON asset (no Firestore dependency)
+    final models = await _dataSource.loadQuestionsFromJson(
+      'assets/data/questions.json',
+    );
 
     // Convert to domain entities using mapper
     _cachedQuestions = QuestionMapper.toDomainList(models);
