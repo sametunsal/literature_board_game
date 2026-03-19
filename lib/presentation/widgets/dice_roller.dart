@@ -19,10 +19,11 @@ class DiceRoller extends ConsumerWidget {
     final themeState = ref.watch(themeProvider);
     final tokens = themeState.tokens;
     final currentPlayerName = state.currentPlayer.name;
+    final screenSize = MediaQuery.of(context).size;
 
     // Show rolling animation (SKIP if rolling for order, as we show status in button)
     if (state.isDiceRolling && state.phase != GamePhase.rollingForOrder) {
-      return _buildRollingIndicator(tokens, currentPlayerName);
+      return _buildRollingIndicator(tokens, currentPlayerName, screenSize);
     }
 
     // Show dice result after roll
@@ -33,17 +34,21 @@ class DiceRoller extends ConsumerWidget {
         currentPlayerName,
         state.dice1,
         state.dice2,
+        screenSize,
       );
     }
 
     // Show roll button
-    return _buildRollButton(state, tokens, currentPlayerName, ref);
+    return _buildRollButton(state, tokens, currentPlayerName, ref, screenSize);
   }
 
   /// Build rolling indicator with spinning animation
-  Widget _buildRollingIndicator(ThemeTokens tokens, String playerName) {
+  Widget _buildRollingIndicator(ThemeTokens tokens, String playerName, Size screenSize) {
+    final iconSize = screenSize.width * 0.12; // 12% of screen width
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(screenSize.width * 0.02),
+      constraints: const BoxConstraints(maxWidth: 280),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -61,12 +66,12 @@ class DiceRoller extends ConsumerWidget {
           Text(
             '$playerName atıyor...',
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: screenSize.width * 0.018,
               fontWeight: FontWeight.w600,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: screenSize.width * 0.02),
           // Spinning dice icon
           Animate(
             onPlay: (controller) => controller.repeat(),
@@ -78,13 +83,13 @@ class DiceRoller extends ConsumerWidget {
                 curve: Curves.linear,
               ),
             ],
-            child: Icon(Icons.casino_rounded, size: 64, color: tokens.primary),
+            child: Icon(Icons.casino_rounded, size: iconSize, color: tokens.primary),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: screenSize.width * 0.02),
           Text(
             'Zarlar dönüyor...',
             style: GoogleFonts.poppins(
-              fontSize: 12,
+              fontSize: screenSize.width * 0.015,
               color: Colors.grey.shade600,
             ),
           ),
@@ -100,7 +105,10 @@ class DiceRoller extends ConsumerWidget {
     String playerName,
     int dice1,
     int dice2,
+    Size screenSize,
   ) {
+    final dieSize = screenSize.width * 0.10; // 10% of screen width for each die
+
     return Animate(
       effects: [
         // Bounce on land - scale up to 1.5x then elastic back to 1.0x
@@ -119,7 +127,8 @@ class DiceRoller extends ConsumerWidget {
         ),
       ],
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(screenSize.width * 0.03),
+        constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -143,35 +152,38 @@ class DiceRoller extends ConsumerWidget {
             Text(
               '$playerName attı:',
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontSize: screenSize.width * 0.018,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenSize.width * 0.01),
             Text(
               '$dice1 + $dice2 = $total',
               style: GoogleFonts.poppins(
-                fontSize: 24,
+                fontSize: screenSize.width * 0.03,
                 fontWeight: FontWeight.w800,
                 color: Colors.black,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: screenSize.width * 0.02),
             // TWO DICE - Spaced evenly
             Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStaticDie(dice1, tokens),
-                const SizedBox(width: 16),
-                _buildStaticDie(dice2, tokens),
+                _buildStaticDie(dice1, tokens, dieSize),
+                SizedBox(width: screenSize.width * 0.02),
+                _buildStaticDie(dice2, tokens, dieSize),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: screenSize.width * 0.015),
             // TOTAL display
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenSize.width * 0.025,
+                vertical: screenSize.width * 0.012,
+              ),
               decoration: BoxDecoration(
                 color: tokens.primary,
                 borderRadius: BorderRadius.circular(12),
@@ -186,7 +198,7 @@ class DiceRoller extends ConsumerWidget {
               child: Text(
                 "TOPLAM: $total",
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
+                  fontSize: screenSize.width * 0.02,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -199,10 +211,10 @@ class DiceRoller extends ConsumerWidget {
   }
 
   /// Build a static die display
-  Widget _buildStaticDie(int value, ThemeTokens tokens) {
+  Widget _buildStaticDie(int value, ThemeTokens tokens, double size) {
     return Container(
-      width: 60,
-      height: 60,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -219,7 +231,7 @@ class DiceRoller extends ConsumerWidget {
         child: Text(
           '$value',
           style: GoogleFonts.poppins(
-            fontSize: 28,
+            fontSize: size * 0.45,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),
@@ -234,10 +246,12 @@ class DiceRoller extends ConsumerWidget {
     ThemeTokens tokens,
     String currentPlayerName,
     WidgetRef ref,
+    Size screenSize,
   ) {
     final phase = state.phase;
     final isDoubleTurn = state.isDoubleTurn;
     final isTieBreaker = phase == GamePhase.tieBreaker;
+    final isMobile = screenSize.width < 600;
 
     // Check if current player is in pending tie-breaker list
     final bool canRollInTieBreaker =
@@ -274,7 +288,10 @@ class DiceRoller extends ConsumerWidget {
       children: [
         // Current player indicator
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenSize.width * 0.02,
+            vertical: screenSize.width * 0.01,
+          ),
           decoration: BoxDecoration(
             color: phase == GamePhase.rollingForOrder
                 ? Colors.amber.withValues(alpha: 0.2)
@@ -297,20 +314,23 @@ class DiceRoller extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              Text(
-                isTieBreaker
-                    ? '🔄 Tie-Breaker! ${state.tieBreakRound}. Tur'
-                    : 'Sıra: $currentPlayerName',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                  shadows: [
-                    Shadow(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      blurRadius: 2,
-                    ),
-                  ],
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  isTieBreaker
+                      ? '🔄 Tie-Breaker! ${state.tieBreakRound}. Tur'
+                      : 'Sıra: $currentPlayerName',
+                  style: GoogleFonts.poppins(
+                    fontSize: isMobile ? screenSize.width * 0.025 : 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               if (phase == GamePhase.rollingForOrder)
@@ -319,43 +339,52 @@ class DiceRoller extends ConsumerWidget {
                   child: Text(
                     'Sıralama için zar atılıyor...',
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
+                      fontSize: isMobile ? screenSize.width * 0.015 : 12,
                       fontWeight: FontWeight.w500,
                       color: Colors.black54,
                     ),
                   ),
                 )
               else if (isTieBreaker)
-                Text(
-                  canRollInTieBreaker
-                      ? '$currentPlayerName için zar at!'
-                      : 'Diğer oyuncular zar atıyor...',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: canRollInTieBreaker
-                        ? Colors.red.shade900
-                        : Colors.black54,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    canRollInTieBreaker
+                        ? '$currentPlayerName için zar at!'
+                        : 'Diğer oyuncular zar atıyor...',
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? screenSize.width * 0.016 : 13,
+                      fontWeight: FontWeight.w600,
+                      color: canRollInTieBreaker
+                          ? Colors.red.shade900
+                          : Colors.black54,
+                    ),
                   ),
                 )
               else if (isDoubleTurn)
-                Text(
-                  'Sıra Yine Sende! 🎲',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.deepOrange.shade900,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Sıra Yine Sende! 🎲',
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? screenSize.width * 0.018 : 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.deepOrange.shade900,
+                    ),
                   ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: screenSize.width * 0.02),
         // Show pending tie-breaker players list
         if (isTieBreaker && state.pendingTieBreakPlayers.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            margin: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenSize.width * 0.015,
+              vertical: screenSize.width * 0.01,
+            ),
+            margin: EdgeInsets.only(bottom: screenSize.width * 0.015),
             decoration: BoxDecoration(
               color: Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
@@ -366,24 +395,27 @@ class DiceRoller extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                Text(
-                  'Beraber kalan oyuncular:',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Beraber kalan oyuncular:',
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? screenSize.width * 0.014 : 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: screenSize.width * 0.008),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: state.pendingTieBreakPlayers
                       .map(
                         (p) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenSize.width * 0.012,
+                            vertical: screenSize.width * 0.008,
                           ),
                           decoration: BoxDecoration(
                             color: p.id == state.currentPlayer.id
@@ -397,12 +429,15 @@ class DiceRoller extends ConsumerWidget {
                               width: 1,
                             ),
                           ),
-                          child: Text(
-                            p.name,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              p.name,
+                              style: GoogleFonts.poppins(
+                                fontSize: isMobile ? screenSize.width * 0.014 : 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ),
@@ -443,9 +478,9 @@ class DiceRoller extends ConsumerWidget {
                 elevation: buttonEnabled ? 4 : 0,
                 shadowColor: buttonColor.withValues(alpha: 0.3),
                 disabledBackgroundColor: Colors.grey.shade400,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? screenSize.width * 0.04 : 32,
+                  vertical: isMobile ? screenSize.width * 0.025 : 16,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -454,8 +489,8 @@ class DiceRoller extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.casino_rounded, size: 24),
-                  const SizedBox(width: 8),
+                  Icon(Icons.casino_rounded, size: isMobile ? screenSize.width * 0.04 : 24),
+                  SizedBox(width: isMobile ? screenSize.width * 0.015 : 8),
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -463,7 +498,7 @@ class DiceRoller extends ConsumerWidget {
                         buttonLabel,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
-                          fontSize: 18,
+                          fontSize: isMobile ? screenSize.width * 0.028 : 18,
                         ),
                       ),
                     ),
