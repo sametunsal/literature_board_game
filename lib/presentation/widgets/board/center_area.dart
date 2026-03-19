@@ -28,10 +28,10 @@ class CenterArea extends StatelessWidget {
     // Height: between top corner and bottom corner
     final centerHeight = layout.actualHeight - 2 * kL;
 
-    // Deck size based on available space (Drastically reduced to be subtle corner elements)
+    // Deck size based on available space (small for isometric view)
     final deckSize =
         math.min(centerWidth, centerHeight) *
-        0.22; // Reduced from 0.26 to 0.22 to clear center UI
+        0.15; // Reduced for isometric 3D view
 
     return Positioned(
       top: kL, // Below top corners
@@ -96,8 +96,8 @@ class CenterArea extends StatelessWidget {
     final kWidth = size;
     final kHeight = size * 1.35; // Standard Ratio for the card
 
-    // Scale up Kader (1.15x) and Sans (1.1x) slightly
-    final scaleMultiplier = type == CardType.kader ? 1.15 : 1.10;
+    // Scale down for isometric view
+    final scaleMultiplier = type == CardType.kader ? 0.85 : 0.80;
     final isMirrored = type == CardType.kader; // Mirror Kader to frame center
 
     return IsometricGameCard(

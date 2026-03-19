@@ -160,7 +160,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
             child: SafeArea(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(4.0),
                   child: BoardLayout(
                     state: state,
                     layout: layout,
