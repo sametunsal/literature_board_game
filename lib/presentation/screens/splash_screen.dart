@@ -121,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: textColor.withOpacity(0.7),
+                       color: textColor.withValues(alpha: 0.7),
                       letterSpacing: 2,
                     ),
                   )
@@ -151,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       'Yükleniyor...',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: textColor.withOpacity(0.5),
+                         color: textColor.withValues(alpha: 0.5),
                         letterSpacing: 1.5,
                       ),
                     ),

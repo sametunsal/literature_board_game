@@ -296,7 +296,7 @@ class Player {
     return {
       'id': id,
       'name': name,
-      'color': color.value.toString(),
+      'color': color.toARGB32().toString(),
       'iconIndex': iconIndex,
       'position': position,
       'inJail': inJail,

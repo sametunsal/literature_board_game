@@ -2018,7 +2018,6 @@ class GameNotifier extends StateNotifier<GameState> {
       // BUG FIX: Don't decrement here! Penalty is only decremented in rollDice()
       // We only check if the next player should be skipped
       bool isSkipped = nextPlayer.turnsToSkip > 0;
-      List<Player> updatedPlayers = List.from(state.players);
 
       if (isSkipped) {
         _logBot(

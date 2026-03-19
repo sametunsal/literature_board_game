@@ -20,7 +20,7 @@ class BoardConfigDataSource {
   }
 
   /// Get a specific tile by ID
-  BoardTile? getTile(int id) {
+  BoardTile? getTile(String id) {
     final tiles = getTiles();
     for (var tile in tiles) {
       if (tile.id == id) return tile;

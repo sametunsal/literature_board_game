@@ -12,7 +12,7 @@ class PlayerMapper {
     return {
       'id': entity.id,
       'name': entity.name,
-      'color': entity.color.value.toString(),
+      'color': entity.color.toARGB32().toString(),
       'iconIndex': entity.iconIndex,
       'stars': entity.stars,
       'position': entity.position,

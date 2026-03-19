@@ -20,7 +20,6 @@ class CenterArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final kL = layout.kLongSide;
-    final kS = layout.kShortSide;
 
     // Center area: inside the perimeter tiles
     // Width: between left corner and right corner

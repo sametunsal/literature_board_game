@@ -93,20 +93,20 @@ class _VictoryScreenState extends State<VictoryScreen>
             child: Image.asset(
               'assets/images/wooden_table_bg.png',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
+              errorBuilder: (_, error, stackTrace) =>
                   Container(color: const Color(0xFF2D2D2D)),
             ),
           ),
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: Colors.black.withOpacity(0.7)),
+              child: Container(color: Colors.black.withValues(alpha: 0.7)),
             ),
           ),
 
           // 2. AMBIENT PARTICLES (Floating Gold Letters)
           Positioned.fill(
-            child: CustomPaint(painter: ParticlePainter(_particles)),
+            child: CustomPaint(painter: _ParticlePainter(_particles)),
           ),
 
           // 3. MAIN CONTENT
@@ -137,7 +137,7 @@ class _VictoryScreenState extends State<VictoryScreen>
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 blurRadius: 30,
                 spreadRadius: 5,
                 offset: const Offset(0, 10),
@@ -215,7 +215,7 @@ class _VictoryScreenState extends State<VictoryScreen>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: widget.winner.color.withOpacity(0.4),
+                            color: widget.winner.color.withValues(alpha: 0.4),
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -240,8 +240,8 @@ class _VictoryScreenState extends State<VictoryScreen>
                             backgroundColor: const Color(0xFFFDF6E3),
                             child: CircleAvatar(
                               radius: 54,
-                              backgroundColor: widget.winner.color.withOpacity(
-                                0.2,
+                              backgroundColor: widget.winner.color.withValues(
+                                alpha: 0.2,
                               ),
                               child: Icon(
                                 _availableIcons[widget.winner.iconIndex %
@@ -259,7 +259,7 @@ class _VictoryScreenState extends State<VictoryScreen>
                               width: 20,
                               height: 20,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.3),
+                                color: Colors.white.withValues(alpha: 0.3),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -395,7 +395,7 @@ class _VictoryScreenState extends State<VictoryScreen>
                   blurRadius: 0,
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                   color: Colors.black.withValues(alpha: 0.3),
                   offset: const Offset(0, 10),
                   blurRadius: 10,
                 ),
@@ -461,10 +461,10 @@ class _Particle {
   });
 }
 
-class ParticlePainter extends CustomPainter {
+class _ParticlePainter extends CustomPainter {
   final List<_Particle> particles;
 
-  ParticlePainter(this.particles);
+  _ParticlePainter(this.particles);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -475,7 +475,7 @@ class ParticlePainter extends CustomPainter {
         text: particle.char,
         style: GoogleFonts.cinzelDecorative(
           fontSize: particle.size,
-          color: Color(0xFFC5A059).withOpacity(particle.opacity),
+          color: const Color(0xFFC5A059).withValues(alpha: particle.opacity),
           fontWeight: FontWeight.bold,
         ),
       );
@@ -488,5 +488,5 @@ class ParticlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ParticlePainter oldDelegate) => true;
+  bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
 }

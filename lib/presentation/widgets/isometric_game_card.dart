@@ -70,11 +70,11 @@ class IsometricGameCard extends StatelessWidget {
                   width: width,
                   height: height,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
+                        color: Colors.black.withValues(alpha: 0.25),
                         blurRadius: 10,
                         spreadRadius: 1,
                         offset: const Offset(0, 4),
@@ -102,7 +102,7 @@ class IsometricGameCard extends StatelessWidget {
                           : const Color(0xFFE0E0E0),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         width: 1.0,
                       ),
                     ),
@@ -122,18 +122,18 @@ class IsometricGameCard extends StatelessWidget {
                       end: Alignment.bottomRight,
                       colors: [
                         mainColor, // More solid, less shiny
-                        mainColor.withOpacity(0.95),
-                        mainColor.withOpacity(0.90),
+                        mainColor.withValues(alpha: 0.95),
+                        mainColor.withValues(alpha: 0.90),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: accentColor.withOpacity(0.8),
+                      color: accentColor.withValues(alpha: 0.8),
                       width: 2.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         offset: const Offset(-1, -1),
                         blurRadius: 1,
                       ),
@@ -151,7 +151,7 @@ class IsometricGameCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: accentColor.withOpacity(0.4),
+                              color: accentColor.withValues(alpha: 0.4),
                               width: 1.0,
                             ),
                           ),
@@ -168,7 +168,7 @@ class IsometricGameCard extends StatelessWidget {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 border: Border.all(
                                   color: accentColor,
                                   width: 2,
@@ -191,7 +191,7 @@ class IsometricGameCard extends StatelessWidget {
                                 letterSpacing: 3,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black.withOpacity(0.6),
+                                    color: Colors.black.withValues(alpha: 0.6),
                                     offset: const Offset(1, 1),
                                     blurRadius: 2,
                                   ),
@@ -208,7 +208,7 @@ class IsometricGameCard extends StatelessWidget {
                         left: 18,
                         child: Icon(
                           icon,
-                          color: accentColor.withOpacity(0.4),
+                          color: accentColor.withValues(alpha: 0.4),
                           size: 14,
                         ),
                       ),
@@ -219,7 +219,7 @@ class IsometricGameCard extends StatelessWidget {
                           angle: math.pi,
                           child: Icon(
                             icon,
-                            color: accentColor.withOpacity(0.4),
+                            color: accentColor.withValues(alpha: 0.4),
                             size: 14,
                           ),
                         ),

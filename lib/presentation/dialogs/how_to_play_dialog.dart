@@ -87,7 +87,7 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -139,7 +139,7 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: (page['color'] as Color).withOpacity(0.1),
+                            color: (page['color'] as Color).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -161,7 +161,7 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                         ),
                         const SizedBox(height: 8),
                         Divider(
-                          color: (page['color'] as Color).withOpacity(0.2),
+                          color: (page['color'] as Color).withValues(alpha: 0.2),
                           thickness: 1,
                           indent: 60,
                           endIndent: 60,
@@ -217,7 +217,7 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                           shape: BoxShape.circle,
                           color: _currentPage == index
                               ? coverColor
-                              : Colors.grey.withOpacity(0.3),
+                              : Colors.grey.withValues(alpha: 0.3),
                         ),
                       );
                     }),
@@ -238,7 +238,7 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                       label: const Text("ANLADIM"),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.green.shade800,
-                        backgroundColor: Colors.green.withOpacity(0.1),
+                        backgroundColor: Colors.green.withValues(alpha: 0.1),
                       ),
                     ),
                 ],
