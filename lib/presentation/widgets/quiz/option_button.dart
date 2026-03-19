@@ -29,6 +29,9 @@ class _OptionButtonState extends State<OptionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isMobile = screenSize.width < 600;
+
     // 1. Determine Color Scheme based on state
     Color bgColor;
     Color borderColor;
@@ -66,6 +69,12 @@ class _OptionButtonState extends State<OptionButton> {
     final double shadowOffset = _isPressed ? 0 : 4;
     final double translateY = _isPressed ? 4 : 0;
 
+    // Responsive padding and font size
+    final horizontalPadding = isMobile ? screenSize.width * 0.025 : 20.0;
+    final verticalPadding = isMobile ? screenSize.width * 0.020 : 16.0;
+    final fontSize = isMobile ? screenSize.width * 0.035 : 16.0;
+    final iconSize = isMobile ? screenSize.width * 0.050 : 24.0;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
@@ -88,22 +97,26 @@ class _OptionButtonState extends State<OptionButton> {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                widget.text,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.text,
+                  style: GoogleFonts.poppins(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
                 ),
               ),
             ),
             if (icon != null) ...[
-              const SizedBox(width: 12),
-              Icon(icon, color: textColor, size: 24),
+              SizedBox(width: isMobile ? screenSize.width * 0.015 : 12),
+              Icon(icon, color: textColor, size: iconSize),
             ],
           ],
         ),
