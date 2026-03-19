@@ -44,6 +44,8 @@ class _BoardLayoutState extends State<BoardLayout> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final isMobile = screenSize.width < 900;
+    final isSmallMobile = screenSize.width < 600;
 
     // ═══════════════════════════════════════════════════════════════
     // 3D ISOMETRIC TRANSFORM
@@ -59,9 +61,16 @@ class _BoardLayoutState extends State<BoardLayout> {
     // The 45° Z-rotation turns the board into a diamond, expanding its
     // bounding box by sqrt(2). The X-tilt further compresses height.
     // We want the diamond to fill ~85% of screen width.
+    // Adjust for smaller screens to ensure visibility
     final boardDiagonal = widget.layout.actualWidth * math.sqrt(2);
-    final targetWidth = screenSize.width * 0.85;
-    final scaleFactor = targetWidth / boardDiagonal;
+    final screenUsageRatio = isSmallMobile ? 0.95 : (isMobile ? 0.90 : 0.85);
+    final targetWidth = screenSize.width * screenUsageRatio;
+
+    // Also check height constraint - ensure board fits vertically
+    final boardHeight = widget.layout.actualHeight * math.sqrt(2) * 0.7; // Approximate visual height
+    final maxScaleByWidth = targetWidth / boardDiagonal;
+    final maxScaleByHeight = (screenSize.height * 0.75) / boardHeight;
+    final scaleFactor = math.min(maxScaleByWidth, maxScaleByHeight);
 
     // Visual thickness of the board (shadow offset)
     const thicknessOffset = 8.0;
@@ -174,7 +183,8 @@ class _BoardLayoutState extends State<BoardLayout> {
 
     // Shift the board upward so the bottom doesn't overflow.
     // The isometric tilt pushes the visual center downward, so we compensate.
-    final verticalOffset = screenSize.height * 0.08;
+    // Use more offset for smaller screens
+    final verticalOffset = screenSize.height * (isSmallMobile ? 0.02 : 0.08);
 
     return Center(
       child: Padding(

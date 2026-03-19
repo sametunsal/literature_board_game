@@ -161,17 +161,22 @@ class _BoardViewState extends ConsumerState<BoardView> {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: BoardLayout(
-                    state: state,
-                    layout: layout,
-                    isDarkMode: isDarkMode,
-                    confettiController: _confettiController,
-                    onQuestionConfirm: () {
-                      ref.read(gameProvider.notifier).answerQuestion(true);
-                    },
-                    onQuestionCancel: () {
-                      ref.read(gameProvider.notifier).answerQuestion(false);
-                    },
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 2.0,
+                    constrained: true,
+                    child: BoardLayout(
+                      state: state,
+                      layout: layout,
+                      isDarkMode: isDarkMode,
+                      confettiController: _confettiController,
+                      onQuestionConfirm: () {
+                        ref.read(gameProvider.notifier).answerQuestion(true);
+                      },
+                      onQuestionCancel: () {
+                        ref.read(gameProvider.notifier).answerQuestion(false);
+                      },
+                    ),
                   ),
                 ),
               ),
