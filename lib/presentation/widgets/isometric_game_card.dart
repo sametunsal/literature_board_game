@@ -165,7 +165,7 @@ class IsometricGameCard extends StatelessWidget {
                           children: [
                             // Circular Icon Badge
                             Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: EdgeInsets.all(width * 0.075),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.black.withValues(alpha: 0.2),
@@ -180,22 +180,25 @@ class IsometricGameCard extends StatelessWidget {
                                 size: width * 0.25,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: width * 0.07),
                             // Text
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: width * 0.14,
-                                fontWeight: FontWeight.bold,
-                                color: accentColor,
-                                letterSpacing: 3,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.6),
-                                    offset: const Offset(1, 1),
-                                    blurRadius: 2,
-                                  ),
-                                ],
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: width * 0.14,
+                                  fontWeight: FontWeight.bold,
+                                  color: accentColor,
+                                  letterSpacing: 3,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(alpha: 0.6),
+                                      offset: const Offset(1, 1),
+                                      blurRadius: 2,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
