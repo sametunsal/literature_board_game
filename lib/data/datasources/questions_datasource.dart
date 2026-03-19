@@ -153,7 +153,9 @@ class QuestionsDataSource {
 
   /// Get questions by category
   List<QuestionModel> getQuestionsByCategory(QuestionCategory category) {
-    return getQuestions().where((q) => q.category.name == category.name).toList();
+    return getQuestions()
+        .where((q) => q.category.name == category.name)
+        .toList();
   }
 
   /// Get a random question by category
