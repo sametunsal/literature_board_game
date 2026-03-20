@@ -2,22 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/motion/motion_constants.dart';
-import '../../widgets/animations/card_deal_transition.dart';
-import '../../../core/theme/game_theme.dart';
 import '../../../core/utils/board_layout_config.dart';
 import '../../../core/utils/board_layout_helper.dart';
 
 import '../../../providers/game_notifier.dart';
 import '../../../providers/dialog_provider.dart';
 import '../floating_score.dart';
-import '../../dialogs/modern_question_dialog.dart';
-import '../../dialogs/card_dialog.dart';
-import '../../dialogs/notification_dialogs.dart';
-import '../../dialogs/shop_dialog.dart';
-import '../../../models/game_card.dart';
-import '../../../models/game_enums.dart';
 
 /// Overlay widget containing all effects and dialogs
 class EffectsOverlay extends ConsumerWidget {
@@ -94,72 +84,10 @@ class EffectsOverlay extends ConsumerWidget {
         ),
       ),
 
-      // Modal dialogs
-      if (dialog.showQuestionDialog && dialog.currentQuestion != null)
-        _buildDialogOverlay(
-          ModernQuestionDialog(
-            question: dialog.currentQuestion!,
-            onAnswer: (isCorrect) {
-              if (isCorrect) {
-                onQuestionConfirm?.call();
-              } else {
-                onQuestionCancel?.call();
-              }
-            },
-            onTimeExpired: () {
-              onQuestionCancel?.call();
-            },
-          ),
-        ),
-
-      if (dialog.showCardDialog && dialog.currentCard != null)
-        Container(
-          color: GameTheme.dialogOverlayColor,
-          child: CardDealTransition(
-            child: CardDialog(
-              card:
-                  dialog.currentCard ??
-                  const GameCard(
-                    description: '',
-                    effectType: CardEffectType.move,
-                    type: CardType.sans,
-                  ),
-            ),
-          ),
-        ),
-
-      // Notification dialogs
-      if (dialog.showLibraryPenaltyDialog)
-        _buildDialogOverlay(const LibraryPenaltyDialog()),
-
-      if (dialog.showTurnSkippedDialog)
-        _buildDialogOverlay(const TurnSkippedDialog()),
-
-      if (dialog.showImzaGunuDialog)
-        _buildDialogOverlay(const ImzaGunuDialog()),
-
-      // Shop Dialog (Kıraathane)
-      if (dialog.showShopDialog) _buildDialogOverlay(const ShopDialog()),
-
       // Floating Score Effect (stars changes)
+      // NOTE: All dialogs moved to BoardView._buildFlatDialogLayer to prevent isometric transform inheritance
       if (state.floatingEffect != null) _buildFloatingScore(state),
     ];
-  }
-
-  /// Wrap dialog in overlay with animation
-  Widget _buildDialogOverlay(Widget dialog) {
-    return Container(
-      color: GameTheme.dialogOverlayColor,
-      child: Center(
-        child: dialog
-            .animate()
-            .scale(
-              duration: MotionDurations.dialog.safe,
-              curve: MotionCurves.emphasized,
-            )
-            .fadeIn(),
-      ),
-    );
   }
 
   /// Build floating score effect positioned over current player's pawn
