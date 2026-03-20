@@ -18,6 +18,12 @@ import 'board/board_layout.dart';
 import 'board/player_hud_manager.dart';
 import 'board/game_controls_overlay.dart';
 import 'board/turn_order_dialog.dart';
+import 'animated_question_card.dart';
+import '../dialogs/card_dialog.dart';
+import '../dialogs/notification_dialogs.dart';
+import '../dialogs/shop_dialog.dart';
+import 'animations/card_deal_transition.dart';
+import '../../models/game_card.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
 // LAYOUT CONFIGURATION - 7x8 RECTANGULAR GRID (26 tiles)
@@ -231,24 +237,112 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
-          // TURN ORDER DIALOG - Shows final turn order after rolling phase
-          if (ref.watch(dialogProvider).showTurnOrderDialog)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: TurnOrderDialog(
-                  players: state.players,
-                  orderRolls: state.orderRolls,
-                  onClose: () {
-                    ref.read(gameProvider.notifier).closeTurnOrderDialog();
-                  },
-                ),
-              ),
-            ),
+          // ═════════════════════════════════════════════════════════════════════
+          // FLAT DIALOG LAYER - All dialogs appear flat (orthogonal to screen)
+          // This is ABOVE the isometric transform to prevent inheriting the 3D effect
+          // ═══════════════════════════════════════════════════════════════════════════
+          _buildFlatDialogLayer(state, ref),
 
           // GAME OVER DIALOG REMOVED - Handled by Navigation
         ],
       ),
+    );
+  }
+
+  /// Build flat dialog layer - all dialogs appear orthogonal to screen
+  /// This prevents dialogs from inheriting the isometric transform
+  Widget _buildFlatDialogLayer(GameState state, WidgetRef ref) {
+    final dialog = ref.watch(dialogProvider);
+
+    return Stack(
+      children: [
+        // Turn Order Dialog
+        if (dialog.showTurnOrderDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: TurnOrderDialog(
+                players: state.players,
+                orderRolls: state.orderRolls,
+                onClose: () {
+                  ref.read(gameProvider.notifier).closeTurnOrderDialog();
+                },
+              ),
+            ),
+          ),
+
+        // Question Dialog with 3D Card Flip Animation
+        if (dialog.showQuestionDialog && dialog.currentQuestion != null)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: AnimatedQuestionCard(
+                question: dialog.currentQuestion!,
+                onAnswer: (isCorrect) {
+                  ref.read(gameProvider.notifier).answerQuestion(isCorrect);
+                },
+                onTimeExpired: () {
+                  ref.read(gameProvider.notifier).answerQuestion(false);
+                },
+              ),
+            ),
+          ),
+
+        // Card Dialog
+        if (dialog.showCardDialog && dialog.currentCard != null)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: CardDealTransition(
+                child: CardDialog(
+                  card:
+                      dialog.currentCard ??
+                      const GameCard(
+                        description: '',
+                        effectType: CardEffectType.move,
+                        type: CardType.sans,
+                      ),
+                ),
+              ),
+            ),
+          ),
+
+        // Library Penalty Dialog
+        if (dialog.showLibraryPenaltyDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const LibraryPenaltyDialog(),
+            ),
+          ),
+
+        // Turn Skipped Dialog
+        if (dialog.showTurnSkippedDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const TurnSkippedDialog(),
+            ),
+          ),
+
+        // Imza Günü Dialog
+        if (dialog.showImzaGunuDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const ImzaGunuDialog(),
+            ),
+          ),
+
+        // Shop Dialog
+        if (dialog.showShopDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const ShopDialog(),
+            ),
+          ),
+      ],
     );
   }
 }
