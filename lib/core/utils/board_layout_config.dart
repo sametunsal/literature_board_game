@@ -25,8 +25,14 @@ class BoardLayoutConfig {
   /// Ratio of long side to short side
   static const double sideRatio = 1.5;
 
-  /// Board size ratio relative to screen
+  /// Board size ratio relative to screen (will be adjusted dynamically)
   static const double boardToScreenRatio = 0.94;
+
+  /// Minimum board size ratio for tiny screens
+  static const double minBoardToScreenRatio = 0.85;
+
+  /// Maximum board size ratio for large screens
+  static const double maxBoardToScreenRatio = 0.94;
 
   /// Number of middle tiles on Bottom/Top rows (between corners)
   static const int middleTilesHorizontal = 5;
@@ -48,8 +54,14 @@ class BoardLayoutConfig {
     //
     // Aspect ratio = 8/9 ≈ 0.889
 
-    final availableWidth = screenWidth * boardToScreenRatio;
-    final availableHeight = screenHeight * boardToScreenRatio;
+    // Dynamic board-to-screen ratio based on screen size
+    final shortestSide = screenWidth < screenHeight
+        ? screenWidth
+        : screenHeight;
+    final dynamicRatio = _calculateDynamicRatio(shortestSide);
+
+    final availableWidth = screenWidth * dynamicRatio;
+    final availableHeight = screenHeight * dynamicRatio;
 
     // Calculate kShort based on which dimension is constraining
     final widthUnits = 2 * sideRatio + middleTilesHorizontal; // 3 + 5 = 8
@@ -111,5 +123,23 @@ class BoardLayoutConfig {
       screenWidth: screenSize.width,
       screenHeight: screenSize.height,
     );
+  }
+
+  /// Calculate dynamic board-to-screen ratio based on screen size
+  /// Smaller screens get more aggressive compression to prevent overflow
+  double _calculateDynamicRatio(double shortestSide) {
+    if (shortestSide < 360) {
+      // Very small screens (tiny phones)
+      return minBoardToScreenRatio;
+    } else if (shortestSide < 600) {
+      // Small screens (mobile portrait)
+      return minBoardToScreenRatio + 0.03;
+    } else if (shortestSide < 900) {
+      // Medium screens (mobile landscape, small tablets)
+      return minBoardToScreenRatio + 0.06;
+    } else {
+      // Large screens (tablets, desktops)
+      return maxBoardToScreenRatio;
+    }
   }
 }

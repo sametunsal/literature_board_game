@@ -44,8 +44,10 @@ class _BoardLayoutState extends State<BoardLayout> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final shortestSide = screenSize.shortestSide;
     final isMobile = screenSize.width < 900;
     final isSmallMobile = screenSize.width < 600;
+    final isTinyScreen = shortestSide < 400;
 
     // ═══════════════════════════════════════════════════════════════
     // 3D ISOMETRIC TRANSFORM
@@ -55,25 +57,35 @@ class _BoardLayoutState extends State<BoardLayout> {
     // ═══════════════════════════════════════════════════════════════
     final matrix = Matrix4.identity()
       ..setEntry(3, 2, 0.001) // Perspective
-      ..rotateX(-0.65)        // Tilt back (-37 degrees approx)
-      ..rotateZ(0.785398);    // Rotate to diamond (45 degrees = pi/4)
+      ..rotateX(-0.65) // Tilt back (-37 degrees approx)
+      ..rotateZ(0.785398); // Rotate to diamond (45 degrees = pi/4)
 
     // The 45° Z-rotation turns the board into a diamond, expanding its
     // bounding box by sqrt(2). The X-tilt further compresses height.
-    // We want the diamond to fill ~85% of screen width.
-    // Adjust for smaller screens to ensure visibility
+    // We want the diamond to fill the screen within safe bounds.
+    // Use shortestSide to ensure board fits on any orientation/size.
     final boardDiagonal = widget.layout.actualWidth * math.sqrt(2);
-    final screenUsageRatio = isSmallMobile ? 0.95 : (isMobile ? 0.90 : 0.85);
-    final targetWidth = screenSize.width * screenUsageRatio;
 
-    // Also check height constraint - ensure board fits vertically
-    final boardHeight = widget.layout.actualHeight * math.sqrt(2) * 0.7; // Approximate visual height
+    // Dynamic screen usage ratio based on screen size
+    final screenUsageRatio = isTinyScreen
+        ? 0.98
+        : (isSmallMobile ? 0.95 : (isMobile ? 0.90 : 0.85));
+    final targetWidth = shortestSide * screenUsageRatio;
+
+    // Height constraint - ensure board fits vertically with safe area
+    final boardHeight =
+        widget.layout.actualHeight *
+        math.sqrt(2) *
+        0.7; // Approximate visual height
+    final availableHeight =
+        screenSize.height * 0.80; // 80% of screen height for board
     final maxScaleByWidth = targetWidth / boardDiagonal;
-    final maxScaleByHeight = (screenSize.height * 0.75) / boardHeight;
+    final maxScaleByHeight = availableHeight / boardHeight;
     final scaleFactor = math.min(maxScaleByWidth, maxScaleByHeight);
 
     // Visual thickness of the board (shadow offset)
-    const thicknessOffset = 8.0;
+    // For isometric projection: all layers must use same positioning method
+    final thicknessOffset = 12.0; // Fixed pixel offset for 3D depth effect
 
     Widget isometricBoard = Transform(
       transform: matrix,
@@ -87,11 +99,16 @@ class _BoardLayoutState extends State<BoardLayout> {
           // Multiple solid colored containers shifted along Y axis simulate
           // 3D depth thanks to the perspective transform.
           // ═══════════════════════════════════════════════════════════════
+          // ═══════════════════════════════════════════════════════════════
+          // THICKNESS & SHADOW LAYERS (Underneath the board)
+          // Using Transform.translate to preserve center alignment after
+          // Matrix4 transform. All layers rotate around the same pivot point.
+          // ═══════════════════════════════════════════════════════════════
           ...List.generate(6, (index) {
-            final offset = (index + 1) * 2.0;
-            return Positioned(
-              top: offset,
-              left: offset,
+            // Each layer is progressively offset to create 3D depth
+            final layerOffset = (index + 1) * (thicknessOffset / 6);
+            return Transform.translate(
+              offset: Offset(layerOffset, layerOffset),
               child: Container(
                 width: widget.layout.actualWidth,
                 height: widget.layout.actualHeight,
@@ -117,12 +134,11 @@ class _BoardLayoutState extends State<BoardLayout> {
             );
           }),
 
-          // ═══════════════════════════════════════════════════════════════
+          // ═════════════════════════════════════════════════════════════
           // LAYER 0: Board Thickness (Dark cardboard backing)
           // ═══════════════════════════════════════════════════════════════
-          Positioned(
-            left: 0,
-            top: thicknessOffset,
+          Transform.translate(
+            offset: Offset(thicknessOffset, thicknessOffset),
             child: Container(
               width: widget.layout.actualWidth,
               height: widget.layout.actualHeight,
@@ -166,7 +182,7 @@ class _BoardLayoutState extends State<BoardLayout> {
                 // Player pawns
                 PawnManager(state: widget.state, layout: widget.layout),
 
-                // Effects and dialogs
+                // Effects only (confetti, floating score) - NO DIALOGS
                 EffectsOverlay(
                   state: widget.state,
                   layout: widget.layout,
@@ -184,21 +200,42 @@ class _BoardLayoutState extends State<BoardLayout> {
     // Shift the board upward so the bottom doesn't overflow.
     // The isometric tilt pushes the visual center downward, so we compensate.
     // Use more offset for smaller screens
-    final verticalOffset = screenSize.height * (isSmallMobile ? 0.02 : 0.08);
+    final verticalOffset =
+        screenSize.height *
+        (isTinyScreen ? 0.01 : (isSmallMobile ? 0.02 : 0.08));
 
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: verticalOffset),
-        child: isometricBoard
-            .animate()
-            .fadeIn(duration: MotionDurations.slow.safe)
-            .scale(
-              begin: Offset(scaleFactor * 0.8, scaleFactor * 0.8),
-              end: Offset(scaleFactor, scaleFactor),
-              duration: MotionDurations.slow.safe,
-              curve: Curves.easeOutBack,
+    // Calculate extra space needed for isometric transform overflow
+    // The diamond shape expands beyond the rectangular bounds
+    final extraSpace = boardDiagonal * 0.15; // 15% extra space for transform
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Center(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: verticalOffset),
+            child: OverflowBox(
+              minWidth: boardDiagonal * scaleFactor + extraSpace,
+              maxWidth: boardDiagonal * scaleFactor + extraSpace,
+              minHeight: boardHeight * scaleFactor + extraSpace,
+              maxHeight: boardHeight * scaleFactor + extraSpace,
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: boardDiagonal * scaleFactor,
+                height: boardHeight * scaleFactor,
+                child: isometricBoard
+                    .animate()
+                    .fadeIn(duration: MotionDurations.slow.safe)
+                    .scale(
+                      begin: Offset(scaleFactor * 0.8, scaleFactor * 0.8),
+                      end: Offset(scaleFactor, scaleFactor),
+                      duration: MotionDurations.slow.safe,
+                      curve: Curves.easeOutBack,
+                    ),
+              ),
             ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
