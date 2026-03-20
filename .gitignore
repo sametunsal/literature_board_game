@@ -46,3 +46,19 @@ app.*.map.json
 
 # Firebase configuration (contains API keys)
 lib/firebase_options.dart
+
+# Test and temporary files
+*.txt
+test_machine*.json
+test_utf8*.json
+*.bat
+*.ps1
+
+# Screenshot files
+*.png
+
+# Temporary JSON files
+bonus_questions.json
+extract_docx.py
+merge_questions.py
+parse_*.py

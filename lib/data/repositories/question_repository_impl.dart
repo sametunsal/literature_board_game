@@ -31,6 +31,15 @@ class QuestionRepositoryImpl implements QuestionRepository {
     QuestionCategory category,
   ) async {
     final allQuestions = await getAllQuestions();
+    if (category == QuestionCategory.tesvik) {
+      return allQuestions
+          .where(
+            (q) =>
+                q.category == QuestionCategory.tesvik ||
+                q.category == QuestionCategory.bonusBilgiler,
+          )
+          .toList();
+    }
     return allQuestions.where((q) => q.category == category).toList();
   }
 

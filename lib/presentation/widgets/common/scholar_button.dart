@@ -49,22 +49,15 @@ class _ScholarButtonState extends State<ScholarButton>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: MotionCurves.emphasized,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: MotionCurves.emphasized),
+    );
 
     // Shimmer animation for gold leaf effect
     _shimmerAnimation = Tween<double>(
       begin: -1.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -91,12 +84,13 @@ class _ScholarButtonState extends State<ScholarButton>
 
   @override
   Widget build(BuildContext context) {
-    final Color buttonColor = widget.customColor ??
+    final Color buttonColor =
+        widget.customColor ??
         (widget.isSecondary ? GameTheme.ottomanSepia : GameTheme.ottomanGold);
 
     final Color textColor = widget.customTextColor ?? Colors.white;
 
-    final double height = widget.isSmall ? 48.0 : 64.0;
+    final double height = widget.isSmall ? 56.0 : 64.0;
     final double fontSize = widget.isSmall ? 16.0 : 20.0;
 
     return LayoutBuilder(
@@ -151,16 +145,18 @@ class _ScholarButtonState extends State<ScholarButton>
                           ]
                         : [
                             BoxShadow(
-                              color: GameTheme.ottomanGoldShadow
-                                  .withValues(alpha: 0.4),
+                              color: GameTheme.ottomanGoldShadow.withValues(
+                                alpha: 0.4,
+                              ),
                               blurRadius: 16,
                               spreadRadius: 0,
                               offset: const Offset(0, 8),
                             ),
                             // Subtle gold glow
                             BoxShadow(
-                              color: GameTheme.ottomanGoldLight
-                                  .withValues(alpha: 0.15),
+                              color: GameTheme.ottomanGoldLight.withValues(
+                                alpha: 0.15,
+                              ),
                               blurRadius: 8,
                               spreadRadius: -2,
                               offset: Offset.zero,
@@ -178,8 +174,14 @@ class _ScholarButtonState extends State<ScholarButton>
                             child: Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  begin: Alignment(-1.0 + _shimmerAnimation.value * 2, -0.5),
-                                  end: Alignment(1.0 - _shimmerAnimation.value * 2, 0.5),
+                                  begin: Alignment(
+                                    -1.0 + _shimmerAnimation.value * 2,
+                                    -0.5,
+                                  ),
+                                  end: Alignment(
+                                    1.0 - _shimmerAnimation.value * 2,
+                                    0.5,
+                                  ),
                                   colors: const [
                                     Colors.transparent,
                                     Colors.white,

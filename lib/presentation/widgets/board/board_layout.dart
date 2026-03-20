@@ -52,12 +52,14 @@ class _BoardLayoutState extends State<BoardLayout> {
     // ═══════════════════════════════════════════════════════════════
     // 3D ISOMETRIC TRANSFORM
     // 1. Perspective Depth: Realistic 3D foreshortening
-    // 2. Rotate X: Tilt the board backward (~37 degrees)
+    // 2. Rotate X: Tilt the board backward (reduced from -0.65 to -0.55 to raise far corner)
     // 3. Rotate Z: Rotate 45° to create the diamond shape
     // ═══════════════════════════════════════════════════════════════
     final matrix = Matrix4.identity()
       ..setEntry(3, 2, 0.001) // Perspective
-      ..rotateX(-0.65) // Tilt back (-37 degrees approx)
+      ..rotateX(
+        -0.55,
+      ) // Reduced tilt to raise far corner (top-right) and make it less compressed
       ..rotateZ(0.785398); // Rotate to diamond (45 degrees = pi/4)
 
     // The 45° Z-rotation turns the board into a diamond, expanding its
@@ -202,11 +204,13 @@ class _BoardLayoutState extends State<BoardLayout> {
     // Use more offset for smaller screens
     final verticalOffset =
         screenSize.height *
-        (isTinyScreen ? 0.01 : (isSmallMobile ? 0.02 : 0.08));
+        (isTinyScreen ? 0.03 : (isSmallMobile ? 0.05 : 0.12));
 
     // Calculate extra space needed for isometric transform overflow
     // The diamond shape expands beyond the rectangular bounds
-    final extraSpace = boardDiagonal * 0.15; // 15% extra space for transform
+    final extraSpace =
+        boardDiagonal *
+        0.25; // 25% extra space for transform (increased from 15%)
 
     return LayoutBuilder(
       builder: (context, constraints) {

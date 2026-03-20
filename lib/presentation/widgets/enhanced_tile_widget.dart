@@ -194,11 +194,12 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
       case 3:
         // LEFT EDGE (physical left side of board): Strip on RIGHT faces center
-        // Layout: [Text (RotatedBox quarterTurns: 1) | Color Strip]
+        // Layout: [Text (RotatedBox quarterTurns: 3) | Color Strip]
+        // Changed quarterTurns from 1 to 3 to make text face outward (towards screen edge)
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: RotatedBox(quarterTurns: 1, child: textContent)),
+            Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
             SizedBox(width: 4), // Spacing between text and strip
             SizedBox(width: 10, child: colorStrip),
           ],

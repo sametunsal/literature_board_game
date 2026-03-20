@@ -8006,5 +8006,577 @@
       "Dadaizm",
       "Sürrealizm"
     ]
+  },
+  {
+    "id": "tes_020",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "İzmir Atatürk Lisesi birinci sınıftayken mektuplaştığı bir kıza yazdığı Nazım Hikmet şiirleriyle yakalanınca tutuklanmış ve okuldan uzaklaştırılmış şairimiz kimdir?",
+    "answer": "Attilâ İlhan",
+    "options": [
+      "Turgut Uyar",
+      "Cemal Süreya",
+      "Attilâ İlhan",
+      "Edip Cansever"
+    ]
+  },
+  {
+    "id": "tes_021",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Babasının memuriyeti dolayısıyla Kudüs'te doğan ve doğduğu şehir dolayısıyla kendisine bununla ilgili isim verilen edebiyatçı kimdir?",
+    "answer": "Ahmet Kutsi Tecer",
+    "options": [
+      "Ahmet Kutsi Tecer",
+      "Yahya Kemal Beyatlı",
+      "Mehmet Emin Yurdakul",
+      "Enis Behiç Koryürek"
+    ]
+  },
+  {
+    "id": "tes_022",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1933 yılından itibaren Mevlevi şeyhi olan Ahmet Remzi Akyürek'le sıkı bir münasebet kurmuş ve onun teşvikleriyle şiirlerinde geniş bir yer bulacak olan Mevlevi kültürünü yakından tanıyan ve Kubbe-i Hadra adlı kitabındaki şiirleri bütünüyle bu konuyla ilgili olan şairimiz kimdir?",
+    "answer": "Asaf Halet Çelebi",
+    "options": [
+      "Ahmet Haşim",
+      "Asaf Halet Çelebi",
+      "Yakup Kadri Karaosmanoğlu",
+      "Yusuf Ziya Ortaç"
+    ]
+  },
+  {
+    "id": "tes_023",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1973 yılında bestelenmiş olan Cumhuriyet'in 50. Yılı Marşı'nın söz yazarı kimdir?",
+    "answer": "Bekir Sıtkı Erdoğan",
+    "options": [
+      "Faruk Nafiz Çamlıbel",
+      "Behçet Kemal Çağlar",
+      "Bekir Sıtkı Erdoğan",
+      "Orhan Seyfi Orhon"
+    ]
+  },
+  {
+    "id": "tes_024",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Romancı Emine Işınsu'nun annesi olan ve aynı zamanda yeğeni Pınar Kür olan edebiyatçımız kimdir?",
+    "answer": "Halide Nusret Zorlutuna",
+    "options": [
+      "Halide Edip Adıvar",
+      "Halide Nusret Zorlutuna",
+      "Şükufe Nihal Başar",
+      "Emine Işınsu"
+    ]
+  },
+  {
+    "id": "tes_025",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1983'te 'Ümmü'l-Muharrirat' (Yazarların Annesi) olarak ilan edilen yazarımız kimdir?",
+    "answer": "Halide Nusret Zorlutuna",
+    "options": [
+      "Halide Edip Adıvar",
+      "Halide Nusret Zorlutuna",
+      "Şükufe Nihal Başar",
+      "Emine Işınsu"
+    ]
+  },
+  {
+    "id": "tes_026",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Zülfü Livaneli'nin besteleyip seslendirdiği 'Güneş Topla Benim İçin' ve 'Memik Oğlan' gibi şiirlerin yazarı olan edebiyatçımız kimdir?",
+    "answer": "Ülkü Tamer",
+    "options": [
+      "Ülkü Tamer",
+      "Can Yücel",
+      "İlhan Berk",
+      "Turgut Uyar"
+    ]
+  },
+  {
+    "id": "tes_027",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Gençliğinde hikâye ile meşgul olan ve hikâyelerini Ahmet Hamdi Tanpınar ile paylaştığında Tanpınar'ın 'Devam et evladım, sen on tane Sait Faik edersin.' sözleriyle yazmaya daha fazla meyleden edebiyatçı kimdir?",
+    "answer": "Oktay Akbal",
+    "options": [
+      "Oktay Akbal",
+      "Sait Faik Abasıyanık",
+      "Memduh Şevket Esendal",
+      "Rauf Mutluay"
+    ]
+  },
+  {
+    "id": "tes_028",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Her geçen gün II. Abdülhamit düşmanlığı ile tanınan ve 'Sarıklı İhtilalci' olarak devrinde anılan şair aynı zamanda Sultan V. Murat'ı tahta geçirmek isteyen 250 kişilik bir grubun başına geçerek Çırağan Sarayı'nı basmış ve hareme kadar gitmiş, burada da karakol amiri tarafından öldürülmüştür. Bahsi geçen edebiyatçı kimdir?",
+    "answer": "Ali Suavi",
+    "options": [
+      "Namık Kemal",
+      "Ziya Paşa",
+      "Ali Suavi",
+      "Şinasi"
+    ]
+  },
+  {
+    "id": "tes_029",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Faik Ali Ozansoy'un kardeşi olan şair ve yazarımız kimdir?",
+    "answer": "Süleyman Nazif",
+    "options": [
+      "Faik Ali Ozansoy",
+      "Süleyman Nazif",
+      "Hüseyin Cahit Yalçın",
+      "Ahmet Rasim"
+    ]
+  },
+  {
+    "id": "tes_030",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Babası Namık Kemal sürekli sürgün edilmesi sebebiyle yarıda kalan eğitimini özel hocalarla tamamlayan şair ve yazar kimdir?",
+    "answer": "Ali Ekrem Bolayır",
+    "options": [
+      "Ali Ekrem Bolayır",
+      "Mehmet Emin Yurdakul",
+      "Tevfik Fikret",
+      "Cenap Şahabettin"
+    ]
+  },
+  {
+    "id": "tes_031",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Aile hayatına düşkünlüğü ve mutlu evliliklere imrenmesi neticesinde Hüseyin Cahit Yalçın'ın yardımıyla Tevfik Fikret'in halası Ayşe Sermet Hanım'la evlenen Servetifünun dönemi yazar ve şairi kimdir?",
+    "answer": "Mehmet Rauf",
+    "options": [
+      "Mehmet Rauf",
+      "Samipaşazade Sezai",
+      "Hüseyin Cahit Yalçın",
+      "Recaizade Mahmut Ekrem"
+    ]
+  },
+  {
+    "id": "tes_032",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Halkın nasıl konuştuğunu öğrenmek amacıyla çingene kızlarına para verip onların bulunduğu evin dolabına saklanarak komşu kadınların konuşmalarını öğrenmeye çalıştığı rivayet edilen yazarımız kimdir?",
+    "answer": "Hüseyin Rahmi Gürpınar",
+    "options": [
+      "Hüseyin Rahmi Gürpınar",
+      "Ahmet Mithat Efendi",
+      "Samipaşazade Sezai",
+      "Nabizade Nazım"
+    ]
+  },
+  {
+    "id": "tes_033",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1970'lerdeki askeri müdahaleden sonra sekiz ay tutuklu kalıp son eşi Mümtaz Soysal ile Mamak Cezaevi'nde evlenen kadın yazar kimdir?",
+    "answer": "Sevgi Soysal",
+    "options": [
+      "Sevgi Soysal",
+      "Halide Edip Adıvar",
+      "Adalet Ağaoğlu",
+      "Leyla Erbil"
+    ]
+  },
+  {
+    "id": "tes_034",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Çocukluğundan beri var olan yazarlık hayalini ilk olarak ciddiye alan Vedat Günyol'un yardımı ve kendi çabasıyla ilk öykü kitabını çıkardığında henüz 19 yaşında olan edebiyatçı kimdir?",
+    "answer": "Selim İleri",
+    "options": [
+      "Selim İleri",
+      "Oktay Akbal",
+      "Fatin Erdoğan",
+      "Pınar Kür"
+    ]
+  },
+  {
+    "id": "tes_035",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Filistin davasını duyurmak için yaptığı çalışmalarla 1986'da Tunus'ta sürgünde bulunan Yaser Arafat tarafından Özgürlük Madalyası ile onurlandırılan kadın yazarımız kimdir?",
+    "answer": "Emine Işınsu",
+    "options": [
+      "Emine Işınsu",
+      "Halide Edip Adıvar",
+      "Adalet Ağaoğlu",
+      "Leyla Erbil"
+    ]
+  },
+  {
+    "id": "tes_036",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Türklere ait nazım biçimi olan 'tuyuğ'u en çok kullanan şair kimdir?",
+    "answer": "Kadı Burhaneddin",
+    "options": [
+      "Nesimi",
+      "Kadı Burhaneddin",
+      "Ahmedi",
+      "Ali Şir Nevai"
+    ]
+  },
+  {
+    "id": "tes_037",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Fuzuli'nin 'Leyla ve Mecnun'u yazılana kadar Türk edebiyatının en başarılı mesnevisi sayılan eser hangisidir ve şairi kimdir?",
+    "answer": "Hüsrev ü Şirin - Şeyhi",
+    "options": [
+      "Hüsrev ü Şirin - Şeyhi",
+      "Leyla ve Mecnun - Fuzuli",
+      "Hüsn ü Aşk - Şeyh Galip",
+      "Harname - Şeyhi"
+    ]
+  },
+  {
+    "id": "tes_038",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "İstanbul'un ilk ve ünlü kadısı Hızır Bey'in oğlu olan divan edebiyatçısı kimdir?",
+    "answer": "Sinan Paşa",
+    "options": [
+      "Sinan Paşa",
+      "Baki",
+      "Nabi",
+      "Nedim"
+    ]
+  },
+  {
+    "id": "tes_039",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Vezir-i azamlıktan azledildikten sonra hapse atılan ve bunun üzerine İstanbul uleması toplu halde padişaha giderek eğer bu zat hapisten çıkarılmazsa bütün kitaplarını yakıp Osmanlı topraklarını terk edeceklerini belirtmiştir. Nihayetinde bu zat hapisten çıkarılmış ve Sivrihisar kadılığı ve müderrisliği göreviyle İstanbul'dan uzaklaştırılmıştır. Parçada bahsi geçen divan edebiyatçısı kimdir?",
+    "answer": "Şeyhi",
+    "options": [
+      "Şeyhi",
+      "Baki",
+      "Nabi",
+      "Nedim"
+    ]
+  },
+  {
+    "id": "tes_040",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Rubai nazım biçiminin divan edebiyatındaki en büyük temsilcisi olan şairimiz kimdir?",
+    "answer": "Azmizade Haleti",
+    "options": [
+      "Azmizade Haleti",
+      "Nedim",
+      "Şeyh Galip",
+      "Baki"
+    ]
+  },
+  {
+    "id": "tes_041",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Şiirdeki üstünlüğünü çok erken yaşlarda kabul ettirerek 24 yaşında 'Divan'ını, 26 yaşında 'Hüsn ü Aşk' adlı mesnevisini bitiren şair kimdir?",
+    "answer": "Şeyh Galip",
+    "options": [
+      "Şeyh Galip",
+      "Nabi",
+      "Fuzuli",
+      "Baki"
+    ]
+  },
+  {
+    "id": "tes_020",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "İzmir Atatürk Lisesi birinci sınıftayken mektuplaştığı bir kıza yazdığı Nazım Hikmet şiirleriyle yakalanınca tutuklanmış ve okuldan uzaklaştırılmış şairimiz kimdir?",
+    "answer": "Attilâ İlhan",
+    "options": [
+      "Turgut Uyar",
+      "Cemal Süreya",
+      "Attilâ İlhan",
+      "Edip Cansever"
+    ]
+  },
+  {
+    "id": "tes_021",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Babasının memuriyeti dolayısıyla Kudüs'te doğan ve doğduğu şehir dolayısıyla kendisine bununla ilgili isim verilen edebiyatçı kimdir?",
+    "answer": "Ahmet Kutsi Tecer",
+    "options": [
+      "Ahmet Kutsi Tecer",
+      "Yahya Kemal Beyatlı",
+      "Mehmet Emin Yurdakul",
+      "Enis Behiç Koryürek"
+    ]
+  },
+  {
+    "id": "tes_022",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1933 yılından itibaren Mevlevi şeyhi olan Ahmet Remzi Akyürek'le sıkı bir münasebet kurmuş ve onun teşvikleriyle şiirlerinde geniş bir yer bulacak olan Mevlevi kültürünü yakından tanıyan ve Kubbe-i Hadra adlı kitabındaki şiirleri bütünüyle bu konuyla ilgili olan şairimiz kimdir?",
+    "answer": "Asaf Halet Çelebi",
+    "options": [
+      "Ahmet Haşim",
+      "Asaf Halet Çelebi",
+      "Yakup Kadri Karaosmanoğlu",
+      "Yusuf Ziya Ortaç"
+    ]
+  },
+  {
+    "id": "tes_023",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1973 yılında bestelenmiş olan Cumhuriyet'in 50. Yılı Marşı'nın söz yazarı kimdir?",
+    "answer": "Bekir Sıtkı Erdoğan",
+    "options": [
+      "Faruk Nafiz Çamlıbel",
+      "Behçet Kemal Çağlar",
+      "Bekir Sıtkı Erdoğan",
+      "Orhan Seyfi Orhon"
+    ]
+  },
+  {
+    "id": "tes_024",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Romancı Emine Işınsu'nun annesi olan ve aynı zamanda yeğeni Pınar Kür olan edebiyatçımız kimdir?",
+    "answer": "Halide Nusret Zorlutuna",
+    "options": [
+      "Halide Edip Adıvar",
+      "Halide Nusret Zorlutuna",
+      "Şükufe Nihal Başar",
+      "Emine Işınsu"
+    ]
+  },
+  {
+    "id": "tes_025",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1983'te 'Ümmü'l-Muharrirat' (Yazarların Annesi) olarak ilan edilen yazarımız kimdir?",
+    "answer": "Halide Nusret Zorlutuna",
+    "options": [
+      "Halide Edip Adıvar",
+      "Halide Nusret Zorlutuna",
+      "Şükufe Nihal Başar",
+      "Emine Işınsu"
+    ]
+  },
+  {
+    "id": "tes_026",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Zülfü Livaneli'nin besteleyip seslendirdiği 'Güneş Topla Benim İçin' ve 'Memik Oğlan' gibi şiirlerin yazarı olan edebiyatçımız kimdir?",
+    "answer": "Ülkü Tamer",
+    "options": [
+      "Ülkü Tamer",
+      "Can Yücel",
+      "İlhan Berk",
+      "Turgut Uyar"
+    ]
+  },
+  {
+    "id": "tes_027",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Gençliğinde hikâye ile meşgul olan ve hikâyelerini Ahmet Hamdi Tanpınar ile paylaştığında Tanpınar'ın 'Devam et evladım, sen on tane Sait Faik edersin.' sözleriyle yazmaya daha fazla meyleden edebiyatçı kimdir?",
+    "answer": "Oktay Akbal",
+    "options": [
+      "Oktay Akbal",
+      "Sait Faik Abasıyanık",
+      "Memduh Şevket Esendal",
+      "Rauf Mutluay"
+    ]
+  },
+  {
+    "id": "tes_028",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Her geçen gün II. Abdülhamit düşmanlığı ile tanınan ve 'Sarıklı İhtilalci' olarak devrinde anılan şair aynı zamanda Sultan V. Murat'ı tahta geçirmek isteyen 250 kişilik bir grubun başına geçerek Çırağan Sarayı'nı basmış ve hareme kadar gitmiş, burada da karakol amiri tarafından öldürülmüştür. Bahsi geçen edebiyatçı kimdir?",
+    "answer": "Ali Suavi",
+    "options": [
+      "Namık Kemal",
+      "Ziya Paşa",
+      "Ali Suavi",
+      "Şinasi"
+    ]
+  },
+  {
+    "id": "tes_029",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Faik Ali Ozansoy'un kardeşi olan şair ve yazarımız kimdir?",
+    "answer": "Süleyman Nazif",
+    "options": [
+      "Faik Ali Ozansoy",
+      "Süleyman Nazif",
+      "Hüseyin Cahit Yalçın",
+      "Ahmet Rasim"
+    ]
+  },
+  {
+    "id": "tes_030",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Babası Namık Kemal sürekli sürgün edilmesi sebebiyle yarıda kalan eğitimini özel hocalarla tamamlayan şair ve yazar kimdir?",
+    "answer": "Ali Ekrem Bolayır",
+    "options": [
+      "Ali Ekrem Bolayır",
+      "Mehmet Emin Yurdakul",
+      "Tevfik Fikret",
+      "Cenap Şahabettin"
+    ]
+  },
+  {
+    "id": "tes_031",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Aile hayatına düşkünlüğü ve mutlu evliliklere imrenmesi neticesinde Hüseyin Cahit Yalçın'ın yardımıyla Tevfik Fikret'in halası Ayşe Sermet Hanım'la evlenen Servetifünun dönemi yazar ve şairi kimdir?",
+    "answer": "Mehmet Rauf",
+    "options": [
+      "Mehmet Rauf",
+      "Samipaşazade Sezai",
+      "Hüseyin Cahit Yalçın",
+      "Recaizade Mahmut Ekrem"
+    ]
+  },
+  {
+    "id": "tes_032",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Halkın nasıl konuştuğunu öğrenmek amacıyla çingene kızlarına para verip onların bulunduğu evin dolabına saklanarak komşu kadınların konuşmalarını öğrenmeye çalıştığı rivayet edilen yazarımız kimdir?",
+    "answer": "Hüseyin Rahmi Gürpınar",
+    "options": [
+      "Hüseyin Rahmi Gürpınar",
+      "Ahmet Mithat Efendi",
+      "Samipaşazade Sezai",
+      "Nabizade Nazım"
+    ]
+  },
+  {
+    "id": "tes_033",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "1970'lerdeki askeri müdahaleden sonra sekiz ay tutuklu kalıp son eşi Mümtaz Soysal ile Mamak Cezaevi'nde evlenen kadın yazar kimdir?",
+    "answer": "Sevgi Soysal",
+    "options": [
+      "Sevgi Soysal",
+      "Halide Edip Adıvar",
+      "Adalet Ağaoğlu",
+      "Leyla Erbil"
+    ]
+  },
+  {
+    "id": "tes_034",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Çocukluğundan beri var olan yazarlık hayalini ilk olarak ciddiye alan Vedat Günyol'un yardımı ve kendi çabasıyla ilk öykü kitabını çıkardığında henüz 19 yaşında olan edebiyatçı kimdir?",
+    "answer": "Selim İleri",
+    "options": [
+      "Selim İleri",
+      "Oktay Akbal",
+      "Fatin Erdoğan",
+      "Pınar Kür"
+    ]
+  },
+  {
+    "id": "tes_035",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Filistin davasını duyurmak için yaptığı çalışmalarla 1986'da Tunus'ta sürgünde bulunan Yaser Arafat tarafından Özgürlük Madalyası ile onurlandırılan kadın yazarımız kimdir?",
+    "answer": "Emine Işınsu",
+    "options": [
+      "Emine Işınsu",
+      "Halide Edip Adıvar",
+      "Adalet Ağaoğlu",
+      "Leyla Erbil"
+    ]
+  },
+  {
+    "id": "tes_036",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Türklere ait nazım biçimi olan 'tuyuğ'u en çok kullanan şair kimdir?",
+    "answer": "Kadı Burhaneddin",
+    "options": [
+      "Nesimi",
+      "Kadı Burhaneddin",
+      "Ahmedi",
+      "Ali Şir Nevai"
+    ]
+  },
+  {
+    "id": "tes_037",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Fuzuli'nin 'Leyla ve Mecnun'u yazılana kadar Türk edebiyatının en başarılı mesnevisi sayılan eser hangisidir ve şairi kimdir?",
+    "answer": "Hüsrev ü Şirin - Şeyhi",
+    "options": [
+      "Hüsrev ü Şirin - Şeyhi",
+      "Leyla ve Mecnun - Fuzuli",
+      "Hüsn ü Aşk - Şeyh Galip",
+      "Harname - Şeyhi"
+    ]
+  },
+  {
+    "id": "tes_038",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "İstanbul'un ilk ve ünlü kadısı Hızır Bey'in oğlu olan divan edebiyatçısı kimdir?",
+    "answer": "Sinan Paşa",
+    "options": [
+      "Sinan Paşa",
+      "Baki",
+      "Nabi",
+      "Nedim"
+    ]
+  },
+  {
+    "id": "tes_039",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Vezir-i azamlıktan azledildikten sonra hapse atılan ve bunun üzerine İstanbul uleması toplu halde padişaha giderek eğer bu zat hapisten çıkarılmazsa bütün kitaplarını yakıp Osmanlı topraklarını terk edeceklerini belirtmiştir. Nihayetinde bu zat hapisten çıkarılmış ve Sivrihisar kadılığı ve müderrisliği göreviyle İstanbul'dan uzaklaştırılmıştır. Parçada bahsi geçen divan edebiyatçısı kimdir?",
+    "answer": "Şeyhi",
+    "options": [
+      "Şeyhi",
+      "Baki",
+      "Nabi",
+      "Nedim"
+    ]
+  },
+  {
+    "id": "tes_040",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Rubai nazım biçiminin divan edebiyatındaki en büyük temsilcisi olan şairimiz kimdir?",
+    "answer": "Azmizade Haleti",
+    "options": [
+      "Azmizade Haleti",
+      "Nedim",
+      "Şeyh Galip",
+      "Baki"
+    ]
+  },
+  {
+    "id": "tes_041",
+    "category": "tesvik",
+    "difficulty": "hard",
+    "question": "Şiirdeki üstünlüğünü çok erken yaşlarda kabul ettirerek 24 yaşında 'Divan'ını, 26 yaşında 'Hüsn ü Aşk' adlı mesnevisini bitiren şair kimdir?",
+    "answer": "Şeyh Galip",
+    "options": [
+      "Şeyh Galip",
+      "Nabi",
+      "Fuzuli",
+      "Baki"
+    ]
   }
 ]

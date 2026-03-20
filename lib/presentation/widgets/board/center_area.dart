@@ -109,7 +109,7 @@ class CenterArea extends StatelessWidget {
 
   Widget _buildHUD(GameState state) {
     return Transform.scale(
-      scale: 0.81, // Increased by ~25% from 0.65
+      scale: 0.60, // Reduced by ~25% from 0.81 to make it less obtrusive
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

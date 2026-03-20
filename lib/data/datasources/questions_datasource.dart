@@ -153,6 +153,16 @@ class QuestionsDataSource {
 
   /// Get questions by category
   List<QuestionModel> getQuestionsByCategory(QuestionCategory category) {
+    // Special handling for Teşvik: combine with Bonus Bilgiler
+    if (category == QuestionCategory.tesvik) {
+      return getQuestions()
+          .where(
+            (q) =>
+                q.category.name == QuestionCategory.tesvik.name ||
+                q.category.name == QuestionCategory.bonusBilgiler.name,
+          )
+          .toList();
+    }
     return getQuestions()
         .where((q) => q.category.name == category.name)
         .toList();

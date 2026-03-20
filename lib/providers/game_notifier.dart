@@ -12,13 +12,13 @@ import '../models/tile_type.dart';
 import '../models/difficulty.dart';
 import '../data/board_config.dart';
 import '../data/game_cards.dart';
-import '../data/repositories/question_repository_impl.dart';
 import '../core/constants/game_constants.dart';
 import '../core/managers/audio_manager.dart';
 import '../core/services/turn_order_service.dart';
 import '../core/services/dice_service.dart';
 import '../core/services/movement_service.dart';
 import 'dialog_provider.dart';
+import 'repository_providers.dart';
 
 // Floating Effect Data Model
 class FloatingEffect {
@@ -348,7 +348,8 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Load questions from repository (non-blocking: game starts even if Firestore fails)
     try {
-      _cachedQuestions = await QuestionRepositoryImpl().getAllQuestions();
+      final questionRepository = ref.read(questionRepositoryProvider);
+      _cachedQuestions = await questionRepository.getAllQuestions();
     } catch (e) {
       safePrint('⚠️ Question loading failed: $e - continuing with empty list');
       _cachedQuestions = [];
@@ -949,13 +950,13 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> _triggerQuestion(BoardTile tile) async {
-    // For TeÅŸvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
+    // For Teşvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
     // For other tiles, use the tile's category
     List<String> categoryNames = [];
     if (tile.type == TileType.tesvik) {
-      // TeÅŸvik tiles pull from BOTH tesvik AND bonusBilgiler for maximum variety
+      // Teşvik tiles pull from BOTH tesvik AND bonusBilgiler for maximum variety
       categoryNames = ['tesvik', 'bonusBilgiler'];
-    } else if (tile.category != null) {
+    } else if (tile.category != null && tile.category!.isNotEmpty) {
       categoryNames = [tile.category!];
     }
 
@@ -1777,6 +1778,9 @@ class GameNotifier extends StateNotifier<GameState> {
       if (card != null) {
         final player = state.currentPlayer;
 
+        // Track if a movement effect occurred to trigger tile arrival
+        bool movementOccurred = false;
+
         switch (card.effectType) {
           case CardEffectType.moneyChange:
             // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
@@ -1835,6 +1839,7 @@ class GameNotifier extends StateNotifier<GameState> {
             );
             state = state.copyWith(players: newPlayers);
             _addLog("ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
+            movementOccurred = true;
             break;
 
           case CardEffectType.moveRelative:
@@ -1866,6 +1871,7 @@ class GameNotifier extends StateNotifier<GameState> {
             } else {
               _addLog("â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
             }
+            movementOccurred = true;
             break;
 
           case CardEffectType.jail:
@@ -1879,6 +1885,7 @@ class GameNotifier extends StateNotifier<GameState> {
               "â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
               type: 'error',
             );
+            movementOccurred = true;
             break;
 
           case CardEffectType.skipTurn:
@@ -1959,6 +1966,23 @@ class GameNotifier extends StateNotifier<GameState> {
               );
             }
             break;
+        }
+
+        // CRITICAL FIX: After applying a movement card effect, trigger tile arrival
+        // This ensures that landing on 'Ben Kimim' or other tiles triggers their actions
+        if (movementOccurred) {
+          final newPlayer = state.currentPlayer;
+          if (state.tiles.isNotEmpty &&
+              newPlayer.position < state.tiles.length) {
+            final newTile = state.tiles[newPlayer.position];
+            _logBot(
+              'Card moved player to ${newTile.name} (${newTile.type}) - triggering tile arrival',
+            );
+            // Schedule tile arrival handling after dialog closes
+            Future.microtask(() async {
+              await _handleTileArrival(newTile);
+            });
+          }
         }
       }
       ref.read(dialogProvider.notifier).hideCard();
