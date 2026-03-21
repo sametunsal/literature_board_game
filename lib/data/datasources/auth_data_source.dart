@@ -1,25 +1,31 @@
-import 'package:firebase_auth/firebase_auth.dart';
+/// Local authentication data source.
+/// Returns a dummy guest user - no server connection.
+library;
+
+import '../../models/user_entity.dart';
 
 abstract class AuthDataSource {
-  Stream<User?> get authStateChanges;
-  User? get currentUser;
-  Future<User> signInAnonymously();
+  UserEntity? get currentUser;
+  Future<UserEntity> signInAnonymously();
 }
 
-class AuthDataSourceImpl implements AuthDataSource {
-  final FirebaseAuth _firebaseAuth;
+class LocalAuthDataSource implements AuthDataSource {
+  static const String _guestUid = 'local_guest_user';
 
-  AuthDataSourceImpl(this._firebaseAuth);
-
-  @override
-  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
+  UserEntity? _currentUser;
 
   @override
-  User? get currentUser => _firebaseAuth.currentUser;
+  UserEntity? get currentUser => _currentUser;
 
   @override
-  Future<User> signInAnonymously() async {
-    final credential = await _firebaseAuth.signInAnonymously();
-    return credential.user!;
+  Future<UserEntity> signInAnonymously() async {
+    _currentUser = UserEntity(
+      uid: _guestUid,
+      isAnonymous: true,
+      displayName: 'Misafir',
+      createdAt: DateTime.now(),
+      lastSeenAt: DateTime.now(),
+    );
+    return _currentUser!;
   }
 }

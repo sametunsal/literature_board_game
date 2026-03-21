@@ -350,7 +350,9 @@ class GameNotifier extends StateNotifier<GameState> {
     try {
       final questionRepository = ref.read(questionRepositoryProvider);
       _cachedQuestions = await questionRepository.getAllQuestions();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      safePrint('JSON Yükleme Hatası: $e');
+      safePrint('JSON Yükleme Hatası Stack Trace: $stackTrace');
       safePrint('⚠️ Question loading failed: $e - continuing with empty list');
       _cachedQuestions = [];
     }
@@ -950,15 +952,16 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> _triggerQuestion(BoardTile tile) async {
+    safePrint('TEST: Yüklü Soru Sayısı: ${_cachedQuestions.length}');
     // For Teşvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
     // For other tiles, use the tile's category
     List<String> categoryNames = [];
     if (tile.type == TileType.tesvik) {
-      // Teşvik tiles pull from BOTH tesvik AND bonusBilgiler for maximum variety
       categoryNames = ['tesvik', 'bonusBilgiler'];
     } else if (tile.category != null && tile.category!.isNotEmpty) {
       categoryNames = [tile.category!];
     }
+    safePrint('TEST: Aranan Kategori: $categoryNames');
 
     if (categoryNames.isEmpty) {
       _addLog('Bu karoda soru yok.', type: 'info');

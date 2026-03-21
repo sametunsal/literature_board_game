@@ -1,11 +1,15 @@
+/// Local user repository implementation.
+/// Uses in-memory storage - no server connection.
+library;
+
 import '../../models/user_entity.dart';
 import '../../domain/repositories/user_repository.dart';
 import '../datasources/user_remote_data_source.dart';
 
-class UserRepositoryImpl implements UserRepository {
-  final UserRemoteDataSource _dataSource;
+class LocalUserRepository implements UserRepository {
+  final UserDataSource _dataSource;
 
-  UserRepositoryImpl(this._dataSource);
+  LocalUserRepository(this._dataSource);
 
   @override
   Future<void> createUserProfile(UserEntity user) =>

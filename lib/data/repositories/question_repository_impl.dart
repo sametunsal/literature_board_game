@@ -1,5 +1,5 @@
 /// Implementation of QuestionRepository.
-/// Uses QuestionsDataSource for loading questions from Firestore.
+/// Loads questions from local JSON assets.
 library;
 
 import 'dart:math';

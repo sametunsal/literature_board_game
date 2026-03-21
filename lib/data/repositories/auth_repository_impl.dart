@@ -1,32 +1,32 @@
-import 'package:firebase_auth/firebase_auth.dart';
+/// Local auth repository implementation.
+/// Returns a dummy guest user - no server connection.
+library;
+
+import 'dart:async';
 import '../../models/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_data_source.dart';
 
-class AuthRepositoryImpl implements AuthRepository {
+class LocalAuthRepository implements AuthRepository {
   final AuthDataSource _dataSource;
+  final _authStateController = StreamController<UserEntity?>.broadcast();
 
-  AuthRepositoryImpl(this._dataSource);
-
-  @override
-  Stream<UserEntity?> get authStateChanges =>
-      _dataSource.authStateChanges.map(_mapFirebaseUser);
+  LocalAuthRepository(this._dataSource);
 
   @override
-  UserEntity? get currentUser => _mapFirebaseUser(_dataSource.currentUser);
+  Stream<UserEntity?> get authStateChanges => _authStateController.stream;
+
+  @override
+  UserEntity? get currentUser => _dataSource.currentUser;
 
   @override
   Future<UserEntity> signInAnonymously() async {
     final user = await _dataSource.signInAnonymously();
-    return _mapFirebaseUser(user)!;
+    _authStateController.add(user);
+    return user;
   }
 
-  UserEntity? _mapFirebaseUser(User? user) {
-    if (user == null) return null;
-    return UserEntity(
-      uid: user.uid,
-      isAnonymous: user.isAnonymous,
-      displayName: user.displayName,
-    );
+  void dispose() {
+    _authStateController.close();
   }
 }

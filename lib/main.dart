@@ -1,8 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firebase_options.dart';
 import 'providers/game_notifier.dart';
 import 'providers/theme_notifier.dart';
 import 'providers/app_bootstrap.dart';
@@ -14,17 +12,11 @@ import 'core/theme/game_theme.dart';
 import 'core/managers/audio_manager.dart';
 import 'core/utils/logger.dart';
 
-/// Tracks if Firebase was initialized successfully
-bool _firebaseInitialized = false;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Audio Manager (starts BGM)
   await AudioManager.instance.init();
-
-  // Initialize Firebase with error handling - don't crash if it fails
-  await _initializeFirebase();
 
   // Enforce Portrait Mode on Startup
   await SystemChrome.setPreferredOrientations([
@@ -33,23 +25,6 @@ Future<void> main() async {
   ]);
 
   runApp(const ProviderScope(child: MyApp()));
-}
-
-/// Safely initialize Firebase - returns silently on failure
-Future<void> _initializeFirebase() async {
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-    _firebaseInitialized = true;
-    safePrint('Firebase initialized successfully');
-  } catch (e) {
-    _firebaseInitialized = false;
-    safePrint('Firebase initialization failed (app will continue): $e');
-    // Don't rethrow - let the app run without Firebase
-  }
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -63,12 +38,9 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
-    // Only run bootstrap if Firebase initialized successfully
-    if (_firebaseInitialized) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _runBootstrap();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runBootstrap();
+    });
   }
 
   Future<void> _runBootstrap() async {
