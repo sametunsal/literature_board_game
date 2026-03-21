@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import '../../models/player.dart';
 import '../../models/game_enums.dart';
+import '../constants/game_constants.dart';
+import 'dice_roll_values.dart';
 import '../../core/utils/logger.dart';
 import '../managers/audio_manager.dart';
 import '../../providers/game_notifier.dart';
@@ -96,47 +98,40 @@ class TurnOrderService {
             : const Duration(milliseconds: 600);
         await Future.delayed(preDelay);
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // ANIMATION: Start dice rolling
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        state = state.copyWith(isDiceRolling: true);
-        notifier.updateState(state);
-        AudioManager.instance.playSfx('audio/dice_roll.wav');
-
-        // Animation duration - shorter in bot mode
-        final animDelay = notifier.isBotPlaying
-            ? const Duration(milliseconds: 400)
-            : const Duration(milliseconds: 1200);
-        await Future.delayed(animDelay);
-
-        // PAUSE GUARD
-        await notifier.checkPauseStatus();
-
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // ROLL: Generate dice values
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        final int d1 = _random.nextInt(6) + 1;
-        final int d2 = _random.nextInt(6) + 1;
-        final int roll = d1 + d2;
-
-        // Store roll for this round
+        // Zar değerleri ÖNCE — animasyon / 3D sahne ile oyun mantığı aynı d1,d2
+        final (d1, d2, roll) = DiceRollValues.roll(_random);
         roundRolls[player.id] = roll;
 
-        // Re-read state in case async happened
         state = notifier.currentState;
-
-        // Update global orderRolls (for final sorting)
         final updatedGlobalRolls = Map<String, int>.from(state.orderRolls);
         updatedGlobalRolls[player.id] = roll;
 
-        // Update state with results
+        // ANIMATION: aynı zarlar state’te (overlay / HUD senkronu)
+        state = state.copyWith(
+          isDiceRolling: true,
+          isDiceRolled: false,
+          dice1: d1,
+          dice2: d2,
+          diceTotal: roll,
+          orderRolls: updatedGlobalRolls,
+        );
+        notifier.updateState(state);
+        AudioManager.instance.playSfx('audio/dice_roll.wav');
+
+        final animDelay = notifier.isBotPlaying
+            ? const Duration(milliseconds: 400)
+            : const Duration(milliseconds: GameConstants.diceAnimationDelay);
+        await Future.delayed(animDelay);
+
+        await notifier.checkPauseStatus();
+
+        state = notifier.currentState;
         state = state.copyWith(
           isDiceRolling: false,
           isDiceRolled: true,
           diceTotal: roll,
           dice1: d1,
           dice2: d2,
-          orderRolls: updatedGlobalRolls,
         );
         notifier.updateState(state);
 

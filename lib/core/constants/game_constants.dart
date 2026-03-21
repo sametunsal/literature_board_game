@@ -126,7 +126,13 @@ class GameConstants {
   static const int hopAnimationDelay =
       450; // Slower, rhythmic pace for pawn steps (matches SFX)
   static const int cardAnimationDelay = 500;
-  static const int diceAnimationDelay = 1500;
+  /// Fırlatma + dönüş (sonunda üst yüzey sonuca kilitlenir)
+  static const int diceRollMotionDelayMs = 2900;
+  /// Dönüş bittikten sonra zarların tahta üstünde sonuç gösterme süresi
+  static const int diceResultHoldMs = 1500;
+  /// İnsan oyuncu: hareket + sonuç bekleme (DiceService tek gecikme)
+  static const int diceAnimationDelay =
+      diceRollMotionDelayMs + diceResultHoldMs;
   static const int turnChangeDelay = 1200;
   static const int diceResetDelay = 150;
   static const int botDialogAutoCloseDelay = 500;

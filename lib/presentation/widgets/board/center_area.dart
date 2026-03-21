@@ -4,6 +4,7 @@ import '../../../core/theme/game_theme.dart';
 import '../../../models/game_enums.dart';
 import '../../../providers/game_notifier.dart';
 import '../../../core/utils/board_layout_config.dart';
+import 'center_dice_roll_overlay.dart';
 import '../isometric_game_card.dart';
 import '../dice_roller.dart';
 
@@ -27,10 +28,12 @@ class CenterArea extends StatelessWidget {
     // Height: between top corner and bottom corner
     final centerHeight = layout.actualHeight - 2 * kL;
 
-    // Deck size based on available space (small for isometric view)
+    // Deste boyutu — Şans biraz büyük; HUD / zar ile çakışmayı sınırla
     final deckSize =
-        math.min(centerWidth, centerHeight) *
-        0.15; // Reduced for isometric 3D view
+        math.min(centerWidth, centerHeight) * 0.175;
+    final minCenterSide = math.min(centerWidth, centerHeight);
+    // Sıra belirleme (rollingForOrder / tie-break) dahil: state.dice1/dice2 tek kaynak
+    final showDiceRollOverlay = state.isDiceRolling;
 
     return Positioned(
       top: kL, // Below top corners
@@ -67,20 +70,29 @@ class CenterArea extends StatelessWidget {
             // ŞANS CARD DECK (Top-Left)
             // ŞANS CARD DECK (Top-Left)
             Positioned(
-              top: 20, // Kept same vertical
-              left: 50, // Moved right (increased from 20)
+              top: 6,
+              left: 0.055 * centerWidth,
               child: _buildElevatedCard(CardType.sans, deckSize),
             ),
 
-            // KADER CARD DECK (Bottom-Right)
+            // KADER (alt sağ) — zar HUD ile çakışmayacak boşluk
             Positioned(
-              bottom: -10, // Pushed slightly off-board for extra clearance
-              right: 15, // Kept slight right offset
+              bottom: 6,
+              right: 0.018 * centerWidth,
               child: _buildElevatedCard(CardType.kader, deckSize),
             ),
 
             // HUD content (center)
             Center(child: _buildHUD(state)),
+
+            // Zar animasyonu en üstte — HUD’daki küçük durum kartının üzerinde görünsün
+            if (showDiceRollOverlay)
+              Positioned.fill(
+                child: CenterDiceRollOverlay(
+                  state: state,
+                  minSide: minCenterSide,
+                ),
+              ),
           ],
         ),
       ),
@@ -93,17 +105,18 @@ class CenterArea extends StatelessWidget {
     // If we want it to react to 'size', we should pass size as width/height reference.
 
     final kWidth = size;
-    final kHeight = size * 1.35; // Standard Ratio for the card
+    final kHeight = size * 1.35;
 
-    // Scale down for isometric view
-    final scaleMultiplier = type == CardType.kader ? 0.85 : 0.80;
-    final isMirrored = type == CardType.kader; // Mirror Kader to frame center
+    // Şans destesini biraz büyüt; Kader biraz daha geniş (sadece genişlik ×1.06)
+    final scaleMultiplier = type == CardType.sans ? 1.02 : 0.90;
+    final baseW = kWidth * scaleMultiplier;
+    final baseH = kHeight * scaleMultiplier;
+    final w = type == CardType.kader ? baseW * 1.06 : baseW;
 
     return IsometricGameCard(
       type: type,
-      width: kWidth * scaleMultiplier,
-      height: kHeight * scaleMultiplier,
-      isMirrored: isMirrored,
+      width: w,
+      height: baseH,
     );
   }
 

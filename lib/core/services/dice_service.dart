@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import '../constants/game_constants.dart';
+import 'dice_roll_values.dart';
 import '../managers/audio_manager.dart';
 import '../../models/game_enums.dart';
 import '../../providers/game_notifier.dart';
@@ -22,26 +23,36 @@ class DiceService {
     // PAUSE GUARD
     await notifier.checkPauseStatus();
 
-    // Generate two independent dice
-    int d1 = _random.nextInt(6) + 1;
-    int d2 = _random.nextInt(6) + 1;
-    int roll = d1 + d2;
+    final (d1, d2, roll) = DiceRollValues.roll(_random);
     bool isDouble = d1 == d2;
 
     notifier.logBot('Dice rolled: $d1 + $d2 = $roll (Double: $isDouble)');
 
-    // Start dice rolling animation
-    notifier.updateState(state.copyWith(isDiceRolling: true));
+    // 3D overlay sonuç yüzünü bilsin; HUD henüz "zar atıldı" moduna geçmesin
+    notifier.updateState(
+      state.copyWith(
+        isDiceRolling: true,
+        isDiceRolled: false,
+        dice1: d1,
+        dice2: d2,
+        diceTotal: roll,
+      ),
+    );
     AudioManager.instance.playSfx('audio/dice_roll.wav');
 
-    // Wait for animation duration (faster in bot mode)
+    // Hareket + sonuç bekleme (bot kısa)
     final diceDelay = isBotPlaying
         ? const Duration(milliseconds: 500)
         : const Duration(milliseconds: GameConstants.diceAnimationDelay);
     await Future.delayed(diceDelay);
 
-    // Stop rolling animation
-    notifier.updateState(notifier.currentState.copyWith(isDiceRolling: false));
+    // Overlay kapanır; sonuç HUD’da gösterilsin
+    notifier.updateState(
+      notifier.currentState.copyWith(
+        isDiceRolling: false,
+        isDiceRolled: true,
+      ),
+    );
 
     // Handle based on game phase
     if (notifier.currentState.phase == GamePhase.playerTurn) {

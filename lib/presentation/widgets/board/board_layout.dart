@@ -70,8 +70,8 @@ class _BoardLayoutState extends State<BoardLayout> {
 
     // Dynamic screen usage ratio based on screen size
     final screenUsageRatio = isTinyScreen
-        ? 0.98
-        : (isSmallMobile ? 0.95 : (isMobile ? 0.90 : 0.85));
+        ? 1.05
+        : (isSmallMobile ? 1.02 : (isMobile ? 0.98 : 0.95));
     final targetWidth = shortestSide * screenUsageRatio;
 
     // Height constraint - ensure board fits vertically with safe area
@@ -204,7 +204,7 @@ class _BoardLayoutState extends State<BoardLayout> {
     // Use more offset for smaller screens
     final verticalOffset =
         screenSize.height *
-        (isTinyScreen ? 0.03 : (isSmallMobile ? 0.05 : 0.12));
+        (isTinyScreen ? 0.14 : (isSmallMobile ? 0.18 : 0.28));
 
     // Calculate extra space needed for isometric transform overflow
     // The diamond shape expands beyond the rectangular bounds

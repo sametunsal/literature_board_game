@@ -203,67 +203,55 @@ class DiceRoller extends ConsumerWidget {
     );
   }
 
-  /// Build rolling indicator with animated dice
+  /// Zar animasyonu tahta ortasındaki [CenterDiceRollOverlay] ile gösterilir;
+  /// burada sadece kompakt durum metni (aynı izometrik düzlemde küçük kart).
   Widget _buildRollingIndicator(
     ThemeTokens tokens,
     String playerName,
     double shortestSide,
   ) {
-    final dieSize = shortestSide * 0.10; // 10% of shortest side
-
     return FittedBox(
       fit: BoxFit.contain,
       child: Container(
-        padding: EdgeInsets.all(shortestSide * 0.02),
+        padding: EdgeInsets.symmetric(
+          horizontal: shortestSide * 0.022,
+          vertical: shortestSide * 0.018,
+        ),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: tokens.border.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-              color: tokens.shadow.withValues(alpha: 0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: tokens.shadow.withValues(alpha: 0.18),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(
+              Icons.casino_rounded,
+              size: shortestSide * 0.045,
+              color: tokens.primary,
+            ),
+            SizedBox(height: shortestSide * 0.01),
             Text(
-              '$playerName atıyor...',
+              playerName,
               style: GoogleFonts.poppins(
-                fontSize: shortestSide * 0.018,
-                fontWeight: FontWeight.w600,
+                fontSize: shortestSide * 0.02,
+                fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
-            SizedBox(height: shortestSide * 0.02),
-            // Animated rolling dice
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                AnimatedDie(
-                  value: 1, // Placeholder value, will show '?' while rolling
-                  size: dieSize,
-                  tokens: tokens,
-                  isRolling: true,
-                ),
-                SizedBox(width: shortestSide * 0.02),
-                AnimatedDie(
-                  value: 1, // Placeholder value, will show '?' while rolling
-                  size: dieSize,
-                  tokens: tokens,
-                  isRolling: true,
-                ),
-              ],
-            ),
-            SizedBox(height: shortestSide * 0.02),
             Text(
-              'Zarlar dönüyor...',
+              'Zar atılıyor…',
               style: GoogleFonts.poppins(
-                fontSize: shortestSide * 0.015,
-                color: Colors.grey.shade600,
+                fontSize: shortestSide * 0.014,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
               ),
             ),
           ],
@@ -396,7 +384,7 @@ class DiceRoller extends ConsumerWidget {
     );
   }
 
-  /// Build modern roll button
+  /// Build modern roll button with 3D isometric effect
   Widget _buildRollButton(
     GameState state,
     ThemeTokens tokens,
@@ -604,69 +592,224 @@ class DiceRoller extends ConsumerWidget {
                 ],
               ),
             ),
-          // UI Lock Button: Checks if automated turn order is running
-          Builder(
-            builder: (context) {
-              // CHECK IF AUTOMATED TURN ORDER IS RUNNING - LOCK THE UI
-              final isTurnOrderInProgress = ref
-                  .read(gameProvider.notifier)
-                  .isTurnOrderProcessing;
+          // Isometric 3D Dice Button with tactile press effect
+          _Isometric3DDiceButton(
+            label: buttonLabel,
+            color: buttonColor,
+            enabled: buttonEnabled,
+            shortestSide: shortestSide,
+            onPressed: buttonEnabled &&
+                (!state.isDiceRolling || phase != GamePhase.rollingForOrder)
+              ? () {
+                  final isTurnOrderInProgress = ref
+                      .read(gameProvider.notifier)
+                      .isTurnOrderProcessing;
+                  
+                  if (!isTurnOrderInProgress) {
+                    if (phase == GamePhase.rollingForOrder) {
+                      ref.read(gameProvider.notifier).startAutomatedTurnOrder();
+                    } else {
+                      ref.read(gameProvider.notifier).rollDice();
+                    }
+                  }
+                }
+              : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-              return ElevatedButton(
-                onPressed:
-                    // LOCKED if automated turn order is running OR if button is not enabled
-                    (buttonEnabled &&
-                        !isTurnOrderInProgress &&
-                        (!state.isDiceRolling ||
-                            phase != GamePhase.rollingForOrder))
-                    ? () {
-                        if (phase == GamePhase.rollingForOrder) {
-                          ref
-                              .read(gameProvider.notifier)
-                              .startAutomatedTurnOrder();
-                        } else {
-                          ref.read(gameProvider.notifier).rollDice();
-                        }
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  foregroundColor: Colors.white,
-                  elevation: buttonEnabled ? 4 : 0,
-                  shadowColor: buttonColor.withValues(alpha: 0.3),
-                  disabledBackgroundColor: Colors.grey.shade400,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: shortestSide * 0.04,
-                    vertical: shortestSide * 0.025,
+/// Isometric 3D Dice Button with tactile press feedback
+class _Isometric3DDiceButton extends StatefulWidget {
+  final String label;
+  final Color color;
+  final bool enabled;
+  final double shortestSide;
+  final VoidCallback? onPressed;
+
+  const _Isometric3DDiceButton({
+    required this.label,
+    required this.color,
+    required this.enabled,
+    required this.shortestSide,
+    this.onPressed,
+  });
+
+  @override
+  State<_Isometric3DDiceButton> createState() => _Isometric3DDiceButtonState();
+}
+
+class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
+  bool _isPressed = false;
+
+  Future<void> _handlePress() async {
+    if (widget.onPressed == null) return;
+    
+    setState(() => _isPressed = true);
+    await Future.delayed(const Duration(milliseconds: 600));
+    
+    if (mounted) {
+      setState(() => _isPressed = false);
+      widget.onPressed?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonColor = widget.enabled ? widget.color : Colors.grey.shade400;
+    final darkColor = widget.enabled 
+        ? Color.lerp(widget.color, Colors.black, 0.3)! 
+        : Colors.grey.shade600;
+
+    // BoardLayout already applies the global isometric matrix to the whole
+    // board stack (rotateX -0.55, rotateZ 0.785398). Do NOT repeat it here —
+    // double rotation skews the button off the board plane.
+    return GestureDetector(
+        onTap: widget.onPressed != null ? _handlePress : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          transform: Matrix4.identity()
+            ..translate(0.0, _isPressed ? 6.0 : 0.0, 0.0),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Deepest slab (reads as physical thickness on the board plane)
+              Container(
+                margin: EdgeInsets.only(
+                  top: _isPressed ? 7 : 14,
+                  left: 5,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.shortestSide * 0.04,
+                  vertical: widget.shortestSide * 0.032,
+                ),
+                decoration: BoxDecoration(
+                  color: Color.lerp(darkColor, Colors.black, 0.35)!,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.45),
+                      blurRadius: _isPressed ? 6 : 14,
+                      offset: Offset(2, _isPressed ? 3 : 8),
+                    ),
+                  ],
+                ),
+                child: Opacity(
+                  opacity: 0,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.04),
+                      SizedBox(width: widget.shortestSide * 0.015),
+                      Text(
+                        widget.label,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: widget.shortestSide * 0.028,
+                        ),
+                      ),
+                    ],
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              // Mid slab (transition between base and face)
+              Container(
+                margin: EdgeInsets.only(
+                  top: _isPressed ? 4 : 7,
+                  left: 3,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.shortestSide * 0.04,
+                  vertical: widget.shortestSide * 0.03,
+                ),
+                decoration: BoxDecoration(
+                  color: darkColor,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Opacity(
+                  opacity: 0,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.04),
+                      SizedBox(width: widget.shortestSide * 0.015),
+                      Text(
+                        widget.label,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: widget.shortestSide * 0.028,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+              ),
+              // Top layer (button surface)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.shortestSide * 0.04,
+                  vertical: widget.shortestSide * 0.032,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      buttonColor,
+                      Color.lerp(buttonColor, Colors.black, 0.15)!,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: buttonColor.withOpacity(0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.casino_rounded, size: shortestSide * 0.04),
-                    SizedBox(width: shortestSide * 0.015),
+                    Icon(
+                      Icons.casino_rounded, 
+                      size: widget.shortestSide * 0.04,
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: widget.shortestSide * 0.015),
                     Flexible(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          buttonLabel,
+                          widget.label,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
-                            fontSize: shortestSide * 0.028,
+                            fontSize: widget.shortestSide * 0.028,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.5),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ); // Close ElevatedButton
-            }, // Close builder function
-          ), // Close Builder widget
-        ],
-      ),
+              ),
+            ],
+          ),
+        ),
     );
   }
 }
