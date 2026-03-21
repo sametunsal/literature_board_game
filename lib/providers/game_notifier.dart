@@ -677,11 +677,8 @@ class GameNotifier extends StateNotifier<GameState> {
       await Future.delayed(delay);
       await _movePlayer(roll);
 
-      // After movement, pass turn to next player
-      _logBot('_handleMovementRoll() COMPLETED - calling endTurn()');
-      _isProcessing =
-          false; // Reset before calling endTurn() to prevent blocking
-      endTurn();
+      // After movement, endTurn() is called in finally block
+      _logBot('_handleMovementRoll() COMPLETED');
     } catch (e, stackTrace) {
       safePrint('ðŸš¨ ERROR in _handleMovementRoll: $e');
       safePrint('Stack trace: $stackTrace');
@@ -835,15 +832,11 @@ class GameNotifier extends StateNotifier<GameState> {
       type: 'error',
     );
 
-    // Release global action guard so user can close dialog
-    final wasLocked = _isProcessingAction;
     _isProcessingAction = false;
 
     // Await the completer to wait for user to close dialog
     await _libraryPenaltyDialogCompleter!.future;
 
-    // Reacquire lock
-    if (wasLocked) _isProcessingAction = true;
     _libraryPenaltyDialogCompleter = null;
   }
 
@@ -879,15 +872,11 @@ class GameNotifier extends StateNotifier<GameState> {
       type: 'success',
     );
 
-    // Release global action guard so user can close dialog
-    final wasLocked = _isProcessingAction;
     _isProcessingAction = false;
 
     // Await the completer to wait for user to close dialog
     await _imzaGunuDialogCompleter!.future;
 
-    // Reacquire lock
-    if (wasLocked) _isProcessingAction = true;
     _imzaGunuDialogCompleter = null;
   }
 
@@ -898,6 +887,8 @@ class GameNotifier extends StateNotifier<GameState> {
     newPlayers[state.currentPlayerIndex] = player.copyWith(
       turnsToSkip: GameConstants.jailTurns,
     );
+
+    state = state.copyWith(players: newPlayers, consecutiveDoubles: 0);
 
     ref.read(dialogProvider.notifier).hideLibraryPenalty();
 
@@ -912,6 +903,8 @@ class GameNotifier extends StateNotifier<GameState> {
       _libraryPenaltyDialogCompleter!.complete();
     }
 
+    // Same as İmza Günü / shop: endTurn must not run while movement holds _isProcessing
+    _isProcessing = false;
     // Library always ends the turn (overrides Double Dice)
     endTurn();
   }
@@ -924,10 +917,12 @@ class GameNotifier extends StateNotifier<GameState> {
     if (_imzaGunuDialogCompleter != null &&
         !_imzaGunuDialogCompleter!.isCompleted) {
       _imzaGunuDialogCompleter!.complete();
-    } else if (_isBotPlaying) {
-      // Bot mode: end turn immediately
-      endTurn();
     }
+
+    // Movement roll still holds _isProcessing until _handleMovementRoll's finally
+    // runs. endTurn() no-ops while _isProcessing is true — release first.
+    _isProcessing = false;
+    endTurn();
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -953,11 +948,11 @@ class GameNotifier extends StateNotifier<GameState> {
 
   Future<void> _triggerQuestion(BoardTile tile) async {
     safePrint('TEST: Yüklü Soru Sayısı: ${_cachedQuestions.length}');
-    // For Teşvik tiles, use combined pool of both 'tesvik' and 'bonusBilgiler' categories
+    // For Teşvik tiles, use bonusBilgiler only
     // For other tiles, use the tile's category
     List<String> categoryNames = [];
     if (tile.type == TileType.tesvik) {
-      categoryNames = ['tesvik', 'bonusBilgiler'];
+      categoryNames = ['bonusBilgiler'];
     } else if (tile.category != null && tile.category!.isNotEmpty) {
       categoryNames = [tile.category!];
     }
@@ -973,9 +968,9 @@ class GameNotifier extends StateNotifier<GameState> {
     final player = state.currentPlayer;
 
     // AUTO-DIFFICULTY: Get difficulty based on player's mastery level
-    // For TeÅŸvik tiles, use tesvik category for mastery calculation
+    // For Teşvik tiles, use bonusBilgiler for mastery calculation
     final masteryCategoryName = tile.type == TileType.tesvik
-        ? 'tesvik'
+        ? 'bonusBilgiler'
         : categoryNames.first;
     final masteryLevel = player.getMasteryLevel(masteryCategoryName);
     final targetDifficulty = _getDifficultyForMasteryLevel(masteryLevel);
@@ -996,7 +991,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     // BUG FIX: Filter out already asked questions to prevent repetition
-    // For TeÅŸvik tiles, match against EITHER tesvik OR bonusBilgiler
+    // For Teşvik tiles, match bonusBilgiler only
     final filteredQuestions = _cachedQuestions.where((q) {
       final matchesCategory = categoryNames.contains(q.category.name);
       final matchesDifficulty = q.difficulty == difficultyFilter;
@@ -1128,16 +1123,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     ref.read(dialogProvider.notifier).showQuestion(selectedQuestion);
 
-    // Release global action guard so user can answer
-    final wasLocked = _isProcessingAction;
     _isProcessingAction = false;
 
     // CRITICAL: Await the completer to wait for user to answer
     // The dialog will call answerQuestion() which will complete this completer
     await _questionDialogCompleter!.future;
 
-    // Reacquire lock
-    if (wasLocked) _isProcessingAction = true;
     _questionDialogCompleter = null;
   }
 
@@ -1556,15 +1547,11 @@ class GameNotifier extends StateNotifier<GameState> {
     _cardDialogCompleter = Completer<void>();
     ref.read(dialogProvider.notifier).showCard(card);
 
-    // Release global action guard so user can interact
-    final wasLocked = _isProcessingAction;
     _isProcessingAction = false;
 
     // Wait for the dialog to be closed (completed in closeCardDialog)
     await _cardDialogCompleter!.future;
 
-    // Reacquire lock
-    if (wasLocked) _isProcessingAction = true;
     _cardDialogCompleter = null;
   }
 
@@ -1776,13 +1763,13 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void closeCardDialog() {
+    var movementOccurred = false;
+    var scheduledChainedTileArrival = false;
+
     try {
       final card = ref.read(dialogProvider).currentCard;
       if (card != null) {
         final player = state.currentPlayer;
-
-        // Track if a movement effect occurred to trigger tile arrival
-        bool movementOccurred = false;
 
         switch (card.effectType) {
           case CardEffectType.moneyChange:
@@ -1905,8 +1892,13 @@ class GameNotifier extends StateNotifier<GameState> {
 
           case CardEffectType.rollAgain:
             _addLog("ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
-            // Don't end turn, let the player roll again
             ref.read(dialogProvider.notifier).hideCard();
+            if (_cardDialogCompleter != null &&
+                !_cardDialogCompleter!.isCompleted) {
+              _cardDialogCompleter!.complete();
+            }
+            // Tekrar zar — sıra aynı oyuncuda; movement barrier'ı kaldır
+            _isProcessing = false;
             return;
 
           case CardEffectType.loseStarsPercentage:
@@ -1972,7 +1964,6 @@ class GameNotifier extends StateNotifier<GameState> {
         }
 
         // CRITICAL FIX: After applying a movement card effect, trigger tile arrival
-        // This ensures that landing on 'Ben Kimim' or other tiles triggers their actions
         if (movementOccurred) {
           final newPlayer = state.currentPlayer;
           if (state.tiles.isNotEmpty &&
@@ -1981,7 +1972,7 @@ class GameNotifier extends StateNotifier<GameState> {
             _logBot(
               'Card moved player to ${newTile.name} (${newTile.type}) - triggering tile arrival',
             );
-            // Schedule tile arrival handling after dialog closes
+            scheduledChainedTileArrival = true;
             Future.microtask(() async {
               await _handleTileArrival(newTile);
             });
@@ -1990,11 +1981,16 @@ class GameNotifier extends StateNotifier<GameState> {
       }
       ref.read(dialogProvider.notifier).hideCard();
 
-      // Complete the completer if waiting for card dialog to close
       if (_cardDialogCompleter != null && !_cardDialogCompleter!.isCompleted) {
         _cardDialogCompleter!.complete();
-      } else if (_isBotPlaying) {
-        // Bot mode: end turn immediately
+      }
+
+      // Zar hareketi sırasında endTurn() no-op oluyordu (İmza Günü ile aynı kök neden)
+      _isProcessing = false;
+
+      // Hareket yoksa veya zincir kare işlenmeyecekse turu kapat; aksi halde
+      // _handleTileArrival / soru akışı endTurn çağırır.
+      if (!scheduledChainedTileArrival) {
         endTurn();
       }
     } finally {
@@ -2038,36 +2034,33 @@ class GameNotifier extends StateNotifier<GameState> {
           : Duration(milliseconds: GameConstants.turnChangeDelay);
       await Future.delayed(delay);
       int next = (state.currentPlayerIndex + 1) % state.players.length;
-
       final nextPlayer = state.players[next];
-      _logBot('Passing turn to: ${nextPlayer.name} (index: $next)');
-
-      // BUG FIX: Don't decrement here! Penalty is only decremented in rollDice()
-      // We only check if the next player should be skipped
       bool isSkipped = nextPlayer.turnsToSkip > 0;
-
-      if (isSkipped) {
-        _logBot(
-          'Next player has turnsToSkip: ${nextPlayer.turnsToSkip} - will be skipped',
-        );
-      }
 
       ref.read(dialogProvider.notifier).hideCard();
 
-      if (isSkipped) {
-        _addLog("${nextPlayer.name} cezalÄ±! Tur atlanÄ±yor.", type: 'error');
+      if (state.consecutiveDoubles > 0) {
+        _addLog("Çift atıldığı için sıra tekrar ${state.currentPlayer.name} oyuncusunda!", type: 'turn');
+        state = state.copyWith(isDiceRolled: false, isDoubleTurn: true);
       } else {
-        _addLog("SÄ±ra ${state.players[next].name} oyuncusunda.", type: 'turn');
+        if (isSkipped) {
+          _addLog("${nextPlayer.name} cezalı! Tur atlanıyor.", type: 'error');
+        } else {
+          _addLog("Sıra ${nextPlayer.name} oyuncusunda.", type: 'turn');
+        }
+
+        state = state.copyWith(
+          currentPlayerIndex: next,
+          isDiceRolled: false,
+          isDoubleTurn: false,
+        );
+
+        if (_isBotPlaying && !isSkipped) {
+          _scheduleBotTurn();
+        }
       }
 
-      _logBot(
-        'endTurn() COMPLETED - next: ${nextPlayer.name}, skipped: $isSkipped',
-      );
-
-      // BOT MODE: Trigger next turn automatically
-      if (_isBotPlaying && !isSkipped) {
-        _scheduleBotTurn();
-      }
+      _logBot('endTurn() COMPLETED - next: ${nextPlayer.name}, skipped: $isSkipped');
     } catch (e, stackTrace) {
       safePrint('ğŸš¨ ERROR in endTurn: $e');
       safePrint('Stack trace: $stackTrace');
@@ -2242,15 +2235,11 @@ class GameNotifier extends StateNotifier<GameState> {
     ref.read(dialogProvider.notifier).showShop();
     _addLog('Kıraathane\'ye hoş geldiniz!', type: 'info');
 
-    // Release global action guard so user can interact
-    final wasLocked = _isProcessingAction;
     _isProcessingAction = false;
 
     // Await the completer to wait for user to close dialog
     await _shopDialogCompleter!.future;
 
-    // Reacquire lock
-    if (wasLocked) _isProcessingAction = true;
     _shopDialogCompleter = null;
   }
 
@@ -2260,10 +2249,11 @@ class GameNotifier extends StateNotifier<GameState> {
     // Complete the completer if waiting for dialog to close
     if (_shopDialogCompleter != null && !_shopDialogCompleter!.isCompleted) {
       _shopDialogCompleter!.complete();
-    } else if (_isBotPlaying) {
-      // Bot mode: end turn immediately
-      endTurn();
     }
+
+    _isProcessing = false;
+    // Always end turn after closing shop (whether purchase was made or not)
+    endTurn();
   }
 
   void purchaseQuote(String quoteId, int cost) {
