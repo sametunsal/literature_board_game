@@ -307,11 +307,12 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
-        // Library Penalty Dialog
+        // Library Penalty — soru kartı boyutu, ortada (tam ekran kart değil)
         if (dialog.showLibraryPenaltyDialog)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.7),
+              color: Colors.black.withValues(alpha: 0.5),
+              alignment: Alignment.center,
               child: const LibraryPenaltyDialog(),
             ),
           ),
@@ -325,11 +326,12 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
-        // Imza Günü Dialog
+        // İmza Günü — soru kartı boyutu, ortada
         if (dialog.showImzaGunuDialog)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.7),
+              color: Colors.black.withValues(alpha: 0.5),
+              alignment: Alignment.center,
               child: const ImzaGunuDialog(),
             ),
           ),

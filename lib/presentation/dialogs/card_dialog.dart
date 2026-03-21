@@ -76,102 +76,107 @@ class _CardDialogState extends ConsumerState<CardDialog> {
     final cardTitle = isSans ? "ŞANS KARTI" : "KADER KARTI";
     final cardIcon = isSans ? Icons.star : Icons.bolt;
 
-    return GestureDetector(
-      onTap: _cancelTimerAndDismiss,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320, maxHeight: 450),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: GameTheme.cardDecorationFor(
-            isDarkMode,
-          ).copyWith(color: GameTheme.parchmentColor),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // PROGRESS BAR (auto-dismiss indicator)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: _progress,
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: AlwaysStoppedAnimation<Color>(cardColor),
-                  minHeight: 4,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // CARD ICON with glow effect
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: cardColor.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+          child: GestureDetector(
+            onTap: _cancelTimerAndDismiss,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: GameTheme.cardDecorationFor(
+                isDarkMode,
+              ).copyWith(color: GameTheme.parchmentColor),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // PROGRESS BAR (auto-dismiss indicator)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: _progress,
+                      backgroundColor: Colors.grey.shade300,
+                      valueColor: AlwaysStoppedAnimation<Color>(cardColor),
+                      minHeight: 4,
                     ),
-                  ],
-                ),
-                child: Icon(cardIcon, size: 50, color: cardColor),
-              ),
-              const SizedBox(height: 16),
-
-              // TITLE with styled badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  cardTitle,
-                  style: GoogleFonts.playfairDisplay(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.white,
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-              // DESCRIPTION
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Text(
-                    card.description,
-                    textAlign: TextAlign.center,
+                  // CARD ICON with glow effect
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: cardColor.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Icon(cardIcon, size: 50, color: cardColor),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // TITLE with styled badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      cardTitle,
+                      style: GoogleFonts.playfairDisplay(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // DESCRIPTION
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Text(
+                        card.description,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          color: GameTheme.textDark,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // TAP TO DISMISS HINT
+                  Text(
+                    "Kapatmak için dokun",
                     style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      color: GameTheme.textDark,
-                      height: 1.5,
+                      fontSize: 11,
+                      color: GameTheme.textDark.withValues(alpha: 0.5),
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 16),
-
-              // TAP TO DISMISS HINT
-              Text(
-                "Kapatmak için dokun",
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: GameTheme.textDark.withValues(alpha: 0.5),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

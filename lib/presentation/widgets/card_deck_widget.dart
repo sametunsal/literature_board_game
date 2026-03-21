@@ -19,8 +19,13 @@ class CardDeckWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSans = type == CardType.sans;
 
-    return Transform.rotate(
-      angle: rotation,
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..setEntry(3, 2, 0.001)
+        ..rotateX(-0.55)
+        ..rotateZ(0.785398)
+        ..rotateZ(rotation),
       child: SizedBox(
         width: size,
         height: size * 1.1,

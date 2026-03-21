@@ -7,7 +7,6 @@ class IsometricGameCard extends StatelessWidget {
   final double width;
   final double height;
   final VoidCallback? onTap;
-  final bool isMirrored;
 
   const IsometricGameCard({
     super.key,
@@ -15,7 +14,6 @@ class IsometricGameCard extends StatelessWidget {
     this.width = 160,
     this.height = 220,
     this.onTap,
-    this.isMirrored = false,
   });
 
   @override
@@ -35,29 +33,12 @@ class IsometricGameCard extends StatelessWidget {
     final icon = isSans ? Icons.auto_awesome : Icons.explore;
     final label = isSans ? "ŞANS" : "KADER";
 
-    // Isometric Transform Constants
-    // Rotate X ~0.6 rad for tilt (~34 deg)
-    // Rotate Z: 0.0 (No tilt/inclination as requested)
-    final double zRotation = 0.0;
+    // Draw flat in board local space: BoardLayout already applies the global
+    // isometric matrix (rotateX -0.55, rotateZ π/4). Extra rotateX here made
+    // decks look upright vs. the table plane.
+    const double thickness = 18.0;
 
-    final Matrix4 isometricTransform = Matrix4.identity()
-      ..setEntry(3, 2, 0.0) // No perspective (Orthographic)
-      ..rotateX(0.6)
-      ..rotateZ(zRotation);
-
-    const double thickness = 16.0;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        // Extra padding for the rotation to not clip
-        width: width + 40,
-        height: height + 40,
-        alignment: Alignment.center,
-        child: Transform(
-          transform: isometricTransform,
-          alignment: Alignment.center,
-          child: Stack(
+    Widget deck = Stack(
             clipBehavior: Clip.none,
             children: [
               // LAYER 1: Shadow (Bottom)
@@ -118,10 +99,14 @@ class IsometricGameCard extends StatelessWidget {
                   height: height,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      begin: isSans
+                          ? Alignment.topRight
+                          : Alignment.topLeft,
+                      end: isSans
+                          ? Alignment.bottomLeft
+                          : Alignment.bottomRight,
                       colors: [
-                        mainColor, // More solid, less shiny
+                        mainColor,
                         mainColor.withValues(alpha: 0.95),
                         mainColor.withValues(alpha: 0.90),
                       ],
@@ -232,8 +217,15 @@ class IsometricGameCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
+          );
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: width + 24,
+        height: height + thickness + 16,
+        alignment: Alignment.topCenter,
+        child: deck,
       ),
     );
   }

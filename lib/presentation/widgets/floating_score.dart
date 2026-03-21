@@ -4,8 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 class FloatingScore extends StatelessWidget {
   final String text;
   final Color color;
-  final bool
-  isPositive; // Determines direction: up for positive, down for negative
+  final bool isPositive;
   final VoidCallback onComplete;
 
   const FloatingScore({
@@ -18,51 +17,51 @@ class FloatingScore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine vertical movement based on positive/negative
-    final double endY = isPositive ? -120 : 80; // Up for +, Down for -
+    final double endY = isPositive ? -140 : 80;
 
     return Center(
       child: Material(
         color: Colors.transparent,
         child: DefaultTextStyle(
-          style: const TextStyle(
-            fontSize: 56,
-            fontWeight: FontWeight.bold,
+          style: TextStyle(
+            fontSize: 64,
+            fontWeight: FontWeight.w900,
             shadows: [
               Shadow(
-                blurRadius: 12,
-                color: Colors.black87,
-                offset: Offset(3, 3),
+                blurRadius: 16,
+                color: Colors.black.withOpacity(0.5),
+                offset: const Offset(0, 4),
               ),
               Shadow(
-                blurRadius: 8,
-                color: Colors.black54,
-                offset: Offset(-1, -1),
+                blurRadius: 24,
+                color: color.withOpacity(0.6),
+                offset: const Offset(0, 0),
               ),
             ],
           ),
           child: Text(text, style: TextStyle(color: color))
               .animate(onComplete: (c) => onComplete())
-              .moveY(
-                begin: 0,
-                end: endY,
-                duration: 1400.ms,
-                curve: Curves.easeOut,
-              )
-              .fadeIn(duration: 200.ms)
-              .fadeOut(delay: 1000.ms, duration: 400.ms)
               .scale(
-                begin: const Offset(0.8, 0.8),
-                end: const Offset(1.2, 1.2),
-                duration: 300.ms,
-                curve: Curves.easeOut,
+                begin: const Offset(0.5, 0.5),
+                end: const Offset(1.3, 1.3),
+                duration: 250.ms,
+                curve: Curves.elasticOut,
               )
               .then()
               .scale(
-                begin: const Offset(1.2, 1.2),
+                begin: const Offset(1.3, 1.3),
                 end: const Offset(1.0, 1.0),
                 duration: 200.ms,
-              ),
+                curve: Curves.easeOut,
+              )
+              .then()
+              .moveY(
+                begin: 0,
+                end: endY,
+                duration: 1500.ms,
+                curve: Curves.easeOut,
+              )
+              .fadeOut(delay: 800.ms, duration: 700.ms),
         ),
       ),
     );
