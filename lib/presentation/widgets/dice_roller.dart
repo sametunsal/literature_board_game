@@ -203,8 +203,6 @@ class DiceRoller extends ConsumerWidget {
     );
   }
 
-  /// Zar animasyonu tahta ortasındaki [CenterDiceRollOverlay] ile gösterilir;
-  /// burada sadece kompakt durum metni (aynı izometrik düzlemde küçük kart).
   Widget _buildRollingIndicator(
     ThemeTokens tokens,
     String playerName,
@@ -213,48 +211,22 @@ class DiceRoller extends ConsumerWidget {
     return FittedBox(
       fit: BoxFit.contain,
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: shortestSide * 0.022,
-          vertical: shortestSide * 0.018,
-        ),
+        padding: EdgeInsets.all(shortestSide * 0.014),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: tokens.border.withValues(alpha: 0.35)),
+          color: Colors.white.withValues(alpha: 0.85),
+          shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: tokens.shadow.withValues(alpha: 0.18),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              color: tokens.shadow.withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.casino_rounded,
-              size: shortestSide * 0.045,
-              color: tokens.primary,
-            ),
-            SizedBox(height: shortestSide * 0.01),
-            Text(
-              playerName,
-              style: GoogleFonts.poppins(
-                fontSize: shortestSide * 0.02,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-            Text(
-              'Zar atılıyor…',
-              style: GoogleFonts.poppins(
-                fontSize: shortestSide * 0.014,
-                fontWeight: FontWeight.w500,
-                color: Colors.black54,
-              ),
-            ),
-          ],
+        child: Icon(
+          Icons.casino_rounded,
+          size: shortestSide * 0.035,
+          color: tokens.primary,
         ),
       ),
     );

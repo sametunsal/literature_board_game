@@ -27,8 +27,13 @@ class _CenterDiceRollOverlayState extends State<CenterDiceRollOverlay> {
   @override
   void initState() {
     super.initState();
+    // Wait for dice animation + settle hold before showing result
     Future.delayed(
-      Duration(milliseconds: GameConstants.diceRollMotionDelayMs),
+      Duration(
+        milliseconds:
+            GameConstants.diceRollMotionDelayMs +
+            GameConstants.diceSettleHoldMs,
+      ),
       () {
         if (mounted) setState(() => _showResult = true);
       },
@@ -66,32 +71,11 @@ class _CenterDiceRollOverlayState extends State<CenterDiceRollOverlay> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '$name atıyor',
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: math.max(9, minSide * 0.028),
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: math.max(3, minSide * 0.01)),
                       DiceRollThreeView(
-                        width: math.min(innerW * 0.92, 220),
-                        height: math.min(innerH * 0.48, 100),
+                        width: math.min(innerW * 0.94, 230),
+                        height: math.min(innerH * 0.6, 118),
                         dice1: d1,
                         dice2: d2,
-                      ),
-                      SizedBox(height: math.max(2, minSide * 0.008)),
-                      Text(
-                        'Zarlar dönüyor…',
-                        style: GoogleFonts.poppins(
-                          fontSize: math.max(8, minSide * 0.022),
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black45,
-                        ),
                       ),
                     ],
                   ),

@@ -42,6 +42,9 @@ class TurnOrderService {
         // Switch to in-game BGM (seamless transition from menu music)
         await AudioManager.instance.playInGameBgm();
 
+        // Smooth entrance — let the board settle before rolling
+        await Future.delayed(const Duration(milliseconds: 800));
+
         notifier.addLog(
           'ğŸ² Otomatik sÄ±ra belirleme baÅŸlÄ±yor...',
           type: 'dice',

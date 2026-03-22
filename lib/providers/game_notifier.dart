@@ -367,8 +367,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _addLog("Oyun baÅŸlatÄ±ldÄ±! ${uniquePlayers.length} oyuncu katÄ±ldÄ±.");
 
-    // Auto-start turn order determination
-    startAutomatedTurnOrder();
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -479,39 +477,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
       _isProcessing = true;
       _startWatchdog(); // Start watchdog for this operation
-
-      // Check if player has turns to skip (library penalty) - only in playerTurn phase
-      if (state.phase == GamePhase.playerTurn &&
-          state.currentPlayer.turnsToSkip > 0) {
-        final player = state.currentPlayer;
-        final remaining = player.turnsToSkip - 1;
-
-        // Decrement turns to skip (BUG FIX: This is the ONLY place we decrement)
-        List<Player> newPlayers = List.from(state.players);
-        newPlayers[state.currentPlayerIndex] = player.copyWith(
-          turnsToSkip: remaining,
-        );
-        state = state.copyWith(players: newPlayers);
-
-        if (remaining > 0) {
-          _addLog(
-            "📚 ${player.name} Kütüphanede! Kalan ceza turu: $remaining",
-            type: 'error',
-          );
-          ref.read(dialogProvider.notifier).showTurnSkipped();
-        } else {
-          _addLog(
-            "✅ ${player.name} Kütüphane cezasını tamamladı! Sıradaki turda zar atabilir.",
-            type: 'success',
-          );
-        }
-
-        // CRITICAL: End turn immediately, DO NOT allow dice roll
-        _isProcessing =
-            false; // Reset before calling endTurn() to prevent blocking
-        endTurn();
-        return;
-      }
 
       await _diceService.executeRoll(
         notifier: this,
@@ -2070,7 +2035,9 @@ class GameNotifier extends StateNotifier<GameState> {
           isDoubleTurn: false,
         );
 
-        if (_isBotPlaying && !isSkipped) {
+        if (isSkipped) {
+          Future.microtask(_handleSkippedTurnEntry);
+        } else if (_isBotPlaying) {
           _scheduleBotTurn();
         }
       }
@@ -2199,6 +2166,46 @@ class GameNotifier extends StateNotifier<GameState> {
 
   void closeTurnSkippedDialog() {
     ref.read(dialogProvider.notifier).hideTurnSkipped();
+  }
+
+  Future<void> _handleSkippedTurnEntry() async {
+    if (state.phase != GamePhase.playerTurn || state.currentPlayer.turnsToSkip <= 0) {
+      if (_isBotPlaying) {
+        _scheduleBotTurn();
+      }
+      return;
+    }
+
+    final player = state.currentPlayer;
+    final remaining = player.turnsToSkip - 1;
+    final newPlayers = List<Player>.from(state.players);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(turnsToSkip: remaining);
+    state = state.copyWith(players: newPlayers, isDiceRolled: false);
+
+    if (remaining > 0) {
+      _addLog(
+        "📚 ${player.name} Kütüphanede! Kalan ceza turu: $remaining",
+        type: 'error',
+      );
+    } else {
+      _addLog(
+        "✅ ${player.name} Kütüphane cezasını tamamladı! Sıradaki turda zar atabilir.",
+        type: 'success',
+      );
+    }
+
+    ref.read(dialogProvider.notifier).showTurnSkipped();
+
+    final delay = _isBotPlaying
+        ? const Duration(milliseconds: 450)
+        : const Duration(
+            milliseconds: GameConstants.turnSkippedDialogAutoCloseDelay,
+          );
+    await Future.delayed(delay);
+
+    if (!mounted || !ref.read(dialogProvider).showTurnSkippedDialog) return;
+
+    closeTurnSkippedDialog();
     endTurn();
   }
 

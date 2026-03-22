@@ -8,15 +8,6 @@ import '../../providers/game_notifier.dart';
 import '../../core/theme/game_theme.dart';
 import '../../providers/theme_notifier.dart';
 
-/// Soru kartı ile aynı maksimum boyutlar (BoardView ortalanmış gösterir)
-Size _eventCardSize(BuildContext context) {
-  final s = MediaQuery.sizeOf(context);
-  return Size(
-    math.min(s.width * 0.90, 400),
-    math.min(s.height * 0.70, 500),
-  );
-}
-
 /// İmza Günü — biraz daha yüksek dikey kart
 Size _imzaCardSize(BuildContext context) {
   final s = MediaQuery.sizeOf(context);
@@ -139,127 +130,124 @@ class NotificationDialogBase extends ConsumerWidget {
   }
 }
 
-/// Kütüphane — ahşap çerçeve + nöbet fişi görünümü (soru kartı boyutu)
-class LibraryPenaltyDialog extends ConsumerWidget {
+/// Kütüphane — kompakt dikey kart, otomatik kapanır ve sıra geçer
+class LibraryPenaltyDialog extends ConsumerStatefulWidget {
   const LibraryPenaltyDialog({super.key});
 
+  @override
+  ConsumerState<LibraryPenaltyDialog> createState() =>
+      _LibraryPenaltyDialogState();
+}
+
+class _LibraryPenaltyDialogState extends ConsumerState<LibraryPenaltyDialog> {
   static const _ink = Color(0xFF3E2723);
   static const _wood = Color(0xFF5D4037);
   static const _parchment = Color(0xFFF2EBDD);
   static const _accent = Color(0xFF8D6E63);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sz = _eventCardSize(context);
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 2200), () {
+      if (mounted) {
+        ref.read(gameProvider.notifier).closeLibraryPenaltyDialog();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final cardW = math.min(size.width * 0.52, 260.0);
+    final cardH = math.min(size.height * 0.48, 320.0);
+
     return Material(
       color: Colors.transparent,
       child: SizedBox(
-        width: sz.width,
-        height: sz.height,
+        width: cardW,
+        height: cardH,
         child: Container(
           decoration: BoxDecoration(
             color: _wood,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF2D1F18), width: 4),
+            border: Border.all(color: const Color(0xFF2D1F18), width: 3),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x40000000),
-                blurRadius: 28,
-                offset: Offset(0, 14),
+                blurRadius: 22,
+                offset: Offset(0, 10),
               ),
             ],
           ),
           child: Container(
-            margin: const EdgeInsets.all(10),
+            margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: _parchment,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _accent, width: 2),
+              border: Border.all(color: _accent, width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                   decoration: const BoxDecoration(
                     color: _ink,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(8)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.menu_book_rounded, color: Colors.amber.shade200, size: 26),
-                      const SizedBox(width: 10),
-                      Text(
-                        'KÜTÜPHANE NÖBETİ',
-                        style: GoogleFonts.crimsonText(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
+                      Icon(Icons.menu_book_rounded,
+                          color: Colors.amber.shade200, size: 22),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'KÜTÜPHANE NÖBETİ',
+                            style: GoogleFonts.crimsonText(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  height: 3,
-                  color: _accent,
-                ),
+                Container(height: 2, color: _accent),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Icon(Icons.local_library_rounded,
+                            color: _wood, size: 36),
+                        const SizedBox(height: 10),
                         Text(
-                          'SESSİZLİK',
+                          'Raflar arasında 2 tur boyunca bekleyeceksin.',
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.crimsonText(
                             fontSize: 14,
+                            height: 1.4,
+                            color: _ink,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sıra otomatik olarak geçiyor…',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: _accent,
                             fontWeight: FontWeight.w600,
-                            color: _wood,
-                            letterSpacing: 4,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: Center(
-                            child: Text(
-                              'Kütüphane nöbeti sırası sana geldi.\n\nRaflar arasında 2 tur boyunca bekleyeceksin — sessizlik şart!',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.crimsonText(
-                                fontSize: 17,
-                                height: 1.45,
-                                color: _ink,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const Divider(color: _accent, thickness: 1),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: () => ref
-                                .read(gameProvider.notifier)
-                                .closeLibraryPenaltyDialog(),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _ink,
-                              foregroundColor: Colors.amber.shade100,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                side: BorderSide(color: Colors.amber.shade700, width: 1.5),
-                              ),
-                            ),
-                            child: Text(
-                              'ANLADIM',
-                              style: GoogleFonts.crimsonText(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                letterSpacing: 1,
-                              ),
-                            ),
                           ),
                         ),
                       ],
@@ -446,15 +434,95 @@ class TurnSkippedDialog extends ConsumerWidget {
     final turnsToSkip = ref.watch(
       gameProvider.select((s) => s.currentPlayer.turnsToSkip),
     );
+    final size = MediaQuery.sizeOf(context);
 
-    return NotificationDialogBase(
-      icon: Icons.block,
-      baseColor: Colors.red,
-      title: "SIRA ATLANDI",
-      message:
-          "Cezalı olduğun için bu turu oynayamıyorsun.\nKalan Ceza: $turnsToSkip Tur",
-      buttonText: "DEVAM ET",
-      onPressed: () => ref.read(gameProvider.notifier).closeTurnSkippedDialog(),
-    );
+    return Material(
+      color: Colors.transparent,
+      child: SizedBox(
+        width: math.min(size.width * 0.5, 280),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F1E3),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFF8D6E63), width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 22,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8D8C2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 36,
+                  color: Color(0xFF5D4037),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'KÜTÜPHANE CEZASI',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF3E2723),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Bu tur sessizlikte bekliyorsun.\nSıra otomatik olarak diğer oyuncuya geçiyor.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: const Color(0xFF4E342E),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFEBE9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  turnsToSkip > 0
+                      ? 'Kalan ceza: $turnsToSkip tur'
+                      : 'Ceza bu tur bitiyor',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF6D4C41),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 220.ms)
+        .scale(
+          begin: const Offset(0.94, 0.94),
+          end: const Offset(1, 1),
+          duration: 260.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 }

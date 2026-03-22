@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/game_constants.dart';
@@ -22,13 +24,14 @@ class TurnOrderDialog extends StatelessWidget {
     final screenW = mq.size.width;
     final isLandscape = screenW > screenH;
 
-    final maxH = isLandscape ? screenH * 0.92 : screenH * 0.82;
-    final maxW = isLandscape ? screenW * 0.34 : screenW * 0.80;
+    final maxH = isLandscape ? screenH * 0.92 : screenH * 0.86;
+    final maxW = isLandscape ? math.min(screenW * 0.30, 280.0) : math.min(screenW * 0.72, 320.0);
 
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
+    return SafeArea(
+      child: Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
           constraints: BoxConstraints(maxHeight: maxH, maxWidth: maxW),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -60,6 +63,8 @@ class TurnOrderDialog extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
+                    Icon(Icons.emoji_events_rounded, color: Colors.amber.shade100, size: 26),
+                    const SizedBox(height: 6),
                     Text(
                       'Sıra Belirlendi!',
                       textAlign: TextAlign.center,
@@ -69,7 +74,7 @@ class TurnOrderDialog extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       'En yüksek zar atan başlar',
                       textAlign: TextAlign.center,
@@ -135,6 +140,7 @@ class TurnOrderDialog extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

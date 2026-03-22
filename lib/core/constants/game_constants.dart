@@ -128,11 +128,15 @@ class GameConstants {
   static const int cardAnimationDelay = 500;
   /// Fırlatma + dönüş (sonunda üst yüzey sonuca kilitlenir)
   static const int diceRollMotionDelayMs = 2900;
-  /// Dönüş bittikten sonra zarların tahta üstünde sonuç gösterme süresi
-  static const int diceResultHoldMs = 1500;
+  /// Dönüş bittikten sonra zarların üst yüzü sabit kalarak oyuncuya gösterilir
+  static const int diceSettleHoldMs = 900;
+  /// Sonuç paneli gösterildikten sonra bekleme süresi
+  static const int diceResultHoldMs = 1400;
   /// İnsan oyuncu: hareket + sonuç bekleme (DiceService tek gecikme)
   static const int diceAnimationDelay =
-      diceRollMotionDelayMs + diceResultHoldMs;
+      diceRollMotionDelayMs + diceSettleHoldMs + diceResultHoldMs;
+  static const int boardEntryIntroDelay = 1100;
+  static const int turnSkippedDialogAutoCloseDelay = 1200;
   static const int turnChangeDelay = 1200;
   static const int diceResetDelay = 150;
   static const int botDialogAutoCloseDelay = 500;

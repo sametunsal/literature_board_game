@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
+import '../../core/constants/game_constants.dart';
 import '../../models/game_enums.dart';
 import '../../models/player.dart';
 import '../../providers/game_notifier.dart';
@@ -58,6 +59,8 @@ class BoardView extends ConsumerStatefulWidget {
 class _BoardViewState extends ConsumerState<BoardView> {
   late ConfettiController _confettiController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _showOpeningOverlay = true;
+  bool _didScheduleOpeningFlow = false;
 
   @override
   void initState() {
@@ -71,6 +74,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 5),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleOpeningFlow();
+    });
   }
 
   @override
@@ -195,15 +201,14 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // MOBILE MENU BUTTON (Opens Drawer)
           if (isMobile)
             Positioned(
-              left: 16,
-              top: 16,
+              left: 8,
+              bottom: 12,
               child: SafeArea(
-                child: FloatingActionButton(
-                  mini: true,
-                  backgroundColor: GameTheme.goldAccent,
+                child: FloatingActionButton.small(
+                  backgroundColor: GameTheme.goldAccent.withValues(alpha: 0.9),
                   foregroundColor: GameTheme.tableBackgroundColor,
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  child: const Icon(Icons.bar_chart_rounded),
+                  child: const Icon(Icons.bar_chart_rounded, size: 20),
                 ),
               ),
             ),
@@ -217,6 +222,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // PERIMETER PLAYER HUD (Corners & Sides)
           // ═══════════════════════════════════════════════════════════════
           PlayerHudManager(state: state),
+
+          if (_showOpeningOverlay) Positioned.fill(child: _buildOpeningOverlay()),
 
           // CONFETTI (on top)
           Align(
@@ -248,6 +255,88 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
           // GAME OVER DIALOG REMOVED - Handled by Navigation
         ],
+      ),
+    );
+  }
+
+  Future<void> _scheduleOpeningFlow() async {
+    if (_didScheduleOpeningFlow) return;
+    _didScheduleOpeningFlow = true;
+
+    await Future.delayed(
+      const Duration(milliseconds: GameConstants.boardEntryIntroDelay),
+    );
+    if (!mounted) return;
+
+    final state = ref.read(gameProvider);
+    final notifier = ref.read(gameProvider.notifier);
+    if (state.phase == GamePhase.rollingForOrder &&
+        state.orderRolls.isEmpty &&
+        !notifier.isTurnOrderProcessing) {
+      notifier.startAutomatedTurnOrder();
+    }
+
+    await Future.delayed(const Duration(milliseconds: 220));
+    if (!mounted) return;
+
+    setState(() => _showOpeningOverlay = false);
+  }
+
+  Widget _buildOpeningOverlay() {
+    return IgnorePointer(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 320),
+        color: Colors.black.withValues(alpha: 0.42),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.94),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: GameTheme.goldAccent.withValues(alpha: 0.75),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  color: GameTheme.goldAccent,
+                  size: 34,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Masa Hazırlanıyor',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: GameTheme.tableBackgroundColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Oyuncular yerleşiyor, sıra belirleme birazdan başlıyor.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -324,7 +413,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
         if (dialog.showTurnSkippedDialog)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.7),
+              color: Colors.black.withValues(alpha: 0.45),
+              alignment: Alignment.center,
               child: const TurnSkippedDialog(),
             ),
           ),

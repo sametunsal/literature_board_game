@@ -187,6 +187,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     }
   }
 
+  /// Tile depth map for isometric perspective compensation.
+  /// 0 = farthest (top-left after transform), 13 = nearest (bottom-right).
   static const _depthMap = <int, int>{
     0: 13, 1: 12, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7,
     7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1, 13: 0,
@@ -194,51 +196,61 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
   };
 
-  /// Isometric perspective compensation: far tiles get larger fonts.
-  /// Board after rotateZ(45°) + rotateX(-0.55):
-  ///   tile 13 (top-left) = farthest, tile 0 (bottom-right) = nearest.
   double _perspectiveScale() {
     final id = int.tryParse(widget.tile.id) ?? 0;
     final depth = _depthMap[id] ?? 7;
-    return 1.0 + (1.0 - depth / 13.0) * 0.2;
+    return 0.88 + (1.0 - depth / 13.0) * 0.24;
   }
 
-  /// Per-tile adaptive sizing based on name length + perspective
+  /// Per-tile adaptive sizing. Accounts for tile dimensions, word structure,
+  /// and isometric foreshortening so every tile name is fully legible and
+  /// never splits a word at line end.
   _TileTextParams _computeTextParams() {
     final name = widget.tile.name;
+    final words = name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
     final charCount = name.length;
-    final wordCount = name.split(RegExp(r'[\s\-]+')).length;
+    final wordCount = words.length;
+    final longestWord = words.fold<int>(0, (m, w) => math.max(m, w.length));
+
+    final isVerticalEdge = widget.quarterTurns == 1 || widget.quarterTurns == 3;
+    final contentW = isVerticalEdge ? widget.height : widget.width;
+    final contentH = isVerticalEdge ? widget.width : widget.height;
+    final usableW = math.max(20.0, contentW - 10);
+    final usableH = math.max(20.0, contentH - 10);
+    final shortSide = math.min(usableW, usableH);
+    final longSide = math.max(usableW, usableH);
     final pScale = _perspectiveScale();
 
-    if (charCount <= 8) {
-      return _TileTextParams(
-        maxFont: (14 * pScale).roundToDouble(),
-        minFont: (8 * pScale).roundToDouble(),
-        maxLines: 2,
-      );
-    } else if (charCount <= 16) {
-      return _TileTextParams(
-        maxFont: (12 * pScale).roundToDouble(),
-        minFont: (7 * pScale).roundToDouble(),
-        maxLines: wordCount <= 2 ? 2 : 3,
-      );
+    final densityPenalty = (charCount / 22).clamp(0.0, 0.38);
+    final longWordPenalty = (longestWord / 14).clamp(0.0, 0.18);
+    final baseFont = (shortSide * 0.30 + longSide * 0.028) *
+        pScale *
+        (1.0 - densityPenalty - longWordPenalty);
+
+    final int maxLines;
+    if (wordCount <= 1) {
+      maxLines = longestWord > 10 ? 2 : 1;
+    } else if (wordCount == 2) {
+      maxLines = 2;
+    } else if (charCount <= 20) {
+      maxLines = 3;
     } else {
-      return _TileTextParams(
-        maxFont: (11 * pScale).roundToDouble(),
-        minFont: (6 * pScale).roundToDouble(),
-        maxLines: 4,
-      );
+      maxLines = 4;
     }
+
+    return _TileTextParams(
+      maxFont: baseFont.clamp(7.0, 15.0),
+      minFont: (baseFont * 0.58).clamp(5.0, 10.0),
+      maxLines: maxLines,
+    );
   }
 
   Widget _buildStandardTileContent() {
     final params = _computeTextParams();
-    final displayName = widget.tile.name == "Eser-Karakter"
-        ? "Eser\nKarakter"
-        : widget.tile.name;
+    final displayName = _formatDisplayName(widget.tile.name);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -256,7 +268,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                 ),
                 minFontSize: params.minFont,
                 maxLines: params.maxLines,
-                stepGranularity: 0.5,
+                stepGranularity: 0.25,
                 wrapWords: false,
                 softWrap: true,
                 overflow: TextOverflow.clip,
@@ -284,6 +296,18 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         ],
       ),
     );
+  }
+
+  String _formatDisplayName(String name) {
+    final words = name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
+    if (words.length <= 1) return name;
+
+    if (words.length == 2) {
+      return '${words[0]}\n${words[1]}';
+    }
+
+    final midpoint = (words.length / 2).ceil();
+    return '${words.take(midpoint).join(' ')}\n${words.skip(midpoint).join(' ')}';
   }
 
   Widget _buildCornerTileContent({

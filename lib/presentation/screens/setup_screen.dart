@@ -114,10 +114,17 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     // Initialize Game (await ensures state is set before navigation)
     await ref.read(gameProvider.notifier).initializeGame(_players);
 
-    // Navigate to Game Board
+    // Navigate to Game Board with a smooth fade transition
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const BoardView()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const BoardView(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
       );
     }
   }

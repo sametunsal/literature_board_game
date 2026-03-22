@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,37 +36,46 @@ class PauseDialog extends ConsumerWidget {
     final tokens = themeState.tokens;
     final currentPreset = themeState.preset;
 
-    return Center(
-          child: Container(
-            width: 340,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: tokens.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: tokens.border.withValues(alpha: 0.5),
-                width: 1.5,
+    final size = MediaQuery.of(context).size;
+
+    return SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 320,
+                maxHeight: size.height * 0.92,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: tokens.shadow.withValues(
-                    alpha: isDarkMode ? 0.4 : 0.15,
+              child: Container(
+                width: math.min(size.width * 0.42, 320),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  color: tokens.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: tokens.border.withValues(alpha: 0.5),
+                    width: 1.5,
                   ),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: tokens.shadow.withValues(
+                        alpha: isDarkMode ? 0.4 : 0.15,
+                      ),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
+                    ),
+                    BoxShadow(
+                      color: tokens.shadow.withValues(
+                        alpha: isDarkMode ? 0.2 : 0.08,
+                      ),
+                      blurRadius: 60,
+                      spreadRadius: 10,
+                    ),
+                  ],
                 ),
-                BoxShadow(
-                  color: tokens.shadow.withValues(
-                    alpha: isDarkMode ? 0.2 : 0.08,
-                  ),
-                  blurRadius: 60,
-                  spreadRadius: 10,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                 // HEADER ICON
                 Container(
                   width: 64,
@@ -82,26 +93,29 @@ class PauseDialog extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // TITLE
-                Text(
-                  "OYUN DURAKLATILDI",
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: tokens.textPrimary,
-                    letterSpacing: 1,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    "OYUN DURAKLATILDI",
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: tokens.textPrimary,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // SUBTITLE
                 Text(
                   "Ne yapmak istersiniz?",
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: tokens.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
 
                 // THEME SELECTOR
                 _buildThemeSelector(
@@ -111,11 +125,11 @@ class PauseDialog extends ConsumerWidget {
                   isDarkMode,
                   currentPreset,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // DIVIDER
                 _buildDivider(tokens),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // RESUME BUTTON
                 GameButton(
@@ -180,7 +194,10 @@ class PauseDialog extends ConsumerWidget {
                     onExit();
                   },
                 ),
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         )
@@ -212,7 +229,7 @@ class PauseDialog extends ConsumerWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Label
           Text(
@@ -225,33 +242,29 @@ class PauseDialog extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
-          // Options row
-          Row(
+          // Options column
+          Column(
             children: [
-              Expanded(
-                child: _buildThemeOption(
-                  label: "Sıcak Kütüphane",
-                  icon: Icons.light_mode,
-                  isSelected: currentPreset == ThemePreset.warmLibraryLight,
-                  tokens: tokens,
-                  isDarkMode: isDarkMode,
-                  onTap: () => ref
-                      .read(themeProvider.notifier)
-                      .setPreset(ThemePreset.warmLibraryLight),
-                ),
+              _buildThemeOption(
+                label: "Sıcak Kütüphane",
+                icon: Icons.light_mode,
+                isSelected: currentPreset == ThemePreset.warmLibraryLight,
+                tokens: tokens,
+                isDarkMode: isDarkMode,
+                onTap: () => ref
+                    .read(themeProvider.notifier)
+                    .setPreset(ThemePreset.warmLibraryLight),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildThemeOption(
-                  label: "Karanlık Akademi",
-                  icon: Icons.dark_mode,
-                  isSelected: currentPreset == ThemePreset.darkAcademia,
-                  tokens: tokens,
-                  isDarkMode: isDarkMode,
-                  onTap: () => ref
-                      .read(themeProvider.notifier)
-                      .setPreset(ThemePreset.darkAcademia),
-                ),
+              const SizedBox(height: 8),
+              _buildThemeOption(
+                label: "Karanlık Akademi",
+                icon: Icons.dark_mode,
+                isSelected: currentPreset == ThemePreset.darkAcademia,
+                tokens: tokens,
+                isDarkMode: isDarkMode,
+                onTap: () => ref
+                    .read(themeProvider.notifier)
+                    .setPreset(ThemePreset.darkAcademia),
               ),
             ],
           ),
