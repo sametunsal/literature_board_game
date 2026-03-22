@@ -13,6 +13,7 @@ import '../models/difficulty.dart';
 import '../data/board_config.dart';
 import '../data/game_cards.dart';
 import '../core/constants/game_constants.dart';
+import '../core/utils/question_line_estimator.dart';
 import '../core/managers/audio_manager.dart';
 import '../core/services/turn_order_service.dart';
 import '../core/services/dice_service.dart';
@@ -946,6 +947,24 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
+  /// Aynı havuzda, mümkünse daha az satıra düşen soruyu tercih eder (okunabilirlik).
+  Question? _pickQuestionPreferringShortLines(List<Question> pool) {
+    if (pool.isEmpty) return null;
+    const maxW = 320.0;
+    final scored = <MapEntry<Question, int>>[];
+    for (final q in pool) {
+      scored.add(
+        MapEntry(q, QuestionLineEstimator.estimateLines(q.text, maxW)),
+      );
+    }
+    scored.sort((a, b) => a.value.compareTo(b.value));
+    final minLines = scored.first.value;
+    final ties =
+        scored.where((e) => e.value == minLines).map((e) => e.key).toList();
+    ties.shuffle(_random);
+    return ties.first;
+  }
+
   Future<void> _triggerQuestion(BoardTile tile) async {
     safePrint('TEST: Yüklü Soru Sayısı: ${_cachedQuestions.length}');
     // For Teşvik tiles, use bonusBilgiler only
@@ -1068,26 +1087,22 @@ class GameNotifier extends StateNotifier<GameState> {
           endTurn();
           return;
         }
-        // Shuffle and pick random
-        anyCategoryQuestions.shuffle(_random);
-        selectedQuestion = anyCategoryQuestions.first;
+        selectedQuestion =
+            _pickQuestionPreferringShortLines(anyCategoryQuestions)!;
         _addLog(
           'âš  $difficultyFilter zorlu soru bulunamadÄ±, rastgele soru seÃ§ildi.',
           type: 'info',
         );
       } else {
-        // Shuffle and pick random from the recycled pool
-        allCategoryQuestions.shuffle(_random);
-        selectedQuestion = allCategoryQuestions.first;
+        selectedQuestion =
+            _pickQuestionPreferringShortLines(allCategoryQuestions)!;
         _addLog(
           'ğŸ”„ Soru havuzu yenilendi, yeni soru seÃ§iliyor.',
           type: 'info',
         );
       }
     } else {
-      // Shuffle the filtered list for true randomness, then pick first
-      filteredQuestions.shuffle(_random);
-      selectedQuestion = filteredQuestions.first;
+      selectedQuestion = _pickQuestionPreferringShortLines(filteredQuestions)!;
     }
 
     // BOT MODE: Auto-answer question without showing dialog

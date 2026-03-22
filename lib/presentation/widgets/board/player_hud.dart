@@ -19,7 +19,7 @@ class PlayerHud extends StatelessWidget {
   Widget build(BuildContext context) {
     // Single player HUD with constrained width for perimeter layout
     return SizedBox(
-      width: 210, // Increased width to fit Avatar + Name + Badge
+      width: 172,
       child:
           PlayerScoreboard(
                 player: player,

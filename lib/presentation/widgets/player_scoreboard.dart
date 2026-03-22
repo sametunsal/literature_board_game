@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 import '../../models/player.dart';
 import '../../models/game_enums.dart';
 import '../../core/constants/game_constants.dart';
 import 'isometric_icon.dart';
 
-/// Compact corner scoreboard for displaying player stats
-/// Shows: Avatar, Name, Stars, and Mastery count
-/// Includes visual indicators for current and next player
 class PlayerScoreboard extends StatelessWidget {
   final Player player;
   final bool isCurrentPlayer;
@@ -29,12 +27,11 @@ class PlayerScoreboard extends StatelessWidget {
     final isLeft =
         alignment == Alignment.topLeft || alignment == Alignment.bottomLeft;
 
-    // Determine border color based on player status
     Color borderColor;
     double borderWidth = 1;
     if (isCurrentPlayer) {
       borderColor = Colors.green.shade400;
-      borderWidth = 3;
+      borderWidth = 2.5;
     } else if (isNext) {
       borderColor = Colors.amber.shade400;
       borderWidth = 2;
@@ -46,9 +43,8 @@ class PlayerScoreboard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
-        // Gradient background for subtle depth
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -58,56 +54,34 @@ class PlayerScoreboard extends StatelessWidget {
                   Colors.green.shade50.withValues(alpha: 0.95),
                 ]
               : isNext
-              ? [
-                  Colors.amber.shade100.withValues(alpha: 0.98),
-                  Colors.amber.shade50.withValues(alpha: 0.95),
-                ]
-              : [
-                  Colors.grey.shade100.withValues(alpha: 0.3),
-                  Colors.white.withValues(alpha: 0.98),
-                ],
+                  ? [
+                      Colors.amber.shade100.withValues(alpha: 0.98),
+                      Colors.amber.shade50.withValues(alpha: 0.95),
+                    ]
+                  : [
+                      Colors.grey.shade100.withValues(alpha: 0.3),
+                      Colors.white.withValues(alpha: 0.98),
+                    ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor, width: borderWidth),
-        // ═══════════════════════════════════════════════════════════════
-        // FAUX 3D CARD EFFECT - Elevated scoreboard
-        // ═══════════════════════════════════════════════════════════════
         boxShadow: [
-          // Primary deep shadow - strong elevation
           BoxShadow(
             color: isCurrentPlayer
-                ? Colors.green.withValues(alpha: 0.35)
+                ? Colors.green.withValues(alpha: 0.3)
                 : isNext
-                ? Colors.amber.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.15),
-            blurRadius: 16,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
+                    ? Colors.amber.withValues(alpha: 0.25)
+                    : Colors.black.withValues(alpha: 0.12),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
           ),
-          // Secondary shadow - depth layer
           BoxShadow(
-            color: isCurrentPlayer
-                ? Colors.green.withValues(alpha: 0.15)
-                : isNext
-                ? Colors.amber.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-          // Top highlight - light source effect
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.7),
-            blurRadius: 6,
-            offset: const Offset(0, -2),
+            color: Colors.white.withValues(alpha: 0.6),
+            blurRadius: 4,
+            offset: const Offset(0, -1),
             spreadRadius: -1,
           ),
-          // Inner glow for active player
-          if (isCurrentPlayer)
-            BoxShadow(
-              color: Colors.green.withValues(alpha: 0.1),
-              blurRadius: 12,
-              spreadRadius: 2,
-            ),
         ],
       ),
       child: Row(
@@ -115,12 +89,12 @@ class PlayerScoreboard extends StatelessWidget {
         children: isLeft
             ? [
                 _buildAvatar(),
-                const SizedBox(width: 10),
+                const SizedBox(width: 6),
                 Expanded(child: _buildInfo(masteriesCount)),
               ]
             : [
                 Expanded(child: _buildInfo(masteriesCount)),
-                const SizedBox(width: 10),
+                const SizedBox(width: 6),
                 _buildAvatar(),
               ],
       ),
@@ -129,71 +103,38 @@ class PlayerScoreboard extends StatelessWidget {
 
   Widget _buildAvatar() {
     return Container(
-      width: 42,
-      height: 42,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isCurrentPlayer ? Colors.amber.shade50 : Colors.grey.shade100,
         border: Border.all(
           color: isCurrentPlayer ? Colors.white : Colors.grey.shade300,
-          width: 2,
+          width: 1.5,
         ),
-        // ═══════════════════════════════════════════════════════════════
-        // FAUX 3D ELEVATION - Neumorphic inspired depth
-        // ═══════════════════════════════════════════════════════════════
         boxShadow: [
-          // Primary drop shadow - elevation
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(3, 4),
-            spreadRadius: -2,
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 6,
+            offset: const Offset(2, 3),
+            spreadRadius: -1,
           ),
-          // Secondary soft shadow - ambient
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(1, 2),
-          ),
-          // Top highlight - light source from above-left
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.8),
-            blurRadius: 4,
-            offset: const Offset(-2, -2),
+            color: Colors.white.withValues(alpha: 0.7),
+            blurRadius: 3,
+            offset: const Offset(-1, -1),
             spreadRadius: -1,
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Subtle inner gradient for 3D curvature effect
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: const Alignment(-0.3, -0.3),
-                  radius: 0.8,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.4),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 1.0],
-                ),
-              ),
-            ),
-          ),
-          Center(
-            child: IsometricIcon(
-              icon:
-                  GameConstants.iconPalette[player.iconIndex %
-                      GameConstants.iconPalette.length],
-              color: player.color, // Use player color for the icon
-              size: 24,
-              depth: 4,
-            ),
-          ),
-        ],
+      child: Center(
+        child: IsometricIcon(
+          icon: GameConstants.iconPalette[
+              player.iconIndex % GameConstants.iconPalette.length],
+          color: player.color,
+          size: 18,
+          depth: 3,
+        ),
       ),
     );
   }
@@ -203,147 +144,67 @@ class PlayerScoreboard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Player name with turn indicator badge
+        // Name row — AutoSizeText so it shrinks instead of ellipsis
         Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(
-              child: Text(
+            Expanded(
+              child: AutoSizeText(
                 player.name,
                 style: GoogleFonts.poppins(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: Colors.grey.shade900,
                 ),
-                overflow: TextOverflow.ellipsis,
                 maxLines: 1,
+                minFontSize: 8,
+                stepGranularity: 0.5,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 6),
-            // Turn indicator badge with 3D effect
-            if (isCurrentPlayer)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.green.shade400, Colors.green.shade600],
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  // ═══════════════════════════════════════════════════════════════
-                  // 3D BADGE EFFECT
-                  // ═══════════════════════════════════════════════════════════════
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, -1),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  'SIRA SENDE',
-                  style: GoogleFonts.poppins(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              )
-            else if (isNext)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.amber.shade400, Colors.amber.shade600],
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withValues(alpha: 0.4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, -1),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  'SIRADAKİ',
-                  style: GoogleFonts.poppins(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+            if (isCurrentPlayer) ...[
+              const SizedBox(width: 4),
+              _StatusBadge(
+                label: 'SIRA',
+                colors: [Colors.green.shade400, Colors.green.shade600],
+                glowColor: Colors.green,
               ),
+            ] else if (isNext) ...[
+              const SizedBox(width: 4),
+              _StatusBadge(
+                label: 'SONRA',
+                colors: [Colors.amber.shade400, Colors.amber.shade600],
+                glowColor: Colors.amber,
+              ),
+            ],
           ],
         ),
-        const SizedBox(height: 4),
-        // Stars row with 3D icon effects
+        const SizedBox(height: 3),
+        // Stats row — compact
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Star icon with 3D effect
-            Container(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.amber.withValues(alpha: 0.5),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.star_rounded, color: Colors.amber, size: 15),
-            ),
-            const SizedBox(width: 4),
+            Icon(Icons.star_rounded, color: Colors.amber, size: 13),
+            const SizedBox(width: 2),
             Text(
               '${player.stars}',
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade800,
               ),
             ),
-            const SizedBox(width: 8),
-            // Trophy icon with 3D effect
-            Container(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: masteriesCount > 0
-                        ? Colors.orange.withValues(alpha: 0.5)
-                        : Colors.grey.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.emoji_events_rounded,
-                color: masteriesCount > 0
-                    ? Colors.orange
-                    : Colors.grey.shade400,
-                size: 15,
-              ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.emoji_events_rounded,
+              color:
+                  masteriesCount > 0 ? Colors.orange : Colors.grey.shade400,
+              size: 13,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 2),
             Text(
               '$masteriesCount/6',
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: masteriesCount > 0
                     ? Colors.orange
@@ -356,7 +217,6 @@ class PlayerScoreboard extends StatelessWidget {
     );
   }
 
-  /// Count how many categories the player is Master (level 3) in
   int _countMasteries() {
     int count = 0;
     for (final category in QuestionCategory.values) {
@@ -364,5 +224,47 @@ class PlayerScoreboard extends StatelessWidget {
       if (level >= 3) count++;
     }
     return count;
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final List<Color> colors;
+  final Color glowColor;
+
+  const _StatusBadge({
+    required this.label,
+    required this.colors,
+    required this.glowColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
+        ),
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withValues(alpha: 0.35),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 7,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import '../../core/motion/motion_constants.dart';
@@ -8,8 +7,6 @@ import '../../models/board_tile.dart';
 import '../../models/difficulty.dart';
 import '../../models/tile_type.dart';
 
-/// Enhanced tile widget with modern flat design
-/// Uses Icons instead of vintage images for cleaner look
 class EnhancedTileWidget extends StatefulWidget {
   final BoardTile tile;
   final double width;
@@ -37,17 +34,13 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate scale based on press, hover, and selection state
-    // Press takes priority, then selection, then hover
     final scale = _isPressed
         ? 0.96
         : (widget.isHovered ? 1.05 : (widget.isSelected ? 1.08 : 1.0));
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-      },
+      onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
         scale: scale,
@@ -66,7 +59,6 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
               width: widget.isSelected ? 2.0 : 1.0,
             ),
             boxShadow: [
-              // Press glow effect
               BoxShadow(
                 color: widget.isSelected
                     ? Colors.blue.withValues(alpha: 0.3)
@@ -74,22 +66,20 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                 blurRadius: _isPressed ? 8 : 0,
                 spreadRadius: _isPressed ? 2 : 0,
               ),
-              // Selection/hover shadows
               BoxShadow(
                 color: widget.isSelected
                     ? Colors.blue.withValues(alpha: 0.2)
                     : (widget.isHovered
-                          ? Colors.blue.withValues(alpha: 0.1)
-                          : Colors.black.withValues(alpha: 0.1)),
+                        ? Colors.blue.withValues(alpha: 0.1)
+                        : Colors.black.withValues(alpha: 0.1)),
                 blurRadius: widget.isSelected
                     ? 8.0
                     : (widget.isHovered ? 6.0 : 3.0),
-                spreadRadius: widget.isSelected ? 0 : 0,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          clipBehavior: Clip.antiAlias,
+          clipBehavior: Clip.hardEdge,
           child: _buildContent(),
         ),
       ),
@@ -97,7 +87,6 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   }
 
   Widget _buildContent() {
-    // Check tile type for custom corner icons
     switch (widget.tile.type) {
       case TileType.start:
         return _buildCornerTileContent(
@@ -145,182 +134,176 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         break;
     }
 
-    // Standard tiles with color strip and text
     final groupColor = _getGroupColor();
-
-    // Color strip widget with vibrant colors
-    Widget colorStrip = Container(decoration: BoxDecoration(color: groupColor));
-
-    // Text content widget (title + price/info)
+    Widget colorStrip = Container(color: groupColor);
     Widget textContent = _buildStandardTileContent();
 
-    // STRICT SWITCH BY EDGE POSITION
     switch (widget.quarterTurns) {
       case 0:
-        // BOTTOM EDGE: Strip TOP, Text 0° (upright)
         return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: 10, child: colorStrip),
-            SizedBox(height: 4), // Spacing between strip and text
-            Expanded(child: _wrapWithRotation(textContent, 0)),
+            SizedBox(
+                height: math.max(4, widget.height * 0.13), child: colorStrip),
+            Expanded(child: textContent),
           ],
         );
-
       case 1:
-        // Right EDGE (physical right side of board): Strip on LEFT faces center
-        // Layout: [Color Strip | Text (RotatedBox quarterTurns: 3)]
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(width: 10, child: colorStrip),
-            SizedBox(width: 4), // Spacing between strip and text
+            SizedBox(
+                width: math.max(4, widget.width * 0.13), child: colorStrip),
             Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
           ],
         );
-
       case 2:
-        // TOP EDGE: Strip BOTTOM, Text readable (0°)
         return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(child: textContent),
-            SizedBox(height: 4), // Spacing between text and strip
-            SizedBox(height: 10, child: colorStrip),
+            SizedBox(
+                height: math.max(4, widget.height * 0.13), child: colorStrip),
           ],
         );
-
       case 3:
-        // LEFT EDGE (physical left side of board): Strip on RIGHT faces center
-        // Layout: [Text (RotatedBox quarterTurns: 3) | Color Strip]
-        // Changed quarterTurns from 1 to 3 to make text face outward (towards screen edge)
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
-            SizedBox(width: 4), // Spacing between text and strip
-            SizedBox(width: 10, child: colorStrip),
+            SizedBox(
+                width: math.max(4, widget.width * 0.13), child: colorStrip),
           ],
         );
-
       default:
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: 10, child: colorStrip),
-            SizedBox(height: 4), // Spacing between strip and text
+            SizedBox(
+                height: math.max(4, widget.height * 0.13), child: colorStrip),
             Expanded(child: textContent),
           ],
         );
     }
   }
 
-  /// Wrap content with rotation transform
-  Widget _wrapWithRotation(Widget child, double degrees) {
-    if (degrees == 0) return child;
-    return Transform.rotate(angle: degrees * (math.pi / 180), child: child);
+  static const _depthMap = <int, int>{
+    0: 13, 1: 12, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7,
+    7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1, 13: 0,
+    14: 1, 15: 2, 16: 3, 17: 4, 18: 5, 19: 6,
+    20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
+  };
+
+  /// Isometric perspective compensation: far tiles get larger fonts.
+  /// Board after rotateZ(45°) + rotateX(-0.55):
+  ///   tile 13 (top-left) = farthest, tile 0 (bottom-right) = nearest.
+  double _perspectiveScale() {
+    final id = int.tryParse(widget.tile.id) ?? 0;
+    final depth = _depthMap[id] ?? 7;
+    return 1.0 + (1.0 - depth / 13.0) * 0.2;
   }
 
-  /// Build standard tile content with title and difficulty
+  /// Per-tile adaptive sizing based on name length + perspective
+  _TileTextParams _computeTextParams() {
+    final name = widget.tile.name;
+    final charCount = name.length;
+    final wordCount = name.split(RegExp(r'[\s\-]+')).length;
+    final pScale = _perspectiveScale();
+
+    if (charCount <= 8) {
+      return _TileTextParams(
+        maxFont: (14 * pScale).roundToDouble(),
+        minFont: (8 * pScale).roundToDouble(),
+        maxLines: 2,
+      );
+    } else if (charCount <= 16) {
+      return _TileTextParams(
+        maxFont: (12 * pScale).roundToDouble(),
+        minFont: (7 * pScale).roundToDouble(),
+        maxLines: wordCount <= 2 ? 2 : 3,
+      );
+    } else {
+      return _TileTextParams(
+        maxFont: (11 * pScale).roundToDouble(),
+        minFont: (6 * pScale).roundToDouble(),
+        maxLines: 4,
+      );
+    }
+  }
+
   Widget _buildStandardTileContent() {
+    final params = _computeTextParams();
+    final displayName = widget.tile.name == "Eser-Karakter"
+        ? "Eser\nKarakter"
+        : widget.tile.name;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Title - AutoSizeText for better readability
           Expanded(
             child: Center(
               child: AutoSizeText(
-                widget.tile.name == "Eser-Karakter"
-                    ? "Eser\nKarakter"
-                    : widget.tile.name,
+                displayName,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
-                  fontSize: widget.tile.name == "Eser-Karakter"
-                      ? 12
-                      : 14, // Smaller font for Eser-Karakter
+                  fontSize: params.maxFont,
                   fontWeight: FontWeight.w800,
                   color: Colors.black87,
-                  height: 1.1,
+                  height: 1.15,
                 ),
-                minFontSize: 8,
-                maxLines: 3,
+                minFontSize: params.minFont,
+                maxLines: params.maxLines,
                 stepGranularity: 0.5,
-                wrapWords: false, // Avoid breaking words if possible
+                wrapWords: false,
                 softWrap: true,
+                overflow: TextOverflow.clip,
               ),
             ),
           ),
-          // Small spacing
-          if (widget.tile.category != null) const SizedBox(height: 2),
-
-          // Difficulty - if category tile
-          if (widget.tile.category != null)
-            AutoSizeText(
-              widget.tile.difficulty.displayName,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
+          if (widget.tile.category != null &&
+              widget.tile.category!.isNotEmpty &&
+              widget.tile.type == TileType.category)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 1),
+              child: Text(
+                widget.tile.difficulty.displayName,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 7,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black45,
+                  height: 1.0,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.clip,
               ),
-              maxLines: 1,
-              minFontSize: 7,
             ),
         ],
       ),
     );
   }
 
-  /// Build corner tile with icon and label (Column layout)
-  /// Icons have a subtle "breathing" idle animation with random delay
   Widget _buildCornerTileContent({
     required IconData icon,
     required Color iconColor,
     required String label,
   }) {
-    // Generate a random delay (0-1000ms) based on tile id for uniqueness
-    final randomDelay = (widget.tile.id.hashCode % 1000).abs();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
+    final shortSide = math.min(widget.width, widget.height);
+    return ClipRect(
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(1.0),
+          padding: const EdgeInsets.all(2),
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon - Prominent size with breathing animation
-                Animate(
-                  onPlay: (controller) => controller.repeat(),
-                  delay: Duration(milliseconds: randomDelay),
-                  effects: [
-                    ScaleEffect(
-                      begin: const Offset(1.0, 1.0),
-                      end: const Offset(1.05, 1.05),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeInOut,
-                    ),
-                    ScaleEffect(
-                      begin: const Offset(1.05, 1.05),
-                      end: const Offset(1.0, 1.0),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeInOut,
-                    ),
-                  ],
-                  child: Icon(icon, size: 32, color: iconColor),
-                ),
-                const SizedBox(height: 4),
-                // Label text - Dark for contrast
+                Icon(icon,
+                    size: math.max(16, shortSide * 0.42), color: iconColor),
+                SizedBox(height: shortSide * 0.04),
                 Text(
                   label,
                   textAlign: TextAlign.center,
@@ -339,11 +322,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     );
   }
 
-  /// Get group color from tile ID (simplified for modern theme)
   Color _getGroupColor() {
     final id = int.tryParse(widget.tile.id) ?? 0;
-
-    // Modern vibrant colors
     switch (id) {
       case 0:
         return Colors.green.shade500;
@@ -379,8 +359,6 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Colors.amber.shade300;
       case 16:
         return Colors.brown.shade300;
-
-      // RIGHT COLUMN TILES (20-25) - Varied "Hard" Colors
       case 20:
         return Colors.teal.shade600;
       case 21:
@@ -393,17 +371,25 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Colors.green.shade600;
       case 25:
         return Colors.blueGrey.shade600;
-
-      // TOP ROW EDGE CASES (If any overlap occurs)
       case 17:
         return Colors.deepPurple.shade400;
       case 18:
         return Colors.cyan.shade400;
       case 19:
         return Colors.lime.shade400;
-
       default:
         return Colors.grey.shade200;
     }
   }
+}
+
+class _TileTextParams {
+  final double maxFont;
+  final double minFont;
+  final int maxLines;
+  const _TileTextParams({
+    required this.maxFont,
+    required this.minFont,
+    required this.maxLines,
+  });
 }

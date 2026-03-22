@@ -62,6 +62,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     // Force landscape orientation for game board
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
@@ -75,6 +76,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   void dispose() {
     _confettiController.dispose();
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
     // Reset to allow any orientation when leaving board view
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -163,26 +168,24 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // FREEZE ANIMATIONS ON PAUSE
           TickerMode(
             enabled: !state.isGamePaused,
-            child: SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: InteractiveViewer(
-                    minScale: 0.5,
-                    maxScale: 2.0,
-                    constrained: true,
-                    child: BoardLayout(
-                      state: state,
-                      layout: layout,
-                      isDarkMode: isDarkMode,
-                      confettiController: _confettiController,
-                      onQuestionConfirm: () {
-                        ref.read(gameProvider.notifier).answerQuestion(true);
-                      },
-                      onQuestionCancel: () {
-                        ref.read(gameProvider.notifier).answerQuestion(false);
-                      },
-                    ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 2.0,
+                  constrained: true,
+                  child: BoardLayout(
+                    state: state,
+                    layout: layout,
+                    isDarkMode: isDarkMode,
+                    confettiController: _confettiController,
+                    onQuestionConfirm: () {
+                      ref.read(gameProvider.notifier).answerQuestion(true);
+                    },
+                    onQuestionCancel: () {
+                      ref.read(gameProvider.notifier).answerQuestion(false);
+                    },
                   ),
                 ),
               ),

@@ -27,7 +27,6 @@ dependencies:
   shimmer: ^3.0.0
   shared_preferences: ^2.2.2
   equatable: ^2.0.8
-  three_js: ^0.2.7
 
 dev_dependencies:
   flutter_test:

@@ -260,7 +260,7 @@ class DiceRoller extends ConsumerWidget {
     );
   }
 
-  /// Build dice display with results
+  /// Kompakt zar sonuç gösterimi
   Widget _buildDiceDisplay(
     int total,
     ThemeTokens tokens,
@@ -269,19 +269,18 @@ class DiceRoller extends ConsumerWidget {
     int dice2,
     double shortestSide,
   ) {
-    final dieSize = shortestSide * 0.10; // 10% of shortest side for each die
+    final dieSize = shortestSide * 0.06;
 
     return Animate(
       effects: [
-        // Bounce on land - scale up to 1.5x then elastic back to 1.0x
         ScaleEffect(
           begin: const Offset(1.0, 1.0),
-          end: const Offset(1.5, 1.5),
+          end: const Offset(1.12, 1.12),
           duration: MotionDurations.fast.safe,
           curve: Curves.easeOut,
         ),
         ScaleEffect(
-          begin: const Offset(1.5, 1.5),
+          begin: const Offset(1.12, 1.12),
           end: const Offset(1.0, 1.0),
           duration: MotionDurations.slow.safe,
           curve: Curves.elasticOut,
@@ -291,91 +290,69 @@ class DiceRoller extends ConsumerWidget {
       child: FittedBox(
         fit: BoxFit.contain,
         child: Container(
-          padding: EdgeInsets.all(shortestSide * 0.03),
+          padding: EdgeInsets.symmetric(
+            horizontal: shortestSide * 0.018,
+            vertical: shortestSide * 0.012,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withValues(alpha: 0.5),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
-              BoxShadow(
-                color: Colors.blue.withValues(alpha: 0.3),
-                blurRadius: 16,
-                spreadRadius: 2,
+                color: Colors.amber.withValues(alpha: 0.35),
+                blurRadius: 14,
+                spreadRadius: 1,
               ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Player name and roll result
               Text(
                 '$playerName attı:',
                 style: GoogleFonts.poppins(
-                  fontSize: shortestSide * 0.018,
+                  fontSize: shortestSide * 0.014,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
               ),
-              SizedBox(height: shortestSide * 0.01),
-              Text(
-                '$dice1 + $dice2 = $total',
-                style: GoogleFonts.poppins(
-                  fontSize: shortestSide * 0.03,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
-                ),
-              ),
-              SizedBox(height: shortestSide * 0.02),
-              // TWO DICE - Spaced evenly with AnimatedDie widgets
+              SizedBox(height: shortestSide * 0.006),
               Row(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   AnimatedDie(
                     value: dice1,
                     size: dieSize,
                     tokens: tokens,
-                    isRolling: false, // Already rolled, show static
                   ),
-                  SizedBox(width: shortestSide * 0.02),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: shortestSide * 0.008),
+                    child: Text(
+                      '+',
+                      style: GoogleFonts.poppins(
+                        fontSize: shortestSide * 0.018,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
                   AnimatedDie(
                     value: dice2,
                     size: dieSize,
                     tokens: tokens,
-                    isRolling: false, // Already rolled, show static
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: shortestSide * 0.01),
+                    child: Text(
+                      '= $total',
+                      style: GoogleFonts.poppins(
+                        fontSize: shortestSide * 0.022,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.brown.shade900,
+                      ),
+                    ),
                   ),
                 ],
-              ),
-              SizedBox(height: shortestSide * 0.015),
-              // TOTAL display
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: shortestSide * 0.025,
-                  vertical: shortestSide * 0.012,
-                ),
-                decoration: BoxDecoration(
-                  color: tokens.primary,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: tokens.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  "TOPLAM: $total",
-                  style: GoogleFonts.poppins(
-                    fontSize: shortestSide * 0.02,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
               ),
             ],
           ),
@@ -434,8 +411,8 @@ class DiceRoller extends ConsumerWidget {
           // Current player indicator
           Container(
             padding: EdgeInsets.symmetric(
-              horizontal: shortestSide * 0.02,
-              vertical: shortestSide * 0.01,
+              horizontal: shortestSide * 0.014,
+              vertical: shortestSide * 0.007,
             ),
             decoration: BoxDecoration(
               color: phase == GamePhase.rollingForOrder
@@ -466,7 +443,7 @@ class DiceRoller extends ConsumerWidget {
                         ? '🔄 Tie-Breaker! ${state.tieBreakRound}. Tur'
                         : 'Sıra: $currentPlayerName',
                     style: GoogleFonts.poppins(
-                      fontSize: shortestSide * 0.025,
+                      fontSize: shortestSide * 0.019,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                       shadows: [
@@ -521,7 +498,7 @@ class DiceRoller extends ConsumerWidget {
               ],
             ),
           ),
-          SizedBox(height: shortestSide * 0.02),
+          SizedBox(height: shortestSide * 0.012),
           // Show pending tie-breaker players list
           if (isTieBreaker && state.pendingTieBreakPlayers.isNotEmpty)
             Container(
@@ -674,26 +651,26 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
           transform: Matrix4.identity()
             ..translate(0.0, _isPressed ? 6.0 : 0.0, 0.0),
           child: Stack(
-            clipBehavior: Clip.none,
+            clipBehavior: Clip.hardEdge,
             children: [
-              // Deepest slab (reads as physical thickness on the board plane)
+              // Deepest slab
               Container(
                 margin: EdgeInsets.only(
-                  top: _isPressed ? 7 : 14,
-                  left: 5,
+                  top: _isPressed ? 5 : 10,
+                  left: 4,
                 ),
                 padding: EdgeInsets.symmetric(
-                  horizontal: widget.shortestSide * 0.04,
-                  vertical: widget.shortestSide * 0.032,
+                  horizontal: widget.shortestSide * 0.028,
+                  vertical: widget.shortestSide * 0.02,
                 ),
                 decoration: BoxDecoration(
                   color: Color.lerp(darkColor, Colors.black, 0.35)!,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.45),
-                      blurRadius: _isPressed ? 6 : 14,
-                      offset: Offset(2, _isPressed ? 3 : 8),
+                      blurRadius: _isPressed ? 4 : 10,
+                      offset: Offset(1.5, _isPressed ? 2 : 6),
                     ),
                   ],
                 ),
@@ -702,45 +679,45 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.04),
-                      SizedBox(width: widget.shortestSide * 0.015),
+                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.03),
+                      SizedBox(width: widget.shortestSide * 0.01),
                       Text(
                         widget.label,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
-                          fontSize: widget.shortestSide * 0.028,
+                          fontSize: widget.shortestSide * 0.021,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              // Mid slab (transition between base and face)
+              // Mid slab
               Container(
                 margin: EdgeInsets.only(
-                  top: _isPressed ? 4 : 7,
-                  left: 3,
+                  top: _isPressed ? 3 : 5,
+                  left: 2,
                 ),
                 padding: EdgeInsets.symmetric(
-                  horizontal: widget.shortestSide * 0.04,
-                  vertical: widget.shortestSide * 0.03,
+                  horizontal: widget.shortestSide * 0.028,
+                  vertical: widget.shortestSide * 0.018,
                 ),
                 decoration: BoxDecoration(
                   color: darkColor,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Opacity(
                   opacity: 0,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.04),
-                      SizedBox(width: widget.shortestSide * 0.015),
+                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.03),
+                      SizedBox(width: widget.shortestSide * 0.01),
                       Text(
                         widget.label,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
-                          fontSize: widget.shortestSide * 0.028,
+                          fontSize: widget.shortestSide * 0.021,
                         ),
                       ),
                     ],
@@ -750,8 +727,8 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
               // Top layer (button surface)
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: widget.shortestSide * 0.04,
-                  vertical: widget.shortestSide * 0.032,
+                  horizontal: widget.shortestSide * 0.028,
+                  vertical: widget.shortestSide * 0.02,
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -762,16 +739,16 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                       Color.lerp(buttonColor, Colors.black, 0.15)!,
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.3),
-                    width: 2,
+                    width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: buttonColor.withOpacity(0.4),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
+                      color: buttonColor.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -780,10 +757,10 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                   children: [
                     Icon(
                       Icons.casino_rounded, 
-                      size: widget.shortestSide * 0.04,
+                      size: widget.shortestSide * 0.03,
                       color: Colors.white,
                     ),
-                    SizedBox(width: widget.shortestSide * 0.015),
+                    SizedBox(width: widget.shortestSide * 0.01),
                     Flexible(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -791,7 +768,7 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                           widget.label,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
-                            fontSize: widget.shortestSide * 0.028,
+                            fontSize: widget.shortestSide * 0.021,
                             color: Colors.white,
                             shadows: [
                               Shadow(

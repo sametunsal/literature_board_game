@@ -17,6 +17,15 @@ Size _eventCardSize(BuildContext context) {
   );
 }
 
+/// İmza Günü — biraz daha yüksek dikey kart
+Size _imzaCardSize(BuildContext context) {
+  final s = MediaQuery.sizeOf(context);
+  return Size(
+    math.min(s.width * 0.90, 400),
+    math.min(s.height * 0.78, 560),
+  );
+}
+
 /// Base layout for all notification dialogs to prevent code duplication
 class NotificationDialogBase extends ConsumerWidget {
   final IconData icon;
@@ -285,7 +294,7 @@ class ImzaGunuDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sz = _eventCardSize(context);
+    final sz = _imzaCardSize(context);
     return Material(
       color: Colors.transparent,
       child: SizedBox(
