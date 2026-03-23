@@ -71,15 +71,15 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
         _displayVal1 = _rng.nextInt(6) + 1;
         _displayVal2 = _rng.nextInt(6) + 1;
 
-        // Dinamik dönüş (yavaşlayarak)
-        final spinSpeed = (1 - easeT) * 12;
-        _rotX1 += spinSpeed * 0.08;
-        _rotY1 += spinSpeed * 0.12;
-        _rotZ1 += spinSpeed * 0.03;
+        // Dinamik dönüş (yavaşlayarak) - daha yavaş hız
+        final spinSpeed = (1 - easeT) * 5; // 12'den 5'e düşürüldü
+        _rotX1 += spinSpeed * 0.06;  // 0.08'den düşürüldü
+        _rotY1 += spinSpeed * 0.08;  // 0.12'den düşürüldü
+        _rotZ1 += spinSpeed * 0.02;  // 0.03'ten düşürüldü
 
-        _rotX2 += spinSpeed * 0.09;
-        _rotY2 -= spinSpeed * 0.11;
-        _rotZ2 -= spinSpeed * 0.04;
+        _rotX2 += spinSpeed * 0.07;  // 0.09'dan düşürüldü
+        _rotY2 -= spinSpeed * 0.075; // 0.11'den düşürüldü
+        _rotZ2 -= spinSpeed * 0.025; // 0.04'ten düşürüldü
       } else {
         // Yavaşlama fazı - final değerlere yaklaşma
         _displayVal1 = widget.dice1.clamp(1, 6);
@@ -141,41 +141,44 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
   Widget build(BuildContext context) {
     final w = math.max(widget.width, 1.0);
     final h = math.max(widget.height, 1.0);
-    final dieSize = math.min(w * 0.30, h * 0.58).clamp(32.0, 72.0);
-    final gap = dieSize * 0.4;
+    // Boyut küçültüldü: max 48px (eskisi 72)
+    final dieSize = math.min(w * 0.22, h * 0.42).clamp(24.0, 48.0);
+    final gap = dieSize * 0.35;
 
-    // Bounce efekti
+    // Bounce efekti - daha hafif
     final bounceT = _bounceController.value;
-    final bounceScale = 1.0 + math.sin(bounceT * math.pi) * 0.08;
-    final bounceY = math.sin(bounceT * math.pi * 2) * (1 - bounceT) * 4;
+    final bounceScale = 1.0 + math.sin(bounceT * math.pi) * 0.05;
+    final bounceY = math.sin(bounceT * math.pi * 2) * (1 - bounceT) * 2;
 
     return SizedBox(
       width: w,
       height: h,
-      child: Center(
-        child: Transform.translate(
-          offset: Offset(0, bounceY),
-          child: Transform.scale(
-            scale: bounceScale,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _Dice3D(
-                  size: dieSize,
-                  topValue: _displayVal1,
-                  rotationX: _rotX1,
-                  rotationY: _rotY1,
-                  rotationZ: _rotZ1,
-                ),
-                SizedBox(width: gap),
-                _Dice3D(
-                  size: dieSize,
-                  topValue: _displayVal2,
-                  rotationX: _rotX2,
-                  rotationY: _rotY2,
-                  rotationZ: _rotZ2,
-                ),
-              ],
+      child: ClipRect(
+        child: Center(
+          child: Transform.translate(
+            offset: Offset(0, bounceY),
+            child: Transform.scale(
+              scale: bounceScale,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Dice3D(
+                    size: dieSize,
+                    topValue: _displayVal1,
+                    rotationX: _rotX1,
+                    rotationY: _rotY1,
+                    rotationZ: _rotZ1,
+                  ),
+                  SizedBox(width: gap),
+                  _Dice3D(
+                    size: dieSize,
+                    topValue: _displayVal2,
+                    rotationX: _rotX2,
+                    rotationY: _rotY2,
+                    rotationZ: _rotZ2,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
