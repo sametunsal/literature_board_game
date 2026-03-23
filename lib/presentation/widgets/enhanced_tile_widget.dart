@@ -145,7 +145,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           children: [
             SizedBox(
                 height: math.max(4, widget.height * 0.13), child: colorStrip),
-            Expanded(child: textContent),
+            Expanded(child: ClipRect(child: textContent)),
           ],
         );
       case 1:
@@ -165,7 +165,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: textContent),
+            Expanded(child: ClipRect(child: textContent)),
             SizedBox(
                 height: math.max(4, widget.height * 0.13), child: colorStrip),
           ],
@@ -189,7 +189,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           children: [
             SizedBox(
                 height: math.max(4, widget.height * 0.13), child: colorStrip),
-            Expanded(child: textContent),
+            Expanded(child: ClipRect(child: textContent)),
           ],
         );
     }
@@ -258,38 +258,42 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         widget.tile.category!.isNotEmpty &&
         widget.tile.type == TileType.category;
 
-    return ClipRect(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Expanded(
-              child: Center(
-                child: AutoSizeText(
-                  displayName,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: params.maxFont,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                    height: 1.1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableH = constraints.maxHeight;
+        final vertPad = 2.0;
+        final difficultyH = showDifficulty ? 9.0 : 0.0;
+        final canFitDifficulty =
+            showDifficulty && (availableH - vertPad * 2 - difficultyH > 14);
+
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 3, vertical: vertPad),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Center(
+                  child: AutoSizeText(
+                    displayName,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: params.maxFont,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                      height: 1.1,
+                    ),
+                    minFontSize: params.minFont,
+                    maxLines: params.maxLines,
+                    stepGranularity: 0.25,
+                    wrapWords: false,
+                    softWrap: true,
+                    overflow: TextOverflow.clip,
                   ),
-                  minFontSize: params.minFont,
-                  maxLines: params.maxLines,
-                  stepGranularity: 0.25,
-                  wrapWords: false,
-                  softWrap: true,
-                  overflow: TextOverflow.clip,
                 ),
               ),
-            ),
-            if (showDifficulty)
-              SizedBox(
-                height: 9,
-                child: Text(
+              if (canFitDifficulty)
+                Text(
                   widget.tile.difficulty.displayName,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
@@ -301,10 +305,10 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   maxLines: 1,
                   overflow: TextOverflow.clip,
                 ),
-              ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 

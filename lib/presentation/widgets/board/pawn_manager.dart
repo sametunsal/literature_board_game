@@ -85,8 +85,9 @@ class _PawnManagerState extends State<PawnManager> {
           slotTop = rowHeight * 2;
         }
 
-        final left = center.dx - (tileSize.width / 2) + slotLeft + offsetX;
-        final top = center.dy - (tileSize.height / 2) + slotTop + offsetY;
+        // Center the pawn within its slot by subtracting half its size
+        final left = center.dx - (tileSize.width / 2) + slotLeft + offsetX - (safePawnSize / 2);
+        final top = center.dy - (tileSize.height / 2) + slotTop + offsetY - (safePawnSize / 2);
 
         return AnimatedPositioned(
           key: ValueKey('pawn_${player.id}'),
