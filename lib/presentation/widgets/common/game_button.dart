@@ -6,12 +6,14 @@ import '../../../providers/theme_notifier.dart';
 import '../../../core/managers/audio_manager.dart';
 
 enum GameButtonVariant { primary, secondary, danger, success }
+enum GameButtonSize { normal, compact }
 
 class GameButton extends ConsumerWidget {
   final String label;
   final IconData? icon;
   final VoidCallback onPressed;
   final GameButtonVariant variant;
+  final GameButtonSize size;
   final bool isLoading;
   final bool isFullWidth;
   final bool isDisabled;
@@ -24,12 +26,13 @@ class GameButton extends ConsumerWidget {
     this.icon,
     required this.onPressed,
     this.variant = GameButtonVariant.primary,
+    this.size = GameButtonSize.normal,
     this.isLoading = false,
     this.isFullWidth = false,
     this.isDisabled = false,
     this.customColor,
     this.customTextColor,
-    this.maxLines = 1, // Default to single line
+    this.maxLines = 1,
   });
 
   final int? maxLines;
@@ -42,6 +45,15 @@ class GameButton extends ConsumerWidget {
     final backgroundColor = customColor ?? _getBackgroundColor(variant, tokens);
     final foregroundColor =
         customTextColor ?? _getForegroundColor(variant, tokens);
+
+    // Size bazlı değerler
+    final isCompact = size == GameButtonSize.compact;
+    final verticalPad = isCompact ? 8.0 : 14.0;
+    final horizontalPad = isCompact ? 10.0 : 16.0;
+    final iconSize = isCompact ? 16.0 : 22.0;
+    final fontSize = isCompact ? 11.0 : 15.0;
+    final borderRadius = isCompact ? 8.0 : 12.0;
+    final elevation = isCompact ? 2.0 : 4.0;
 
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
@@ -56,20 +68,20 @@ class GameButton extends ConsumerWidget {
           backgroundColor: backgroundColor,
           foregroundColor: foregroundColor,
           disabledBackgroundColor: backgroundColor.withValues(alpha: 0.5),
-          padding: const EdgeInsets.symmetric(
-            vertical: 14,
-            horizontal: 16,
-          ), // Reduced horizontal padding
-          elevation: 4,
+          padding: EdgeInsets.symmetric(
+            vertical: verticalPad,
+            horizontal: horizontalPad,
+          ),
+          elevation: elevation,
           shadowColor: backgroundColor.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(borderRadius),
           ),
         ),
         child: isLoading
             ? SizedBox(
-                width: 20,
-                height: 20,
+                width: isCompact ? 16 : 20,
+                height: isCompact ? 16 : 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
@@ -79,20 +91,20 @@ class GameButton extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 22, color: foregroundColor),
-                    const SizedBox(width: 8),
+                    Icon(icon, size: iconSize, color: foregroundColor),
+                    SizedBox(width: isCompact ? 5 : 8),
                   ],
                   Flexible(
                     child: Text(
                       label,
-                      textAlign: TextAlign.center, // Center text for multiline
+                      textAlign: TextAlign.center,
                       maxLines: maxLines,
                       style: GoogleFonts.poppins(
-                        fontSize: 15,
+                        fontSize: fontSize,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                        letterSpacing: isCompact ? 0.3 : 0.5,
                         color: foregroundColor,
-                        height: 1.2, // Better line height for wrapping
+                        height: 1.2,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

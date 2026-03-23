@@ -139,58 +139,63 @@ class PauseDialog extends ConsumerWidget {
                     label: "OYUNA DÖN",
                     icon: Icons.play_arrow,
                     variant: GameButtonVariant.success,
+                    size: GameButtonSize.compact,
                     isFullWidth: true,
                     onPressed: () {
                       AudioManager.instance.playClick();
                       onResume();
                     },
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
 
                   // SETTINGS BUTTON
                   GameButton(
                     label: "AYARLAR",
                     icon: Icons.settings,
                     variant: GameButtonVariant.secondary,
+                    size: GameButtonSize.compact,
                     isFullWidth: true,
                     onPressed: () {
                       AudioManager.instance.playClick();
                       onSettings();
                     },
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
 
                   // COLLECTION BUTTON
                   GameButton(
                     label: "KOLEKSİYONUM",
                     icon: Icons.collections_bookmark,
                     variant: GameButtonVariant.secondary,
+                    size: GameButtonSize.compact,
                     isFullWidth: true,
                     onPressed: () {
                       AudioManager.instance.playClick();
                       onCollection();
                     },
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
 
                   // END GAME BUTTON
                   GameButton(
                     label: "OYUNU BİTİR",
                     icon: Icons.flag,
                     variant: GameButtonVariant.primary,
+                    size: GameButtonSize.compact,
                     isFullWidth: true,
                     onPressed: () {
                       AudioManager.instance.playClick();
                       onEndGame();
                     },
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
 
                   // EXIT BUTTON
                   GameButton(
                     label: "ANA MENÜ",
                     icon: Icons.exit_to_app,
                     variant: GameButtonVariant.danger,
+                    size: GameButtonSize.compact,
                     isFullWidth: true,
                     onPressed: () {
                       AudioManager.instance.playClick();
