@@ -2,8 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/constants/game_constants.dart';
 
-/// Stabil izometrik 3D zar animasyonu - CustomPainter ile çizim.
-/// Yüzler kaybolmaz, içi görünmez.
+/// Gerçekçi 3D zar animasyonu - büyük, kare orantılı, görünür dönüş.
 class DiceRollThreeView extends StatefulWidget {
   const DiceRollThreeView({
     super.key,
@@ -25,12 +24,6 @@ class DiceRollThreeView extends StatefulWidget {
 class _DiceRollThreeViewState extends State<DiceRollThreeView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  final _rng = math.Random();
-
-  int _displayVal1 = 1;
-  int _displayVal2 = 1;
-  double _wobble1 = 0;
-  double _wobble2 = 0;
 
   @override
   void initState() {
@@ -38,39 +31,11 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
     _controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: GameConstants.diceRollMotionDelayMs),
-    )..addListener(_onTick);
-    _controller.forward();
-  }
-
-  void _onTick() {
-    final t = _controller.value;
-
-    setState(() {
-      if (t < 0.80) {
-        // Dönüş fazı - rastgele değerler göster
-        // Her 80ms'de bir değer değiştir (daha yavaş)
-        if ((_controller.lastElapsedDuration?.inMilliseconds ?? 0) % 80 < 20) {
-          _displayVal1 = _rng.nextInt(6) + 1;
-          _displayVal2 = _rng.nextInt(6) + 1;
-        }
-        // Hafif sallanma efekti
-        _wobble1 = math.sin(t * math.pi * 8) * (1 - t) * 0.15;
-        _wobble2 = math.sin(t * math.pi * 7 + 1) * (1 - t) * 0.12;
-      } else {
-        // Yerleşme fazı - final değerlere geç
-        _displayVal1 = widget.dice1.clamp(1, 6);
-        _displayVal2 = widget.dice2.clamp(1, 6);
-        // Sallanma azalsın
-        final settleT = (t - 0.80) / 0.20;
-        _wobble1 = math.sin(t * math.pi * 8) * (1 - settleT) * 0.08;
-        _wobble2 = math.sin(t * math.pi * 7 + 1) * (1 - settleT) * 0.06;
-      }
-    });
+    )..forward();
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onTick);
     _controller.dispose();
     super.dispose();
   }
@@ -79,201 +44,332 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
   Widget build(BuildContext context) {
     final w = math.max(widget.width, 1.0);
     final h = math.max(widget.height, 1.0);
-    final dieSize = math.min(w * 0.20, h * 0.38).clamp(28.0, 52.0);
-    final gap = dieSize * 0.5;
+    
+    // Daha büyük zarlar - ekranın önemli bir kısmını kaplasın
+    final dieSize = math.min(w * 0.28, h * 0.50).clamp(45.0, 80.0);
+    final gap = dieSize * 0.4;
 
     return SizedBox(
       width: w,
       height: h,
       child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _IsometricDie(
-              value: _displayVal1,
-              size: dieSize,
-              wobble: _wobble1,
-            ),
-            SizedBox(width: gap),
-            _IsometricDie(
-              value: _displayVal2,
-              size: dieSize,
-              wobble: _wobble2,
-            ),
-          ],
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final t = _controller.value;
+            
+            // Zıplama efekti - zarlar havadan düşer gibi
+            final bounceY = _calculateBounce(t) * dieSize * 0.3;
+            
+            return Transform.translate(
+              offset: Offset(0, bounceY),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _AnimatedDie(
+                    finalValue: widget.dice1,
+                    size: dieSize,
+                    progress: t,
+                    seed: 1,
+                  ),
+                  SizedBox(width: gap),
+                  _AnimatedDie(
+                    finalValue: widget.dice2,
+                    size: dieSize,
+                    progress: t,
+                    seed: 2,
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
+
+  // Gerçekçi zıplama - hızlı düşüş, birkaç küçük zıplama
+  double _calculateBounce(double t) {
+    if (t < 0.3) {
+      // İlk düşüş
+      return -math.sin(t / 0.3 * math.pi / 2);
+    } else if (t < 0.5) {
+      // İlk zıplama
+      final localT = (t - 0.3) / 0.2;
+      return -0.4 * math.sin(localT * math.pi);
+    } else if (t < 0.65) {
+      // İkinci zıplama (daha küçük)
+      final localT = (t - 0.5) / 0.15;
+      return -0.15 * math.sin(localT * math.pi);
+    } else if (t < 0.75) {
+      // Son zıplama (çok küçük)
+      final localT = (t - 0.65) / 0.1;
+      return -0.05 * math.sin(localT * math.pi);
+    }
+    return 0;
+  }
 }
 
-/// Tek bir isometric zar - CustomPainter ile çizilir
-class _IsometricDie extends StatelessWidget {
-  const _IsometricDie({
-    required this.value,
+/// Tek bir animasyonlu zar
+class _AnimatedDie extends StatelessWidget {
+  const _AnimatedDie({
+    required this.finalValue,
     required this.size,
-    required this.wobble,
+    required this.progress,
+    required this.seed,
   });
 
-  final int value;
+  final int finalValue;
   final double size;
-  final double wobble;
+  final double progress;
+  final int seed;
 
   @override
   Widget build(BuildContext context) {
-    // Toplam boyut: küp + perspektif için ekstra alan
-    final totalSize = size * 1.4;
+    final rng = math.Random(seed * 1000 + (progress * 50).floor());
+    
+    // Görüntülenecek değer
+    final displayValue = progress < 0.75 
+        ? rng.nextInt(6) + 1 
+        : finalValue.clamp(1, 6);
+
+    // Dönüş açıları - gerçekçi 3D rotasyon
+    // Başlangıçta hızlı dönüş, sonra yavaşlama
+    final spinFactor = progress < 0.75 
+        ? math.pow(1 - progress / 0.75, 2) // Yavaşlayan dönüş
+        : 0.0;
+    
+    // Toplam dönüş miktarı (birkaç tam tur)
+    final totalSpinX = spinFactor * math.pi * 4 * (seed == 1 ? 1 : 1.2);
+    final totalSpinY = spinFactor * math.pi * 3 * (seed == 1 ? 1.1 : 0.9);
+    
+    // Hafif sallanma (yerleştikten sonra)
+    final wobble = progress > 0.75 
+        ? math.sin((progress - 0.75) / 0.25 * math.pi * 3) * 0.03 * (1 - progress)
+        : 0.0;
 
     return SizedBox(
-      width: totalSize,
-      height: totalSize,
+      width: size * 1.3,
+      height: size * 1.3,
       child: CustomPaint(
-        size: Size(totalSize, totalSize),
-        painter: _IsometricDiePainter(
-          value: value.clamp(1, 6),
-          wobble: wobble,
+        size: Size(size * 1.3, size * 1.3),
+        painter: _RealisticDiePainter(
+          value: displayValue,
+          rotationX: totalSpinX + wobble,
+          rotationY: totalSpinY,
+          cubeSize: size,
         ),
       ),
     );
   }
 }
 
-/// Isometric küp çizen painter - 3 yüz her zaman görünür
-class _IsometricDiePainter extends CustomPainter {
-  _IsometricDiePainter({
+/// Gerçekçi 3D zar çizen painter
+class _RealisticDiePainter extends CustomPainter {
+  _RealisticDiePainter({
     required this.value,
-    required this.wobble,
+    required this.rotationX,
+    required this.rotationY,
+    required this.cubeSize,
   });
 
   final int value;
-  final double wobble;
+  final double rotationX;
+  final double rotationY;
+  final double cubeSize;
 
-  // Renkler
-  static const _topColor = Color(0xFFFFFDF8);
-  static const _leftColor = Color(0xFFE8E4D8);
-  static const _rightColor = Color(0xFFD4D0C4);
-  static const _borderColor = Color(0xFF8B8578);
-  static const _pipColor = Color(0xFF1A1408);
+  // Zar renkleri - fildişi/krem tonu
+  static const _faceLight = Color(0xFFFFFDF5);
+  static const _faceMid = Color(0xFFF5F0E0);
+  static const _faceDark = Color(0xFFE8E0D0);
+  static const _border = Color(0xFF9A9080);
+  static const _pip = Color(0xFF1A1408);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final cubeSize = size.width * 0.6;
+    final half = cubeSize / 2;
 
-    // Isometric açılar (30 derece)
-    const angle = math.pi / 6; // 30°
+    // 3D küp köşeleri (birim küp -1 ile 1 arası)
+    final vertices = <List<double>>[
+      [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], // Arka yüz
+      [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],     // Ön yüz
+    ];
 
-    // Küp köşe noktaları hesapla
-    final halfW = cubeSize / 2;
-    final halfH = cubeSize * 0.5; // Yükseklik
-    final depth = cubeSize * 0.35; // Derinlik
+    // Rotasyon uygula
+    final rotated = vertices.map((v) => _rotate3D(v, rotationX, rotationY)).toList();
 
-    // Wobble efekti - hafif offset
-    final wobbleX = wobble * cubeSize * 0.3;
-    final wobbleY = wobble * cubeSize * 0.15;
+    // 2D'ye projeksiyon (isometric-like)
+    final projected = rotated.map((v) {
+      final scale = 1.0 + v[2] * 0.15; // Hafif perspektif
+      return Offset(
+        center.dx + v[0] * half * scale,
+        center.dy + v[1] * half * scale * 0.85, // Y eksenini biraz sıkıştır
+      );
+    }).toList();
 
-    // Merkez noktası (küpün ön köşesi)
-    final frontX = center.dx + wobbleX;
-    final frontY = center.dy + halfH * 0.3 + wobbleY;
+    // Yüzler (vertex indeksleri)
+    final faces = [
+      [0, 1, 2, 3], // Arka (Z-)
+      [4, 5, 6, 7], // Ön (Z+)
+      [0, 1, 5, 4], // Alt (Y-)
+      [2, 3, 7, 6], // Üst (Y+)
+      [0, 3, 7, 4], // Sol (X-)
+      [1, 2, 6, 5], // Sağ (X+)
+    ];
 
-    // Üst yüz köşeleri
-    final topFront = Offset(frontX, frontY - halfH);
-    final topLeft = Offset(frontX - halfW * math.cos(angle), frontY - halfH - halfW * math.sin(angle));
-    final topRight = Offset(frontX + halfW * math.cos(angle), frontY - halfH - halfW * math.sin(angle));
-    final topBack = Offset(frontX, frontY - halfH - halfW * math.sin(angle) * 2);
-
-    // Alt ön köşe
-    final bottomFront = Offset(frontX, frontY + depth);
-
-    // Sol ve sağ alt köşeler
-    final bottomLeft = Offset(topLeft.dx, topLeft.dy + depth + halfH);
-    final bottomRight = Offset(topRight.dx, topRight.dy + depth + halfH);
-
-    // Gölge
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    
-    final shadowPath = Path()
-      ..moveTo(bottomFront.dx + 3, bottomFront.dy + 5)
-      ..lineTo(bottomLeft.dx + 3, bottomLeft.dy + 5)
-      ..lineTo(topLeft.dx + 3, topLeft.dy + depth + 5)
-      ..lineTo(topBack.dx + 3, topBack.dy + depth + 5)
-      ..lineTo(topRight.dx + 3, topRight.dy + depth + 5)
-      ..lineTo(bottomRight.dx + 3, bottomRight.dy + 5)
-      ..close();
-    canvas.drawPath(shadowPath, shadowPaint);
-
-    // Sol yüz (karanlık)
-    final leftPath = Path()
-      ..moveTo(topFront.dx, topFront.dy)
-      ..lineTo(topLeft.dx, topLeft.dy)
-      ..lineTo(bottomLeft.dx, bottomLeft.dy)
-      ..lineTo(bottomFront.dx, bottomFront.dy)
-      ..close();
-    
-    canvas.drawPath(leftPath, Paint()..color = _leftColor);
-    canvas.drawPath(leftPath, Paint()..color = _borderColor..style = PaintingStyle.stroke..strokeWidth = 1);
-
-    // Sağ yüz (orta)
-    final rightPath = Path()
-      ..moveTo(topFront.dx, topFront.dy)
-      ..lineTo(topRight.dx, topRight.dy)
-      ..lineTo(bottomRight.dx, bottomRight.dy)
-      ..lineTo(bottomFront.dx, bottomFront.dy)
-      ..close();
-    
-    canvas.drawPath(rightPath, Paint()..color = _rightColor);
-    canvas.drawPath(rightPath, Paint()..color = _borderColor..style = PaintingStyle.stroke..strokeWidth = 1);
-
-    // Üst yüz (en aydınlık) - pip'ler burada
-    final topPath = Path()
-      ..moveTo(topFront.dx, topFront.dy)
-      ..lineTo(topLeft.dx, topLeft.dy)
-      ..lineTo(topBack.dx, topBack.dy)
-      ..lineTo(topRight.dx, topRight.dy)
-      ..close();
-    
-    canvas.drawPath(topPath, Paint()..color = _topColor);
-    canvas.drawPath(topPath, Paint()..color = _borderColor..style = PaintingStyle.stroke..strokeWidth = 1);
-
-    // Üst yüze pip'leri çiz
-    _drawPips(canvas, topFront, topLeft, topRight, topBack, value);
-  }
-
-  void _drawPips(Canvas canvas, Offset front, Offset left, Offset right, Offset back, int val) {
-    final pipPaint = Paint()..color = _pipColor;
-    final highlightPaint = Paint()..color = Colors.white.withValues(alpha: 0.3);
-
-    // Üst yüzün merkezi ve boyutları
-    final centerX = (front.dx + left.dx + right.dx + back.dx) / 4;
-    final centerY = (front.dy + left.dy + right.dy + back.dy) / 4;
-    
-    // Yüz genişliği ve yüksekliği
-    final faceW = (right.dx - left.dx) * 0.7;
-    final faceH = (front.dy - back.dy) * 0.7;
-    
-    final pipR = math.min(faceW, faceH) * 0.12;
-
-    void drawPip(double relX, double relY) {
-      // Isometric dönüşüm
-      final px = centerX + (relX - 0.5) * faceW + (relY - 0.5) * faceW * 0.15;
-      final py = centerY + (relY - 0.5) * faceH * 0.5 + (relX - 0.5) * faceH * 0.15;
+    // Her yüzün normal vektörü ve derinliği
+    final faceData = <_FaceData>[];
+    for (int i = 0; i < faces.length; i++) {
+      final f = faces[i];
+      final normal = _calculateNormal(rotated[f[0]], rotated[f[1]], rotated[f[2]]);
       
-      // Gölge
-      canvas.drawCircle(Offset(px + 0.5, py + 0.5), pipR * 0.9, 
-        Paint()..color = Colors.black.withValues(alpha: 0.15));
-      // Pip
-      canvas.drawCircle(Offset(px, py), pipR, pipPaint);
-      // Highlight
-      canvas.drawCircle(Offset(px - pipR * 0.2, py - pipR * 0.2), pipR * 0.3, highlightPaint);
+      // Yüz kameraya bakıyor mu? (Z komponenti pozitif)
+      if (normal[2] > 0) {
+        final depth = (rotated[f[0]][2] + rotated[f[1]][2] + rotated[f[2]][2] + rotated[f[3]][2]) / 4;
+        final faceValue = _getFaceValue(value, i);
+        faceData.add(_FaceData(
+          indices: f,
+          depth: depth,
+          brightness: normal[2],
+          faceValue: faceValue,
+        ));
+      }
     }
 
-    const lo = 0.22;
-    const mid = 0.50;
-    const hi = 0.78;
+    // Derinliğe göre sırala (arkadan öne)
+    faceData.sort((a, b) => a.depth.compareTo(b.depth));
 
-    switch (val) {
+    // Gölge çiz
+    _drawShadow(canvas, projected, center, half);
+
+    // Yüzleri çiz
+    for (final face in faceData) {
+      _drawFace(canvas, projected, face);
+    }
+  }
+
+  List<double> _rotate3D(List<double> v, double rx, double ry) {
+    // Y ekseni etrafında döndür
+    final cosY = math.cos(ry);
+    final sinY = math.sin(ry);
+    final x1 = v[0] * cosY - v[2] * sinY;
+    final z1 = v[0] * sinY + v[2] * cosY;
+
+    // X ekseni etrafında döndür
+    final cosX = math.cos(rx);
+    final sinX = math.sin(rx);
+    final y2 = v[1] * cosX - z1 * sinX;
+    final z2 = v[1] * sinX + z1 * cosX;
+
+    return [x1, y2, z2];
+  }
+
+  List<double> _calculateNormal(List<double> v0, List<double> v1, List<double> v2) {
+    // İki kenar vektörü
+    final e1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+    final e2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
+    
+    // Çapraz çarpım
+    final nx = e1[1] * e2[2] - e1[2] * e2[1];
+    final ny = e1[2] * e2[0] - e1[0] * e2[2];
+    final nz = e1[0] * e2[1] - e1[1] * e2[0];
+    
+    // Normalize
+    final len = math.sqrt(nx * nx + ny * ny + nz * nz);
+    return [nx / len, ny / len, nz / len];
+  }
+
+  void _drawShadow(Canvas canvas, List<Offset> projected, Offset center, double half) {
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.25)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    
+    // Basit oval gölge
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(center.dx + 4, center.dy + half * 0.7),
+        width: cubeSize * 0.9,
+        height: cubeSize * 0.3,
+      ),
+      shadowPaint,
+    );
+  }
+
+  void _drawFace(Canvas canvas, List<Offset> projected, _FaceData face) {
+    final path = Path();
+    path.moveTo(projected[face.indices[0]].dx, projected[face.indices[0]].dy);
+    for (int i = 1; i < 4; i++) {
+      path.lineTo(projected[face.indices[i]].dx, projected[face.indices[i]].dy);
+    }
+    path.close();
+
+    // Yüz rengi (parlaklığa göre)
+    final baseColor = face.brightness > 0.7 
+        ? _faceLight 
+        : face.brightness > 0.4 
+            ? _faceMid 
+            : _faceDark;
+    
+    // Yüzü doldur
+    canvas.drawPath(path, Paint()..color = baseColor);
+    
+    // Kenarlık
+    canvas.drawPath(path, Paint()
+      ..color = _border
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2);
+
+    // Pip'leri çiz (sadece en parlak yüze)
+    if (face.brightness > 0.5) {
+      _drawPips(canvas, projected, face);
+    }
+  }
+
+  void _drawPips(Canvas canvas, List<Offset> projected, _FaceData face) {
+    final p0 = projected[face.indices[0]];
+    final p1 = projected[face.indices[1]];
+    final p2 = projected[face.indices[2]];
+    final p3 = projected[face.indices[3]];
+
+    // Yüz merkezi ve eksenleri
+    final centerX = (p0.dx + p1.dx + p2.dx + p3.dx) / 4;
+    final centerY = (p0.dy + p1.dy + p2.dy + p3.dy) / 4;
+    
+    // Yüz boyutu
+    final faceW = (p1 - p0).distance;
+    final faceH = (p3 - p0).distance;
+    final pipR = math.min(faceW, faceH) * 0.10;
+
+    // Yüz yönleri
+    final dirX = Offset((p1.dx - p0.dx) / faceW, (p1.dy - p0.dy) / faceW);
+    final dirY = Offset((p3.dx - p0.dx) / faceH, (p3.dy - p0.dy) / faceH);
+
+    void drawPip(double relX, double relY) {
+      final px = centerX + (relX - 0.5) * faceW * 0.6 * dirX.dx + (relY - 0.5) * faceH * 0.6 * dirY.dx;
+      final py = centerY + (relX - 0.5) * faceW * 0.6 * dirX.dy + (relY - 0.5) * faceH * 0.6 * dirY.dy;
+      
+      // Pip gölgesi
+      canvas.drawCircle(
+        Offset(px + 0.5, py + 0.5),
+        pipR * 0.9,
+        Paint()..color = Colors.black.withValues(alpha: 0.2),
+      );
+      // Pip
+      canvas.drawCircle(Offset(px, py), pipR, Paint()..color = _pip);
+      // Highlight
+      canvas.drawCircle(
+        Offset(px - pipR * 0.25, py - pipR * 0.25),
+        pipR * 0.3,
+        Paint()..color = Colors.white.withValues(alpha: 0.35),
+      );
+    }
+
+    const lo = 0.20;
+    const mid = 0.50;
+    const hi = 0.80;
+
+    switch (face.faceValue) {
       case 1:
         drawPip(mid, mid);
       case 2:
@@ -304,7 +400,38 @@ class _IsometricDiePainter extends CustomPainter {
     }
   }
 
+  // Üst değere göre her yüzün değerini belirle
+  int _getFaceValue(int topValue, int faceIndex) {
+    // Standart zar: karşılıklı yüzler 7
+    // faceIndex: 0=arka, 1=ön, 2=alt, 3=üst, 4=sol, 5=sağ
+    final mapping = {
+      1: [5, 2, 3, 1, 4, 6], // top=1
+      2: [4, 3, 1, 2, 6, 5], // top=2
+      3: [1, 6, 2, 5, 3, 4], // top=3
+      4: [6, 1, 5, 2, 4, 3], // top=4
+      5: [3, 4, 6, 5, 1, 2], // top=5
+      6: [2, 5, 4, 6, 3, 1], // top=6
+    };
+    return mapping[topValue]?[faceIndex] ?? 1;
+  }
+
   @override
-  bool shouldRepaint(covariant _IsometricDiePainter old) =>
-      old.value != value || old.wobble != wobble;
+  bool shouldRepaint(covariant _RealisticDiePainter old) =>
+      old.value != value || 
+      old.rotationX != rotationX || 
+      old.rotationY != rotationY;
+}
+
+class _FaceData {
+  final List<int> indices;
+  final double depth;
+  final double brightness;
+  final int faceValue;
+
+  _FaceData({
+    required this.indices,
+    required this.depth,
+    required this.brightness,
+    required this.faceValue,
+  });
 }
