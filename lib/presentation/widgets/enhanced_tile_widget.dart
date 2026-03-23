@@ -154,7 +154,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           children: [
             SizedBox(
                 width: math.max(4, widget.width * 0.13), child: colorStrip),
-            Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
+            Expanded(
+              child: ClipRect(
+                child: RotatedBox(quarterTurns: 3, child: textContent),
+              ),
+            ),
           ],
         );
       case 2:
@@ -170,7 +174,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: RotatedBox(quarterTurns: 3, child: textContent)),
+            Expanded(
+              child: ClipRect(
+                child: RotatedBox(quarterTurns: 3, child: textContent),
+              ),
+            ),
             SizedBox(
                 width: math.max(4, widget.width * 0.13), child: colorStrip),
           ],
@@ -202,112 +210,119 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     return 0.88 + (1.0 - depth / 13.0) * 0.24;
   }
 
-  /// Per-tile adaptive sizing. Accounts for tile dimensions, word structure,
-  /// and isometric foreshortening so every tile name is fully legible and
-  /// never splits a word at line end.
+  /// Per-tile adaptive sizing.  Accounts for tile dimensions, word
+  /// structure and isometric foreshortening.  Each word gets its own
+  /// line so `AutoSizeText` never has to split a word mid-line.
   _TileTextParams _computeTextParams() {
     final name = widget.tile.name;
-    final words = name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
-    final charCount = name.length;
+    final words =
+        name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
     final wordCount = words.length;
     final longestWord = words.fold<int>(0, (m, w) => math.max(m, w.length));
 
-    final isVerticalEdge = widget.quarterTurns == 1 || widget.quarterTurns == 3;
+    final isVerticalEdge =
+        widget.quarterTurns == 1 || widget.quarterTurns == 3;
     final contentW = isVerticalEdge ? widget.height : widget.width;
     final contentH = isVerticalEdge ? widget.width : widget.height;
-    final usableW = math.max(20.0, contentW - 10);
-    final usableH = math.max(20.0, contentH - 10);
-    final shortSide = math.min(usableW, usableH);
-    final longSide = math.max(usableW, usableH);
+    final usableW = math.max(20.0, contentW - 8);
+    final usableH = math.max(20.0, contentH - 6);
     final pScale = _perspectiveScale();
 
-    final densityPenalty = (charCount / 22).clamp(0.0, 0.38);
-    final longWordPenalty = (longestWord / 14).clamp(0.0, 0.18);
-    final baseFont = (shortSide * 0.30 + longSide * 0.028) *
-        pScale *
-        (1.0 - densityPenalty - longWordPenalty);
+    // Keep lines bounded for tiny perspective tiles.
+    final int maxLines = wordCount.clamp(1, 4);
 
-    final int maxLines;
-    if (wordCount <= 1) {
-      maxLines = longestWord > 10 ? 2 : 1;
-    } else if (wordCount == 2) {
-      maxLines = 2;
-    } else if (charCount <= 20) {
-      maxLines = 3;
-    } else {
-      maxLines = 4;
-    }
+    // Base font from the width available for the longest word,
+    // scaled by perspective depth so far-away tiles stay legible.
+    final charWidth = usableW / math.max(longestWord, 1);
+    final lineHeight = usableH / maxLines;
+    final baseFont = math.min(charWidth * 1.55, lineHeight * 0.72) * pScale;
+
+    final showDifficultyTag =
+        widget.tile.type == TileType.category &&
+        (usableH > 34) &&
+        (pScale > 0.92);
 
     return _TileTextParams(
-      maxFont: baseFont.clamp(7.0, 15.0),
-      minFont: (baseFont * 0.58).clamp(5.0, 10.0),
+      maxFont: baseFont.clamp(6.5, 15.0),
+      minFont: (baseFont * 0.55).clamp(4.5, 10.0),
       maxLines: maxLines,
+      showDifficultyTag: showDifficultyTag,
     );
   }
 
   Widget _buildStandardTileContent() {
     final params = _computeTextParams();
-    final displayName = _formatDisplayName(widget.tile.name);
+    final displayName = _formatDisplayName(widget.tile.name, params.maxLines);
+    final showDifficulty = params.showDifficultyTag &&
+        widget.tile.category != null &&
+        widget.tile.category!.isNotEmpty &&
+        widget.tile.type == TileType.category;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Center(
-              child: AutoSizeText(
-                displayName,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: params.maxFont,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black87,
-                  height: 1.15,
+    return ClipRect(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Expanded(
+              child: Center(
+                child: AutoSizeText(
+                  displayName,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: params.maxFont,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                    height: 1.1,
+                  ),
+                  minFontSize: params.minFont,
+                  maxLines: params.maxLines,
+                  stepGranularity: 0.25,
+                  wrapWords: false,
+                  softWrap: true,
+                  overflow: TextOverflow.clip,
                 ),
-                minFontSize: params.minFont,
-                maxLines: params.maxLines,
-                stepGranularity: 0.25,
-                wrapWords: false,
-                softWrap: true,
-                overflow: TextOverflow.clip,
               ),
             ),
-          ),
-          if (widget.tile.category != null &&
-              widget.tile.category!.isNotEmpty &&
-              widget.tile.type == TileType.category)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 1),
-              child: Text(
-                widget.tile.difficulty.displayName,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 7,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black45,
-                  height: 1.0,
+            if (showDifficulty)
+              SizedBox(
+                height: 9,
+                child: Text(
+                  widget.tile.difficulty.displayName,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 6,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black45,
+                    height: 1.0,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.clip,
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  String _formatDisplayName(String name) {
-    final words = name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
-    if (words.length <= 1) return name;
+  /// Put every word on its own line so AutoSizeText never has to break
+  /// a word.  For 5+ words we pair short words together to save space.
+  String _formatDisplayName(String name, int maxLines) {
+    final words =
+        name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return '';
 
-    if (words.length == 2) {
-      return '${words[0]}\n${words[1]}';
+    // Start with one word per line.
+    final lines = List<String>.from(words);
+    // If lines exceed maxLines, merge last words into previous lines.
+    while (lines.length > maxLines) {
+      final last = lines.removeLast();
+      lines[lines.length - 1] = '${lines.last} $last';
     }
-
-    final midpoint = (words.length / 2).ceil();
-    return '${words.take(midpoint).join(' ')}\n${words.skip(midpoint).join(' ')}';
+    return lines.join('\n');
   }
 
   Widget _buildCornerTileContent({
@@ -411,9 +426,11 @@ class _TileTextParams {
   final double maxFont;
   final double minFont;
   final int maxLines;
+  final bool showDifficultyTag;
   const _TileTextParams({
     required this.maxFont,
     required this.minFont,
     required this.maxLines,
+    required this.showDifficultyTag,
   });
 }

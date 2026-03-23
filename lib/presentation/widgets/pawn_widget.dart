@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../models/player.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/motion/motion_constants.dart';
@@ -44,31 +42,31 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    // Simple scale pulse: 1.0 → 1.1 → 1.0
+    // Smooth scale pulse: 1.0 → 1.12 → 1.0 with polished curves
     _pulseAnimation = TweenSequence<double>([
-      // Scale up quickly (pickup)
+      // Scale up with overshoot effect (pickup feel)
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 1.0,
-          end: 1.1,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 20,
+          end: 1.12,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 18,
       ),
-      // Hold at peak while sliding
+      // Subtle breathing at peak while sliding
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 1.1,
-          end: 1.1,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 60,
+          begin: 1.12,
+          end: 1.10,
+        ).chain(CurveTween(curve: Curves.easeInOutSine)),
+        weight: 64,
       ),
-      // Scale back down (place)
+      // Gentle scale back down with settling bounce (place)
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 1.1,
+          begin: 1.10,
           end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 20,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 18,
       ),
     ]).animate(_pulseController);
 
@@ -175,166 +173,3 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
   }
 }
 
-/// Container that smoothly moves pawn groups across the board
-/// Uses strict 2x3 Grid Layout (3 Rows, 2 Columns)
-/// Mapped for up to 6 players
-class AnimatedPawnContainer extends StatefulWidget {
-  final Offset center;
-  final double width;
-  final double height;
-  final List<Player> players;
-  final String currentPlayerId;
-  final double pawnSize; // Base size hint
-
-  const AnimatedPawnContainer({
-    super.key,
-    required this.center,
-    required this.width,
-    required this.height,
-    required this.players,
-    required this.currentPlayerId,
-    required this.pawnSize,
-  });
-
-  @override
-  State<AnimatedPawnContainer> createState() => _AnimatedPawnContainerState();
-}
-
-class _AnimatedPawnContainerState extends State<AnimatedPawnContainer> {
-  Offset? _previousCenter;
-  bool _justMoved = false;
-  Timer? _moveResetTimer;
-
-  @override
-  void didUpdateWidget(AnimatedPawnContainer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Detect position change
-    if (oldWidget.center != widget.center) {
-      _previousCenter = oldWidget.center;
-      _justMoved = true;
-
-      _moveResetTimer?.cancel();
-      _moveResetTimer = Timer(
-        MotionDurations.pawn + MotionDurations.medium,
-        () {
-          if (mounted) {
-            setState(() {
-              _justMoved = false;
-            });
-          }
-        },
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _moveResetTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Calculate top-left of the tile area
-    final left = widget.center.dx - (widget.width / 2);
-    final top = widget.center.dy - (widget.height / 2);
-
-    Widget pawnContainer = Positioned(
-      left: left,
-      top: top,
-      child: SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final double w = constraints.maxWidth;
-            final double h = constraints.maxHeight;
-
-            // 2 Columns (Left, Right)
-            final double colWidth = w / 2;
-            // 3 Rows (Top, Middle, Bottom)
-            final double rowHeight = h / 3;
-
-            // Safe Pawn Size: min dimension * 0.8 (allows padding)
-            final double minDim = colWidth < rowHeight ? colWidth : rowHeight;
-            final double safePawnSize = minDim * 0.8;
-
-            // Calculate centering offsets within cell
-            final double offsetX = (colWidth - safePawnSize) / 2;
-            final double offsetY = (rowHeight - safePawnSize) / 2;
-
-            return Stack(
-              clipBehavior: Clip.none,
-              // GUARANTEED UNIQUE MAPPING: Use List Index
-              // The `players` list contains only players on THIS tile.
-              // So mapping 0->TL, 1->TR etc. ensures perfect separation.
-              children: widget.players.asMap().entries.map((entry) {
-                final int index = entry.key;
-                final Player p = entry.value;
-
-                // Determine Slot based on List Index
-                // 0: TL, 1: TR
-                // 2: ML, 3: MR
-                // 4: BL, 5: BR
-                final int pos = index % 6;
-
-                double pLeft = 0;
-                double pTop = 0;
-
-                // Column Determination (Even=Left, Odd=Right)
-                if (pos % 2 == 0) {
-                  pLeft = 0; // Left Column
-                } else {
-                  pLeft = colWidth; // Right Column
-                }
-
-                // Row Determination
-                if (pos < 2) {
-                  pTop = 0; // Top Row
-                } else if (pos < 4) {
-                  pTop = rowHeight; // Middle Row
-                } else {
-                  pTop = rowHeight * 2; // Bottom Row
-                }
-
-                // Apply centering padding
-                pLeft += offsetX;
-                pTop += offsetY;
-
-                return Positioned(
-                  left: pLeft,
-                  top: pTop,
-                  child: PawnWidget(
-                    key: ValueKey(p.id),
-                    player: p,
-                    size: safePawnSize,
-                    isActive: p.id == widget.currentPlayerId,
-                    isCurrentTurn: p.id == widget.currentPlayerId,
-                  ),
-                );
-              }).toList(),
-            );
-          },
-        ),
-      ),
-    );
-
-    // Apply smooth slide animation
-    if (_justMoved && _previousCenter != null) {
-      final dx = left - (_previousCenter!.dx - (widget.width / 2));
-      final dy = top - (_previousCenter!.dy - (widget.height / 2));
-
-      return pawnContainer
-          .animate(key: ValueKey('${widget.center.dx}_${widget.center.dy}'))
-          .move(
-            begin: Offset(-dx, -dy),
-            end: Offset.zero,
-            duration: MotionDurations.pawn.safe,
-            curve: Curves.easeInOutCubic,
-          );
-    }
-
-    return pawnContainer;
-  }
-}

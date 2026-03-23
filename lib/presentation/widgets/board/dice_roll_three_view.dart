@@ -1,10 +1,8 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-
 import '../../../core/constants/game_constants.dart';
 
-/// İki küp zar — saf Flutter; boyutlar parent içinde tutulur (overflow yok).
+/// Isometric 3D-like dice animation using Flutter transforms.
 class DiceRollThreeView extends StatefulWidget {
   const DiceRollThreeView({
     super.key,
@@ -25,8 +23,8 @@ class DiceRollThreeView extends StatefulWidget {
 
 class _DiceRollThreeViewState extends State<DiceRollThreeView>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final _random = math.Random();
+  late final AnimationController _controller;
+  final _rng = math.Random();
   int _d1 = 1;
   int _d2 = 1;
 
@@ -36,16 +34,16 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
     _controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: GameConstants.diceRollMotionDelayMs),
-    )..addListener(_onTick);
+    )..addListener(_tick);
     _controller.forward();
   }
 
-  void _onTick() {
+  void _tick() {
     final t = _controller.value;
     setState(() {
       if (t < 0.88) {
-        _d1 = _random.nextInt(6) + 1;
-        _d2 = _random.nextInt(6) + 1;
+        _d1 = _rng.nextInt(6) + 1;
+        _d2 = _rng.nextInt(6) + 1;
       } else {
         _d1 = widget.dice1.clamp(1, 6);
         _d2 = widget.dice2.clamp(1, 6);
@@ -55,7 +53,7 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
 
   @override
   void dispose() {
-    _controller.removeListener(_onTick);
+    _controller.removeListener(_tick);
     _controller.dispose();
     super.dispose();
   }
@@ -64,16 +62,13 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
   Widget build(BuildContext context) {
     final w = math.max(widget.width, 1.0);
     final h = math.max(widget.height, 1.0);
-    final gap = math.max(6.0, w * 0.04);
-    // Dönüş + gölge için ekstra slot (Monopoly tahta merkezinde sıkışmayı önler)
-    const slotPerDie = 1.58;
-    var dieSize = math.min(
-      (w - gap) / (2 * slotPerDie),
-      h * 0.68,
-    );
-    // Ek güvenlik: hiçbir zaman viewport'un %42'sinden büyük olmasın
-    dieSize *= 0.92;
-    final spin = _controller.value * math.pi * 5 * (1 - _controller.value);
+    final dieSize = math.min((w * 0.32), h * 0.64).clamp(28.0, 88.0);
+    final gap = math.max(10.0, dieSize * 0.26);
+    final t = _controller.value;
+
+    final spinA = (1 - t) * math.pi * 3.2;
+    final spinB = (1 - t) * math.pi * 2.9;
+    final bob = math.sin(t * math.pi * 5) * (1 - t) * 9;
 
     return SizedBox(
       width: w,
@@ -81,18 +76,21 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
       child: Center(
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _RotatingDie(
-              angle: spin,
-              dieSize: dieSize,
+            _IsometricDie(
               value: _d1,
+              size: dieSize,
+              rotateY: spinA,
+              rotateX: spinA * 0.55,
+              bobY: bob,
             ),
             SizedBox(width: gap),
-            _RotatingDie(
-              angle: -spin * 1.05,
-              dieSize: dieSize,
+            _IsometricDie(
               value: _d2,
+              size: dieSize,
+              rotateY: -spinB,
+              rotateX: spinB * 0.52,
+              bobY: -bob * 0.6,
             ),
           ],
         ),
@@ -101,125 +99,142 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
   }
 }
 
-class _RotatingDie extends StatelessWidget {
-  const _RotatingDie({
-    required this.angle,
-    required this.dieSize,
+class _IsometricDie extends StatelessWidget {
+  const _IsometricDie({
     required this.value,
+    required this.size,
+    required this.rotateY,
+    required this.rotateX,
+    required this.bobY,
   });
 
-  final double angle;
-  final double dieSize;
   final int value;
+  final double size;
+  final double rotateY;
+  final double rotateX;
+  final double bobY;
 
   @override
   Widget build(BuildContext context) {
-    final pad = dieSize * 0.29; // slotPerDie 1.58 ile uyumlu
-    return SizedBox(
-      width: dieSize + 2 * pad,
-      height: dieSize + 2 * pad,
-      child: Center(
-        child: Transform.rotate(
-          angle: angle,
-          child: _DiceFace(value: value, size: dieSize),
+    final depth = size * 0.23;
+    final radius = Radius.circular(size * 0.12);
+
+    return Transform.translate(
+      offset: Offset(0, bobY),
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.0022)
+          ..rotateX(0.65 + rotateX)
+          ..rotateZ(-0.42)
+          ..rotateY(rotateY),
+        child: SizedBox(
+          width: size + depth,
+          height: size + depth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: depth * 0.55,
+                top: depth * 0.55,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD8D0BC),
+                    borderRadius: BorderRadius.all(radius),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: depth * 0.18,
+                top: depth * 0.24,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFFCF2), Color(0xFFF0E9D7)],
+                    ),
+                    borderRadius: BorderRadius.all(radius),
+                    border: Border.all(
+                      color: const Color(0xFFB5A985),
+                      width: 1.25,
+                    ),
+                  ),
+                  child: CustomPaint(painter: _PipsPainter(value)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _DiceFace extends StatelessWidget {
-  const _DiceFace({required this.value, required this.size});
-
-  final int value;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(size * 0.12),
-        border: Border.all(color: Colors.black45, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: CustomPaint(
-        painter: _DicePipsPainter(value.clamp(1, 6)),
-      ),
-    );
-  }
-}
-
-class _DicePipsPainter extends CustomPainter {
-  _DicePipsPainter(this.value);
-
+class _PipsPainter extends CustomPainter {
+  _PipsPainter(this.value);
   final int value;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final r = size.shortestSide * 0.09;
-    final paint = Paint()..color = const Color(0xFF212121);
+    final r = size.shortestSide * 0.08;
+    final pip = Paint()..color = const Color(0xFF2F2819);
+    final shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.18)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
 
-    void dot(double nx, double ny) {
-      canvas.drawCircle(
-        Offset(nx * size.width, ny * size.height),
-        r,
-        paint,
-      );
+    void dot(double x, double y) {
+      final c = Offset(x * size.width, y * size.height);
+      canvas.drawCircle(c + const Offset(0.35, 0.55), r * 0.9, shadow);
+      canvas.drawCircle(c, r, pip);
     }
 
-    const lo = 0.24;
-    const c = 0.5;
-    const hi = 0.76;
-
-    switch (value) {
+    const lo = 0.26;
+    const mid = 0.50;
+    const hi = 0.74;
+    switch (value.clamp(1, 6)) {
       case 1:
-        dot(c, c);
-        break;
+        dot(mid, mid);
       case 2:
         dot(lo, lo);
         dot(hi, hi);
-        break;
       case 3:
         dot(lo, lo);
-        dot(c, c);
+        dot(mid, mid);
         dot(hi, hi);
-        break;
       case 4:
         dot(lo, lo);
         dot(hi, lo);
         dot(lo, hi);
         dot(hi, hi);
-        break;
       case 5:
         dot(lo, lo);
         dot(hi, lo);
-        dot(c, c);
+        dot(mid, mid);
         dot(lo, hi);
         dot(hi, hi);
-        break;
-      case 6:
       default:
         dot(lo, lo);
         dot(hi, lo);
-        dot(lo, c);
-        dot(hi, c);
+        dot(lo, mid);
+        dot(hi, mid);
         dot(lo, hi);
         dot(hi, hi);
-        break;
     }
   }
 
   @override
-  bool shouldRepaint(covariant _DicePipsPainter oldDelegate) {
-    return oldDelegate.value != value;
-  }
+  bool shouldRepaint(covariant _PipsPainter oldDelegate) =>
+      oldDelegate.value != value;
 }

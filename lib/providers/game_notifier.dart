@@ -756,6 +756,9 @@ class GameNotifier extends StateNotifier<GameState> {
         ? const Duration(milliseconds: 300)
         : const Duration(milliseconds: 1500);
     await Future.delayed(delay);
+
+    // Movement roll still holds _isProcessing — release before endTurn
+    _isProcessing = false;
     endTurn();
   }
 

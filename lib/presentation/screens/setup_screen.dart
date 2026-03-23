@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -140,9 +141,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: GameTheme.tableBackgroundColor,
       appBar: _buildAppBar(),
-      body: OttomanBackground(
-        showPattern: true,
+      body: _SetupBackground(
         child: SafeArea(
           child: Column(
             children: [
@@ -185,7 +186,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  /// App Bar with Ottoman styling
+
+  /// App Bar with table-green styling
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.transparent,
@@ -193,12 +195,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       leading: Container(
         margin: const EdgeInsets.only(left: 16, top: 8),
         decoration: BoxDecoration(
-          color: GameTheme.ottomanBackground,
+          color: const Color(0xFF1A3D30),
           shape: BoxShape.circle,
           border: Border.all(color: GameTheme.ottomanGold, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: GameTheme.ottomanGoldShadow.withValues(alpha: 0.2),
+              color: Colors.black.withValues(alpha: 0.35),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -207,7 +209,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         child: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: GameTheme.ottomanAccent,
+            color: GameTheme.ottomanGold,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -216,9 +218,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         "OYUNCU DEFTERİ",
         style: GoogleFonts.cinzelDecorative(
           fontWeight: FontWeight.w700,
-          color: GameTheme.ottomanAccent,
-          fontSize: 24,
+          color: GameTheme.ottomanGold,
+          fontSize: 22,
           letterSpacing: 3,
+          shadows: const [
+            Shadow(
+              color: Colors.black54,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
       ),
       centerTitle: true,
@@ -228,17 +237,17 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   /// Header with decorative flourish
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Column(
         children: [
-          // Decorative line
+          // Decorative gold line
           Container(
-            height: 2,
+            height: 1.5,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  GameTheme.ottomanGold.withValues(alpha: 0.5),
+                  GameTheme.ottomanGold.withValues(alpha: 0.7),
                   Colors.transparent,
                 ],
               ),
@@ -250,7 +259,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             style: GoogleFonts.crimsonText(
               fontSize: 14,
               fontStyle: FontStyle.italic,
-              color: GameTheme.ottomanTextSecondary,
+              color: GameTheme.ottomanGold.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -269,18 +278,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         clipBehavior: Clip.none,
         alignment: Alignment.centerLeft,
         children: [
-          // PARCHMENT CARD
+          // DARK CARD
           Container(
             margin: const EdgeInsets.only(right: 50),
             decoration: BoxDecoration(
-              color: GameTheme.ottomanBackgroundAlt.withValues(alpha: 0.5),
+              color: const Color(0xFF1A3D30).withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: GameTheme.ottomanBorder, width: 1),
+              border: Border.all(
+                color: GameTheme.ottomanGold.withValues(alpha: 0.4),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: 0.35),
                   offset: const Offset(0, 4),
-                  blurRadius: 8,
+                  blurRadius: 10,
                 ),
               ],
             ),
@@ -327,9 +339,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                         Text(
                           "OYUNCU ${index + 1}",
                           style: GoogleFonts.cinzelDecorative(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: GameTheme.ottomanTextSecondary,
+                            color: GameTheme.ottomanGold.withValues(alpha: 0.7),
                             letterSpacing: 2.0,
                           ),
                         ),
@@ -338,30 +350,28 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                         TextField(
                           controller: controller,
                           style: GoogleFonts.amiri(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.w400,
-                            color: GameTheme.ottomanText,
+                            color: Colors.white.withValues(alpha: 0.92),
                             height: 1.0,
                           ),
                           decoration: InputDecoration(
                             hintText: "İmza atınız...",
                             hintStyle: GoogleFonts.amiri(
-                              color: GameTheme.ottomanTextSecondary.withValues(
-                                alpha: 0.5,
-                              ),
-                              fontSize: 20,
+                              color: Colors.white.withValues(alpha: 0.3),
+                              fontSize: 18,
                               fontStyle: FontStyle.italic,
                             ),
                             border: InputBorder.none,
                             enabledBorder: UnderlineInputBorder(
                               borderSide: BorderSide(
-                                color: GameTheme.ottomanSignatureLine,
+                                color: GameTheme.ottomanGold.withValues(alpha: 0.4),
                                 width: 1.5,
                               ),
                             ),
                             focusedBorder: UnderlineInputBorder(
                               borderSide: BorderSide(
-                                color: GameTheme.ottomanAccent,
+                                color: GameTheme.ottomanGold,
                                 width: 2,
                               ),
                             ),
@@ -661,4 +671,72 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+/// Dark wood-green background matching the game board, with subtle radial
+/// spotlight and fine grain texture so the setup screen feels like sitting
+/// at the same table as the game.
+class _SetupBackground extends StatelessWidget {
+  const _SetupBackground({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(0.0, -0.3),
+          radius: 1.4,
+          colors: [
+            Color(0xFF1E4D3A), // lighter center spotlight
+            Color(0xFF0F2E25), // GameTheme.tableBackgroundColor
+            Color(0xFF071A15), // deeper corners
+          ],
+          stops: [0.0, 0.55, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Subtle grain / vignette overlay
+          Positioned.fill(
+            child: CustomPaint(painter: _TableGrainPainter()),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _TableGrainPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rng = math.Random(7);
+    // Fine grain
+    final grain = Paint()
+      ..color = Colors.white.withValues(alpha: 0.018)
+      ..style = PaintingStyle.fill;
+    for (int i = 0; i < 600; i++) {
+      canvas.drawCircle(
+        Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height),
+        rng.nextDouble() * 1.2,
+        grain,
+      );
+    }
+    // Corner vignette darkening
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 1.1,
+        colors: [
+          Colors.transparent,
+          Colors.black.withValues(alpha: 0.35),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vignette);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }

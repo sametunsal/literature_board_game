@@ -144,7 +144,7 @@ class _SansCard extends StatelessWidget {
 
                     const Spacer(flex: 1),
 
-                    // Title plaque
+                    // Icon-only plaque (no text to avoid tiny-font artifacts)
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
@@ -163,16 +163,22 @@ class _SansCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'ŞANS',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFFFFF8E1),
-                            letterSpacing: 4,
+                      child: Center(
+                        child: Container(
+                          width: s * 0.17,
+                          height: s * 0.17,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFFFF8E1).withValues(alpha: 0.18),
+                            border: Border.all(
+                              color: const Color(0xFFFFF8E1).withValues(alpha: 0.6),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.wb_sunny_rounded,
+                            color: Color(0xFFFFF8E1),
+                            size: 16,
                           ),
                         ),
                       ),
@@ -316,7 +322,7 @@ class _KaderCard extends StatelessWidget {
 
                     const Spacer(flex: 1),
 
-                    // Title plaque
+                    // Icon-only plaque (no text to avoid tiny-font artifacts)
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
@@ -340,16 +346,22 @@ class _KaderCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'KADER',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFFE0F2F1),
-                            letterSpacing: 4,
+                      child: Center(
+                        child: Container(
+                          width: s * 0.17,
+                          height: s * 0.17,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFE0F2F1).withValues(alpha: 0.14),
+                            border: Border.all(
+                              color: const Color(0xFFE0F2F1).withValues(alpha: 0.55),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Color(0xFFE0F2F1),
+                            size: 16,
                           ),
                         ),
                       ),

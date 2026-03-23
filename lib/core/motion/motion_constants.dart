@@ -86,6 +86,15 @@ class MotionCurves {
 
   /// Bouncy feedback, playful interactions (elasticOut)
   static const Curve spring = Curves.elasticOut;
+  
+  /// Smooth pawn movement - fast start, gentle landing (easeOutQuart)
+  static const Curve pawnMove = Curves.easeOutQuart;
+  
+  /// Polished enter/exit for scale animations (easeOutBack)
+  static const Curve scaleIn = Curves.easeOutBack;
+  
+  /// Subtle breathing animation (easeInOutSine)
+  static const Curve breathe = Curves.easeInOutSine;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

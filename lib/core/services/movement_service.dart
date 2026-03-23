@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/material.dart' show Color;
 import '../constants/game_constants.dart';
 import '../managers/audio_manager.dart';
 import '../../data/board_config.dart';
@@ -47,21 +48,45 @@ class MovementService {
       for (int i = 0; i < steps; i++) {
         currentPos = (currentPos + 1) % BoardConfig.boardSize;
 
-        // Check if passed start
-        if (currentPos == BoardConfig.startPosition) {
-          // Award stars for passing start
+        // Award passing-start bonus only when the player crosses start
+        // mid-route (not as the final destination — that's handled by
+        // _handleStartTileLanding to avoid double-awarding).
+        final bool isLastStep = (i == steps - 1);
+        if (currentPos == BoardConfig.startPosition && !isLastStep) {
           List<Player> startPlayers = List.from(notifier.currentState.players);
           startPlayers[notifier.currentState.currentPlayerIndex] = player
               .copyWith(stars: player.stars + GameConstants.passingStartBonus);
+          
           notifier.updateState(
-            notifier.currentState.copyWith(players: startPlayers),
+            notifier.currentState.copyWith(
+              players: startPlayers,
+              floatingEffect: FloatingEffect(
+                '+${GameConstants.passingStartBonus} ⭐',
+                const Color(0xFFFFD700),
+              ),
+            ),
           );
           player = notifier.currentState.currentPlayer;
 
           notifier.addLog(
-            "Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız",
-            type: 'purchase',
+            "Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!",
+            type: 'success',
           );
+          
+          AudioManager.instance.playSfx('audio/star_collect.wav');
+          
+          Future.delayed(
+            const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+            () {
+              if (notifier.mounted) {
+                notifier.updateState(
+                  notifier.currentState.copyWith(floatingEffect: null),
+                );
+              }
+            },
+          );
+          
+          await Future.delayed(const Duration(milliseconds: 600));
         }
 
         // Update position for each step
