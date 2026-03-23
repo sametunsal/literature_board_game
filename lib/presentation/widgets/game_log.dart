@@ -53,17 +53,17 @@ class GameLog extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 320),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                // V2.5 Dark Academia glassmorphism
-                color: GameTheme.tableBackgroundColor.withValues(alpha: 0.6),
+                // Lighter background for better contrast
+                color: const Color(0xFFF5F3ED).withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(16),
-                // Copper accent border for V2.5 theme
+                // Copper accent border
                 border: Border.all(color: GameTheme.copperAccent, width: 1.5),
                 // Subtle shadow for depth
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    spreadRadius: -5,
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 16,
+                    spreadRadius: -3,
                   ),
                 ],
               ),
@@ -105,7 +105,7 @@ class GameLog extends StatelessWidget {
                           "Henüz olay yok...",
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: GameTheme.textDark.withValues(alpha: 0.5),
+                            color: Colors.black54,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -163,13 +163,13 @@ class GameLog extends StatelessWidget {
         Icon(
           Icons.history,
           size: 14,
-          color: GameTheme.textDark.withValues(alpha: 0.7),
+          color: Colors.black87,
         ),
         const SizedBox(width: 6),
         Text(
           "OYUN GEÇMİŞİ",
           style: GameTheme.hudSectionLabel.copyWith(
-            color: GameTheme.textDark.withValues(alpha: 0.8),
+            color: Colors.black87,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -360,7 +360,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
                   fontWeight: FontWeight.w600,
                   color: rank == 1
                       ? GameTheme.goldAccent
-                      : GameTheme.textDark.withValues(alpha: 0.5),
+                      : Colors.black54,
                 ),
               ),
             ),
@@ -391,8 +391,8 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
                 style: GameTheme.hudPlayerName.copyWith(
                   fontWeight: isCurrentTurn ? FontWeight.w600 : FontWeight.w500,
                   color: isCurrentTurn
-                      ? GameTheme.textDark
-                      : GameTheme.textDark.withValues(alpha: 0.85),
+                      ? Colors.black87
+                      : Colors.black.withValues(alpha: 0.8),
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -404,8 +404,8 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
               style: GameTheme.hudBalance.copyWith(
                 color: _isAnimating
                     ? glowColor
-                    : (rank == 1 ? GameTheme.goldAccent : GameTheme.textDark),
-                shadows: const [Shadow(color: Colors.black54, blurRadius: 2)],
+                    : (rank == 1 ? GameTheme.goldAccent : Colors.black87),
+                shadows: const [Shadow(color: Colors.black26, blurRadius: 1)],
               ),
               child: Text("⭐$_displayedStars"),
             ),
@@ -447,9 +447,9 @@ class _LogEntry extends StatelessWidget {
             width: 3,
             height: 3,
             decoration: BoxDecoration(
-              color: isLatest
-                  ? GameTheme.goldAccent
-                  : GameTheme.textDark.withValues(alpha: 0.5),
+            color: isLatest
+                ? GameTheme.goldAccent
+                : Colors.black38,
               shape: BoxShape.circle,
             ),
           ),
@@ -462,8 +462,8 @@ class _LogEntry extends StatelessWidget {
               style: GameTheme.hudLogEntry.copyWith(
                 fontWeight: isLatest ? FontWeight.w500 : FontWeight.normal,
                 color: isLatest
-                    ? GameTheme.textDark
-                    : GameTheme.textDark.withValues(alpha: 0.7),
+                    ? Colors.black87
+                    : Colors.black.withValues(alpha: 0.7),
               ),
             ),
           ),

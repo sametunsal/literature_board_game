@@ -186,75 +186,84 @@ class _LibraryPenaltyDialogState extends ConsumerState<LibraryPenaltyDialog> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: _accent, width: 1.5),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                  decoration: const BoxDecoration(
-                    color: _ink,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(8)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.menu_book_rounded,
-                          color: Colors.amber.shade200, size: 22),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'KÜTÜPHANE NÖBETİ',
-                            style: GoogleFonts.crimsonText(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(height: 2, color: _accent),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-                    child: Column(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                    decoration: const BoxDecoration(
+                      color: _ink,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(8)),
+                    ),
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.local_library_rounded,
-                            color: _wood, size: 36),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Raflar arasında 2 tur boyunca bekleyeceksin.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.crimsonText(
-                            fontSize: 14,
-                            height: 1.4,
-                            color: _ink,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Sıra otomatik olarak geçiyor…',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: _accent,
-                            fontWeight: FontWeight.w600,
+                        Icon(Icons.menu_book_rounded,
+                            color: Colors.amber.shade200, size: 20),
+                        const SizedBox(width: 7),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'KÜTÜPHANE NÖBETİ',
+                              style: GoogleFonts.crimsonText(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Container(height: 2, color: _accent),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.local_library_rounded,
+                              color: _wood, size: 32),
+                          const SizedBox(height: 8),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Raflar arasında 2 tur\nboyunca bekleyeceksin.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.crimsonText(
+                                fontSize: 13,
+                                height: 1.35,
+                                color: _ink,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Sıra otomatik olarak geçiyor…',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                color: _accent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

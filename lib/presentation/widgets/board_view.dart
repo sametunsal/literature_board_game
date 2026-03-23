@@ -65,7 +65,11 @@ class _BoardViewState extends ConsumerState<BoardView> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Immersive fullscreen — hide system UI overlays completely
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+      overlays: [],
+    );
     // Force landscape orientation for game board
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,

@@ -1,4 +1,5 @@
-import 'dart:math';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,7 +18,7 @@ class ShopDialog extends ConsumerStatefulWidget {
 
 class _ShopDialogState extends ConsumerState<ShopDialog> {
   final QuoteRepository _quoteRepo = QuoteRepository();
-  final _random = Random();
+  final _random = math.Random();
 
   List<LiteraryQuoteModel> _dailyQuotes =
       []; // Rotating stock - only 6 quotes shown
@@ -68,18 +69,19 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
     final state = ref.watch(gameProvider);
     final player = state.currentPlayer;
     final ownedIds = player.collectedQuotes.toSet();
+    final size = MediaQuery.of(context).size;
+    final isLandscape = size.width > size.height;
 
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: BoxConstraints(
-          maxWidth: 500,
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-        ),
+        width: isLandscape
+            ? math.min(size.width * 0.42, 380.0)
+            : math.min(size.width * 0.88, 420.0),
+        height: isLandscape ? size.height * 0.92 : size.height * 0.85,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),

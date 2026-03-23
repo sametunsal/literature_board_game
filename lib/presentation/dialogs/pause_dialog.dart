@@ -72,25 +72,24 @@ class PauseDialog extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                 // HEADER ICON
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: tokens.accent.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.pause_circle_filled,
-                    size: 40,
+                    size: 28,
                     color: tokens.accent,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 // TITLE
                 FittedBox(
@@ -98,24 +97,24 @@ class PauseDialog extends ConsumerWidget {
                   child: Text(
                     "OYUN DURAKLATILDI",
                     style: GoogleFonts.playfairDisplay(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: tokens.textPrimary,
                       letterSpacing: 1,
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
 
                 // SUBTITLE
                 Text(
                   "Ne yapmak istersiniz?",
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: tokens.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
 
                 // THEME SELECTOR
                 _buildThemeSelector(
@@ -125,11 +124,11 @@ class PauseDialog extends ConsumerWidget {
                   isDarkMode,
                   currentPreset,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // DIVIDER
                 _buildDivider(tokens),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // RESUME BUTTON
                 GameButton(
@@ -142,7 +141,7 @@ class PauseDialog extends ConsumerWidget {
                     onResume();
                   },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 7),
 
                 // SETTINGS BUTTON
                 GameButton(
@@ -155,7 +154,7 @@ class PauseDialog extends ConsumerWidget {
                     onSettings();
                   },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 7),
 
                 // COLLECTION BUTTON
                 GameButton(
@@ -168,7 +167,7 @@ class PauseDialog extends ConsumerWidget {
                     onCollection();
                   },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 7),
 
                 // END GAME BUTTON
                 GameButton(
@@ -181,7 +180,7 @@ class PauseDialog extends ConsumerWidget {
                     onEndGame();
                   },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 7),
 
                 // EXIT BUTTON
                 GameButton(
@@ -194,8 +193,7 @@ class PauseDialog extends ConsumerWidget {
                     onExit();
                   },
                 ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -219,10 +217,10 @@ class PauseDialog extends ConsumerWidget {
     ThemePreset currentPreset,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
         color: tokens.surfaceAlt,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: tokens.border.withValues(alpha: 0.4),
           width: 1,
@@ -235,13 +233,13 @@ class PauseDialog extends ConsumerWidget {
           Text(
             "TEMA",
             style: GoogleFonts.poppins(
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w600,
               color: tokens.textSecondary,
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           // Options column
           Column(
             children: [
@@ -255,7 +253,7 @@ class PauseDialog extends ConsumerWidget {
                     .read(themeProvider.notifier)
                     .setPreset(ThemePreset.warmLibraryLight),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               _buildThemeOption(
                 label: "Karanlık Akademi",
                 icon: Icons.dark_mode,
@@ -289,12 +287,12 @@ class PauseDialog extends ConsumerWidget {
       child: AnimatedContainer(
         duration: MotionDurations.fast.safe,
         curve: MotionCurves.standard,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
               ? tokens.primary.withValues(alpha: isDarkMode ? 0.25 : 0.12)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
                 ? tokens.primary
@@ -302,27 +300,27 @@ class PauseDialog extends ConsumerWidget {
             width: isSelected ? 2 : 1,
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: 20,
+              size: 16,
               color: isSelected ? tokens.primary : tokens.textSecondary,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(width: 6),
             Text(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 color: isSelected ? tokens.primary : tokens.textSecondary,
               ),
             ),
             if (isSelected) ...[
-              const SizedBox(height: 4),
-              Icon(Icons.check_circle, size: 14, color: tokens.primary),
+              const SizedBox(width: 4),
+              Icon(Icons.check_circle, size: 12, color: tokens.primary),
             ],
           ],
         ),
