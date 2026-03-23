@@ -1,6 +1,9 @@
 # Local AI / editor config (machine-specific; do not commit secrets)
 .claude/settings.local.json
 
+# Docx files (keep locally, don't track in git)
+*.docx
+
 # Miscellaneous
 *.class
 *.log
