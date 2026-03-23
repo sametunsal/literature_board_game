@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import '../../models/game_card.dart';
 import '../../models/game_enums.dart';
 import '../../providers/game_notifier.dart';
@@ -152,7 +153,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                   // DESCRIPTION
                   Flexible(
                     child: SingleChildScrollView(
-                      child: Text(
+                      child: AutoSizeText(
                         card.description,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
@@ -160,6 +161,9 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                           color: GameTheme.textDark,
                           height: 1.5,
                         ),
+                        minFontSize: 12,
+                        maxLines: 6,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),

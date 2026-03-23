@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/quiz/option_button.dart';
 import '../../models/question.dart';
@@ -103,7 +104,9 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog>
       });
 
       // Play SFX exactly when color changes
-      AudioManager.instance.playSfx(isCorrect ? 'audio/correct.wav' : 'audio/wrong.wav');
+      AudioManager.instance.playSfx(
+        isCorrect ? 'audio/correct.wav' : 'audio/wrong.wav',
+      );
 
       if (!isCorrect) {
         // Trigger Shake Animation
@@ -167,127 +170,147 @@ class _ModernQuestionDialogState extends State<ModernQuestionDialog>
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Center(
-          child: ShakeWidget(
-            key: _shakeKey,
-            child: Container(
-              width: screenSize.width * 0.90,
-              constraints: BoxConstraints(
-                maxWidth: 400,
-                maxHeight: screenSize.height * 0.80,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF9F6), // Cream / Off-White
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 1. HEADER (Category Indicator)
-                      ClipPath(
-                        clipper: ZigZagClipper(),
-                        child: Container(
-                          height: 80,
-                          color: categoryColor,
-                          alignment: Alignment.center,
-                          child: Text(
-                            categoryTitle,
-                            style: GoogleFonts.alegreyaSansSc(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ),
+          child:
+              ShakeWidget(
+                    key: _shakeKey,
+                    child: Container(
+                      width: screenSize.width * 0.90,
+                      constraints: BoxConstraints(
+                        maxWidth: 400,
+                        maxHeight: screenSize.height * 0.80,
                       ),
-
-                      // 2. QUESTION BODY
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 100),
-                          child: Center(
-                            child: Text(
-                              widget.question.text,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.crimsonText(
-                                fontSize: 22,
-                                color: const Color(0xFF2C2C2C), // Dark Ink
-                                height: 1.3,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAF9F6), // Cream / Off-White
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 20,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // 1. HEADER (Category Indicator)
+                              ClipPath(
+                                clipper: ZigZagClipper(),
+                                child: Container(
+                                  height: 80,
+                                  color: categoryColor,
+                                  alignment: Alignment.center,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      categoryTitle,
+                                      style: GoogleFonts.alegreyaSansSc(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 1.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+
+                              // 2. QUESTION BODY
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  24,
+                                  24,
+                                  16,
+                                ),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    minHeight: 100,
+                                  ),
+                                  child: Center(
+                                    child: AutoSizeText(
+                                      widget.question.text,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.crimsonText(
+                                        fontSize: 22,
+                                        color: const Color(
+                                          0xFF2C2C2C,
+                                        ), // Dark Ink
+                                        height: 1.3,
+                                      ),
+                                      minFontSize: 14,
+                                      maxLines: 4,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // 3. OPTIONS LIST
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 8,
+                                ),
+                                child: Column(
+                                  children: List.generate(
+                                    widget.question.options.length,
+                                    (index) {
+                                      return _buildOptionButton(index);
+                                    },
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // 4. TIMER (Golden Ink Line)
+                              AnimatedBuilder(
+                                animation: _timerAnimation,
+                                builder: (context, child) {
+                                  // Color transition: Gold -> Orange -> Red
+                                  Color timerColor;
+                                  if (_timerAnimation.value > 0.6) {
+                                    timerColor = const Color(
+                                      0xFFFFD700,
+                                    ); // Gold
+                                  } else if (_timerAnimation.value > 0.3) {
+                                    timerColor = Colors.orange;
+                                  } else {
+                                    timerColor = Colors.red;
+                                  }
+
+                                  return Container(
+                                    height: 4,
+                                    width: double.infinity,
+                                    alignment: Alignment.centerLeft,
+                                    child: FractionallySizedBox(
+                                      widthFactor: _timerAnimation.value,
+                                      child: Container(color: timerColor),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
-
-                      // 3. OPTIONS LIST
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 8,
-                        ),
-                        child: Column(
-                          children: List.generate(
-                            widget.question.options.length,
-                            (index) {
-                              return _buildOptionButton(index);
-                            },
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // 4. TIMER (Golden Ink Line)
-                      AnimatedBuilder(
-                        animation: _timerAnimation,
-                        builder: (context, child) {
-                          // Color transition: Gold -> Orange -> Red
-                          Color timerColor;
-                          if (_timerAnimation.value > 0.6) {
-                            timerColor = const Color(0xFFFFD700); // Gold
-                          } else if (_timerAnimation.value > 0.3) {
-                            timerColor = Colors.orange;
-                          } else {
-                            timerColor = Colors.red;
-                          }
-
-                          return Container(
-                            height: 4,
-                            width: double.infinity,
-                            alignment: Alignment.centerLeft,
-                            child: FractionallySizedBox(
-                              widthFactor: _timerAnimation.value,
-                              child: Container(color: timerColor),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          )
-              .animate()
-              .slideY(
-                begin: 0.5,
-                end: 0,
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOutBack,
-              )
-              .fadeIn(duration: const Duration(milliseconds: 400)),
+                    ),
+                  )
+                  .animate()
+                  .slideY(
+                    begin: 0.5,
+                    end: 0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutBack,
+                  )
+                  .fadeIn(duration: const Duration(milliseconds: 400)),
         ),
       ),
     );

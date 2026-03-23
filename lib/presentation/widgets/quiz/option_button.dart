@@ -97,7 +97,10 @@ class _OptionButtonState extends State<OptionButton> {
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -111,6 +114,8 @@ class _OptionButtonState extends State<OptionButton> {
                     fontWeight: FontWeight.w600,
                     color: textColor,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),

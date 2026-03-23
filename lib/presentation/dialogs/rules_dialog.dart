@@ -56,13 +56,20 @@ class RulesDialog extends ConsumerWidget {
                       children: [
                         Icon(Icons.menu_book, color: tokens.accent, size: 32),
                         const SizedBox(width: 12),
-                        Text(
-                          "Oyun Kuralları",
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: tokens.accent,
-                            letterSpacing: 1.5,
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              "Oyun Kuralları",
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: tokens.accent,
+                                letterSpacing: 1.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -148,6 +155,8 @@ class RulesDialog extends ConsumerWidget {
                       color: tokens.textSecondary,
                       fontStyle: FontStyle.italic,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
@@ -188,12 +197,19 @@ class RulesDialog extends ConsumerWidget {
                 child: Icon(icon, color: tokens.accent, size: 24),
               ),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: tokens.textPrimary,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: tokens.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ],
@@ -223,6 +239,8 @@ class RulesDialog extends ConsumerWidget {
                         color: tokens.textSecondary,
                         height: 1.5,
                       ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

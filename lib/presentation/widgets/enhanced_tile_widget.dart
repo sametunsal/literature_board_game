@@ -1,12 +1,10 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 import '../../core/motion/motion_constants.dart';
 import '../../models/board_tile.dart';
-import '../../models/difficulty.dart';
 import '../../models/tile_type.dart';
 
+/// Kutucuk widget'ı - tüm içerik FittedBox ile sığdırılır, overflow imkansız.
 class EnhancedTileWidget extends StatefulWidget {
   final BoardTile tile;
   final double width;
@@ -46,395 +44,246 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         scale: scale,
         duration: MotionDurations.fast.safe,
         curve: MotionCurves.emphasized,
-        child: AnimatedContainer(
-          duration: MotionDurations.fast.safe,
-          curve: MotionCurves.standard,
+        child: Container(
           width: widget.width,
           height: widget.height,
+          clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: widget.isSelected ? Colors.blue : Colors.grey.shade300,
               width: widget.isSelected ? 2.0 : 1.0,
             ),
             boxShadow: [
+              if (widget.isSelected)
+                BoxShadow(
+                  color: Colors.blue.withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
               BoxShadow(
-                color: widget.isSelected
-                    ? Colors.blue.withValues(alpha: 0.3)
-                    : Colors.transparent,
-                blurRadius: _isPressed ? 8 : 0,
-                spreadRadius: _isPressed ? 2 : 0,
-              ),
-              BoxShadow(
-                color: widget.isSelected
-                    ? Colors.blue.withValues(alpha: 0.2)
-                    : (widget.isHovered
-                        ? Colors.blue.withValues(alpha: 0.1)
-                        : Colors.black.withValues(alpha: 0.1)),
-                blurRadius: widget.isSelected
-                    ? 8.0
-                    : (widget.isHovered ? 6.0 : 3.0),
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
-          clipBehavior: Clip.hardEdge,
-          child: _buildContent(),
+          child: _buildTileContent(),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildTileContent() {
+    // Köşe ve özel kutucuklar
+    if (_isSpecialTile()) {
+      return _buildSpecialTile();
+    }
+    // Kategori kutucukları
+    return _buildCategoryTile();
+  }
+
+  bool _isSpecialTile() {
+    return widget.tile.type == TileType.start ||
+        widget.tile.type == TileType.shop ||
+        widget.tile.type == TileType.library ||
+        widget.tile.type == TileType.signingDay ||
+        widget.tile.type == TileType.chance ||
+        widget.tile.type == TileType.fate ||
+        widget.tile.type == TileType.corner;
+  }
+
+  /// Köşe ve özel kutucuklar - ikon + etiket
+  Widget _buildSpecialTile() {
+    final IconData icon;
+    final Color iconColor;
+    final String label;
+
     switch (widget.tile.type) {
       case TileType.start:
-        return _buildCornerTileContent(
-          icon: Icons.play_arrow,
-          iconColor: Colors.green.shade700,
-          label: 'BAŞLANGIÇ',
-        );
+        icon = Icons.play_arrow_rounded;
+        iconColor = Colors.green.shade600;
+        label = 'BAŞLA';
       case TileType.shop:
-        return _buildCornerTileContent(
-          icon: Icons.local_cafe,
-          iconColor: Colors.brown.shade700,
-          label: 'KIRAATHANE',
-        );
+        icon = Icons.local_cafe_rounded;
+        iconColor = Colors.brown.shade600;
+        label = 'KIRAATHANE';
       case TileType.library:
-        return _buildCornerTileContent(
-          icon: Icons.local_library,
-          iconColor: Colors.teal.shade700,
-          label: 'KÜTÜPHANE',
-        );
+        icon = Icons.local_library_rounded;
+        iconColor = Colors.teal.shade600;
+        label = 'KÜTÜPHANE';
       case TileType.signingDay:
-        return _buildCornerTileContent(
-          icon: Icons.edit_note,
-          iconColor: Colors.purple.shade700,
-          label: 'İMZA GÜNÜ',
-        );
+        icon = Icons.edit_note_rounded;
+        iconColor = Colors.purple.shade600;
+        label = 'İMZA GÜNÜ';
       case TileType.chance:
-        return _buildCornerTileContent(
-          icon: Icons.casino,
-          iconColor: Colors.amber.shade700,
-          label: 'ŞANS',
-        );
+        icon = Icons.casino_rounded;
+        iconColor = Colors.amber.shade700;
+        label = 'ŞANS';
       case TileType.fate:
-        return _buildCornerTileContent(
-          icon: Icons.auto_awesome,
-          iconColor: Colors.deepPurple.shade700,
-          label: 'KADER',
-        );
-      case TileType.corner:
-        return _buildCornerTileContent(
-          icon: Icons.star,
-          iconColor: Colors.orange.shade700,
-          label: widget.tile.name,
-        );
+        icon = Icons.auto_awesome_rounded;
+        iconColor = Colors.deepPurple.shade600;
+        label = 'KADER';
       default:
-        break;
+        icon = Icons.star_rounded;
+        iconColor = Colors.orange.shade600;
+        label = widget.tile.name;
     }
 
-    final groupColor = _getGroupColor();
-    Widget colorStrip = Container(color: groupColor);
-    Widget textContent = _buildStandardTileContent();
-
-    switch (widget.quarterTurns) {
-      case 0:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Padding(
+      padding: const EdgeInsets.all(2),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-                height: math.max(4, widget.height * 0.13), child: colorStrip),
-            Expanded(child: ClipRect(child: textContent)),
-          ],
-        );
-      case 1:
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-                width: math.max(4, widget.width * 0.13), child: colorStrip),
-            Expanded(
-              child: ClipRect(
-                child: RotatedBox(quarterTurns: 3, child: textContent),
+            Icon(icon, size: 28, color: iconColor),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+                height: 1.1,
               ),
             ),
           ],
-        );
-      case 2:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: ClipRect(child: textContent)),
-            SizedBox(
-                height: math.max(4, widget.height * 0.13), child: colorStrip),
-          ],
-        );
-      case 3:
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRect(
-                child: RotatedBox(quarterTurns: 3, child: textContent),
-              ),
-            ),
-            SizedBox(
-                width: math.max(4, widget.width * 0.13), child: colorStrip),
-          ],
-        );
-      default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-                height: math.max(4, widget.height * 0.13), child: colorStrip),
-            Expanded(child: ClipRect(child: textContent)),
-          ],
-        );
-    }
-  }
-
-  /// Tile depth map for isometric perspective compensation.
-  /// 0 = farthest (top-left after transform), 13 = nearest (bottom-right).
-  static const _depthMap = <int, int>{
-    0: 13, 1: 12, 2: 11, 3: 10, 4: 9, 5: 8, 6: 7,
-    7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1, 13: 0,
-    14: 1, 15: 2, 16: 3, 17: 4, 18: 5, 19: 6,
-    20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
-  };
-
-  double _perspectiveScale() {
-    final id = int.tryParse(widget.tile.id) ?? 0;
-    final depth = _depthMap[id] ?? 7;
-    return 0.88 + (1.0 - depth / 13.0) * 0.24;
-  }
-
-  /// Per-tile adaptive sizing.  Accounts for tile dimensions, word
-  /// structure and isometric foreshortening.  Each word gets its own
-  /// line so `AutoSizeText` never has to split a word mid-line.
-  _TileTextParams _computeTextParams() {
-    final name = widget.tile.name;
-    final words =
-        name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
-    final wordCount = words.length;
-    final longestWord = words.fold<int>(0, (m, w) => math.max(m, w.length));
-
-    final isVerticalEdge =
-        widget.quarterTurns == 1 || widget.quarterTurns == 3;
-    final contentW = isVerticalEdge ? widget.height : widget.width;
-    final contentH = isVerticalEdge ? widget.width : widget.height;
-    final usableW = math.max(20.0, contentW - 8);
-    final usableH = math.max(20.0, contentH - 6);
-    final pScale = _perspectiveScale();
-
-    // Keep lines bounded for tiny perspective tiles.
-    final int maxLines = wordCount.clamp(1, 4);
-
-    // Base font from the width available for the longest word,
-    // scaled by perspective depth so far-away tiles stay legible.
-    final charWidth = usableW / math.max(longestWord, 1);
-    final lineHeight = usableH / maxLines;
-    final baseFont = math.min(charWidth * 1.55, lineHeight * 0.72) * pScale;
-
-    final showDifficultyTag =
-        widget.tile.type == TileType.category &&
-        (usableH > 34) &&
-        (pScale > 0.92);
-
-    return _TileTextParams(
-      maxFont: baseFont.clamp(6.5, 15.0),
-      minFont: (baseFont * 0.55).clamp(4.5, 10.0),
-      maxLines: maxLines,
-      showDifficultyTag: showDifficultyTag,
-    );
-  }
-
-  Widget _buildStandardTileContent() {
-    final params = _computeTextParams();
-    final displayName = _formatDisplayName(widget.tile.name, params.maxLines);
-    final showDifficulty = params.showDifficultyTag &&
-        widget.tile.category != null &&
-        widget.tile.category!.isNotEmpty &&
-        widget.tile.type == TileType.category;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final availableH = constraints.maxHeight;
-        final vertPad = 2.0;
-        final difficultyH = showDifficulty ? 9.0 : 0.0;
-        final canFitDifficulty =
-            showDifficulty && (availableH - vertPad * 2 - difficultyH > 14);
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 3, vertical: vertPad),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Center(
-                  child: AutoSizeText(
-                    displayName,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: params.maxFont,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                      height: 1.1,
-                    ),
-                    minFontSize: params.minFont,
-                    maxLines: params.maxLines,
-                    stepGranularity: 0.25,
-                    wrapWords: false,
-                    softWrap: true,
-                    overflow: TextOverflow.clip,
-                  ),
-                ),
-              ),
-              if (canFitDifficulty)
-                Text(
-                  widget.tile.difficulty.displayName,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 6,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black45,
-                    height: 1.0,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.clip,
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Put every word on its own line so AutoSizeText never has to break
-  /// a word.  For 5+ words we pair short words together to save space.
-  String _formatDisplayName(String name, int maxLines) {
-    final words =
-        name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
-    if (words.isEmpty) return '';
-
-    // Start with one word per line.
-    final lines = List<String>.from(words);
-    // If lines exceed maxLines, merge last words into previous lines.
-    while (lines.length > maxLines) {
-      final last = lines.removeLast();
-      lines[lines.length - 1] = '${lines.last} $last';
-    }
-    return lines.join('\n');
-  }
-
-  Widget _buildCornerTileContent({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-  }) {
-    final shortSide = math.min(widget.width, widget.height);
-    return ClipRect(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(2),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon,
-                    size: math.max(16, shortSide * 0.42), color: iconColor),
-                SizedBox(height: shortSide * 0.04),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
   }
 
-  Color _getGroupColor() {
-    final id = int.tryParse(widget.tile.id) ?? 0;
-    switch (id) {
-      case 0:
-        return Colors.green.shade500;
-      case 1:
-        return Colors.blue.shade500;
-      case 2:
-        return Colors.purple.shade400;
-      case 3:
-        return Colors.orange.shade400;
-      case 4:
-        return Colors.red.shade400;
-      case 5:
-        return Colors.teal.shade400;
-      case 6:
-        return Colors.pink.shade400;
-      case 7:
-        return Colors.indigo.shade400;
-      case 8:
-        return Colors.brown.shade400;
-      case 9:
-        return Colors.grey.shade400;
-      case 10:
-        return Colors.blue.shade300;
-      case 11:
-        return Colors.purple.shade300;
-      case 12:
-        return Colors.orange.shade300;
-      case 13:
-        return Colors.red.shade300;
-      case 14:
-        return Colors.teal.shade300;
-      case 15:
-        return Colors.amber.shade300;
-      case 16:
-        return Colors.brown.shade300;
-      case 20:
-        return Colors.teal.shade600;
-      case 21:
-        return Colors.indigo.shade500;
-      case 22:
-        return Colors.deepOrange.shade600;
-      case 23:
-        return Colors.pink.shade600;
-      case 24:
-        return Colors.green.shade600;
-      case 25:
-        return Colors.blueGrey.shade600;
-      case 17:
-        return Colors.deepPurple.shade400;
-      case 18:
-        return Colors.cyan.shade400;
-      case 19:
-        return Colors.lime.shade400;
+  /// Kategori kutucukları - renk şeridi + isim
+  Widget _buildCategoryTile() {
+    final color = _getTileColor();
+    final isVertical = widget.quarterTurns == 1 || widget.quarterTurns == 3;
+
+    // Renk şeridi kalınlığı
+    const stripThickness = 5.0;
+
+    // İçerik widget'ı - sadece isim (FittedBox ile)
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            _formatName(widget.tile.name),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+              height: 1.15,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Yatay kutucuklar için döndürülmüş içerik
+    final rotatedContent = isVertical
+        ? RotatedBox(quarterTurns: 3, child: content)
+        : content;
+
+    // Kenar pozisyonuna göre renk şeridi yerleşimi
+    switch (widget.quarterTurns) {
+      case 0: // Alt kenar - şerit üstte
+        return Column(
+          children: [
+            Container(height: stripThickness, color: color),
+            Expanded(child: rotatedContent),
+          ],
+        );
+      case 1: // Sağ kenar - şerit solda
+        return Row(
+          children: [
+            Container(width: stripThickness, color: color),
+            Expanded(child: rotatedContent),
+          ],
+        );
+      case 2: // Üst kenar - şerit altta
+        return Column(
+          children: [
+            Expanded(child: rotatedContent),
+            Container(height: stripThickness, color: color),
+          ],
+        );
+      case 3: // Sol kenar - şerit sağda
+        return Row(
+          children: [
+            Expanded(child: rotatedContent),
+            Container(width: stripThickness, color: color),
+          ],
+        );
       default:
-        return Colors.grey.shade200;
+        return Column(
+          children: [
+            Container(height: stripThickness, color: color),
+            Expanded(child: rotatedContent),
+          ],
+        );
     }
   }
-}
 
-class _TileTextParams {
-  final double maxFont;
-  final double minFont;
-  final int maxLines;
-  final bool showDifficultyTag;
-  const _TileTextParams({
-    required this.maxFont,
-    required this.minFont,
-    required this.maxLines,
-    required this.showDifficultyTag,
-  });
+  /// İsmi satırlara böl - her kelime kendi satırında
+  String _formatName(String name) {
+    // Tek kelimelik isimler
+    if (!name.contains(' ') && !name.contains('-')) {
+      return name;
+    }
+
+    // Çok uzun tek kelimeler için kısaltma
+    final words = name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
+    
+    if (words.isEmpty) return name;
+    if (words.length == 1) return words.first;
+
+    // Her kelimeyi ayrı satıra koy (max 3 satır)
+    if (words.length <= 3) {
+      return words.join('\n');
+    }
+
+    // 3'ten fazla kelime varsa, ilk 2 ve son kelimeleri grupla
+    return '${words[0]}\n${words.sublist(1, words.length - 1).join(' ')}\n${words.last}';
+  }
+
+  Color _getTileColor() {
+    final id = int.tryParse(widget.tile.id) ?? 0;
+    
+    // Kategori renklerini tile ID'sine göre belirle
+    final colors = [
+      Colors.green.shade500,    // 0
+      Colors.blue.shade500,     // 1
+      Colors.purple.shade500,   // 2
+      Colors.orange.shade500,   // 3
+      Colors.red.shade500,      // 4
+      Colors.teal.shade500,     // 5
+      Colors.pink.shade500,     // 6
+      Colors.indigo.shade500,   // 7
+      Colors.brown.shade500,    // 8
+      Colors.cyan.shade500,     // 9
+      Colors.amber.shade600,    // 10
+      Colors.deepPurple.shade500, // 11
+      Colors.lightGreen.shade600, // 12
+      Colors.deepOrange.shade500, // 13
+      Colors.blueGrey.shade500, // 14
+      Colors.lime.shade600,     // 15
+      Colors.indigo.shade400,   // 16
+      Colors.pink.shade400,     // 17
+      Colors.teal.shade400,     // 18
+      Colors.amber.shade500,    // 19
+      Colors.blue.shade400,     // 20
+      Colors.purple.shade400,   // 21
+      Colors.orange.shade400,   // 22
+      Colors.red.shade400,      // 23
+      Colors.green.shade400,    // 24
+      Colors.brown.shade400,    // 25
+    ];
+
+    return colors[id % colors.length];
+  }
 }
