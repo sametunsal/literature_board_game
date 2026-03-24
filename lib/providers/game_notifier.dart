@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player.dart';
@@ -18,6 +19,7 @@ import '../core/managers/audio_manager.dart';
 import '../core/services/turn_order_service.dart';
 import '../core/services/dice_service.dart';
 import '../core/services/movement_service.dart';
+import '../core/services/economy_service.dart';
 import 'dialog_provider.dart';
 import 'repository_providers.dart';
 
@@ -174,6 +176,7 @@ class GameNotifier extends StateNotifier<GameState> {
   final TurnOrderService _turnOrderService = TurnOrderService();
   final DiceService _diceService = DiceService();
   final MovementService _movementService = MovementService();
+  final EconomyService _economyService = const EconomyService();
   final _random = Random();
   Timer? _animationTimer;
   final List<Timer> _activeTimers = [];
@@ -209,6 +212,46 @@ class GameNotifier extends StateNotifier<GameState> {
       _isProcessing &&
       (state.phase == GamePhase.rollingForOrder ||
           state.phase == GamePhase.tieBreaker);
+
+  @visibleForTesting
+  int computeAdjustedReward({
+    required int baseStars,
+    required int promotionReward,
+    required int currentStars,
+    required int leaderStars,
+    required int consecutiveDoubles,
+  }) {
+    final compressedBase = _economyService.applyLeadCompression(
+      reward: baseStars,
+      currentStars: currentStars,
+      leaderStars: leaderStars,
+    );
+    final decayedBase = _economyService.applyDoubleRewardDecay(
+      reward: compressedBase,
+      consecutiveDoubles: consecutiveDoubles,
+    );
+    final underdogBonus = _economyService.applyUnderdogBonus(
+      baseStars: decayedBase,
+      currentStars: currentStars,
+      leaderStars: leaderStars,
+    );
+    return decayedBase + promotionReward + underdogBonus;
+  }
+
+  @visibleForTesting
+  int computeLeadCompressionTurnBonus({
+    required int currentStars,
+    required int leaderStars,
+    required bool isSkipped,
+  }) {
+    if (isSkipped) return 0;
+    final adjusted = _economyService.applyLeadCompression(
+      reward: GameConstants.underdogBonusStars,
+      currentStars: currentStars,
+      leaderStars: leaderStars,
+    );
+    return (adjusted - GameConstants.underdogBonusStars).clamp(0, 9999);
+  }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // PAUSE MECHANISM
@@ -535,11 +578,11 @@ class GameNotifier extends StateNotifier<GameState> {
       int newConsecutive = isDouble ? state.consecutiveDoubles + 1 : 0;
       _logBot('Consecutive doubles: $newConsecutive');
 
-      // CASE A: 3rd Consecutive Double -> Jail
-      if (newConsecutive >= 3) {
-        _logBot('CASE A: 3rd consecutive double -> Jail');
+      // CASE A: Consecutive double cap reached -> Jail
+      if (newConsecutive > GameConstants.maxConsecutiveDoubles) {
+        _logBot('CASE A: consecutive double cap reached -> Jail');
         _addLog(
-          "ðŸš¨ 3. Kez Ã‡ift! KÃ¼tÃ¼phaneye (Hapse) gidiyorsun.",
+          "ðŸš¨ Çok fazla çift! KÃ¼tÃ¼phaneye (Hapse) gidiyorsun.",
           type: 'error',
         );
 
@@ -577,6 +620,12 @@ class GameNotifier extends StateNotifier<GameState> {
           "ðŸŽ² Ã‡ift AttÄ±n ($newConsecutive. Kez)! Tekrar oyna.",
           type: 'dice',
         );
+        if (newConsecutive == GameConstants.maxConsecutiveDoubles) {
+          _addLog(
+            "⚖️ Denge: 2. çift sonrası ödül bonuslarında azalma aktif.",
+            type: 'warning',
+          );
+        }
 
         // Update state with dice results and consecutive count
         state = state.copyWith(
@@ -1168,27 +1217,19 @@ class GameNotifier extends StateNotifier<GameState> {
               'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
         }
 
-        int totalStars = baseStars + promotionReward;
-
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // CATCH-UP MECHANIC (Underdog Bonus) - Bot version
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         final leaderStars = state.players
             .map((p) => p.stars)
             .reduce((a, b) => a > b ? a : b);
-        final bool isUnderdog =
-            player.stars < (leaderStars * GameConstants.underdogThreshold);
-
-        if (isUnderdog) {
-          final underdogBonus =
-              (baseStars * (GameConstants.underdogMultiplier - 1))
-                  .round()
-                  .clamp(GameConstants.underdogBonusStars, baseStars);
-          totalStars += underdogBonus;
-          _addLog(
-            'ğŸ”¥ Bot: Mazlum Bonusu! +$underdogBonus â­',
-            type: 'success',
-          );
+        final totalStars = computeAdjustedReward(
+          baseStars: baseStars,
+          promotionReward: promotionReward,
+          currentStars: player.stars,
+          leaderStars: leaderStars,
+          consecutiveDoubles: state.consecutiveDoubles,
+        );
+        final derivedBonus = totalStars - baseStars - promotionReward;
+        if (derivedBonus > 0) {
+          _addLog('ğŸ”¥ Bot: Denge Bonusu! +$derivedBonus â­', type: 'success');
         }
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1336,27 +1377,20 @@ class GameNotifier extends StateNotifier<GameState> {
               'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
         }
 
-        int totalStars = baseStars + promotionReward;
-
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // CATCH-UP MECHANIC (Underdog Bonus)
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // Get leader's star count
         final leaderStars = state.players
             .map((p) => p.stars)
             .reduce((a, b) => a > b ? a : b);
-        final bool isUnderdog =
-            player.stars < (leaderStars * GameConstants.underdogThreshold);
-
-        if (isUnderdog) {
-          // Apply underdog multiplier or bonus
-          final underdogBonus =
-              (baseStars * (GameConstants.underdogMultiplier - 1))
-                  .round()
-                  .clamp(GameConstants.underdogBonusStars, baseStars);
-          totalStars += underdogBonus;
+        final totalStars = computeAdjustedReward(
+          baseStars: baseStars,
+          promotionReward: promotionReward,
+          currentStars: player.stars,
+          leaderStars: leaderStars,
+          consecutiveDoubles: state.consecutiveDoubles,
+        );
+        final derivedBonus = totalStars - baseStars - promotionReward;
+        if (derivedBonus > 0) {
           _addLog(
-            'ğŸ”¥ Mazlum Bonusu! +$underdogBonus â­ (Geriden gelme bonusu)',
+            'ğŸ”¥ Denge Bonusu! +$derivedBonus â­ (Geriden gelme bonusu)',
             type: 'success',
           );
         }
@@ -1674,9 +1708,14 @@ class GameNotifier extends StateNotifier<GameState> {
           return;
 
         case CardEffectType.loseStarsPercentage:
-          int percentage = card.value; // e.g., 50 means 50%
-          int loss = (player.stars * percentage / 100).round();
-          int newStars = player.stars - loss;
+          final percentage = _economyService.applyPercentLossCap(
+            requestedPercent: card.value,
+          );
+          final loss = (player.stars * percentage / 100).round();
+          final newStars = _economyService.normalizeTransferFloor(
+            currentStars: player.stars,
+            delta: -loss,
+          );
           _updateStars(player, newStars);
           _addLog(
             "ğŸ¤– Bot: ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
@@ -1885,9 +1924,14 @@ class GameNotifier extends StateNotifier<GameState> {
             return;
 
           case CardEffectType.loseStarsPercentage:
-            int percentage = card.value; // e.g., 50 means 50%
-            int loss = (player.stars * percentage / 100).round();
-            int newStars = player.stars - loss;
+            final percentage = _economyService.applyPercentLossCap(
+              requestedPercent: card.value,
+            );
+            final loss = (player.stars * percentage / 100).round();
+            final newStars = _economyService.normalizeTransferFloor(
+              currentStars: player.stars,
+              delta: -loss,
+            );
             _updateStars(player, newStars);
             _addLog(
               "ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
@@ -2019,6 +2063,14 @@ class GameNotifier extends StateNotifier<GameState> {
       int next = (state.currentPlayerIndex + 1) % state.players.length;
       final nextPlayer = state.players[next];
       bool isSkipped = nextPlayer.turnsToSkip > 0;
+      final leaderStars = state.players
+          .map((p) => p.stars)
+          .reduce((a, b) => a > b ? a : b);
+      final turnEndCompressionBonus = computeLeadCompressionTurnBonus(
+        currentStars: nextPlayer.stars,
+        leaderStars: leaderStars,
+        isSkipped: isSkipped,
+      );
 
       ref.read(dialogProvider.notifier).hideCard();
 
@@ -2037,6 +2089,19 @@ class GameNotifier extends StateNotifier<GameState> {
           isDiceRolled: false,
           isDoubleTurn: false,
         );
+
+        if (turnEndCompressionBonus > 0) {
+          final boostedPlayers = List<Player>.from(state.players);
+          final boosted = boostedPlayers[next].copyWith(
+            stars: boostedPlayers[next].stars + turnEndCompressionBonus,
+          );
+          boostedPlayers[next] = boosted;
+          state = state.copyWith(players: boostedPlayers);
+          _addLog(
+            "🔄 Recenter: ${boosted.name} +$turnEndCompressionBonus ⭐ (catch-up)",
+            type: 'success',
+          );
+        }
 
         if (isSkipped) {
           Future.microtask(_handleSkippedTurnEntry);

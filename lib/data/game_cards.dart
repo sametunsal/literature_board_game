@@ -7,31 +7,31 @@ class GameCards {
     // Telif ödülleri (düşük miktarlarda, 0'dan başlayan oyuncular için)
     GameCard(
       description:
-          "Telif hakkı ödemesi aldın! +10 Yıldız kazandın.",
+          "Telif hakkı ödemesi aldın! +8 Yıldız kazandın.",
+      type: CardType.sans,
+      effectType: CardEffectType.moneyChange,
+      value: 8,
+    ),
+    GameCard(
+      description:
+          "Küçük bir edebi ödül kazandın. +10 Yıldız!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
       value: 10,
     ),
     GameCard(
       description:
-          "Küçük bir edebi ödül kazandın. +15 Yıldız!",
+          "Makalen dergide yayınlandı. +12 Yıldız kazandın.",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: 15,
-    ),
-    GameCard(
-      description:
-          "Makalen dergide yayınlandı. +20 Yıldız kazandın.",
-      type: CardType.sans,
-      effectType: CardEffectType.moneyChange,
-      value: 20,
+      value: 12,
     ),
     GameCard(
       description:
           "İlham perisi geldi! 2 kare ileri git.",
       type: CardType.sans,
       effectType: CardEffectType.moveRelative,
-      value: 2,
+      value: 1,
     ),
     GameCard(
       description:
@@ -52,7 +52,7 @@ class GameCards {
           "Okuyucularından güzel mektuplar aldın. +10 Yıldız motivasyon!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: 10,
+      value: 8,
     ),
     GameCard(
       description:
@@ -63,10 +63,10 @@ class GameCards {
     ),
     GameCard(
       description:
-          "Yayınevi送nden küçük bir avans geldi. +15 Yıldız!",
+          "Yayınevinden küçük bir avans geldi. +10 Yıldız!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
-      value: 15,
+      value: 10,
     ),
   ];
 
@@ -94,53 +94,53 @@ class GameCards {
           "Yanlış anlaşılma yüzünden tekzip yayınladın. 2 kare geri git.",
       type: CardType.kader,
       effectType: CardEffectType.moveRelative,
-      value: -2,
+      value: -1,
     ),
     GameCard(
       description:
           "Eserin eleştirildi. 3 kare geri çekil.",
       type: CardType.kader,
       effectType: CardEffectType.moveRelative,
-      value: -3,
+      value: -2,
     ),
 
     // Yüzdeli kayıplar (0 olduğunda güvenli)
     GameCard(
       description:
-          "Cüzdanını düşürdün. Mevcut yıldızlarının yarısını kaybettin.",
+          "Cüzdanını düşürdün. Mevcut yıldızlarının %40'ını kaybettin.",
       type: CardType.kader,
       effectType: CardEffectType.loseStarsPercentage,
-      value: 50, // 50% kayıp
+      value: 40, // cap ile uyumlu üst sınır
     ),
     GameCard(
       description:
-          "Kötü bir yatırım yaptın. Yıldızlarının %40'ını kaybettin.",
+          "Kötü bir yatırım yaptın. Yıldızlarının %30'unu kaybettin.",
       type: CardType.kader,
       effectType: CardEffectType.loseStarsPercentage,
-      value: 40, // 40% kayıp
+      value: 30,
     ),
 
     // Küçük düz cezalar (minimum 0 koruması ile)
     GameCard(
       description:
-          "Kahve faturası öde. 5 Yıldız. (Yıldızın yoksa 0 olur)",
+          "Kahve faturası öde. 4 Yıldız. (Yıldızın yoksa 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
-      value: -5,
+      value: -4,
     ),
     GameCard(
       description:
-          "Kırtasiye masrafı. 8 Yıldız öde. (Yetersiz bakiyede 0 olur)",
+          "Kırtasiye masrafı. 6 Yıldız öde. (Yetersiz bakiyede 0 olur)",
+      type: CardType.kader,
+      effectType: CardEffectType.moneyChange,
+      value: -6,
+    ),
+    GameCard(
+      description:
+          "Kütüphane cezası. 8 Yıldız öde. (Yetersiz bakiyede 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
       value: -8,
-    ),
-    GameCard(
-      description:
-          "Kütüphane cezası. 10 Yıldız öde. (Yetersiz bakiyede 0 olur)",
-      type: CardType.kader,
-      effectType: CardEffectType.moneyChange,
-      value: -10,
     ),
   ];
 }

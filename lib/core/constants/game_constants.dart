@@ -55,7 +55,8 @@ class GameConstants {
   // ═══════════════════════════════════════════════════════════════════
   static const int passingStartBonus =
       5; // Stars awarded when passing start (reduced from 50)
-  static const int maxConsecutiveDoubles = 3; // Maximum doubles before penalty
+  static const int maxConsecutiveDoubles = 2; // Soft cap before reward decay
+  static const double doubleDecayAfterSecond = 0.5;
 
   // ═════════════════════════════════════════════════════════════════════
   // DICE CONFIGURATION
@@ -75,10 +76,13 @@ class GameConstants {
   // Correct answers required for each promotion
   static const int answersRequiredForPromotion = 3;
 
-  // Star Rewards for correct answers based on tile difficulty
-  static const int easyStarReward = 5; // Stars per correct easy answer
-  static const int mediumStarReward = 10; // Stars per correct medium answer
-  static const int hardStarReward = 15; // Stars per correct hard answer
+  // Legacy aliases preserved for backward compatibility.
+  @Deprecated('Use rewardEasy instead.')
+  static const int easyStarReward = rewardEasy;
+  @Deprecated('Use rewardMedium instead.')
+  static const int mediumStarReward = rewardMedium;
+  @Deprecated('Use rewardHard instead.')
+  static const int hardStarReward = rewardHard;
 
   // Promotion rewards (multiplier based on new rank)
   // Çırak = 1x, Kalfa = 2x, Usta = 3x
@@ -105,6 +109,13 @@ class GameConstants {
   static const int underdogBonusStars = 3; // Fixed bonus for underdog
   static const double underdogMultiplier =
       1.5; // Reward multiplier for underdog
+  static const int leadCompressionThreshold = 15;
+  static const double trailingBoostScale = 1.2;
+
+  // Target expected values for deck balancing.
+  static const double targetChanceCardEV = 8.0;
+  static const double targetFateCardEV = -8.0;
+  static const int maxPercentLoss = 40;
 
   // ═══════════════════════════════════════════════════════════════════
   // QUOTE DROP RATE (Progression Bonus)

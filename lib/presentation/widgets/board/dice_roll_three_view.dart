@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/animation.dart';
 import '../../../core/constants/game_constants.dart';
 
 /// Gerçekçi 3D zar animasyonu - büyük, kare orantılı, görünür dönüş.
@@ -46,7 +47,7 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
     final h = math.max(widget.height, 1.0);
     
     // Daha büyük zarlar - ekranın önemli bir kısmını kaplasın
-    final dieSize = math.min(w * 0.28, h * 0.50).clamp(45.0, 80.0);
+    final dieSize = math.min(w * 0.22, h * 0.40).clamp(35.0, 65.0);
     final gap = dieSize * 0.4;
 
     return SizedBox(
@@ -126,26 +127,31 @@ class _AnimatedDie extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rng = math.Random(seed * 1000 + (progress * 50).floor());
-    
-    // Görüntülenecek değer
-    final displayValue = progress < 0.75 
-        ? rng.nextInt(6) + 1 
-        : finalValue.clamp(1, 6);
+    final clampedFinalValue = finalValue.clamp(1, 6);
 
-    // Dönüş açıları - gerçekçi 3D rotasyon
-    // Başlangıçta hızlı dönüş, sonra yavaşlama
-    final spinFactor = progress < 0.75 
-        ? math.pow(1 - progress / 0.75, 2) // Yavaşlayan dönüş
-        : 0.0;
-    
-    // Toplam dönüş miktarı (birkaç tam tur)
-    final totalSpinX = spinFactor * math.pi * 4 * (seed == 1 ? 1 : 1.2);
-    final totalSpinY = spinFactor * math.pi * 3 * (seed == 1 ? 1.1 : 0.9);
-    
+    // Hedef rotasyon - final değerin olduğu yüzü kameraya (ön yüze) getir.
+    // Sabit tablo yerine aynı 3D matematikle hesaplıyoruz.
+    final targetRotation = _findRotationForVisibleFace(clampedFinalValue);
+    final baseRng = math.Random(seed * 7919 + clampedFinalValue * 101);
+    final startX = (baseRng.nextDouble() * 2 - 1) * math.pi;
+    final startY = (baseRng.nextDouble() * 2 - 1) * math.pi;
+    final dirX = baseRng.nextBool() ? 1.0 : -1.0;
+    final dirY = baseRng.nextBool() ? 1.0 : -1.0;
+    final turnsX = 2 + baseRng.nextInt(2); // 2-3 tam tur
+    final turnsY = 2 + baseRng.nextInt(2); // 2-3 tam tur
+
+    // Son açı: hedef + tam tur(lar). Böylece zar baştan sona doğal şekilde akıp
+    // tam hedef yüzde bitiyor, finalde ani "snap" olmuyor.
+    final endX = targetRotation.$1 + dirX * 2 * math.pi * turnsX;
+    final endY = targetRotation.$2 + dirY * 2 * math.pi * turnsY;
+    final t = Curves.easeOutQuart.transform(progress.clamp(0.0, 1.0));
+    final currentRotationX = startX + (endX - startX) * t;
+    final currentRotationY = startY + (endY - startY) * t;
+
     // Hafif sallanma (yerleştikten sonra)
-    final wobble = progress > 0.75 
-        ? math.sin((progress - 0.75) / 0.25 * math.pi * 3) * 0.03 * (1 - progress)
+    final settleCurve = ((progress - 0.8) / 0.2).clamp(0.0, 1.0);
+    final wobble = progress > 0.8
+        ? math.sin((progress - 0.8) / 0.2 * math.pi * 3) * 0.02 * (1 - settleCurve)
         : 0.0;
 
     return SizedBox(
@@ -154,15 +160,74 @@ class _AnimatedDie extends StatelessWidget {
       child: CustomPaint(
         size: Size(size * 1.3, size * 1.3),
         painter: _RealisticDiePainter(
-          value: displayValue,
-          rotationX: totalSpinX + wobble,
-          rotationY: totalSpinY,
+          value: clampedFinalValue,
+          rotationX: currentRotationX + wobble,
+          rotationY: currentRotationY,
           cubeSize: size,
+          debugExpectedValue: clampedFinalValue,
+          showDebugOverlay: progress >= 0.74 && _kShowDiceDebugOverlay,
         ),
       ),
     );
   }
+
+  (double, double) _findRotationForVisibleFace(int visibleValue) {
+    const faceValues = [5, 2, 6, 1, 4, 3]; // 0=arka,1=ön,2=alt,3=üst,4=sol,5=sağ
+    const quarterTurns = [
+      0.0,
+      math.pi / 2,
+      -math.pi / 2,
+      math.pi,
+    ];
+
+    // Küp yüz merkezleri (birim küp).
+    const faceCenters = <List<double>>[
+      [0.0, 0.0, -1.0], // arka
+      [0.0, 0.0, 1.0], // ön
+      [0.0, -1.0, 0.0], // alt
+      [0.0, 1.0, 0.0], // üst
+      [-1.0, 0.0, 0.0], // sol
+      [1.0, 0.0, 0.0], // sağ
+    ];
+
+    for (final rx in quarterTurns) {
+      for (final ry in quarterTurns) {
+        var bestFace = 0;
+        var bestZ = -double.infinity;
+        for (var i = 0; i < faceCenters.length; i++) {
+          final v = _rotate3D(faceCenters[i], rx, ry);
+          if (v[2] > bestZ) {
+            bestZ = v[2];
+            bestFace = i;
+          }
+        }
+        if (faceValues[bestFace] == visibleValue) {
+          return (rx, ry);
+        }
+      }
+    }
+
+    // Fallback: hiçbir aday eşleşmezse nötr dön.
+    return (0.0, 0.0);
+  }
+
+  List<double> _rotate3D(List<double> v, double rx, double ry) {
+    final cosY = math.cos(ry);
+    final sinY = math.sin(ry);
+    final x1 = v[0] * cosY - v[2] * sinY;
+    final z1 = v[0] * sinY + v[2] * cosY;
+
+    final cosX = math.cos(rx);
+    final sinX = math.sin(rx);
+    final y2 = v[1] * cosX - z1 * sinX;
+    final z2 = v[1] * sinX + z1 * cosX;
+
+    return [x1, y2, z2];
+  }
+
 }
+
+const bool _kShowDiceDebugOverlay = false;
 
 /// Gerçekçi 3D zar çizen painter
 class _RealisticDiePainter extends CustomPainter {
@@ -171,12 +236,16 @@ class _RealisticDiePainter extends CustomPainter {
     required this.rotationX,
     required this.rotationY,
     required this.cubeSize,
+    required this.debugExpectedValue,
+    required this.showDebugOverlay,
   });
 
   final int value;
   final double rotationX;
   final double rotationY;
   final double cubeSize;
+  final int debugExpectedValue;
+  final bool showDebugOverlay;
 
   // Zar renkleri - fildişi/krem tonu
   static const _faceLight = Color(0xFFFFFDF5);
@@ -208,7 +277,7 @@ class _RealisticDiePainter extends CustomPainter {
       );
     }).toList();
 
-    // Yüzler (vertex indeksleri)
+    // Yüzler (vertex indeksleri, saat yönü/saat yönü tersi sırası tutarlı olmalı)
     final faces = [
       [0, 1, 2, 3], // Arka (Z-)
       [4, 5, 6, 7], // Ön (Z+)
@@ -220,25 +289,60 @@ class _RealisticDiePainter extends CustomPainter {
 
     // Her yüzün normal vektörü ve derinliği
     final faceData = <_FaceData>[];
+    // Projeksiyonla uyumlu görünüm yönü (+Z)
+    const cameraDir = [0.0, 0.0, 1.0];
+    const cullingEpsilon = 1e-4;
     for (int i = 0; i < faces.length; i++) {
       final f = faces[i];
-      final normal = _calculateNormal(rotated[f[0]], rotated[f[1]], rotated[f[2]]);
-      
-      // Yüz kameraya bakıyor mu? (Z komponenti pozitif)
-      if (normal[2] > 0) {
-        final depth = (rotated[f[0]][2] + rotated[f[1]][2] + rotated[f[2]][2] + rotated[f[3]][2]) / 4;
-        final faceValue = _getFaceValue(value, i);
+      final rawNormal = _calculateNormal(rotated[f[0]], rotated[f[1]], rotated[f[2]]);
+      final faceCenter = _calculateFaceCenter(rotated, f);
+      var normal = rawNormal;
+
+      // Normal içeri bakıyorsa ters çevirerek winding farklarından etkilenmeyi azalt.
+      final outwardDot = normal[0] * faceCenter[0] + normal[1] * faceCenter[1] + normal[2] * faceCenter[2];
+      if (outwardDot < 0) {
+        normal = [-normal[0], -normal[1], -normal[2]];
+      }
+
+      final dotProduct =
+          normal[0] * cameraDir[0] + normal[1] * cameraDir[1] + normal[2] * cameraDir[2];
+
+      // Yüz kameraya bakıyor mu? (sınır açılarda titreşim için epsilon)
+      if (dotProduct > cullingEpsilon) {
+        final zValues = [
+          rotated[f[0]][2],
+          rotated[f[1]][2],
+          rotated[f[2]][2],
+          rotated[f[3]][2],
+        ];
+        final depth = zValues.reduce((a, b) => a + b) / 4.0;
+        final minDepth = zValues.reduce(math.min);
+        final maxDepth = zValues.reduce(math.max);
+        final faceValue = _getFaceValue(i);
+        // Parlaklık = kameraya dönüklük
+        final brightness = dotProduct.clamp(0.0, 1.0);
         faceData.add(_FaceData(
           indices: f,
+          faceIndex: i,
           depth: depth,
-          brightness: normal[2],
+          minDepth: minDepth,
+          maxDepth: maxDepth,
+          brightness: brightness,
           faceValue: faceValue,
         ));
       }
     }
 
-    // Derinliğe göre sırala (arkadan öne)
-    faceData.sort((a, b) => a.depth.compareTo(b.depth));
+    // Derinliğe göre sırala (arkadan öne), eşitlikte deterministik tie-break.
+    faceData.sort((a, b) {
+      final depthCompare = a.depth.compareTo(b.depth);
+      if (depthCompare != 0) return depthCompare;
+      final minCompare = a.minDepth.compareTo(b.minDepth);
+      if (minCompare != 0) return minCompare;
+      final maxCompare = a.maxDepth.compareTo(b.maxDepth);
+      if (maxCompare != 0) return maxCompare;
+      return a.faceIndex.compareTo(b.faceIndex);
+    });
 
     // Gölge çiz
     _drawShadow(canvas, projected, center, half);
@@ -246,6 +350,12 @@ class _RealisticDiePainter extends CustomPainter {
     // Yüzleri çiz
     for (final face in faceData) {
       _drawFace(canvas, projected, face);
+    }
+
+    if (showDebugOverlay && faceData.isNotEmpty) {
+      // En öndeki (kameraya en yakın) yüzü görünen yüz kabul et.
+      final visibleFace = faceData.last;
+      _drawDebugOverlay(canvas, size, debugExpectedValue, visibleFace.faceValue);
     }
   }
 
@@ -277,7 +387,29 @@ class _RealisticDiePainter extends CustomPainter {
     
     // Normalize
     final len = math.sqrt(nx * nx + ny * ny + nz * nz);
+    if (len < 1e-8) {
+      return [0.0, 0.0, 0.0];
+    }
     return [nx / len, ny / len, nz / len];
+  }
+
+  List<double> _calculateFaceCenter(List<List<double>> vertices, List<int> indices) {
+    final cx = (vertices[indices[0]][0] +
+            vertices[indices[1]][0] +
+            vertices[indices[2]][0] +
+            vertices[indices[3]][0]) /
+        4.0;
+    final cy = (vertices[indices[0]][1] +
+            vertices[indices[1]][1] +
+            vertices[indices[2]][1] +
+            vertices[indices[3]][1]) /
+        4.0;
+    final cz = (vertices[indices[0]][2] +
+            vertices[indices[1]][2] +
+            vertices[indices[2]][2] +
+            vertices[indices[3]][2]) /
+        4.0;
+    return [cx, cy, cz];
   }
 
   void _drawShadow(Canvas canvas, List<Offset> projected, Offset center, double half) {
@@ -297,12 +429,29 @@ class _RealisticDiePainter extends CustomPainter {
   }
 
   void _drawFace(Canvas canvas, List<Offset> projected, _FaceData face) {
-    final path = Path();
-    path.moveTo(projected[face.indices[0]].dx, projected[face.indices[0]].dy);
-    for (int i = 1; i < 4; i++) {
-      path.lineTo(projected[face.indices[i]].dx, projected[face.indices[i]].dy);
-    }
-    path.close();
+    final p0 = projected[face.indices[0]];
+    final p1 = projected[face.indices[1]];
+    final p2 = projected[face.indices[2]];
+    final p3 = projected[face.indices[3]];
+    final edgeA = (p1 - p0).distance;
+    final edgeB = (p3 - p0).distance;
+    final shortestEdge = math.min(edgeA, edgeB);
+    final maxAllowed = shortestEdge * 0.24;
+    // Degenerate (çok ince/çizgiye yakın) yüzlerde rounded path üretme,
+    // aksi durumda bezier köşeler titreşim ve argüman hatası üretebiliyor.
+    final isDegenerateFace = shortestEdge < 2.0 || maxAllowed <= 0.0;
+    final desiredRadius = cubeSize * 0.15;
+    final cornerRadius = isDegenerateFace
+        ? 0.0
+        : math.min(math.max(desiredRadius, 0.2), maxAllowed);
+    final path = cornerRadius <= 0.0
+        ? (Path()
+          ..moveTo(p0.dx, p0.dy)
+          ..lineTo(p1.dx, p1.dy)
+          ..lineTo(p2.dx, p2.dy)
+          ..lineTo(p3.dx, p3.dy)
+          ..close())
+        : _buildRoundedQuadPath(p0, p1, p2, p3, cornerRadius);
 
     // Yüz rengi (parlaklığa göre)
     final baseColor = face.brightness > 0.7 
@@ -320,10 +469,78 @@ class _RealisticDiePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2);
 
-    // Pip'leri çiz (sadece en parlak yüze)
-    if (face.brightness > 0.5) {
+    // Pip'leri culling'den geçmiş görünür yüzlerde çiz.
+    if (face.brightness > 0.2) {
       _drawPips(canvas, projected, face);
     }
+  }
+
+  Path _buildRoundedQuadPath(
+    Offset p0,
+    Offset p1,
+    Offset p2,
+    Offset p3,
+    double radius,
+  ) {
+    final aIn = _pointTowards(p0, p3, radius);
+    final aOut = _pointTowards(p0, p1, radius);
+    final bIn = _pointTowards(p1, p0, radius);
+    final bOut = _pointTowards(p1, p2, radius);
+    final cIn = _pointTowards(p2, p1, radius);
+    final cOut = _pointTowards(p2, p3, radius);
+    final dIn = _pointTowards(p3, p2, radius);
+    final dOut = _pointTowards(p3, p0, radius);
+
+    return Path()
+      ..moveTo(aOut.dx, aOut.dy)
+      ..lineTo(bIn.dx, bIn.dy)
+      ..quadraticBezierTo(p1.dx, p1.dy, bOut.dx, bOut.dy)
+      ..lineTo(cIn.dx, cIn.dy)
+      ..quadraticBezierTo(p2.dx, p2.dy, cOut.dx, cOut.dy)
+      ..lineTo(dIn.dx, dIn.dy)
+      ..quadraticBezierTo(p3.dx, p3.dy, dOut.dx, dOut.dy)
+      ..lineTo(aIn.dx, aIn.dy)
+      ..quadraticBezierTo(p0.dx, p0.dy, aOut.dx, aOut.dy)
+      ..close();
+  }
+
+  Offset _pointTowards(Offset from, Offset to, double distance) {
+    final dx = to.dx - from.dx;
+    final dy = to.dy - from.dy;
+    final len = math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6) return from;
+    final t = (distance / len).clamp(0.0, 1.0);
+    return Offset(from.dx + dx * t, from.dy + dy * t);
+  }
+
+  void _drawDebugOverlay(
+    Canvas canvas,
+    Size size,
+    int expectedValue,
+    int visibleValue,
+  ) {
+    final isMatch = expectedValue == visibleValue;
+    final bgPaint = Paint()
+      ..color = (isMatch ? Colors.green : Colors.red).withValues(alpha: 0.80);
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(6, 6, size.width - 12, 20),
+      const Radius.circular(6),
+    );
+    canvas.drawRRect(rect, bgPaint);
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: 'exp:$expectedValue vis:$visibleValue',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: size.width - 16);
+
+    textPainter.paint(canvas, const Offset(10, 9));
   }
 
   void _drawPips(Canvas canvas, List<Offset> projected, _FaceData face) {
@@ -372,24 +589,29 @@ class _RealisticDiePainter extends CustomPainter {
     switch (face.faceValue) {
       case 1:
         drawPip(mid, mid);
+        break;
       case 2:
         drawPip(lo, lo);
         drawPip(hi, hi);
+        break;
       case 3:
         drawPip(lo, lo);
         drawPip(mid, mid);
         drawPip(hi, hi);
+        break;
       case 4:
         drawPip(lo, lo);
         drawPip(hi, lo);
         drawPip(lo, hi);
         drawPip(hi, hi);
+        break;
       case 5:
         drawPip(lo, lo);
         drawPip(hi, lo);
         drawPip(mid, mid);
         drawPip(lo, hi);
         drawPip(hi, hi);
+        break;
       case 6:
         drawPip(lo, lo);
         drawPip(hi, lo);
@@ -397,40 +619,42 @@ class _RealisticDiePainter extends CustomPainter {
         drawPip(hi, mid);
         drawPip(lo, hi);
         drawPip(hi, hi);
+        break;
     }
   }
 
-  // Üst değere göre her yüzün değerini belirle
-  int _getFaceValue(int topValue, int faceIndex) {
-    // Standart zar: karşılıklı yüzler 7
-    // faceIndex: 0=arka, 1=ön, 2=alt, 3=üst, 4=sol, 5=sağ
-    final mapping = {
-      1: [5, 2, 3, 1, 4, 6], // top=1
-      2: [4, 3, 1, 2, 6, 5], // top=2
-      3: [1, 6, 2, 5, 3, 4], // top=3
-      4: [6, 1, 5, 2, 4, 3], // top=4
-      5: [3, 4, 6, 5, 1, 2], // top=5
-      6: [2, 5, 4, 6, 3, 1], // top=6
-    };
-    return mapping[topValue]?[faceIndex] ?? 1;
+  // Küpün sabit yüz yerleşimi:
+  // faceIndex: 0=arka, 1=ön, 2=alt, 3=üst, 4=sol, 5=sağ
+  // değerler:   5      2     6     1     4     3
+  int _getFaceValue(int faceIndex) {
+    const faceValues = [5, 2, 6, 1, 4, 3];
+    if (faceIndex < 0 || faceIndex >= faceValues.length) return 1;
+    return faceValues[faceIndex];
   }
 
   @override
   bool shouldRepaint(covariant _RealisticDiePainter old) =>
       old.value != value || 
       old.rotationX != rotationX || 
-      old.rotationY != rotationY;
+      old.rotationY != rotationY ||
+      old.cubeSize != cubeSize;
 }
 
 class _FaceData {
   final List<int> indices;
+  final int faceIndex;
   final double depth;
+  final double minDepth;
+  final double maxDepth;
   final double brightness;
   final int faceValue;
 
   _FaceData({
     required this.indices,
+    required this.faceIndex,
     required this.depth,
+    required this.minDepth,
+    required this.maxDepth,
     required this.brightness,
     required this.faceValue,
   });
