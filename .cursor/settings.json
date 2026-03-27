@@ -1,7 +1,79 @@
 {
-  "plugins": {
-    "linear": {
-      "enabled": true
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Persistent memory across sessions - remembers context, decisions, and patterns"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Chain-of-thought reasoning for complex problems"
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Live Flutter/Dart documentation lookup"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp", "--browser", "chrome"],
+      "description": "Browser automation and E2E testing"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PAT_HERE"
+      },
+      "description": "GitHub operations - PRs, issues, repos"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:/proje"],
+      "description": "Filesystem operations for project access"
     }
+  },
+  "env": {
+    "ECC_HOOK_PROFILE": "standard",
+    "ECC_DISABLED_HOOKS": ""
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node \"../everything-claude-code/.cursor/hooks/session-start.js\"",
+        "description": "Load context on session start"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"../everything-claude-code/.cursor/hooks/before-shell-execution.js\"",
+            "description": "Git push reminder, tmux suggestion, auto-start dev servers"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"../everything-claude-code/.cursor/scripts/hooks/suggest-compact.js\"",
+            "description": "Suggest manual compaction at logical intervals"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "type": "command",
+        "command": "node \"../everything-claude-code/.cursor/hooks/session-end.js\"",
+        "description": "Save state on session end"
+      }
+    ]
   }
 }

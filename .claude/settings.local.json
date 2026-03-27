@@ -13,7 +13,13 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git rm:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(mkdir:*)",
+      "Bash(mkdir -p /d/proje/edebina_3d/.cursor/agents)",
+      "Bash(cp /d/proje/edebina_3d/everything-claude-code/agents/*.md /d/proje/edebina_3d/.cursor/agents/)",
+      "Skill(update-config)",
+      "WebSearch",
+      "Bash(git reset:*)"
     ]
   }
 }

@@ -19,3 +19,11 @@
 
 # Context Awareness
 - Before modifying core game logic, silently review `lib/core/constants/game_constants.dart` and `lib/docs/STATE_MANAGEMENT.md` to maintain consistency.
+
+# Specialized Agents (Available via @mention)
+- @planner → Feature planning and implementation roadmap
+- @tdd-guide → Test-driven development workflow
+- @code-reviewer → Code quality and maintainability review
+- @architect → System design and architectural decisions
+- @security-reviewer → Security vulnerability analysis
+- @build-error-resolver → Build and type error resolution
