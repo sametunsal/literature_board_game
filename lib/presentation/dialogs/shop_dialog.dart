@@ -121,18 +121,22 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Icon(Icons.store_rounded, color: Colors.amber, size: 28),
+          const Icon(Icons.store_rounded, color: Colors.amber, size: 28),
           const SizedBox(width: 12),
-          Text(
-            'KIRAATHANE',
-            style: GoogleFonts.poppins(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-              letterSpacing: 1,
+          Expanded(
+            child: Text(
+              'KIRAATHANE',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+                letterSpacing: 1,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -141,7 +145,7 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
             ),
             child: Row(
               children: [
-                Icon(Icons.star_rounded, color: Colors.white, size: 20),
+                const Icon(Icons.star_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 6),
                 Text(
                   '$stars',
@@ -318,15 +322,19 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
           padding: const EdgeInsets.only(top: 8),
           child: Row(
             children: [
-              Text(
-                '— ${quote.author}',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  '— ${quote.author}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -346,7 +354,7 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
           ),
         ),
         trailing: isOwned
-            ? Icon(Icons.check_circle_rounded, color: Colors.green, size: 28)
+            ? const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28)
             : ElevatedButton(
                 onPressed: canAfford ? () => _purchaseQuote(quote) : null,
                 style: ElevatedButton.styleFrom(
@@ -361,11 +369,14 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  visualDensity: VisualDensity.compact,
+                  minimumSize: const Size(0, 34),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star_rounded, size: 16, color: Colors.white),
+                    const Icon(Icons.star_rounded, size: 16, color: Colors.white),
                     const SizedBox(width: 4),
                     Text('${quote.starCost}'),
                   ],
