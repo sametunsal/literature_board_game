@@ -159,6 +159,8 @@ class _AnimatedDie extends StatelessWidget {
       height: size * 1.3,
       child: CustomPaint(
         size: Size(size * 1.3, size * 1.3),
+        isComplex: true,
+        willChange: true,
         painter: _RealisticDiePainter(
           value: clampedFinalValue,
           rotationX: currentRotationX + wobble,
@@ -444,30 +446,58 @@ class _RealisticDiePainter extends CustomPainter {
     final cornerRadius = isDegenerateFace
         ? 0.0
         : math.min(math.max(desiredRadius, 0.2), maxAllowed);
-    final path = cornerRadius <= 0.0
-        ? (Path()
-          ..moveTo(p0.dx, p0.dy)
-          ..lineTo(p1.dx, p1.dy)
-          ..lineTo(p2.dx, p2.dy)
-          ..lineTo(p3.dx, p3.dy)
-          ..close())
-        : _buildRoundedQuadPath(p0, p1, p2, p3, cornerRadius);
+
+    // Yüzler ayrı ayrı rasterize edildiği için animasyon sırasında birleşim
+    // çizgilerinde mikroskobik boşluklar oluşabiliyor. Özellikle köşelerde
+    // daha agresif genişletme ile komşu yüzlerle üst üste bindiriyoruz.
+    final expansionPx = math.max(0.8, cubeSize * 0.018);
+    final expandedPath = _buildCornerExpandedPath(
+      p0: p0,
+      p1: p1,
+      p2: p2,
+      p3: p3,
+      expansionPx: expansionPx,
+      cornerExpansion: expansionPx * 1.5, // Köşelerde ekstra genişletme
+      cornerRadius: cornerRadius,
+    );
+
+    // Kenarlık için hafif genişletilmiş path
+    final borderPath = _buildCornerExpandedPath(
+      p0: p0,
+      p1: p1,
+      p2: p2,
+      p3: p3,
+      expansionPx: expansionPx * 0.4,
+      cornerExpansion: expansionPx * 0.8,
+      cornerRadius: cornerRadius,
+    );
 
     // Yüz rengi (parlaklığa göre)
-    final baseColor = face.brightness > 0.7 
-        ? _faceLight 
-        : face.brightness > 0.4 
-            ? _faceMid 
+    final baseColor = face.brightness > 0.7
+        ? _faceLight
+        : face.brightness > 0.4
+            ? _faceMid
             : _faceDark;
-    
-    // Yüzü doldur
-    canvas.drawPath(path, Paint()..color = baseColor);
-    
-    // Kenarlık
-    canvas.drawPath(path, Paint()
+
+    // Yüzü doldur - expanded path kullan
+    canvas.drawPath(
+      expandedPath,
+      Paint()
+        ..color = baseColor
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high,
+    );
+
+    // Kenarlık - expanded path kullan
+    canvas.drawPath(borderPath, Paint()
       ..color = _border
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2);
+      ..strokeWidth = 1.4
+      ..isAntiAlias = true);
+
+    // Köşe boşluklarını dolduracak ekstra "seam" katmanı
+    // Kenarlıktan SONRA çiziyoruz ki border boşluklarını da kapatsın
+    _drawCornerSeams(canvas, [p0, p1, p2, p3], expansionPx, baseColor);
 
     // Pip'leri culling'den geçmiş görünür yüzlerde çiz.
     if (face.brightness > 0.2) {
@@ -504,6 +534,16 @@ class _RealisticDiePainter extends CustomPainter {
       ..close();
   }
 
+  Offset _expandFromCenter(Offset point, Offset center, double amount) {
+    final dx = point.dx - center.dx;
+    final dy = point.dy - center.dy;
+    final len = math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6) return point;
+    final nx = dx / len;
+    final ny = dy / len;
+    return Offset(point.dx + nx * amount, point.dy + ny * amount);
+  }
+
   Offset _pointTowards(Offset from, Offset to, double distance) {
     final dx = to.dx - from.dx;
     final dy = to.dy - from.dy;
@@ -511,6 +551,77 @@ class _RealisticDiePainter extends CustomPainter {
     if (len < 1e-6) return from;
     final t = (distance / len).clamp(0.0, 1.0);
     return Offset(from.dx + dx * t, from.dy + dy * t);
+  }
+
+  /// Her köşeyi ayrı ayrı genişleten path - köşe boşlukları için
+  Path _buildCornerExpandedPath({
+    required Offset p0,
+    required Offset p1,
+    required Offset p2,
+    required Offset p3,
+    required double expansionPx,
+    required double cornerExpansion,
+    required double cornerRadius,
+  }) {
+    final center = Offset(
+      (p0.dx + p1.dx + p2.dx + p3.dx) / 4,
+      (p0.dy + p1.dy + p2.dy + p3.dy) / 4,
+    );
+
+    // Köşe noktalarını daha agresif genişlet
+    final ep0 = _expandFromCenter(p0, center, cornerExpansion);
+    final ep1 = _expandFromCenter(p1, center, cornerExpansion);
+    final ep2 = _expandFromCenter(p2, center, cornerExpansion);
+    final ep3 = _expandFromCenter(p3, center, cornerExpansion);
+
+    if (cornerRadius <= 0.0) {
+      return Path()
+        ..moveTo(ep0.dx, ep0.dy)
+        ..lineTo(ep1.dx, ep1.dy)
+        ..lineTo(ep2.dx, ep2.dy)
+        ..lineTo(ep3.dx, ep3.dy)
+        ..close();
+    }
+
+    // Rounded path with expanded corners
+    final aIn = _pointTowards(ep0, ep3, cornerRadius);
+    final aOut = _pointTowards(ep0, ep1, cornerRadius);
+    final bIn = _pointTowards(ep1, ep0, cornerRadius);
+    final bOut = _pointTowards(ep1, ep2, cornerRadius);
+    final cIn = _pointTowards(ep2, ep1, cornerRadius);
+    final cOut = _pointTowards(ep2, ep3, cornerRadius);
+    final dIn = _pointTowards(ep3, ep2, cornerRadius);
+    final dOut = _pointTowards(ep3, ep0, cornerRadius);
+
+    return Path()
+      ..moveTo(aOut.dx, aOut.dy)
+      ..lineTo(bIn.dx, bIn.dy)
+      ..quadraticBezierTo(ep1.dx, ep1.dy, bOut.dx, bOut.dy)
+      ..lineTo(cIn.dx, cIn.dy)
+      ..quadraticBezierTo(ep2.dx, ep2.dy, cOut.dx, cOut.dy)
+      ..lineTo(dIn.dx, dIn.dy)
+      ..quadraticBezierTo(ep3.dx, ep3.dy, dOut.dx, dOut.dy)
+      ..lineTo(aIn.dx, aIn.dy)
+      ..quadraticBezierTo(ep0.dx, ep0.dy, aOut.dx, aOut.dy)
+      ..close();
+  }
+
+  /// Köşe boşluklarını dolduracak "seam" - ince ve uyumlu
+  /// Kenarlıktan SONRA çağrılır, ancak çok subtle olmalı
+  void _drawCornerSeams(Canvas canvas, List<Offset> corners, double expansionPx, Color faceColor) {
+    // Çok daha küçük - sadece boşluğu doldursun, görünmesin
+    final seamRadius = expansionPx * 0.5;
+
+    // Yüz rengiyle tam uyumlu paint
+    final seamPaint = Paint()
+      ..color = faceColor
+      ..isAntiAlias = true
+      ..style = PaintingStyle.fill;
+
+    for (final corner in corners) {
+      // Tek küçük daire - sadece boşluğu kapatsın
+      canvas.drawCircle(corner, seamRadius, seamPaint);
+    }
   }
 
   void _drawDebugOverlay(
