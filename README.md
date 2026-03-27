@@ -15,7 +15,7 @@
 
 ### 🎨 Visual Design
 - **Dark Academia Theme:** Warm, cozy library aesthetic with elegant typography
-- **3D-style Animations:** Flying pawn movement, card dealing, confetti celebrations
+- **3D Dice Animation:** Realistic 6-faced cube animation with visible rotation, corner gaps eliminated
 - **Perimeter HUD:** Player panels positioned around board edges (corners for ≤4 players, corners + middle-sides for 5-6)
 - **Responsive Layout:** Optimized for various screen sizes with SafeArea support
 
@@ -40,6 +40,7 @@
 - **google_fonts** (^6.1.0) - Typography (Cinzel Decorative, Pinyon Script, Poppins, Crimson Text)
 - **font_awesome_flutter** (^10.6.0) - Icons
 - **confetti** (^0.7.0) - Victory celebration effects
+- **lottie** (^3.1.0) - JSON-based animations
 - **shimmer** (^3.0.0) - Loading effects
 
 ### Audio
@@ -183,6 +184,17 @@ Answer **3 questions correctly** in the same category/difficulty to achieve rank
 | 🎲 **Teşvik** | Bonus - Free stars reward |
 | ⚖️ **Şans/Kader** | Chance/Fate cards with random effects |
 
+## ✨ Recent Additions
+
+### New Card Interactions
+- **Printer/Ink Issue Dialog:** Special themed popup for "Printer jammed" and "Out of ink" fate cards
+- **Auto-Close:** Automatically closes after 1.8 seconds
+- **Ink Stain Theme:** Visually cohesive design matching the game's aesthetic
+
+### Player Experience Improvements
+- **Question Shuffling:** Questions are randomly shuffled within their categories for each game
+- **Dice Animation:** Realistic 3D dice with corner gaps eliminated
+
 ## 🚀 Installation & Setup
 
 ### Prerequisites
@@ -309,6 +321,7 @@ None at this time.
 
 ## 🔄 Version History
 
+- **v1.0.1** - Printer/Ink issue themed dialog, question shuffling, dice corner gap fixes
 - **v1.0.0** - Initial release with 6-player support, context-aware audio, and perimeter HUD layout
 
 ## 📄 License

@@ -15,7 +15,7 @@
 
 ### 🎨 Görsel Tasarım
 - **Dark Academia Teması:** Şık tipografi ile sıcak, samimi kütüphane estetiği
-- **3D Tarzı Animasyonlar:** Uçuran piyon hareketi, kart dağıtımı, konfetili kutlamalar
+- **3D Zar Animasyonu:** 6 yüzeli gerçekçi küp animasyonu, görünür dönüş, köşe boşlukları giderilmiş
 - **Çevre HUD:** Oyuncu panelleri tahta kenarlarında konumlandırılır (4 ve altı için köşeler, 5-6 için köşeler + orta kenarlar)
 - **Duyarlı Düzen:** SafeArea desteği ile çeşitli ekran boyutları için optimize edilmiş
 
@@ -40,6 +40,7 @@
 - **google_fonts** (^6.1.0) - Tipografi (Cinzel Decorative, Pinyon Script, Poppins, Crimson Text)
 - **font_awesome_flutter** (^10.6.0) - İkonlar
 - **confetti** (^0.7.0) - Zafer kutlama efektleri
+- **lottie** (^3.1.0) - JSON tabanlı animasyonlar
 - **shimmer** (^3.0.0) - Yükleme efektleri
 
 ### Ses
@@ -183,6 +184,17 @@ Aynı kategori/zorlukta **3 soruyu doğru cevaplayarak** rütbeler elde edin:
 | 🎲 **Teşvik** | Bonus - Ücretsiz yıldız ödülü |
 | ⚖️ **Şans/Kader** - Rastgele efektli Şans/Kader kartları |
 
+## ✨ Son Eklenen Özellikler
+
+### Yeni Kart Etkileşimleri
+- **Yazıcı/Mürekkep Sorunu Dialogu:** "Yazıcı tıkandı" ve "Mürekkep bitti" kartları için özel themed popup
+- **Otomatik Kapanma:** 1.8 saniye sonra otomatik kapanır
+- **Mürekkep Lekesi Teması:** Görsel olarak uyumlu tasarım
+
+### Oyuncu Deneyimi İyileştirmeleri
+- **Soru Karıştırma:** Her oyunda sorular kendi kategorilerinde rastgele sırayla gelir
+- **Zar Animasyonu:** Köşe boşlukları giderilmiş gerçekçi 3D zar animasyonu
+
 ## 🚀 Kurulum ve Başlangıç
 
 ### Ön Koşullar
@@ -309,6 +321,7 @@ GameButton(
 
 ## 🔄 Sürüm Geçmişi
 
+- **v1.0.1** - Yazıcı/Mürekkep sorunu themed dialog, soru karıştırma, zar köşe boşlukları giderildi
 - **v1.0.0** - 6 oyuncu desteği, bağlam farkında ses ve çevre HUD düzeni ile ilk sürüm
 
 ## 📄 Lisans
