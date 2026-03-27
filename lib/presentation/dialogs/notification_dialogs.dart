@@ -434,6 +434,199 @@ class ImzaGunuDialog extends ConsumerWidget {
   }
 }
 
+/// Yazıcı/Mürekkep Sorunu — special themed dialog for fate card
+class PrinterInkIssueDialog extends ConsumerStatefulWidget {
+  const PrinterInkIssueDialog({super.key});
+
+  @override
+  ConsumerState<PrinterInkIssueDialog> createState() =>
+      _PrinterInkIssueDialogState();
+}
+
+class _PrinterInkIssueDialogState extends ConsumerState<PrinterInkIssueDialog> {
+  static const _inkBlack = Color(0xFF1A1A1A);
+  static const _paper = Color(0xFFF5F1E8);
+  static const _stain = Color(0xFF3E2723);
+  static const _accent = Color(0xFF5D4037);
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted) {
+        ref.read(gameProvider.notifier).closePrinterIssueDialog();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final cardW = math.min(size.width * 0.55, 280.0);
+    final cardH = math.min(size.height * 0.42, 280.0);
+
+    return Material(
+      color: Colors.transparent,
+      child: SizedBox(
+        width: cardW,
+        height: cardH,
+        child: Container(
+          decoration: BoxDecoration(
+            color: _inkBlack,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF000000), width: 3),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x50000000),
+                blurRadius: 20,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Container(
+            margin: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: _paper,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _stain.withValues(alpha: 0.3), width: 2),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Ink stain header
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: _stain,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(10),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.print_rounded, color: Colors.white, size: 22),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'YAZICI SORUNU',
+                              style: GoogleFonts.crimsonText(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Ink drip effect
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _stain,
+                          _stain.withValues(alpha: 0.6),
+                          _stain.withValues(alpha: 0.2),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Ink splat icon
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _stain.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.water_drop_rounded, color: _stain, size: 32),
+                          ),
+                          const SizedBox(height: 10),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Yazıcı çalışmıyor,\nmürekkep bitti!',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.crimsonText(
+                                  fontSize: 14,
+                                  height: 1.4,
+                                  color: _inkBlack,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '1 tur beklemek zorundasın.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: _accent,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _accent.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Sıra otomatik geçiyor…',
+                              style: GoogleFonts.poppins(
+                                fontSize: 9,
+                                color: _accent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 250.ms)
+        .scale(
+          begin: const Offset(0.9, 0.9),
+          end: const Offset(1, 1),
+          duration: 350.ms,
+          curve: Curves.easeOutBack,
+        );
+  }
+}
+
 /// Turn Skipped notification dialog
 class TurnSkippedDialog extends ConsumerWidget {
   const TurnSkippedDialog({super.key});

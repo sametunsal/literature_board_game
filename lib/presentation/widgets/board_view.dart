@@ -413,6 +413,16 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
+        // Printer Ink Issue Dialog — special themed dialog
+        if (dialog.showPrinterIssueDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              alignment: Alignment.center,
+              child: const PrinterInkIssueDialog(),
+            ),
+          ),
+
         // Turn Skipped Dialog
         if (dialog.showTurnSkippedDialog)
           Positioned.fill(

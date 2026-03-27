@@ -318,6 +318,7 @@ class GameNotifier extends StateNotifier<GameState> {
           '  - showLibraryPenaltyDialog: ${dialog.showLibraryPenaltyDialog}',
         );
         safePrint('  - showImzaGunuDialog: ${dialog.showImzaGunuDialog}');
+        safePrint('  - showPrinterIssueDialog: ${dialog.showPrinterIssueDialog}');
         safePrint('  - showShopDialog: ${dialog.showShopDialog}');
         safePrint('  - showTurnOrderDialog: ${dialog.showTurnOrderDialog}');
         safePrint('  - phase: ${state.phase}');
@@ -339,6 +340,9 @@ class GameNotifier extends StateNotifier<GameState> {
         } else if (dialog.showImzaGunuDialog) {
           _logBot('Watchdog: Closing stuck imza gÃ¼nÃ¼ dialog');
           closeImzaGunuDialog();
+        } else if (dialog.showPrinterIssueDialog) {
+          _logBot('Watchdog: Closing stuck printer issue dialog');
+          closePrinterIssueDialog();
         } else if (dialog.showShopDialog) {
           _logBot('Watchdog: Closing stuck shop dialog');
           closeShopDialog();
@@ -394,6 +398,9 @@ class GameNotifier extends StateNotifier<GameState> {
     try {
       final questionRepository = ref.read(questionRepositoryProvider);
       _cachedQuestions = await questionRepository.getAllQuestions();
+      // Shuffle questions for random order each game
+      _cachedQuestions.shuffle(_random);
+      safePrint('ℹ️ Questions shuffled for random order this game');
     } catch (e, stackTrace) {
       safePrint('JSON Yükleme Hatası: $e');
       safePrint('JSON Yükleme Hatası Stack Trace: $stackTrace');
@@ -943,6 +950,28 @@ class GameNotifier extends StateNotifier<GameState> {
     endTurn();
   }
 
+  /// Close printer/ink issue dialog and set turnsToSkip
+  void closePrinterIssueDialog() {
+    final player = state.currentPlayer;
+    List<Player> newPlayers = List.from(state.players);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(
+      turnsToSkip: player.turnsToSkip + 1, // 1 turn penalty
+    );
+
+    state = state.copyWith(players: newPlayers, consecutiveDoubles: 0);
+
+    ref.read(dialogProvider.notifier).hidePrinterIssue();
+
+    _addLog(
+      "${player.name} yazıcı sorunu nedeniyle 1 tur ceza aldı!",
+      type: 'error',
+    );
+
+    _isProcessing = false;
+    endTurn();
+  }
+
+
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // 3. SORU & MASTERY SÄ°STEMÄ°
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1034,6 +1063,8 @@ class GameNotifier extends StateNotifier<GameState> {
       final notAskedBefore = !state.askedQuestionIds.contains(q.text);
       return matchesCategory && matchesDifficulty && notAskedBefore;
     }).toList();
+    // Shuffle filtered questions for randomness
+    filteredQuestions.shuffle(_random);
 
     Question? selectedQuestion;
     bool shouldResetAskedIds = false;
@@ -1053,12 +1084,16 @@ class GameNotifier extends StateNotifier<GameState> {
         final matchesDifficulty = q.difficulty == difficultyFilter;
         return matchesCategory && matchesDifficulty;
       }).toList();
+      // Shuffle recycled questions for randomness
+      allCategoryQuestions.shuffle(_random);
 
       if (allCategoryQuestions.isEmpty) {
         // Fallback: any question from this category (any difficulty)
         final anyCategoryQuestions = _cachedQuestions
             .where((q) => categoryNames.contains(q.category.name))
             .toList();
+        // Shuffle fallback questions for randomness
+        anyCategoryQuestions.shuffle(_random);
         if (anyCategoryQuestions.isEmpty) {
           // FALLBACK FOR TEÅžVIK TILES: Create a synthetic bonus reward question
           // This proves the tile logic works even when the database is empty
@@ -1688,15 +1723,27 @@ class GameNotifier extends StateNotifier<GameState> {
           break;
 
         case CardEffectType.skipTurn:
-          List<Player> temp = List.from(state.players);
-          temp[state.currentPlayerIndex] = player.copyWith(
-            turnsToSkip: player.turnsToSkip + card.value,
-          );
-          state = state.copyWith(players: temp);
-          _addLog(
-            "ğŸ¤– Bot: â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
-            type: 'error',
-          );
+          // Check if it's a printer/ink issue card
+          final isPrinterIssue = card.description.contains('MÃ¼rekkep') ||
+              card.description.contains('YazÄ±cÄ±');
+
+          if (isPrinterIssue) {
+            ref.read(dialogProvider.notifier).showPrinterIssue();
+            _addLog(
+              "ğŸ¤– Bot: â–ªï¸ ${player.name} yazÄ±cÄ± sorunuyla karÅŸÄ±laÅŸtÄ±!",
+              type: 'error',
+            );
+          } else {
+            List<Player> temp = List.from(state.players);
+            temp[state.currentPlayerIndex] = player.copyWith(
+              turnsToSkip: player.turnsToSkip + card.value,
+            );
+            state = state.copyWith(players: temp);
+            _addLog(
+              "ğŸ¤– Bot: â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
+              type: 'error',
+            );
+          }
           break;
 
         case CardEffectType.rollAgain:
@@ -1901,15 +1948,27 @@ class GameNotifier extends StateNotifier<GameState> {
             break;
 
           case CardEffectType.skipTurn:
-            List<Player> temp = List.from(state.players);
-            temp[state.currentPlayerIndex] = player.copyWith(
-              turnsToSkip: player.turnsToSkip + card.value,
-            );
-            state = state.copyWith(players: temp);
-            _addLog(
-              "â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
-              type: 'error',
-            );
+            // Check if it's a printer/ink issue card
+            final isPrinterIssue = card.description.contains('MÃ¼rekkep') ||
+                card.description.contains('YazÄ±cÄ±');
+
+            if (isPrinterIssue) {
+              ref.read(dialogProvider.notifier).showPrinterIssue();
+              _addLog(
+                "â–ªï¸ ${player.name} yazÄ±cÄ± sorunuyla karÅŸÄ±laÅŸtÄ±!",
+                type: 'error',
+              );
+            } else {
+              List<Player> temp = List.from(state.players);
+              temp[state.currentPlayerIndex] = player.copyWith(
+                turnsToSkip: player.turnsToSkip + card.value,
+              );
+              state = state.copyWith(players: temp);
+              _addLog(
+                "â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
+                type: 'error',
+              );
+            }
             break;
 
           case CardEffectType.rollAgain:
@@ -2205,6 +2264,9 @@ class GameNotifier extends StateNotifier<GameState> {
     } else if (ref.read(dialogProvider).showImzaGunuDialog) {
       _logBot('Closing ImzaGunuDialog');
       closeImzaGunuDialog();
+    } else if (ref.read(dialogProvider).showPrinterIssueDialog) {
+      _logBot('Closing PrinterIssueDialog');
+      closePrinterIssueDialog();
     } else if (ref.read(dialogProvider).showTurnSkippedDialog) {
       _logBot('Closing TurnSkippedDialog');
       closeTurnSkippedDialog();

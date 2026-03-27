@@ -12,6 +12,7 @@ class DialogState {
   final bool showCardDialog;
   final bool showLibraryPenaltyDialog;
   final bool showImzaGunuDialog;
+  final bool showPrinterIssueDialog;
   final bool showTurnSkippedDialog;
   final bool showShopDialog;
   final bool showTurnOrderDialog;
@@ -23,6 +24,7 @@ class DialogState {
     this.showCardDialog = false,
     this.showLibraryPenaltyDialog = false,
     this.showImzaGunuDialog = false,
+    this.showPrinterIssueDialog = false,
     this.showTurnSkippedDialog = false,
     this.showShopDialog = false,
     this.showTurnOrderDialog = false,
@@ -35,6 +37,7 @@ class DialogState {
     bool? showCardDialog,
     bool? showLibraryPenaltyDialog,
     bool? showImzaGunuDialog,
+    bool? showPrinterIssueDialog,
     bool? showTurnSkippedDialog,
     bool? showShopDialog,
     bool? showTurnOrderDialog,
@@ -51,6 +54,8 @@ class DialogState {
       showLibraryPenaltyDialog:
           showLibraryPenaltyDialog ?? this.showLibraryPenaltyDialog,
       showImzaGunuDialog: showImzaGunuDialog ?? this.showImzaGunuDialog,
+      showPrinterIssueDialog:
+          showPrinterIssueDialog ?? this.showPrinterIssueDialog,
       showTurnSkippedDialog:
           showTurnSkippedDialog ?? this.showTurnSkippedDialog,
       showShopDialog: showShopDialog ?? this.showShopDialog,
@@ -65,6 +70,7 @@ class DialogState {
       showCardDialog: false,
       showLibraryPenaltyDialog: false,
       showImzaGunuDialog: false,
+      showPrinterIssueDialog: false,
       showTurnSkippedDialog: false,
       showShopDialog: false,
       showTurnOrderDialog: false,
@@ -77,6 +83,7 @@ class DialogState {
       showCardDialog ||
       showLibraryPenaltyDialog ||
       showImzaGunuDialog ||
+      showPrinterIssueDialog ||
       showTurnSkippedDialog ||
       showShopDialog ||
       showTurnOrderDialog;
@@ -109,6 +116,10 @@ class DialogNotifier extends StateNotifier<DialogState> {
     state = state.clearVisibility().copyWith(showImzaGunuDialog: true);
   }
 
+  void showPrinterIssue() {
+    state = state.clearVisibility().copyWith(showPrinterIssueDialog: true);
+  }
+
   void showTurnSkipped() {
     state = state.clearVisibility().copyWith(showTurnSkippedDialog: true);
   }
@@ -137,6 +148,10 @@ class DialogNotifier extends StateNotifier<DialogState> {
 
   void hideImzaGunu() {
     state = state.copyWith(showImzaGunuDialog: false);
+  }
+
+  void hidePrinterIssue() {
+    state = state.copyWith(showPrinterIssueDialog: false);
   }
 
   void hideTurnSkipped() {
