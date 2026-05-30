@@ -51,12 +51,15 @@ class BotController {
   // PUBLIC API
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /// Flip bot state and emit logs. Does NOT auto-schedule — the caller
+  /// is responsible for triggering the first turn (e.g. via its own
+  /// scheduling method). This keeps scheduling ownership with a single
+  /// system during the GameNotifier transition period.
   bool toggle() {
     _isActive = !_isActive;
     if (_isActive) {
       _cb.addLog('🤖 Bot Modu AKTİF! Oyun otomatik oynanıyor...', type: 'info');
       log('=== BOT MODE ACTIVATED ===');
-      scheduleNextTurn();
     } else {
       _cb.addLog('🤖 Bot Modu KAPALI. Manuel oynamaya dönüldü.', type: 'info');
       log('=== BOT MODE DEACTIVATED ===');

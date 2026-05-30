@@ -64,11 +64,14 @@ void main() {
       expect(controller.isActive, isFalse);
     });
 
-    test('first toggle activates and schedules next turn', () {
+    test('first toggle activates and adds log but does not auto-schedule', () {
       fakeAsync((async) {
         controller.toggle();
         expect(controller.isActive, isTrue);
         expect(tracker.logs, contains(predicate<String>((s) => s.contains('Bot Modu AKTİF'))));
+        // toggle no longer auto-schedules — caller owns scheduling
+        async.elapse(const Duration(seconds: 2));
+        expect(tracker.rollDiceCalls, 0);
       });
     });
 
@@ -117,7 +120,8 @@ void main() {
     test('does nothing when game is over', () {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.gameOver;
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(const Duration(seconds: 2));
         expect(tracker.rollDiceCalls, 0);
       });
@@ -126,7 +130,8 @@ void main() {
     test('calls rollDice when no blockers', () {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100));
         expect(tracker.rollDiceCalls, 1);
       });
@@ -136,7 +141,8 @@ void main() {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
         tracker.dialogSnapshot = const BotDialogSnapshot(showShopDialog: true);
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600));
         expect(tracker.rollDiceCalls, 0);
         expect(tracker.closeShopCalls, 1);
@@ -147,7 +153,8 @@ void main() {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
         tracker.isProcessing = true;
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100));
         expect(tracker.rollDiceCalls, 0);
       });
@@ -157,7 +164,8 @@ void main() {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
         tracker.isDiceRolling = true;
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100));
         expect(tracker.rollDiceCalls, 0);
       });
@@ -493,9 +501,8 @@ void main() {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
         tracker.dialogSnapshot = const BotDialogSnapshot(showTurnOrderDialog: true);
-        controller.toggle();
-        // scheduleNextTurn fires at botTurnScheduleDelay, sees dialog open,
-        // calls _handleDialog which delays 500ms then closes.
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(
           milliseconds: GameConstants.botTurnScheduleDelay + 600,
         ));
@@ -507,7 +514,8 @@ void main() {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
         tracker.dialogSnapshot = const BotDialogSnapshot(showLibraryPenaltyDialog: true);
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(
           milliseconds: GameConstants.botTurnScheduleDelay + 600,
         ));
@@ -519,7 +527,8 @@ void main() {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
         tracker.isProcessing = true;
-        controller.toggle();
+        controller.activateForTest();
+        controller.scheduleNextTurn();
         async.elapse(Duration(
           milliseconds: GameConstants.botTurnScheduleDelay + 600,
         ));

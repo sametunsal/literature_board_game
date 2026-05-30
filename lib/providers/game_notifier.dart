@@ -18,6 +18,8 @@ import '../core/services/turn_order_service.dart';
 import '../core/services/dice_service.dart';
 import '../core/services/movement_service.dart';
 import '../core/services/economy_service.dart';
+import '../core/services/bot_callbacks.dart';
+import '../core/services/bot_controller.dart';
 import '../core/services/card_effect_service.dart';
 import '../core/services/question_flow_service.dart';
 import 'dialog_provider.dart';
@@ -189,9 +191,10 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Global action lock to prevent race conditions from rapid UI tapping
   bool _isProcessingAction = false;
 
-  // Bot mode variables
-  bool _isBotPlaying = false;
-  bool get isBotPlaying => _isBotPlaying;
+  // Bot mode — delegated to BotController
+  late final BotController _botController;
+  bool get _isBotPlaying => _botController.isActive;
+  bool get isBotPlaying => _botController.isActive;
   Timer? _botWatchdog;
 
   // Cached questions for the session
@@ -211,7 +214,45 @@ class GameNotifier extends StateNotifier<GameState> {
   // Dialog lock flag - prevents turn actions while dialog is open
   bool get _isDialogOpen => ref.read(dialogProvider).isAnyDialogOpen;
 
-  GameNotifier(this.ref) : super(GameState(players: []));
+  GameNotifier(this.ref) : super(GameState(players: [])) {
+    _botController = BotController(
+      callbacks: BotCallbacks(
+        rollDice: () => rollDice(),
+        endTurn: () => endTurn(),
+        addLog: (msg, {type = 'info'}) => _addLog(msg, type: type),
+        applyAnswerResult: (r) => _applyAnswerResult(r),
+        applyCardEffectResult: (r) => _applyCardEffectResult(r),
+        checkWinCondition: () => _checkWinCondition(),
+        closeCardDialog: () => closeCardDialog(),
+        closeLibraryPenaltyDialog: () => closeLibraryPenaltyDialog(),
+        closeImzaGunuDialog: () => closeImzaGunuDialog(),
+        closePrinterIssueDialog: () => closePrinterIssueDialog(),
+        closeShopDialog: () => closeShopDialog(),
+        closeTurnOrderDialog: () => closeTurnOrderDialog(),
+        closeTurnSkippedDialog: () => closeTurnSkippedDialog(),
+        answerQuestion: (isCorrect) => answerQuestion(isCorrect),
+        readDialogState: () {
+          final d = ref.read(dialogProvider);
+          return BotDialogSnapshot(
+            showQuestionDialog: d.showQuestionDialog,
+            showCardDialog: d.showCardDialog,
+            showLibraryPenaltyDialog: d.showLibraryPenaltyDialog,
+            showImzaGunuDialog: d.showImzaGunuDialog,
+            showPrinterIssueDialog: d.showPrinterIssueDialog,
+            showTurnSkippedDialog: d.showTurnSkippedDialog,
+            showShopDialog: d.showShopDialog,
+            showTurnOrderDialog: d.showTurnOrderDialog,
+          );
+        },
+        readIsDiceRolling: () => state.isDiceRolling,
+        readIsProcessing: () => _isProcessing,
+        setProcessing: (v) => _isProcessing = v,
+        readGamePhase: () => state.phase,
+      ),
+      cardEffectService: _cardEffectService,
+      questionFlowService: _questionFlowService,
+    );
+  }
 
   bool get isProcessing => _isProcessing;
 
@@ -1456,23 +1497,12 @@ class GameNotifier extends StateNotifier<GameState> {
   // BOT MODE METHODS
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  /// Toggle bot mode on/off
+  /// Toggle bot mode on/off — delegates to BotController.
+  /// BotController handles state flip, logs, and initial scheduling.
+  /// Subsequent scheduling still uses GameNotifier's _scheduleBotTurn for now.
   void toggleBotMode() {
-    _isBotPlaying = !_isBotPlaying;
-    if (_isBotPlaying) {
-      _addLog(
-        'ğŸ¤– Bot Modu AKTÄ°F! Oyun otomatik oynanÄ±yor...',
-        type: 'info',
-      );
-      _logBot('=== BOT MODE ACTIVATED ===');
-      // Start the bot game loop
-      _scheduleBotTurn();
-    } else {
-      _addLog(
-        'ğŸ¤– Bot Modu KAPALI. Manuel oynamaya dÃ¶nÃ¼ldÃ¼.',
-        type: 'info',
-      );
-      _logBot('=== BOT MODE DEACTIVATED ===');
+    _botController.toggle();
+    if (!_botController.isActive) {
       _cancelWatchdog();
     }
   }
@@ -1786,6 +1816,7 @@ class GameNotifier extends StateNotifier<GameState> {
     }
     _activeTimers.clear();
     _cancelWatchdog();
+    _botController.dispose();
     super.dispose();
   }
 }
