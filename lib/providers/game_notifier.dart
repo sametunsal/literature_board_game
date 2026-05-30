@@ -891,19 +891,10 @@ class GameNotifier extends StateNotifier<GameState> {
     if (_isBotPlaying) {
       state = state.copyWith(players: newPlayers);
       _addLog(
-        "ğŸ¤– Bot: ğŸ“š ${player.name} KÃ¼tÃ¼phanede! $libraryPenaltyTurns tur ceza.",
+        "🤖 Bot: 📚 ${player.name} Kütüphanede! $libraryPenaltyTurns tur ceza.",
         type: 'error',
       );
-      _activeTimers.add(
-        Timer(
-          const Duration(
-            milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay,
-          ),
-          () {
-            closeLibraryPenaltyDialog();
-          },
-        ),
-      );
+      _botController.handleDialogTile(BotDialogType.library);
       return;
     }
 
@@ -934,16 +925,7 @@ class GameNotifier extends StateNotifier<GameState> {
         "ğŸ¤– Bot: âœï¸ ${player.name} Ä°mza GÃ¼nÃ¼'nde okurlarÄ±yla buluÅŸtu!",
         type: 'success',
       );
-      _activeTimers.add(
-        Timer(
-          const Duration(
-            milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay,
-          ),
-          () {
-            closeImzaGunuDialog();
-          },
-        ),
-      );
+      _botController.handleDialogTile(BotDialogType.signingDay);
       return;
     }
 
@@ -1595,14 +1577,7 @@ class GameNotifier extends StateNotifier<GameState> {
     if (_isBotPlaying) {
       ref.read(dialogProvider.notifier).showShop();
       _addLog('ğŸ¤– Bot: KÄ±raathane\'ye hoÅŸ geldiniz!', type: 'info');
-      _activeTimers.add(
-        Timer(
-          const Duration(milliseconds: GameConstants.botDialogAutoCloseDelay),
-          () {
-            closeShopDialog();
-          },
-        ),
-      );
+      _botController.handleDialogTile(BotDialogType.shop);
       return;
     }
 
