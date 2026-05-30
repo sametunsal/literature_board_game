@@ -332,15 +332,10 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  // VERBOSE BOT LOGGING
+  // BOT LOGGING (forwarded to BotController)
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  /// Helper method for verbose bot logging with timestamp
-  void _logBot(String message) {
-    if (!_isBotPlaying) return;
-    final timestamp = DateTime.now().toIso8601String().substring(11, 23);
-    safePrint('[BOT ğŸ¤–] $timestamp - $message');
-  }
+  void _logBot(String message) => _botController.log(message);
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // WATCHDOG TIMER (Anti-Freeze Protection)
@@ -487,7 +482,7 @@ class GameNotifier extends StateNotifier<GameState> {
   void updateState(GameState newState) => state = newState;
   void addLog(String message, {String? type}) =>
       _addLog(message, type: type ?? 'info');
-  void logBot(String message) => _logBot(message);
+  void logBot(String message) => _botController.log(message);
   Future<void> checkPauseStatus() => _checkPauseStatus();
   void setProcessing(bool value) => _isProcessing = value;
 
