@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player.dart';
 import '../models/board_tile.dart';
 import '../models/game_enums.dart';
-import '../models/game_card.dart';
 import '../models/question.dart';
 import '../../core/utils/logger.dart';
 import '../models/tile_type.dart';
@@ -1098,7 +1097,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // BOT MODE: Auto-answer question without showing dialog
     if (_isBotPlaying) {
-      _addLog('🤖 Bot: Soru cevaplandı (${selectedQuestion.category.name})');
       final updatedAskedIds = Set<String>.from(state.askedQuestionIds);
       updatedAskedIds.add(selectedQuestion.text);
       state = state.copyWith(
@@ -1106,8 +1104,13 @@ class GameNotifier extends StateNotifier<GameState> {
             ? {selectedQuestion.text}
             : updatedAskedIds,
       );
-      final isCorrect = _random.nextBool();
-      await _botAnswerQuestion(selectedQuestion, isCorrect);
+      await _botController.handleQuestionTile(
+        question: selectedQuestion,
+        currentTile: state.currentTile,
+        allPlayers: state.players,
+        currentPlayerIndex: state.currentPlayerIndex,
+        consecutiveDoubles: state.consecutiveDoubles,
+      );
       return;
     }
 
@@ -1132,40 +1135,6 @@ class GameNotifier extends StateNotifier<GameState> {
     _questionDialogCompleter = null;
   }
 
-
-  /// Bot auto-answers a question
-  Future<void> _botAnswerQuestion(Question question, bool isCorrect) async {
-    try {
-      final tile = state.currentTile;
-      final categoryName = tile?.category;
-      final difficulty = tile?.difficulty ?? Difficulty.medium;
-
-      final result = _questionFlowService.processAnswer(
-        isCorrect: isCorrect,
-        player: state.currentPlayer,
-        categoryName: categoryName,
-        difficulty: difficulty,
-        allPlayers: state.players,
-        currentPlayerIndex: state.currentPlayerIndex,
-        consecutiveDoubles: state.consecutiveDoubles,
-        random: _random,
-        isBot: true,
-      );
-
-      _applyAnswerResult(result);
-
-      if (result.checkWinCondition) {
-        _checkWinCondition();
-      }
-
-      await Future.delayed(const Duration(milliseconds: 500));
-      endTurn();
-    } catch (e, stackTrace) {
-      safePrint('🚨 ERROR in _botAnswerQuestion: $e');
-      safePrint('Stack trace: $stackTrace');
-      endTurn();
-    }
-  }
 
 
   Future<void> answerQuestion(bool isCorrect) async {
@@ -1257,8 +1226,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // BOT MODE: Auto-apply card effect without showing dialog
     if (_isBotPlaying) {
-      _addLog('ğŸ¤– Bot: $cardName kartÄ± Ã§ekildi');
-      await _botApplyCardEffect(card);
+      _addLog('🤖 Bot: $cardName kartı çekildi');
+      await _botController.handleCardEffect(
+        card: card,
+        players: state.players,
+        currentPlayerIndex: state.currentPlayerIndex,
+      );
       return;
     }
 
@@ -1280,28 +1253,6 @@ class GameNotifier extends StateNotifier<GameState> {
     _cardDialogCompleter = null;
   }
 
-  /// Bot auto-applies a card effect
-  Future<void> _botApplyCardEffect(GameCard card) async {
-    try {
-      final result = _cardEffectService.apply(
-        card: card,
-        players: state.players,
-        currentPlayerIndex: state.currentPlayerIndex,
-        isBot: true,
-      );
-      _applyCardEffectResult(result);
-
-      if (result.rollAgain) return;
-
-      // Wait a short delay then end turn
-      await Future.delayed(const Duration(milliseconds: 500));
-      endTurn();
-    } catch (e, stackTrace) {
-      safePrint('🚨 ERROR in _botApplyCardEffect: $e');
-      safePrint('Stack trace: $stackTrace');
-      endTurn();
-    }
-  }
 
   void closeCardDialog() {
     var scheduledChainedTileArrival = false;
