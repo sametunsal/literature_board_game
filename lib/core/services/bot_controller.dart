@@ -64,6 +64,10 @@ class BotController {
       _cb.addLog('🤖 Bot Modu KAPALI. Manuel oynamaya dönüldü.', type: 'info');
       log('=== BOT MODE DEACTIVATED ===');
       _cancelWatchdog();
+      for (final timer in _activeTimers) {
+        timer.cancel();
+      }
+      _activeTimers.clear();
     }
     return _isActive;
   }

@@ -1421,8 +1421,17 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Subsequent scheduling still uses GameNotifier's _scheduleBotTurn for now.
   void toggleBotMode() {
     _botController.toggle();
-    if (!_botController.isActive) {
+    if (_botController.isActive) {
+      _scheduleBotTurn();
+    } else {
       _cancelWatchdog();
+      for (final timer in _activeTimers) {
+        timer.cancel();
+      }
+      _activeTimers.clear();
+      _isProcessing = false;
+      _isProcessingAction = false;
+      state = state.copyWith(isDiceRolling: false, isDiceRolled: false);
     }
   }
 
