@@ -14,13 +14,13 @@ import '../models/difficulty.dart';
 import '../data/board_config.dart';
 import '../data/game_cards.dart';
 import '../core/constants/game_constants.dart';
-import '../core/utils/question_line_estimator.dart';
 import '../core/managers/audio_manager.dart';
 import '../core/services/turn_order_service.dart';
 import '../core/services/dice_service.dart';
 import '../core/services/movement_service.dart';
 import '../core/services/economy_service.dart';
 import '../core/services/card_effect_service.dart';
+import '../core/services/question_flow_service.dart';
 import 'dialog_provider.dart';
 import 'repository_providers.dart';
 
@@ -180,6 +180,8 @@ class GameNotifier extends StateNotifier<GameState> {
   final EconomyService _economyService = const EconomyService();
   late final CardEffectService _cardEffectService =
       CardEffectService(_economyService);
+  late final QuestionFlowService _questionFlowService =
+      QuestionFlowService(_economyService);
   final _random = Random();
   Timer? _animationTimer;
   final List<Timer> _activeTimers = [];
@@ -1004,186 +1006,64 @@ class GameNotifier extends StateNotifier<GameState> {
   /// - Ã‡Ä±rak -> Medium
   /// - Kalfa -> Hard
   /// - Usta -> Hard (for farming rewards)
-  Difficulty _getDifficultyForMasteryLevel(MasteryLevel level) {
-    switch (level) {
-      case MasteryLevel.novice:
-        return Difficulty.easy;
-      case MasteryLevel.cirak:
-        return Difficulty.medium;
-      case MasteryLevel.kalfa:
-      case MasteryLevel.usta:
-        return Difficulty.hard;
-    }
-  }
-
-  /// Aynı havuzda, mümkünse daha az satıra düşen soruyu tercih eder (okunabilirlik).
-  Question? _pickQuestionPreferringShortLines(List<Question> pool) {
-    if (pool.isEmpty) return null;
-    const maxW = 320.0;
-    final scored = <MapEntry<Question, int>>[];
-    for (final q in pool) {
-      scored.add(
-        MapEntry(q, QuestionLineEstimator.estimateLines(q.text, maxW)),
-      );
-    }
-    scored.sort((a, b) => a.value.compareTo(b.value));
-    final minLines = scored.first.value;
-    final ties =
-        scored.where((e) => e.value == minLines).map((e) => e.key).toList();
-    ties.shuffle(_random);
-    return ties.first;
-  }
 
   Future<void> _triggerQuestion(BoardTile tile) async {
     safePrint('TEST: Yüklü Soru Sayısı: ${_cachedQuestions.length}');
-    // For Teşvik tiles, use bonusBilgiler only
-    // For other tiles, use the tile's category
-    List<String> categoryNames = [];
-    if (tile.type == TileType.tesvik) {
-      categoryNames = ['bonusBilgiler'];
-    } else if (tile.category != null && tile.category!.isNotEmpty) {
-      categoryNames = [tile.category!];
-    }
-    safePrint('TEST: Aranan Kategori: $categoryNames');
 
-    if (categoryNames.isEmpty) {
-      _addLog('Bu karoda soru yok.', type: 'info');
+    final selectionResult = _questionFlowService.selectQuestion(
+      tile: tile,
+      player: state.currentPlayer,
+      questionPool: _cachedQuestions,
+      askedQuestionIds: state.askedQuestionIds,
+      random: _random,
+    );
+
+    for (final log in selectionResult.logs) {
+      _addLog(log.message, type: log.type);
+    }
+
+    if (selectionResult.noQuestionsFound) {
       endTurn();
       return;
     }
 
-    // Now uses categoryNames list instead of tile.category!
-    final player = state.currentPlayer;
-
-    // AUTO-DIFFICULTY: Get difficulty based on player's mastery level
-    // For Teşvik tiles, use bonusBilgiler for mastery calculation
-    final masteryCategoryName = tile.type == TileType.tesvik
-        ? 'bonusBilgiler'
-        : categoryNames.first;
-    final masteryLevel = player.getMasteryLevel(masteryCategoryName);
-    final targetDifficulty = _getDifficultyForMasteryLevel(masteryLevel);
-    final difficultyFilter = switch (targetDifficulty) {
-      Difficulty.easy => 'easy',
-      Difficulty.medium => 'medium',
-      Difficulty.hard => 'hard',
-    };
-
-    // Log the auto-selected difficulty
-    final masteryName = masteryLevel.displayName;
-    final categoryDisplay = tile.type == TileType.tesvik
-        ? 'TeÅŸvik'
-        : _getCategoryDisplayName(categoryNames.first);
-    _addLog(
-      '$categoryDisplay kategorisinde $masteryName seviyesi: $difficultyFilter soru seÃ§ildi.',
-      type: 'info',
-    );
-
-    // BUG FIX: Filter out already asked questions to prevent repetition
-    // For Teşvik tiles, match bonusBilgiler only
-    final filteredQuestions = _cachedQuestions.where((q) {
-      final matchesCategory = categoryNames.contains(q.category.name);
-      final matchesDifficulty = q.difficulty == difficultyFilter;
-      final notAskedBefore = !state.askedQuestionIds.contains(q.text);
-      return matchesCategory && matchesDifficulty && notAskedBefore;
-    }).toList();
-    // Shuffle filtered questions for randomness
-    filteredQuestions.shuffle(_random);
-
-    Question? selectedQuestion;
-    bool shouldResetAskedIds = false;
-
-    if (filteredQuestions.isEmpty) {
-      // All questions in this category/difficulty have been asked
-      // Reset and recycle questions
-      _addLog(
-        'âš  Bu kategorideki tÃ¼m sorular soruldu. Liste sÄ±fÄ±rlanÄ±yor...',
-        type: 'info',
+    if (selectionResult.isTesivkBonusFallback) {
+      final player = state.currentPlayer;
+      final bonusStars = 5;
+      List<Player> newPlayers = List.from(state.players);
+      newPlayers[state.currentPlayerIndex] = player.copyWith(
+        stars: player.stars + bonusStars,
       );
-      shouldResetAskedIds = true;
+      state = state.copyWith(
+        players: newPlayers,
+        floatingEffect: FloatingEffect('+$bonusStars ⭐', Colors.amber),
+      );
 
-      // Get all questions for this category and difficulty (including previously asked)
-      final allCategoryQuestions = _cachedQuestions.where((q) {
-        final matchesCategory = categoryNames.contains(q.category.name);
-        final matchesDifficulty = q.difficulty == difficultyFilter;
-        return matchesCategory && matchesDifficulty;
-      }).toList();
-      // Shuffle recycled questions for randomness
-      allCategoryQuestions.shuffle(_random);
+      _activeTimers.add(
+        Timer(
+          const Duration(
+            seconds: GameConstants.floatingEffectDurationSeconds,
+          ),
+          () {
+            state = state.copyWith(floatingEffect: null);
+          },
+        ),
+      );
 
-      if (allCategoryQuestions.isEmpty) {
-        // Fallback: any question from this category (any difficulty)
-        final anyCategoryQuestions = _cachedQuestions
-            .where((q) => categoryNames.contains(q.category.name))
-            .toList();
-        // Shuffle fallback questions for randomness
-        anyCategoryQuestions.shuffle(_random);
-        if (anyCategoryQuestions.isEmpty) {
-          // FALLBACK FOR TEÅžVIK TILES: Create a synthetic bonus reward question
-          // This proves the tile logic works even when the database is empty
-          if (tile.type == TileType.tesvik) {
-            _addLog(
-              'ğŸ TeÅŸvik karesi - Bonus Ã¶dÃ¼lÃ¼ kazandÄ±nÄ±z!',
-              type: 'success',
-            );
-
-            // Award bonus stars directly
-            final player = state.currentPlayer;
-            final bonusStars = 5;
-            List<Player> newPlayers = List.from(state.players);
-            newPlayers[state.currentPlayerIndex] = player.copyWith(
-              stars: player.stars + bonusStars,
-            );
-            state = state.copyWith(
-              players: newPlayers,
-              floatingEffect: FloatingEffect('+$bonusStars â­', Colors.amber),
-            );
-
-            // Clear floating effect after delay
-            _activeTimers.add(
-              Timer(
-                const Duration(
-                  seconds: GameConstants.floatingEffectDurationSeconds,
-                ),
-                () {
-                  state = state.copyWith(floatingEffect: null);
-                },
-              ),
-            );
-
-            _addLog(
-              '${player.name} TeÅŸvik bonusu kazandÄ±: +$bonusStars â­',
-              type: 'success',
-            );
-            endTurn();
-            return;
-          }
-
-          _addLog('Bu kategoride soru bulunamadÄ±!', type: 'error');
-          endTurn();
-          return;
-        }
-        selectedQuestion =
-            _pickQuestionPreferringShortLines(anyCategoryQuestions)!;
-        _addLog(
-          'âš  $difficultyFilter zorlu soru bulunamadÄ±, rastgele soru seÃ§ildi.',
-          type: 'info',
-        );
-      } else {
-        selectedQuestion =
-            _pickQuestionPreferringShortLines(allCategoryQuestions)!;
-        _addLog(
-          'ğŸ”„ Soru havuzu yenilendi, yeni soru seÃ§iliyor.',
-          type: 'info',
-        );
-      }
-    } else {
-      selectedQuestion = _pickQuestionPreferringShortLines(filteredQuestions)!;
+      _addLog(
+        '${player.name} Teşvik bonusu kazandı: +$bonusStars ⭐',
+        type: 'success',
+      );
+      endTurn();
+      return;
     }
+
+    final selectedQuestion = selectionResult.question!;
+    final shouldResetAskedIds = selectionResult.shouldResetAskedIds;
 
     // BOT MODE: Auto-answer question without showing dialog
     if (_isBotPlaying) {
-      _addLog('ğŸ¤– Bot: Soru cevaplandÄ± (${selectedQuestion.category.name})');
-      // Track this question as asked even in bot mode
+      _addLog('🤖 Bot: Soru cevaplandı (${selectedQuestion.category.name})');
       final updatedAskedIds = Set<String>.from(state.askedQuestionIds);
       updatedAskedIds.add(selectedQuestion.text);
       state = state.copyWith(
@@ -1191,17 +1071,14 @@ class GameNotifier extends StateNotifier<GameState> {
             ? {selectedQuestion.text}
             : updatedAskedIds,
       );
-      // Bot has 50% chance to answer correctly
       final isCorrect = _random.nextBool();
       await _botAnswerQuestion(selectedQuestion, isCorrect);
       return;
     }
 
     // Normal mode: Show question dialog
-    // Create completer to wait for user response (Async Barrier)
     _questionDialogCompleter = Completer<void>();
 
-    // BUG FIX: Track this question as asked to prevent repetition
     final updatedAskedIds = Set<String>.from(state.askedQuestionIds);
     updatedAskedIds.add(selectedQuestion.text);
 
@@ -1215,12 +1092,11 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _isProcessingAction = false;
 
-    // CRITICAL: Await the completer to wait for user to answer
-    // The dialog will call answerQuestion() which will complete this completer
     await _questionDialogCompleter!.future;
 
     _questionDialogCompleter = null;
   }
+
 
   /// Bot auto-answers a question
   Future<void> _botAnswerQuestion(Question question, bool isCorrect) async {
@@ -1229,149 +1105,34 @@ class GameNotifier extends StateNotifier<GameState> {
       final categoryName = tile?.category;
       final difficulty = tile?.difficulty ?? Difficulty.medium;
 
-      if (isCorrect && categoryName != null) {
-        final player = state.currentPlayer;
+      final result = _questionFlowService.processAnswer(
+        isCorrect: isCorrect,
+        player: state.currentPlayer,
+        categoryName: categoryName,
+        difficulty: difficulty,
+        allPlayers: state.players,
+        currentPlayerIndex: state.currentPlayerIndex,
+        consecutiveDoubles: state.consecutiveDoubles,
+        random: _random,
+        isBot: true,
+      );
 
-        // Record correct answer for this category and difficulty
-        final newAnswerCount = player.recordCorrectAnswer(
-          categoryName,
-          difficulty,
-        );
-        final currentMastery = player.getMasteryLevel(categoryName);
+      _applyAnswerResult(result);
 
-        // Base stars for correct answer
-        int baseStars = switch (difficulty) {
-          Difficulty.easy => GameConstants.rewardEasy,
-          Difficulty.medium => GameConstants.rewardMedium,
-          Difficulty.hard => GameConstants.rewardHard,
-        };
-
-        String difficultyName = difficulty.displayName;
-        String promotionMessage = '';
-        MasteryLevel? newMastery;
-        int promotionReward = 0;
-
-        // Check for promotion
-        if (currentMastery == MasteryLevel.novice &&
-            difficulty == Difficulty.easy &&
-            newAnswerCount >= GameConstants.answersRequiredForPromotion) {
-          newMastery = MasteryLevel.cirak;
-          promotionReward = GameConstants.promotionBaseReward * 1;
-          promotionMessage =
-              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Ã‡Ä±rak oldun!';
-        } else if (currentMastery == MasteryLevel.cirak &&
-            difficulty == Difficulty.medium &&
-            newAnswerCount >= GameConstants.answersRequiredForPromotion) {
-          newMastery = MasteryLevel.kalfa;
-          promotionReward = GameConstants.promotionBaseReward * 2;
-          promotionMessage =
-              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
-        } else if (currentMastery == MasteryLevel.kalfa &&
-            difficulty == Difficulty.hard &&
-            newAnswerCount >= GameConstants.answersRequiredForPromotion) {
-          newMastery = MasteryLevel.usta;
-          promotionReward = GameConstants.promotionBaseReward * 3;
-          promotionMessage =
-              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
-        }
-
-        final leaderStars = state.players
-            .map((p) => p.stars)
-            .reduce((a, b) => a > b ? a : b);
-        final totalStars = computeAdjustedReward(
-          baseStars: baseStars,
-          promotionReward: promotionReward,
-          currentStars: player.stars,
-          leaderStars: leaderStars,
-          consecutiveDoubles: state.consecutiveDoubles,
-        );
-        final derivedBonus = totalStars - baseStars - promotionReward;
-        if (derivedBonus > 0) {
-          _addLog('ğŸ”¥ Bot: Denge Bonusu! +$derivedBonus â­', type: 'success');
-        }
-
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // QUOTE DROP RATE (Progression Bonus) - Bot version
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        var updatedPlayer = player;
-        if (difficulty == Difficulty.hard &&
-            _random.nextDouble() < GameConstants.hardQuestionQuoteDropRate) {
-          final randomQuoteId = 'quote_${_random.nextInt(100)}';
-          updatedPlayer = player.collectQuote(randomQuoteId);
-          _addLog(
-            'ğŸ“œ Bot: Zor soru bonusu! SÃ¶z kartÄ± kazandÄ±!',
-            type: 'success',
-          );
-        } else {
-          updatedPlayer = player;
-        }
-
-        // Update player
-        List<Player> newPlayers = List.from(state.players);
-
-        // Update category progress
-        final newProgress = Map<String, Map<String, int>>.from(
-          player.categoryProgress,
-        );
-        if (!newProgress.containsKey(categoryName)) {
-          newProgress[categoryName] = {};
-        }
-        final categoryMap = Map<String, int>.from(newProgress[categoryName]!);
-        categoryMap[difficulty.name] = newAnswerCount;
-        newProgress[categoryName] = categoryMap;
-
-        updatedPlayer = updatedPlayer.copyWith(categoryProgress: newProgress);
-
-        // Apply promotion if occurred
-        if (newMastery != null) {
-          final newLevels = Map<String, int>.from(player.categoryLevels);
-          newLevels[categoryName] = newMastery.value;
-          updatedPlayer = updatedPlayer.copyWith(categoryLevels: newLevels);
-        }
-
-        // Add stars
-        updatedPlayer = updatedPlayer.copyWith(
-          stars: updatedPlayer.stars + totalStars,
-        );
-
-        newPlayers[state.currentPlayerIndex] = updatedPlayer;
-        state = state.copyWith(players: newPlayers);
-
-        _addLog(
-          'ğŸ¤– Bot: DoÄŸru cevap! +$baseStars â­ ($difficultyName)',
-          type: 'success',
-        );
-
-        if (promotionMessage.isNotEmpty) {
-          _addLog(
-            'ğŸ¤– Bot: $promotionMessage (+$promotionReward â­ bonus)',
-            type: 'success',
-          );
-        }
-
+      if (result.checkWinCondition) {
         _checkWinCondition();
-      } else if (!isCorrect) {
-        _addLog(
-          "ğŸ¤– Bot: YanlÄ±ÅŸ cevap. YÄ±ldÄ±z kazanamadÄ±n.",
-          type: 'error',
-        );
       }
 
-      // Wait a short delay then end turn
       await Future.delayed(const Duration(milliseconds: 500));
       endTurn();
     } catch (e, stackTrace) {
-      safePrint('ğŸš¨ ERROR in _botAnswerQuestion: $e');
+      safePrint('🚨 ERROR in _botAnswerQuestion: $e');
       safePrint('Stack trace: $stackTrace');
       endTurn();
     }
   }
 
-  /// Answer question and handle mastery progression
-  /// Mastery System:
-  /// - 3 Easy answers â†’ Ã‡Ä±rak (1x reward)
-  /// - 3 Medium answers â†’ Kalfa (2x reward) [requires Ã‡Ä±rak]
-  /// - 3 Hard answers â†’ Usta (3x reward) [requires Kalfa]
+
   Future<void> answerQuestion(bool isCorrect) async {
     // UI Race Condition Guard
     if (_isProcessingAction) return;
@@ -1386,202 +1147,56 @@ class GameNotifier extends StateNotifier<GameState> {
       final categoryName = tile?.category;
       final difficulty = tile?.difficulty ?? Difficulty.medium;
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-      // STEP 1: IMMEDIATE LOGIC - Calculate score/stars (dialog still visible)
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-      if (isCorrect && categoryName != null) {
-        final player = state.currentPlayer;
+      final result = _questionFlowService.processAnswer(
+        isCorrect: isCorrect,
+        player: state.currentPlayer,
+        categoryName: categoryName,
+        difficulty: difficulty,
+        allPlayers: state.players,
+        currentPlayerIndex: state.currentPlayerIndex,
+        consecutiveDoubles: state.consecutiveDoubles,
+        random: _random,
+      );
 
-        // Record correct answer for this category and difficulty
-        final newAnswerCount = player.recordCorrectAnswer(
-          categoryName,
-          difficulty,
-        );
-        final currentMastery = player.getMasteryLevel(categoryName);
+      _applyAnswerResult(result);
 
-        // Base stars for correct answer
-        int baseStars = switch (difficulty) {
-          Difficulty.easy => GameConstants.rewardEasy,
-          Difficulty.medium => GameConstants.rewardMedium,
-          Difficulty.hard => GameConstants.rewardHard,
-        };
-
-        String difficultyName = difficulty.displayName;
-        String promotionMessage = '';
-        MasteryLevel? newMastery;
-        int promotionReward = 0;
-
-        // Check for promotion
-        if (currentMastery == MasteryLevel.novice &&
-            difficulty == Difficulty.easy &&
-            newAnswerCount >= GameConstants.answersRequiredForPromotion) {
-          newMastery = MasteryLevel.cirak;
-          promotionReward = GameConstants.promotionBaseReward * 1;
-          promotionMessage =
-              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Ã‡Ä±rak oldun!';
-        } else if (currentMastery == MasteryLevel.cirak &&
-            difficulty == Difficulty.medium &&
-            newAnswerCount >= GameConstants.answersRequiredForPromotion) {
-          newMastery = MasteryLevel.kalfa;
-          promotionReward = GameConstants.promotionBaseReward * 2;
-          promotionMessage =
-              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
-        } else if (currentMastery == MasteryLevel.kalfa &&
-            difficulty == Difficulty.hard &&
-            newAnswerCount >= GameConstants.answersRequiredForPromotion) {
-          newMastery = MasteryLevel.usta;
-          promotionReward = GameConstants.promotionBaseReward * 3;
-          promotionMessage =
-              'ğŸ† ${_getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
-        }
-
-        final leaderStars = state.players
-            .map((p) => p.stars)
-            .reduce((a, b) => a > b ? a : b);
-        final totalStars = computeAdjustedReward(
-          baseStars: baseStars,
-          promotionReward: promotionReward,
-          currentStars: player.stars,
-          leaderStars: leaderStars,
-          consecutiveDoubles: state.consecutiveDoubles,
-        );
-        final derivedBonus = totalStars - baseStars - promotionReward;
-        if (derivedBonus > 0) {
-          _addLog(
-            'ğŸ”¥ Denge Bonusu! +$derivedBonus â­ (Geriden gelme bonusu)',
-            type: 'success',
-          );
-        }
-
-        // Update player stats
-        List<Player> newPlayers = List.from(state.players);
-        var updatedPlayer = player;
-
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // QUOTE DROP RATE (Progression Bonus)
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        if (difficulty == Difficulty.hard &&
-            _random.nextDouble() < GameConstants.hardQuestionQuoteDropRate) {
-          // Generate a random quote ID
-          final randomQuoteId = 'quote_${_random.nextInt(100)}';
-          updatedPlayer = updatedPlayer.collectQuote(randomQuoteId);
-          _addLog(
-            'ğŸ“œ Zor soru bonusu! Rastgele bir sÃ¶z kartÄ± kazandÄ±n!',
-            type: 'success',
-          );
-        }
-
-        final newProgress = Map<String, Map<String, int>>.from(
-          player.categoryProgress,
-        );
-        if (!newProgress.containsKey(categoryName)) {
-          newProgress[categoryName] = {};
-        }
-        final categoryMap = Map<String, int>.from(newProgress[categoryName]!);
-        categoryMap[difficulty.name] = newAnswerCount;
-        newProgress[categoryName] = categoryMap;
-
-        updatedPlayer = updatedPlayer.copyWith(categoryProgress: newProgress);
-
-        if (newMastery != null) {
-          final newLevels = Map<String, int>.from(player.categoryLevels);
-          newLevels[categoryName] = newMastery.value;
-          updatedPlayer = updatedPlayer.copyWith(categoryLevels: newLevels);
-        }
-
-        updatedPlayer = updatedPlayer.copyWith(
-          stars: updatedPlayer.stars + totalStars,
-        );
-
-        newPlayers[state.currentPlayerIndex] = updatedPlayer;
-
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // STEP 2: TRIGGER ANIMATION - Update state to show confetti/feedback
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        state = state.copyWith(players: newPlayers);
-
-        _addLog(
-          'DoÄŸru cevap! +$baseStars â­ ($difficultyName)',
-          type: 'success',
-        );
-        // SFX now plays in dialog during reveal phase
-
-        if (promotionMessage.isNotEmpty) {
-          _addLog(
-            '$promotionMessage (+$promotionReward â­ bonus)',
-            type: 'success',
-          );
-        }
-
+      if (result.checkWinCondition) {
         _checkWinCondition();
-
         if (state.phase != GamePhase.gameOver) {
           shouldEndTurn = true;
         }
-      } else if (!isCorrect) {
-        _addLog("YanlÄ±ÅŸ cevap. YÄ±ldÄ±z kazanamadÄ±n.", type: 'error');
-        // SFX now plays in dialog during reveal phase
-        shouldEndTurn = true;
       } else {
         shouldEndTurn = true;
       }
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-      // STEP 3: TEARDOWN - Close dialog immediately
-      // NOTE: Animation already played in the dialog widget before callback was called.
-      // No additional delay needed here.
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-      safePrint('ğŸ”· TEARDOWN: Setting showQuestionDialog=false');
+      safePrint('🔷 TEARDOWN: Setting showQuestionDialog=false');
       ref.read(dialogProvider.notifier).hideQuestion();
     } catch (e, stack) {
-      safePrint('ğŸ”· ERROR in answerQuestion: $e');
-      safePrint('ğŸ”· Stack: $stack');
+      safePrint('🔷 ERROR in answerQuestion: $e');
+      safePrint('🔷 Stack: $stack');
     } finally {
-      // SAFETY FALLBACK: Always reset processing flag and complete completer
       _isProcessing = false;
-      _isProcessingAction = false; // Reset action guard
-      safePrint('ğŸ”· FINALLY: _isProcessing reset to false');
+      _isProcessingAction = false;
+      safePrint('🔷 FINALLY: _isProcessing reset to false');
 
-      // Unblock the flow - safely complete the completer
       safePrint(
-        'ğŸ”· Completer status: ${_questionDialogCompleter != null ? (_questionDialogCompleter!.isCompleted ? "completed" : "pending") : "null"}',
+        '🔷 Completer status: ${_questionDialogCompleter != null ? (_questionDialogCompleter!.isCompleted ? "completed" : "pending") : "null"}',
       );
       if (_questionDialogCompleter != null &&
           !_questionDialogCompleter!.isCompleted) {
-        safePrint('ğŸ”· Completing _questionDialogCompleter NOW');
+        safePrint('🔷 Completing _questionDialogCompleter NOW');
         _questionDialogCompleter!.complete();
       }
       _questionDialogCompleter = null;
-      safePrint('ğŸ”· FINALLY complete, dialog should be closed now');
+      safePrint('🔷 FINALLY complete, dialog should be closed now');
     }
 
-    // End turn after everything is cleaned up
     if (shouldEndTurn) {
       endTurn();
     }
   }
 
-  /// Get display name for category
-  String _getCategoryDisplayName(String categoryName) {
-    switch (categoryName) {
-      case 'turkEdebiyatindaIlkler':
-        return 'TÃ¼rk EdebiyatÄ±nda Ä°lkler';
-      case 'edebiSanatlar':
-        return 'Edebi Sanatlar';
-      case 'eserKarakter':
-        return 'Eser-Karakter';
-      case 'edebiyatAkimlari':
-        return 'Edebiyat AkÄ±mlarÄ±';
-      case 'benKimim':
-        return 'Ben Kimim?';
-      case 'tesvik':
-        return 'TeÅŸvik';
-      case 'bonusBilgiler':
-        return 'Bonus Bilgi';
-      default:
-        return categoryName;
-    }
-  }
+
 
   /// Draw a card from Åžans or Kader deck
   /// Note: Currently unused - cards are handled through other mechanisms
@@ -1730,6 +1345,15 @@ class GameNotifier extends StateNotifier<GameState> {
     }
     if (result.showPrinterIssue) {
       ref.read(dialogProvider.notifier).showPrinterIssue();
+    }
+  }
+
+  void _applyAnswerResult(AnswerResult result) {
+    List<Player> newPlayers = List.from(state.players);
+    newPlayers[state.currentPlayerIndex] = result.updatedPlayer;
+    state = state.copyWith(players: newPlayers);
+    for (final log in result.logs) {
+      _addLog(log.message, type: log.type);
     }
   }
 
