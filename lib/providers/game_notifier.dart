@@ -653,10 +653,7 @@ class GameNotifier extends StateNotifier<GameState> {
         );
 
         // Wait for animation then pass turn to next player
-        final delay = _isBotPlaying
-            ? const Duration(milliseconds: 300)
-            : const Duration(milliseconds: 1500);
-        await Future.delayed(delay);
+        await Future.delayed(_botController.getDelay(humanMs: 1500, botMs: 300));
         _isProcessing =
             false; // Reset before calling endTurn() to prevent blocking
         endTurn();
@@ -687,10 +684,7 @@ class GameNotifier extends StateNotifier<GameState> {
         );
 
         // Move player
-        final delay = _isBotPlaying
-            ? const Duration(milliseconds: 300)
-            : const Duration(milliseconds: 1500);
-        await Future.delayed(delay);
+        await Future.delayed(_botController.getDelay(humanMs: 1500, botMs: 300));
         await _movePlayer(roll);
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -736,10 +730,7 @@ class GameNotifier extends StateNotifier<GameState> {
       );
 
       // Move player
-      final delay = _isBotPlaying
-          ? const Duration(milliseconds: 300)
-          : const Duration(milliseconds: 1500);
-      await Future.delayed(delay);
+      await Future.delayed(_botController.getDelay(humanMs: 1500, botMs: 300));
       await _movePlayer(roll);
 
       // After movement, endTurn() is called in finally block
@@ -867,10 +858,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     // Wait to show the message, then end turn (faster in bot mode)
-    final delay = _isBotPlaying
-        ? const Duration(milliseconds: 300)
-        : const Duration(milliseconds: 1500);
-    await Future.delayed(delay);
+    await Future.delayed(_botController.getDelay(humanMs: 1500, botMs: 300));
 
     // Movement roll still holds _isProcessing — release before endTurn
     _isProcessing = false;
@@ -1196,8 +1184,9 @@ class GameNotifier extends StateNotifier<GameState> {
   /// For bot players: Auto-applies effect without showing dialog
   Future<void> _drawCardAndApply(CardType cardType) async {
     await Future.delayed(
-      Duration(
-        milliseconds: _isBotPlaying ? 100 : GameConstants.cardAnimationDelay,
+      _botController.getDelay(
+        humanMs: GameConstants.cardAnimationDelay,
+        botMs: 100,
       ),
     );
 
@@ -1355,10 +1344,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     try {
       // Always pass turn to next player
-      final delay = _isBotPlaying
-          ? const Duration(milliseconds: 200)
-          : Duration(milliseconds: GameConstants.turnChangeDelay);
-      await Future.delayed(delay);
+      await Future.delayed(
+        _botController.getDelay(
+          humanMs: GameConstants.turnChangeDelay,
+          botMs: 200,
+        ),
+      );
       int next = (state.currentPlayerIndex + 1) % state.players.length;
       final nextPlayer = state.players[next];
       bool isSkipped = nextPlayer.turnsToSkip > 0;
@@ -1555,12 +1546,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     ref.read(dialogProvider.notifier).showTurnSkipped();
 
-    final delay = _isBotPlaying
-        ? const Duration(milliseconds: 450)
-        : const Duration(
-            milliseconds: GameConstants.turnSkippedDialogAutoCloseDelay,
-          );
-    await Future.delayed(delay);
+    await Future.delayed(
+      _botController.getDelay(
+        humanMs: GameConstants.turnSkippedDialogAutoCloseDelay,
+        botMs: 450,
+      ),
+    );
 
     if (!mounted || !ref.read(dialogProvider).showTurnSkippedDialog) return;
 

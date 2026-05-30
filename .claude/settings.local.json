@@ -30,7 +30,16 @@
       "Bash(xxd)",
       "Bash(/c/Users/samet/AppData/Local/flutter/bin/dart run *)",
       "Bash(xxd /tmp/test_contains.dart)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "PowerShell(flutter analyze *)",
+      "PowerShell(try { Get-ChildItem -Path \"C:\\\\src\" -Filter \"flutter.bat\" -Recurse -ErrorAction Stop -Depth 3 | Select-Object -First 1 -ExpandProperty FullName } catch {}; try { Get-ChildItem -Path \"C:\\\\dev\" -Filter \"flutter.bat\" -Recurse -ErrorAction Stop -Depth 3 | Select-Object -First 1 -ExpandProperty FullName } catch {}; try { Get-ChildItem -Path \"C:\\\\flutter\" -Filter \"flutter.bat\" -Recurse -ErrorAction Stop -Depth 3 | Select-Object -First 1 -ExpandProperty FullName } catch {}; try { Get-ChildItem -Path \"$env:LOCALAPPDATA\" -Filter \"flutter.bat\" -Recurse -ErrorAction Stop -Depth 4 | Select-Object -First 1 -ExpandProperty FullName } catch {})",
+      "PowerShell(& \"C:\\\\Users\\\\samet\\\\AppData\\\\Local\\\\flutter\\\\bin\\\\flutter.bat\" analyze)",
+      "PowerShell(& \"C:\\\\Users\\\\samet\\\\AppData\\\\Local\\\\flutter\\\\bin\\\\flutter.bat\" test)",
+      "PowerShell(git *)",
+      "PowerShell(\\(Get-Content \"C:\\\\sametunsal\\\\literature_board_game\\\\lib\\\\providers\\\\game_notifier.dart\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(& \"C:\\\\Users\\\\samet\\\\AppData\\\\Local\\\\flutter\\\\bin\\\\flutter.bat\" analyze lib/core/services/bot_callbacks.dart lib/core/services/bot_controller.dart)",
+      "PowerShell(& \"C:\\\\Users\\\\samet\\\\AppData\\\\Local\\\\flutter\\\\bin\\\\flutter.bat\" test test/core/services/bot_controller_test.dart)",
+      "PowerShell(& \"C:\\\\Users\\\\samet\\\\AppData\\\\Local\\\\flutter\\\\bin\\\\flutter.bat\" analyze lib/providers/game_notifier.dart)"
     ]
   }
 }
