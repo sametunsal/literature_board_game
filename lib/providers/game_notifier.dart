@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player.dart';
@@ -1609,29 +1608,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     closeTurnSkippedDialog();
     endTurn();
-  }
-
-  void _updateStars(Player p, int stars) async {
-    int idx = state.players.indexWhere((x) => x.id == p.id);
-    if (idx == -1) return;
-
-    int diff = stars - p.stars;
-    if (diff != 0) {
-      String sign = diff > 0 ? "+" : "";
-      Color color = diff > 0 ? Colors.greenAccent : Colors.redAccent;
-      state = state.copyWith(
-        floatingEffect: FloatingEffect("$sign$diff", color),
-      );
-    }
-
-    List<Player> list = List.from(state.players);
-    list[idx] = list[idx].copyWith(stars: stars);
-    state = state.copyWith(players: list);
-
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (mounted) {
-      state = state.copyWith(floatingEffect: null);
-    }
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
