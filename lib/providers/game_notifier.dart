@@ -20,6 +20,7 @@ import '../core/services/turn_order_service.dart';
 import '../core/services/dice_service.dart';
 import '../core/services/movement_service.dart';
 import '../core/services/economy_service.dart';
+import '../core/services/card_effect_service.dart';
 import 'dialog_provider.dart';
 import 'repository_providers.dart';
 
@@ -177,6 +178,8 @@ class GameNotifier extends StateNotifier<GameState> {
   final DiceService _diceService = DiceService();
   final MovementService _movementService = MovementService();
   final EconomyService _economyService = const EconomyService();
+  late final CardEffectService _cardEffectService =
+      CardEffectService(_economyService);
   final _random = Random();
   Timer? _animationTimer;
   final List<Timer> _activeTimers = [];
@@ -1630,447 +1633,55 @@ class GameNotifier extends StateNotifier<GameState> {
   /// Bot auto-applies a card effect
   Future<void> _botApplyCardEffect(GameCard card) async {
     try {
-      final player = state.currentPlayer;
+      final result = _cardEffectService.apply(
+        card: card,
+        players: state.players,
+        currentPlayerIndex: state.currentPlayerIndex,
+        isBot: true,
+      );
+      _applyCardEffectResult(result);
 
-      switch (card.effectType) {
-        case CardEffectType.moneyChange:
-          // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
-          final originalStars = player.stars;
-          final rawNewStars = player.stars + card.value;
-          final newStars = rawNewStars.clamp(0, double.infinity).toInt();
-
-          // Check if player couldn't afford the full payment
-          if (card.value < 0 && rawNewStars < 0) {
-            // Player went into debt (before clamp) - apply alternative penalty
-            List<Player> penaltyPlayers = List.from(state.players);
-            penaltyPlayers[state.currentPlayerIndex] = player.copyWith(
-              stars: newStars,
-              turnsToSkip: player.turnsToSkip + 1, // Alternative: 1 turn wait
-            );
-            state = state.copyWith(players: penaltyPlayers);
-            _addLog(
-              "ğŸ¤– Bot: âš ï¸ ${player.name} Ã¶deyemedi! YÄ±ldÄ±zlar 0'a dÃ¼ÅŸtÃ¼ + 1 tur ceza!",
-              type: 'error',
-            );
-          } else {
-            _updateStars(player, newStars);
-            if (card.value > 0) {
-              _addLog(
-                "ğŸ¤– Bot: ğŸ’° ${player.name} +${card.value} yÄ±ldÄ±z kazandÄ±!",
-                type: 'success',
-              );
-            } else {
-              final lost = originalStars - newStars;
-              _addLog(
-                "ğŸ¤– Bot: ğŸ’¸ ${player.name} $lost yÄ±ldÄ±z kaybetti!",
-                type: 'error',
-              );
-            }
-          }
-          break;
-
-        case CardEffectType.move:
-          int targetPos = card.value % BoardConfig.boardSize;
-          bool passedStart = targetPos < player.position;
-
-          List<Player> newPlayers = List.from(state.players);
-          int newStars = player.stars;
-
-          if (passedStart && targetPos != BoardConfig.startPosition) {
-            newStars += GameConstants.passingStartBonus;
-            _addLog(
-              "ğŸ¤– Bot: ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
-              type: 'success',
-            );
-          }
-
-          newPlayers[state.currentPlayerIndex] = player.copyWith(
-            position: targetPos,
-            stars: newStars,
-          );
-          state = state.copyWith(players: newPlayers);
-          _addLog(
-            "ğŸ¤– Bot: ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!",
-          );
-          break;
-
-        case CardEffectType.moveRelative:
-          // Move forward/backward by relative amount
-          int currentPos = player.position;
-          int targetPos = (currentPos + card.value) % BoardConfig.boardSize;
-          if (targetPos < 0) targetPos += BoardConfig.boardSize;
-
-          List<Player> newPlayers = List.from(state.players);
-          int newStars = player.stars;
-
-          // Check if passed start (moving forward wraps around)
-          if (card.value > 0 && targetPos < currentPos) {
-            newStars += GameConstants.passingStartBonus;
-            _addLog(
-              "ğŸ¤– Bot: ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
-              type: 'success',
-            );
-          }
-
-          newPlayers[state.currentPlayerIndex] = player.copyWith(
-            position: targetPos,
-            stars: newStars,
-          );
-          state = state.copyWith(players: newPlayers);
-
-          if (card.value > 0) {
-            _addLog(
-              "ğŸ¤– Bot: âž¡ï¸ ${player.name} $targetPos. kareye ilerledi!",
-            );
-          } else {
-            _addLog(
-              "ğŸ¤– Bot: â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!",
-            );
-          }
-          break;
-
-        case CardEffectType.jail:
-          List<Player> temp = List.from(state.players);
-          temp[state.currentPlayerIndex] = player.copyWith(
-            position: BoardConfig.shopPosition,
-            turnsToSkip: GameConstants.jailTurns,
-          );
-          state = state.copyWith(players: temp);
-          _addLog(
-            "ğŸ¤– Bot: â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
-            type: 'error',
-          );
-          break;
-
-        case CardEffectType.skipTurn:
-          // Check if it's a printer/ink issue card
-          final isPrinterIssue = card.description.contains('MÃ¼rekkep') ||
-              card.description.contains('YazÄ±cÄ±');
-
-          if (isPrinterIssue) {
-            ref.read(dialogProvider.notifier).showPrinterIssue();
-            _addLog(
-              "ğŸ¤– Bot: â–ªï¸ ${player.name} yazÄ±cÄ± sorunuyla karÅŸÄ±laÅŸtÄ±!",
-              type: 'error',
-            );
-          } else {
-            List<Player> temp = List.from(state.players);
-            temp[state.currentPlayerIndex] = player.copyWith(
-              turnsToSkip: player.turnsToSkip + card.value,
-            );
-            state = state.copyWith(players: temp);
-            _addLog(
-              "ğŸ¤– Bot: â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
-              type: 'error',
-            );
-          }
-          break;
-
-        case CardEffectType.rollAgain:
-          _addLog(
-            "ğŸ¤– Bot: ğŸ² ${player.name} tekrar zar atÄ±yor!",
-            type: 'info',
-          );
-          // Don't end turn, let the bot roll again
-          return;
-
-        case CardEffectType.loseStarsPercentage:
-          final percentage = _economyService.applyPercentLossCap(
-            requestedPercent: card.value,
-          );
-          final loss = (player.stars * percentage / 100).round();
-          final newStars = _economyService.normalizeTransferFloor(
-            currentStars: player.stars,
-            delta: -loss,
-          );
-          _updateStars(player, newStars);
-          _addLog(
-            "ğŸ¤– Bot: ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
-            type: 'error',
-          );
-          break;
-
-        case CardEffectType.globalMoney:
-          List<Player> updatedPlayers = List.from(state.players);
-          final currentIdx = state.currentPlayerIndex;
-          int totalTransfer = 0;
-
-          for (int i = 0; i < updatedPlayers.length; i++) {
-            if (i != currentIdx) {
-              if (card.value > 0) {
-                int amount = card.value;
-                if (updatedPlayers[i].stars < amount) {
-                  amount = updatedPlayers[i].stars > 0
-                      ? updatedPlayers[i].stars
-                      : 0;
-                }
-                updatedPlayers[i] = updatedPlayers[i].copyWith(
-                  stars: updatedPlayers[i].stars - amount,
-                );
-                totalTransfer += amount;
-              } else {
-                int amount = -card.value;
-                updatedPlayers[i] = updatedPlayers[i].copyWith(
-                  stars: updatedPlayers[i].stars + amount,
-                );
-                totalTransfer += amount;
-              }
-            }
-          }
-
-          int finalStars = card.value > 0
-              ? player.stars + totalTransfer
-              : player.stars - totalTransfer;
-          updatedPlayers[currentIdx] = updatedPlayers[currentIdx].copyWith(
-            stars: finalStars,
-          );
-
-          state = state.copyWith(players: updatedPlayers);
-
-          if (card.value > 0) {
-            _addLog(
-              "ğŸ¤– Bot: ğŸ† ${player.name} herkesten toplam $totalTransfer â­ aldÄ±!",
-              type: 'success',
-            );
-          } else {
-            _addLog(
-              "ğŸ¤– Bot: ğŸ’¸ ${player.name} herkese toplam $totalTransfer â­ Ã¶dedi!",
-              type: 'error',
-            );
-          }
-          break;
-      }
+      if (result.rollAgain) return;
 
       // Wait a short delay then end turn
       await Future.delayed(const Duration(milliseconds: 500));
       endTurn();
     } catch (e, stackTrace) {
-      safePrint('ğŸš¨ ERROR in _botApplyCardEffect: $e');
+      safePrint('🚨 ERROR in _botApplyCardEffect: $e');
       safePrint('Stack trace: $stackTrace');
       endTurn();
     }
   }
 
   void closeCardDialog() {
-    var movementOccurred = false;
     var scheduledChainedTileArrival = false;
 
     try {
       final card = ref.read(dialogProvider).currentCard;
       if (card != null) {
-        final player = state.currentPlayer;
+        final result = _cardEffectService.apply(
+          card: card,
+          players: state.players,
+          currentPlayerIndex: state.currentPlayerIndex,
+        );
 
-        switch (card.effectType) {
-          case CardEffectType.moneyChange:
-            // BorÃ§lanma KorumasÄ± (Debt Protection): Balance never goes below 0
-            final originalStars = player.stars;
-            final rawNewStars = player.stars + card.value;
-            final newStars = rawNewStars.clamp(0, double.infinity).toInt();
-
-            // Check if player couldn't afford the full payment
-            if (card.value < 0 && rawNewStars < 0) {
-              // Player went into debt (before clamp) - apply alternative penalty
-              List<Player> penaltyPlayers = List.from(state.players);
-              penaltyPlayers[state.currentPlayerIndex] = player.copyWith(
-                stars: newStars,
-                turnsToSkip: player.turnsToSkip + 1, // Alternative: 1 turn wait
-              );
-              state = state.copyWith(players: penaltyPlayers);
-              _addLog(
-                "âš ï¸ ${player.name} Ã¶deyemedi! YÄ±ldÄ±zlar 0'a dÃ¼ÅŸtÃ¼ + 1 tur ceza!",
-                type: 'error',
-              );
-            } else {
-              _updateStars(player, newStars);
-              if (card.value > 0) {
-                _addLog(
-                  "ğŸ’° ${player.name} +${card.value} yÄ±ldÄ±z kazandÄ±!",
-                  type: 'success',
-                );
-              } else {
-                final lost = originalStars - newStars;
-                _addLog(
-                  "ğŸ’¸ ${player.name} $lost yÄ±ldÄ±z kaybetti!",
-                  type: 'error',
-                );
-              }
-            }
-            break;
-
-          case CardEffectType.move:
-            int targetPos = card.value % BoardConfig.boardSize;
-            bool passedStart = targetPos < player.position;
-
-            List<Player> newPlayers = List.from(state.players);
-            int newStars = player.stars;
-
-            if (passedStart && targetPos != BoardConfig.startPosition) {
-              newStars += GameConstants.passingStartBonus;
-              _addLog(
-                "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
-                type: 'success',
-              );
-            }
-
-            newPlayers[state.currentPlayerIndex] = player.copyWith(
-              position: targetPos,
-              stars: newStars,
-            );
-            state = state.copyWith(players: newPlayers);
-            _addLog("ğŸ¯ ${player.name} $targetPos. kareye taÅŸÄ±ndÄ±!");
-            movementOccurred = true;
-            break;
-
-          case CardEffectType.moveRelative:
-            // Move forward/backward by relative amount
-            int currentPos = player.position;
-            int targetPos = (currentPos + card.value) % BoardConfig.boardSize;
-            if (targetPos < 0) targetPos += BoardConfig.boardSize;
-
-            List<Player> newPlayers = List.from(state.players);
-            int newStars = player.stars;
-
-            // Check if passed start (moving forward wraps around)
-            if (card.value > 0 && targetPos < currentPos) {
-              newStars += GameConstants.passingStartBonus;
-              _addLog(
-                "ğŸ BaÅŸlangÄ±Ã§tan geÃ§tin: +${GameConstants.passingStartBonus} YÄ±ldÄ±z!",
-                type: 'success',
-              );
-            }
-
-            newPlayers[state.currentPlayerIndex] = player.copyWith(
-              position: targetPos,
-              stars: newStars,
-            );
-            state = state.copyWith(players: newPlayers);
-
-            if (card.value > 0) {
-              _addLog("âž¡ï¸ ${player.name} $targetPos. kareye ilerledi!");
-            } else {
-              _addLog("â¬…ï¸ ${player.name} $targetPos. kareye geri gitti!");
-            }
-            movementOccurred = true;
-            break;
-
-          case CardEffectType.jail:
-            List<Player> temp = List.from(state.players);
-            temp[state.currentPlayerIndex] = player.copyWith(
-              position: BoardConfig.shopPosition,
-              turnsToSkip: GameConstants.jailTurns,
-            );
-            state = state.copyWith(players: temp);
-            _addLog(
-              "â›” ${player.name} kÃ¼tÃ¼phane nÃ¶betine yollandÄ±!",
-              type: 'error',
-            );
-            movementOccurred = true;
-            break;
-
-          case CardEffectType.skipTurn:
-            // Check if it's a printer/ink issue card
-            final isPrinterIssue = card.description.contains('MÃ¼rekkep') ||
-                card.description.contains('YazÄ±cÄ±');
-
-            if (isPrinterIssue) {
-              ref.read(dialogProvider.notifier).showPrinterIssue();
-              _addLog(
-                "â–ªï¸ ${player.name} yazÄ±cÄ± sorunuyla karÅŸÄ±laÅŸtÄ±!",
-                type: 'error',
-              );
-            } else {
-              List<Player> temp = List.from(state.players);
-              temp[state.currentPlayerIndex] = player.copyWith(
-                turnsToSkip: player.turnsToSkip + card.value,
-              );
-              state = state.copyWith(players: temp);
-              _addLog(
-                "â¸ï¸ ${player.name} ${card.value} tur ceza aldÄ±!",
-                type: 'error',
-              );
-            }
-            break;
-
-          case CardEffectType.rollAgain:
-            _addLog("ğŸ² ${player.name} tekrar zar atÄ±yor!", type: 'info');
-            ref.read(dialogProvider.notifier).hideCard();
-            if (_cardDialogCompleter != null &&
-                !_cardDialogCompleter!.isCompleted) {
-              _cardDialogCompleter!.complete();
-            }
-            // Tekrar zar — sıra aynı oyuncuda; movement barrier'ı kaldır
-            _isProcessing = false;
-            return;
-
-          case CardEffectType.loseStarsPercentage:
-            final percentage = _economyService.applyPercentLossCap(
-              requestedPercent: card.value,
-            );
-            final loss = (player.stars * percentage / 100).round();
-            final newStars = _economyService.normalizeTransferFloor(
-              currentStars: player.stars,
-              delta: -loss,
-            );
-            _updateStars(player, newStars);
-            _addLog(
-              "ğŸ“‰ ${player.name} yÄ±ldÄ±zlarÄ±nÄ±n %%$percentage'ini kaybetti! (-$loss â­)",
-              type: 'error',
-            );
-            break;
-
-          case CardEffectType.globalMoney:
-            List<Player> updatedPlayers = List.from(state.players);
-            final currentIdx = state.currentPlayerIndex;
-            int totalTransfer = 0;
-
-            for (int i = 0; i < updatedPlayers.length; i++) {
-              if (i != currentIdx) {
-                if (card.value > 0) {
-                  int amount = card.value;
-                  if (updatedPlayers[i].stars < amount) {
-                    amount = updatedPlayers[i].stars > 0
-                        ? updatedPlayers[i].stars
-                        : 0;
-                  }
-                  updatedPlayers[i] = updatedPlayers[i].copyWith(
-                    stars: updatedPlayers[i].stars - amount,
-                  );
-                  totalTransfer += amount;
-                } else {
-                  int amount = -card.value;
-                  updatedPlayers[i] = updatedPlayers[i].copyWith(
-                    stars: updatedPlayers[i].stars + amount,
-                  );
-                  totalTransfer += amount;
-                }
-              }
-            }
-
-            int finalStars = card.value > 0
-                ? player.stars + totalTransfer
-                : player.stars - totalTransfer;
-            updatedPlayers[currentIdx] = updatedPlayers[currentIdx].copyWith(
-              stars: finalStars,
-            );
-
-            state = state.copyWith(players: updatedPlayers);
-
-            if (card.value > 0) {
-              _addLog(
-                "ğŸ† ${player.name} herkesten toplam $totalTransfer â­ aldÄ±!",
-                type: 'success',
-              );
-            } else {
-              _addLog(
-                "ğŸ’¸ ${player.name} herkese toplam $totalTransfer â­ Ã¶dedi!",
-                type: 'error',
-              );
-            }
-            break;
+        if (result.rollAgain) {
+          for (final log in result.logs) {
+            _addLog(log.message, type: log.type);
+          }
+          ref.read(dialogProvider.notifier).hideCard();
+          if (_cardDialogCompleter != null &&
+              !_cardDialogCompleter!.isCompleted) {
+            _cardDialogCompleter!.complete();
+          }
+          _isProcessing = false;
+          return;
         }
 
+        _applyCardEffectResult(result);
+
         // CRITICAL FIX: After applying a movement card effect, trigger tile arrival
-        if (movementOccurred) {
+        if (result.movementOccurred) {
           final newPlayer = state.currentPlayer;
           if (state.tiles.isNotEmpty &&
               newPlayer.position < state.tiles.length) {
@@ -2091,17 +1702,34 @@ class GameNotifier extends StateNotifier<GameState> {
         _cardDialogCompleter!.complete();
       }
 
-      // Zar hareketi sırasında endTurn() no-op oluyordu (İmza Günü ile aynı kök neden)
       _isProcessing = false;
 
-      // Hareket yoksa veya zincir kare işlenmeyecekse turu kapat; aksi halde
-      // _handleTileArrival / soru akışı endTurn çağırır.
       if (!scheduledChainedTileArrival) {
         endTurn();
       }
     } finally {
       // Release action guard
       _isProcessingAction = false;
+    }
+  }
+
+  void _applyCardEffectResult(CardEffectResult result) {
+    state = state.copyWith(players: result.updatedPlayers);
+    for (final log in result.logs) {
+      _addLog(log.message, type: log.type);
+    }
+    if (result.showFloatingEffect &&
+        result.starsDelta != null &&
+        result.starsDelta != 0) {
+      final sign = result.starsDelta! > 0 ? '+' : '';
+      final color =
+          result.starsDelta! > 0 ? Colors.greenAccent : Colors.redAccent;
+      state = state.copyWith(
+        floatingEffect: FloatingEffect('$sign${result.starsDelta}', color),
+      );
+    }
+    if (result.showPrinterIssue) {
+      ref.read(dialogProvider.notifier).showPrinterIssue();
     }
   }
 

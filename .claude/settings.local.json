@@ -25,7 +25,12 @@
       "PowerShell($env:Path)",
       "Bash(where flutter *)",
       "Bash(/c/Users/samet/AppData/Local/flutter/bin/flutter analyze *)",
-      "Bash(/c/Users/samet/AppData/Local/flutter/bin/flutter test *)"
+      "Bash(/c/Users/samet/AppData/Local/flutter/bin/flutter test *)",
+      "Bash(xxd C:/sametunsal/literature_board_game/lib/core/services/card_effect_service.dart)",
+      "Bash(xxd)",
+      "Bash(/c/Users/samet/AppData/Local/flutter/bin/dart run *)",
+      "Bash(xxd /tmp/test_contains.dart)",
+      "Bash(python3 *)"
     ]
   }
 }

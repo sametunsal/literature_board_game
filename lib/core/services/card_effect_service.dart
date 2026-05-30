@@ -16,6 +16,7 @@ class CardEffectResult {
   final bool movementOccurred;
   final bool rollAgain;
   final bool showPrinterIssue;
+  final bool showFloatingEffect;
   final int? starsDelta;
 
   const CardEffectResult({
@@ -24,6 +25,7 @@ class CardEffectResult {
     this.movementOccurred = false,
     this.rollAgain = false,
     this.showPrinterIssue = false,
+    this.showFloatingEffect = false,
     this.starsDelta,
   });
 }
@@ -115,6 +117,7 @@ class CardEffectService {
       updatedPlayers: updated,
       logs: logs,
       starsDelta: delta,
+      showFloatingEffect: true,
     );
   }
 
@@ -280,6 +283,7 @@ class CardEffectService {
         type: 'error',
       )],
       starsDelta: newStars - player.stars,
+      showFloatingEffect: true,
     );
   }
 
