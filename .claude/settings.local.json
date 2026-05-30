@@ -19,7 +19,13 @@
       "Bash(cp /d/proje/edebina_3d/everything-claude-code/agents/*.md /d/proje/edebina_3d/.cursor/agents/)",
       "Skill(update-config)",
       "WebSearch",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(xargs -I {} bash -c \"echo \\\\\"{}: $\\(wc -l < '{}'\\) lines\\\\\"\")",
+      "Bash(del *)",
+      "PowerShell($env:Path)",
+      "Bash(where flutter *)",
+      "Bash(/c/Users/samet/AppData/Local/flutter/bin/flutter analyze *)",
+      "Bash(/c/Users/samet/AppData/Local/flutter/bin/flutter test *)"
     ]
   }
 }

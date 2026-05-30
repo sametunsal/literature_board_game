@@ -193,6 +193,10 @@ class GameNotifier extends StateNotifier<GameState> {
   // Cached questions for the session
   List<Question> _cachedQuestions = [];
 
+  // Guard against infinite card→tile→card chains
+  int _tileArrivalDepth = 0;
+  static const _maxTileArrivalDepth = 3;
+
   // Completers for waiting for dialogs to close (Async Barrier)
   Completer<void>? _cardDialogCompleter;
   Completer<void>? _questionDialogCompleter;
@@ -733,6 +737,18 @@ class GameNotifier extends StateNotifier<GameState> {
 
   Future<void> _handleTileArrival(BoardTile tile) async {
     _logBot('_handleTileArrival() - Tile: ${tile.name}, Type: ${tile.type}');
+
+    if (_tileArrivalDepth >= _maxTileArrivalDepth) {
+      safePrint(
+        '⚠️ Tile arrival chain depth exceeded $_maxTileArrivalDepth — breaking loop',
+      );
+      _tileArrivalDepth = 0;
+      endTurn();
+      return;
+    }
+    _tileArrivalDepth++;
+    try {
+
     switch (tile.type) {
       case TileType.category:
         _logBot('Tile type: CATEGORY');
@@ -787,6 +803,10 @@ class GameNotifier extends StateNotifier<GameState> {
         // KADER - Draw a fate card
         await _drawCardAndApply(CardType.kader);
         break;
+    }
+
+    } finally {
+      _tileArrivalDepth--;
     }
   }
 
@@ -2533,6 +2553,10 @@ class GameNotifier extends StateNotifier<GameState> {
   @override
   void dispose() {
     _animationTimer?.cancel();
+    for (final timer in _activeTimers) {
+      timer.cancel();
+    }
+    _activeTimers.clear();
     _cancelWatchdog();
     super.dispose();
   }
