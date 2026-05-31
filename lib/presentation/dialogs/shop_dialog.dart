@@ -69,48 +69,63 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
     final state = ref.watch(gameProvider);
     final player = state.currentPlayer;
     final ownedIds = player.collectedQuotes.toSet();
-    final size = MediaQuery.of(context).size;
-    final isLandscape = size.width > size.height;
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: Container(
-        width: isLandscape
-            ? math.min(size.width * 0.42, 380.0)
-            : math.min(size.width * 0.88, 420.0),
-        height: isLandscape ? size.height * 0.92 : size.height * 0.85,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(player.stars),
+      insetPadding: EdgeInsets.zero,
+      child: SafeArea(
+        minimum: const EdgeInsets.all(12),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableSize = constraints.biggest;
+            final isLandscape = availableSize.width > availableSize.height;
+            final dialogWidth = isLandscape
+                ? math.min(availableSize.width * 0.42, 380.0)
+                : math.min(availableSize.width * 0.88, 420.0);
+            final dialogHeight = isLandscape
+                ? availableSize.height
+                : availableSize.height * 0.85;
 
-            // Daily Selection Banner
-            _buildDailyBanner(),
+            return SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Header
+                    _buildHeader(player.stars),
 
-            // Period Filter
-            _buildPeriodFilter(),
+                    // Daily Selection Banner
+                    _buildDailyBanner(),
 
-            // Quotes List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildQuotesList(ownedIds, player.stars),
-            ),
+                    // Period Filter
+                    _buildPeriodFilter(),
 
-            // Close Button
-            _buildCloseButton(),
-          ],
+                    // Quotes List
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _buildQuotesList(ownedIds, player.stars),
+                    ),
+
+                    // Close Button
+                    _buildCloseButton(),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -354,7 +369,11 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
           ),
         ),
         trailing: isOwned
-            ? const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28)
+            ? const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.green,
+                size: 28,
+              )
             : ElevatedButton(
                 onPressed: canAfford ? () => _purchaseQuote(quote) : null,
                 style: ElevatedButton.styleFrom(
@@ -376,7 +395,11 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded, size: 16, color: Colors.white),
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 4),
                     Text('${quote.starCost}'),
                   ],
