@@ -3,6 +3,7 @@ import '../models/tile_type.dart';
 import '../models/difficulty.dart';
 import '../models/game_enums.dart';
 import '../core/utils/logger.dart';
+import 'book_config.dart';
 
 class BoardConfig {
   static final List<QuestionCategory> _categoryOrder = [
@@ -60,6 +61,7 @@ class BoardConfig {
         position: 1,
         type: TileType.category,
         category: _getCategoryAt(0).name,
+        bookId: _bookIdAt(1),
         difficulty: Difficulty.easy,
       ),
     );
@@ -70,6 +72,7 @@ class BoardConfig {
         position: 2,
         type: TileType.category,
         category: _getCategoryAt(1).name,
+        bookId: _bookIdAt(2),
         difficulty: Difficulty.easy,
       ),
     );
@@ -90,6 +93,7 @@ class BoardConfig {
         position: 4,
         type: TileType.category,
         category: _getCategoryAt(2).name,
+        bookId: _bookIdAt(4),
         difficulty: Difficulty.easy,
       ),
     );
@@ -100,6 +104,7 @@ class BoardConfig {
         position: 5,
         type: TileType.category,
         category: _getCategoryAt(3).name,
+        bookId: _bookIdAt(5),
         difficulty: Difficulty.easy,
       ),
     );
@@ -122,6 +127,7 @@ class BoardConfig {
         position: 7,
         type: TileType.category,
         category: _getCategoryAt(4).name,
+        bookId: _bookIdAt(7),
         difficulty: Difficulty.medium,
       ),
     );
@@ -142,6 +148,7 @@ class BoardConfig {
         position: 9,
         type: TileType.category,
         category: _getCategoryAt(0).name,
+        bookId: _bookIdAt(9),
         difficulty: Difficulty.medium,
       ),
     );
@@ -162,6 +169,7 @@ class BoardConfig {
         position: 11,
         type: TileType.category,
         category: _getCategoryAt(1).name,
+        bookId: _bookIdAt(11),
         difficulty: Difficulty.medium,
       ),
     );
@@ -172,6 +180,7 @@ class BoardConfig {
         position: 12,
         type: TileType.category,
         category: _getCategoryAt(2).name,
+        bookId: _bookIdAt(12),
         difficulty: Difficulty.medium,
       ),
     );
@@ -194,6 +203,7 @@ class BoardConfig {
         position: 14,
         type: TileType.category,
         category: _getCategoryAt(3).name,
+        bookId: _bookIdAt(14),
         difficulty: Difficulty.medium,
       ),
     );
@@ -204,6 +214,7 @@ class BoardConfig {
         position: 15,
         type: TileType.category,
         category: _getCategoryAt(4).name,
+        bookId: _bookIdAt(15),
         difficulty: Difficulty.medium,
       ),
     );
@@ -234,6 +245,7 @@ class BoardConfig {
         position: 18,
         type: TileType.category,
         category: _getCategoryAt(0).name,
+        bookId: _bookIdAt(18),
         difficulty: Difficulty.medium,
       ),
     );
@@ -256,6 +268,7 @@ class BoardConfig {
         position: 20,
         type: TileType.category,
         category: _getCategoryAt(1).name,
+        bookId: _bookIdAt(20),
         difficulty: Difficulty.hard,
       ),
     );
@@ -266,6 +279,7 @@ class BoardConfig {
         position: 21,
         type: TileType.category,
         category: _getCategoryAt(2).name,
+        bookId: _bookIdAt(21),
         difficulty: Difficulty.hard,
       ),
     );
@@ -286,6 +300,7 @@ class BoardConfig {
         position: 23,
         type: TileType.category,
         category: _getCategoryAt(3).name,
+        bookId: _bookIdAt(23),
         difficulty: Difficulty.hard,
       ),
     );
@@ -296,6 +311,7 @@ class BoardConfig {
         position: 24,
         type: TileType.category,
         category: _getCategoryAt(4).name,
+        bookId: _bookIdAt(24),
         difficulty: Difficulty.hard,
       ),
     );
@@ -315,6 +331,8 @@ class BoardConfig {
 
   static QuestionCategory _getCategoryAt(int index) =>
       _categoryOrder[index % 6];
+  static String? _bookIdAt(int position) =>
+      BookConfig.getByTilePosition(position)?.id;
   static List<String> getCategoryNames() =>
       tiles.map((t) => t.category ?? '').toList();
   static BoardTile getTile(int id) {

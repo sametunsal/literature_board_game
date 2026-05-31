@@ -17,6 +17,7 @@ class TileMapper {
       'position': entity.position,
       'type': entity.type.name,
       'category': entity.category,
+      'bookId': entity.bookId,
       'difficulty': entity.difficulty.name,
     };
   }
@@ -32,6 +33,7 @@ class TileMapper {
         orElse: () => TileType.category,
       ),
       category: json['category'] as String?,
+      bookId: json['bookId'] as String?,
       difficulty: Difficulty.values.firstWhere(
         (e) => e.name == json['difficulty'],
         orElse: () => Difficulty.medium,

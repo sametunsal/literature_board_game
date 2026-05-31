@@ -18,6 +18,9 @@ class BoardTile {
   /// Category for category tiles (one of the 6 categories)
   final String? category;
 
+  /// Optional Publishing Tycoon book property ID for category tiles.
+  final String? bookId;
+
   /// Difficulty level for category tiles
   final Difficulty difficulty;
 
@@ -27,6 +30,7 @@ class BoardTile {
     required this.position,
     required this.type,
     this.category,
+    this.bookId,
     this.difficulty = Difficulty.medium,
   });
 
@@ -37,6 +41,7 @@ class BoardTile {
     int? position,
     TileType? type,
     String? category,
+    String? bookId,
     Difficulty? difficulty,
   }) {
     return BoardTile(
@@ -45,6 +50,7 @@ class BoardTile {
       position: position ?? this.position,
       type: type ?? this.type,
       category: category ?? this.category,
+      bookId: bookId ?? this.bookId,
       difficulty: difficulty ?? this.difficulty,
     );
   }
@@ -60,6 +66,7 @@ class BoardTile {
         orElse: () => TileType.category,
       ),
       category: json['category'] as String?,
+      bookId: json['bookId'] as String?,
       difficulty: Difficulty.values.firstWhere(
         (e) => e.name == json['difficulty'],
         orElse: () => Difficulty.medium,
@@ -75,6 +82,7 @@ class BoardTile {
       'position': position,
       'type': type.name,
       'category': category,
+      'bookId': bookId,
       'difficulty': difficulty.name,
     };
   }
@@ -90,6 +98,6 @@ class BoardTile {
 
   @override
   String toString() {
-    return 'BoardTile(id: $id, name: $name, position: $position, type: $type, category: $category, difficulty: $difficulty)';
+    return 'BoardTile(id: $id, name: $name, position: $position, type: $type, category: $category, bookId: $bookId, difficulty: $difficulty)';
   }
 }
