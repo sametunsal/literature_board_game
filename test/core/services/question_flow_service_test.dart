@@ -18,8 +18,8 @@ class _FixedRandom implements Random {
   final int _intValue;
 
   _FixedRandom({double doubleValue = 0.5, int intValue = 42})
-      : _doubleValue = doubleValue,
-        _intValue = intValue;
+    : _doubleValue = doubleValue,
+      _intValue = intValue;
 
   @override
   double nextDouble() => _doubleValue;
@@ -145,24 +145,38 @@ void main() {
 
   group('getCategoryDisplayName', () {
     test('all known categories return Turkish names', () {
-      expect(QuestionFlowService.getCategoryDisplayName('turkEdebiyatindaIlkler'),
-          'Türk Edebiyatında İlkler');
-      expect(QuestionFlowService.getCategoryDisplayName('edebiSanatlar'),
-          'Edebi Sanatlar');
-      expect(QuestionFlowService.getCategoryDisplayName('eserKarakter'),
-          'Eser-Karakter');
-      expect(QuestionFlowService.getCategoryDisplayName('edebiyatAkimlari'),
-          'Edebiyat Akımları');
       expect(
-          QuestionFlowService.getCategoryDisplayName('benKimim'), 'Ben Kimim?');
+        QuestionFlowService.getCategoryDisplayName('turkEdebiyatindaIlkler'),
+        'Türk Edebiyatında İlkler',
+      );
+      expect(
+        QuestionFlowService.getCategoryDisplayName('edebiSanatlar'),
+        'Edebi Sanatlar',
+      );
+      expect(
+        QuestionFlowService.getCategoryDisplayName('eserKarakter'),
+        'Eser-Karakter',
+      );
+      expect(
+        QuestionFlowService.getCategoryDisplayName('edebiyatAkimlari'),
+        'Edebiyat Akımları',
+      );
+      expect(
+        QuestionFlowService.getCategoryDisplayName('benKimim'),
+        'Ben Kimim?',
+      );
       expect(QuestionFlowService.getCategoryDisplayName('tesvik'), 'Teşvik');
-      expect(QuestionFlowService.getCategoryDisplayName('bonusBilgiler'),
-          'Bonus Bilgi');
+      expect(
+        QuestionFlowService.getCategoryDisplayName('bonusBilgiler'),
+        'Bonus Bilgi',
+      );
     });
 
     test('unknown category returns raw ID', () {
-      expect(QuestionFlowService.getCategoryDisplayName('unknownCat'),
-          'unknownCat');
+      expect(
+        QuestionFlowService.getCategoryDisplayName('unknownCat'),
+        'unknownCat',
+      );
     });
   });
 
@@ -194,13 +208,15 @@ void main() {
     test('filters by category', () {
       final pool = [
         makeQuestion(
-            text: 'Wrong cat',
-            category: QuestionCategory.benKimim,
-            difficulty: 'easy'),
+          text: 'Wrong cat',
+          category: QuestionCategory.benKimim,
+          difficulty: 'easy',
+        ),
         makeQuestion(
-            text: 'Right cat',
-            category: QuestionCategory.edebiSanatlar,
-            difficulty: 'easy'),
+          text: 'Right cat',
+          category: QuestionCategory.edebiSanatlar,
+          difficulty: 'easy',
+        ),
       ];
       final result = service.selectQuestion(
         tile: categoryTile(category: 'edebiSanatlar'),
@@ -219,9 +235,7 @@ void main() {
         makeQuestion(text: 'Easy', difficulty: 'easy'),
         makeQuestion(text: 'Medium', difficulty: 'medium'),
       ];
-      final player = makePlayer(
-        categoryLevels: {'edebiSanatlar': 1},
-      );
+      final player = makePlayer(categoryLevels: {'edebiSanatlar': 1});
       final result = service.selectQuestion(
         tile: categoryTile(),
         player: player,
@@ -252,9 +266,7 @@ void main() {
     });
 
     test('recycles when all questions asked', () {
-      final pool = [
-        makeQuestion(text: 'Only', difficulty: 'easy'),
-      ];
+      final pool = [makeQuestion(text: 'Only', difficulty: 'easy')];
       final result = service.selectQuestion(
         tile: categoryTile(),
         player: makePlayer(),
@@ -269,9 +281,7 @@ void main() {
     });
 
     test('falls back to any difficulty when target difficulty empty', () {
-      final pool = [
-        makeQuestion(text: 'Hard Q', difficulty: 'hard'),
-      ];
+      final pool = [makeQuestion(text: 'Hard Q', difficulty: 'hard')];
       final result = service.selectQuestion(
         tile: categoryTile(),
         player: makePlayer(),
@@ -289,13 +299,15 @@ void main() {
     test('tesvik tile uses bonusBilgiler category', () {
       final pool = [
         makeQuestion(
-            text: 'Bonus',
-            category: QuestionCategory.bonusBilgiler,
-            difficulty: 'easy'),
+          text: 'Bonus',
+          category: QuestionCategory.bonusBilgiler,
+          difficulty: 'easy',
+        ),
         makeQuestion(
-            text: 'Other',
-            category: QuestionCategory.edebiSanatlar,
-            difficulty: 'easy'),
+          text: 'Other',
+          category: QuestionCategory.edebiSanatlar,
+          difficulty: 'easy',
+        ),
       ];
       final result = service.selectQuestion(
         tile: tesvikTile(),
@@ -368,10 +380,7 @@ void main() {
         useLineEstimation: false,
       );
 
-      expect(
-        result.logs.first.message,
-        contains('easy soru seçildi'),
-      );
+      expect(result.logs.first.message, contains('easy soru seçildi'));
     });
   });
 
@@ -395,6 +404,7 @@ void main() {
 
       expect(result.baseStars, GameConstants.rewardEasy);
       expect(result.updatedPlayer.stars, 10 + result.totalStars);
+      expect(result.wasCorrect, true);
       expect(result.checkWinCondition, true);
     });
 
@@ -595,8 +605,12 @@ void main() {
 
     test('totalStars includes base + promotion + underdog', () {
       final trailing = makePlayer(id: 'p1', stars: 5);
-      final leader =
-          makePlayer(id: 'p2', name: 'Bob', stars: 100, position: 10);
+      final leader = makePlayer(
+        id: 'p2',
+        name: 'Bob',
+        stars: 100,
+        position: 10,
+      );
       final result = service.processAnswer(
         isCorrect: true,
         player: trailing,
@@ -632,6 +646,7 @@ void main() {
 
       expect(result.updatedPlayer.stars, 20);
       expect(result.totalStars, 0);
+      expect(result.wasCorrect, false);
       expect(result.checkWinCondition, false);
     });
 
@@ -666,6 +681,7 @@ void main() {
       );
 
       expect(result.updatedPlayer.stars, 20);
+      expect(result.wasCorrect, false);
       expect(result.checkWinCondition, false);
     });
   });
@@ -689,8 +705,9 @@ void main() {
         isBot: true,
       );
 
-      final correctLog =
-          result.logs.where((l) => l.message.contains('Doğru cevap')).first;
+      final correctLog = result.logs
+          .where((l) => l.message.contains('Doğru cevap'))
+          .first;
       expect(correctLog.message, startsWith('🤖 Bot:'));
     });
 
@@ -708,8 +725,9 @@ void main() {
         isBot: false,
       );
 
-      final correctLog =
-          result.logs.where((l) => l.message.contains('Doğru cevap')).first;
+      final correctLog = result.logs
+          .where((l) => l.message.contains('Doğru cevap'))
+          .first;
       expect(correctLog.message.startsWith('🤖'), false);
     });
 

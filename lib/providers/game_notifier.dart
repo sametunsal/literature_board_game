@@ -1334,10 +1334,7 @@ class GameNotifier extends StateNotifier<GameState> {
     List<Player> newPlayers = List.from(state.players);
     newPlayers[state.currentPlayerIndex] = result.updatedPlayer;
     state = state.copyWith(players: newPlayers);
-    _acquireTelifForCurrentBookIfEligible(
-      state.currentTile,
-      result.checkWinCondition,
-    );
+    _acquireTelifForCurrentBookIfEligible(state.currentTile, result.wasCorrect);
     for (final log in result.logs) {
       _addLog(log.message, type: log.type);
     }
