@@ -1199,6 +1199,20 @@ class GameNotifier extends StateNotifier<GameState> {
       'Telif alindi: ${state.currentPlayer.name} - ${book.title}',
       type: 'success',
     );
+    final feedbackText = 'Telif: ${book.title}';
+    state = state.copyWith(
+      floatingEffect: FloatingEffect(feedbackText, Colors.amberAccent),
+    );
+    _activeTimers.add(
+      Timer(
+        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+        () {
+          if (mounted && state.floatingEffect?.text == feedbackText) {
+            state = state.copyWith(floatingEffect: null);
+          }
+        },
+      ),
+    );
   }
 
   /// Draw a card from Åžans or Kader deck
@@ -1338,10 +1352,10 @@ class GameNotifier extends StateNotifier<GameState> {
     List<Player> newPlayers = List.from(state.players);
     newPlayers[state.currentPlayerIndex] = result.updatedPlayer;
     state = state.copyWith(players: newPlayers);
-    _acquireTelifForCurrentBookIfEligible(state.currentTile, result.wasCorrect);
     for (final log in result.logs) {
       _addLog(log.message, type: log.type);
     }
+    _acquireTelifForCurrentBookIfEligible(state.currentTile, result.wasCorrect);
   }
 
   void closeDialogs() {

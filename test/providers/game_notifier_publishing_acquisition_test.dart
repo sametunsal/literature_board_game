@@ -56,6 +56,25 @@ void main() {
       expect(telifLogs.single, contains(book.title));
     });
 
+    test('Telif acquisition shows floating feedback with book title', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = BookConfig.books.first;
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+
+      notifier.updateState(_stateFor(tile: tile));
+
+      await notifier.answerQuestion(true);
+
+      final effect = container.read(gameProvider).floatingEffect;
+      expect(effect, isNotNull);
+      expect(effect!.text, contains('Telif'));
+      expect(effect.text, contains(book.title));
+    });
+
     test('ownership belongs to the current player', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -88,6 +107,7 @@ void main() {
 
       expect(container.read(gameProvider).bookOwnerships, isEmpty);
       expect(_telifLogs(container), isEmpty);
+      expect(container.read(gameProvider).floatingEffect, isNull);
     });
 
     test('non-book special tile does not create ownership', () async {
@@ -104,6 +124,7 @@ void main() {
 
       expect(container.read(gameProvider).bookOwnerships, isEmpty);
       expect(_telifLogs(container), isEmpty);
+      expect(container.read(gameProvider).floatingEffect, isNull);
     });
 
     test('already-owned book is not replaced', () async {
@@ -131,6 +152,7 @@ void main() {
         same(existingOwnership),
       );
       expect(_telifLogs(container), isEmpty);
+      expect(container.read(gameProvider).floatingEffect, isNull);
     });
 
     test('existing stars and quote behavior remains unchanged', () async {
