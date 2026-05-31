@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player.dart';
 import '../models/board_tile.dart';
+import '../models/book_level.dart';
 import '../models/book_ownership.dart';
 import '../models/game_enums.dart';
 import '../models/question.dart';
@@ -20,6 +21,7 @@ import '../core/services/movement_service.dart';
 import '../core/services/economy_service.dart';
 import '../core/services/bot_callbacks.dart';
 import '../core/services/bot_controller.dart';
+import '../core/services/board_book_lookup_service.dart';
 import '../core/services/card_effect_service.dart';
 import '../core/services/question_flow_service.dart';
 import 'dialog_provider.dart';
@@ -1177,6 +1179,24 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
+  void _acquireTelifForCurrentBookIfEligible(BoardTile? tile, bool isCorrect) {
+    if (!isCorrect || tile == null) return;
+
+    final book = BoardBookLookupService.bookForTile(tile);
+    if (book == null || state.bookOwnerships.containsKey(book.id)) return;
+
+    final updatedOwnerships = Map<String, BookOwnership>.from(
+      state.bookOwnerships,
+    );
+    updatedOwnerships[book.id] = BookOwnership(
+      bookId: book.id,
+      ownerPlayerId: state.currentPlayer.id,
+      level: BookLevel.telif,
+    );
+
+    state = state.copyWith(bookOwnerships: updatedOwnerships);
+  }
+
   /// Draw a card from Åžans or Kader deck
   /// Note: Currently unused - cards are handled through other mechanisms
   // ignore: unused_element
@@ -1314,6 +1334,10 @@ class GameNotifier extends StateNotifier<GameState> {
     List<Player> newPlayers = List.from(state.players);
     newPlayers[state.currentPlayerIndex] = result.updatedPlayer;
     state = state.copyWith(players: newPlayers);
+    _acquireTelifForCurrentBookIfEligible(
+      state.currentTile,
+      result.checkWinCondition,
+    );
     for (final log in result.logs) {
       _addLog(log.message, type: log.type);
     }
