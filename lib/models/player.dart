@@ -61,6 +61,12 @@ class Player {
   /// Stars earned (currency for shop) - replaces Monopoly's "money"
   final int stars;
 
+  /// Publishing Tycoon currency alias.
+  ///
+  /// Phase 5 compatibility only: active gameplay still stores and mutates
+  /// currency through [stars]. Later phases can rename the backing field.
+  int get akce => stars;
+
   /// List of quote IDs/texts collected by the player
   final List<String> collectedQuotes;
 
@@ -92,6 +98,14 @@ class Player {
   /// Add stars to the player's balance
   Player addStars(int amount) {
     return copyWith(stars: stars + amount);
+  }
+
+  /// Immutable setter-style helper for the Publishing Tycoon currency alias.
+  ///
+  /// This intentionally writes to the existing [stars] backing field so current
+  /// gameplay behavior remains unchanged during migration.
+  Player withAkce(int amount) {
+    return copyWith(akce: amount);
   }
 
   /// Check if player has enough stars to make a purchase
@@ -235,6 +249,7 @@ class Player {
     bool? inJail,
     int? turnsToSkip,
     int? stars,
+    int? akce,
     List<String>? collectedQuotes,
     Map<String, int>? categoryLevels,
     Map<String, Map<String, int>>? categoryProgress,
@@ -248,7 +263,7 @@ class Player {
       position: position ?? this.position,
       inJail: inJail ?? this.inJail,
       turnsToSkip: turnsToSkip ?? this.turnsToSkip,
-      stars: stars ?? this.stars,
+      stars: akce ?? stars ?? this.stars,
       collectedQuotes: collectedQuotes ?? this.collectedQuotes,
       categoryLevels: categoryLevels ?? this.categoryLevels,
       categoryProgress: categoryProgress ?? this.categoryProgress,
