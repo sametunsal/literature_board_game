@@ -43,12 +43,6 @@ class _BoardLayoutState extends State<BoardLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final shortestSide = screenSize.shortestSide;
-    final isMobile = screenSize.width < 900;
-    final isSmallMobile = screenSize.width < 600;
-    final isTinyScreen = shortestSide < 400;
-
     // ═══════════════════════════════════════════════════════════════
     // 3D ISOMETRIC TRANSFORM
     // 1. Perspective Depth: Realistic 3D foreshortening
@@ -66,25 +60,6 @@ class _BoardLayoutState extends State<BoardLayout> {
     // bounding box by sqrt(2). The X-tilt further compresses height.
     // We want the diamond to fill the screen within safe bounds.
     // Use shortestSide to ensure board fits on any orientation/size.
-    final boardDiagonal = widget.layout.actualWidth * math.sqrt(2);
-
-    // Dynamic screen usage ratio based on screen size
-    final screenUsageRatio = isTinyScreen
-        ? 1.05
-        : (isSmallMobile ? 1.02 : (isMobile ? 0.98 : 0.95));
-    final targetWidth = shortestSide * screenUsageRatio;
-
-    // Height constraint - ensure board fits vertically with safe area
-    final boardHeight =
-        widget.layout.actualHeight *
-        math.sqrt(2) *
-        0.7; // Approximate visual height
-    final availableHeight =
-        screenSize.height * 0.80; // 80% of screen height for board
-    final maxScaleByWidth = targetWidth / boardDiagonal;
-    final maxScaleByHeight = availableHeight / boardHeight;
-    final scaleFactor = math.min(maxScaleByWidth, maxScaleByHeight);
-
     // Visual thickness of the board (shadow offset)
     // For isometric projection: all layers must use same positioning method
     final thicknessOffset = 12.0; // Fixed pixel offset for 3D depth effect
@@ -199,47 +174,129 @@ class _BoardLayoutState extends State<BoardLayout> {
       ),
     );
 
-    // Shift the board upward so the bottom doesn't overflow.
-    // The isometric tilt pushes the visual center downward, so we compensate.
-    // Use more offset for smaller screens
-    final verticalOffset =
-        screenSize.height *
-        (isTinyScreen ? 0.14 : (isSmallMobile ? 0.18 : 0.28));
-
-    // Calculate extra space needed for isometric transform overflow
-    // The diamond shape expands beyond the rectangular bounds
-    final extraSpace =
-        boardDiagonal *
-        0.25; // 25% extra space for transform (increased from 15%)
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Center(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: verticalOffset),
-            child: OverflowBox(
-              minWidth: boardDiagonal * scaleFactor + extraSpace,
-              maxWidth: boardDiagonal * scaleFactor + extraSpace,
-              minHeight: boardHeight * scaleFactor + extraSpace,
-              maxHeight: boardHeight * scaleFactor + extraSpace,
-              alignment: Alignment.center,
-              child: SizedBox(
-                width: boardDiagonal * scaleFactor,
-                height: boardHeight * scaleFactor,
-                child: isometricBoard
-                    .animate()
-                    .fadeIn(duration: MotionDurations.slow.safe)
-                    .scale(
-                      begin: Offset(scaleFactor * 0.8, scaleFactor * 0.8),
-                      end: Offset(scaleFactor, scaleFactor),
-                      duration: MotionDurations.slow.safe,
-                      curve: Curves.easeOutBack,
+        final mediaSize = MediaQuery.sizeOf(context);
+        final mediaPadding = MediaQuery.paddingOf(context);
+        final containerSize = Size(
+          constraints.hasBoundedWidth ? constraints.maxWidth : mediaSize.width,
+          constraints.hasBoundedHeight
+              ? constraints.maxHeight
+              : mediaSize.height,
+        );
+        final safeRect = Rect.fromLTRB(
+          mediaPadding.left,
+          mediaPadding.top,
+          math.max(mediaPadding.left, containerSize.width - mediaPadding.right),
+          math.max(
+            mediaPadding.top,
+            containerSize.height - mediaPadding.bottom,
+          ),
+        );
+
+        final shortestSide = safeRect.size.shortestSide;
+        final isMobile = safeRect.width < 900;
+        final isSmallMobile = safeRect.width < 600;
+        final isTinyScreen = shortestSide < 400;
+
+        // Keep the existing board scale policy, but derive it from the actual
+        // constrained safe area instead of the full MediaQuery size.
+        final boardDiagonal = widget.layout.actualWidth * math.sqrt(2);
+        final screenUsageRatio = isTinyScreen
+            ? 1.05
+            : (isSmallMobile ? 1.02 : (isMobile ? 0.98 : 0.95));
+        final targetWidth = shortestSide * screenUsageRatio;
+        final boardHeight = widget.layout.actualHeight * math.sqrt(2) * 0.7;
+        final targetHeight = safeRect.height * 0.80;
+        final policyScale = math.min(
+          targetWidth / boardDiagonal,
+          targetHeight / boardHeight,
+        );
+
+        final projectedBounds = _projectedBoardBounds(
+          matrix,
+          Size(widget.layout.actualWidth, widget.layout.actualHeight),
+          thicknessOffset,
+        );
+        final fitScale = math.min(
+          safeRect.width / projectedBounds.width,
+          safeRect.height / projectedBounds.height,
+        );
+        final scaleFactor = math.min(policyScale, fitScale);
+        final visualSize = Size(
+          projectedBounds.width * scaleFactor,
+          projectedBounds.height * scaleFactor,
+        );
+
+        return SizedBox(
+          width: containerSize.width,
+          height: containerSize.height,
+          child: Stack(
+            children: [
+              Positioned.fromRect(
+                rect: safeRect,
+                child: Center(
+                  child: SizedBox(
+                    width: visualSize.width,
+                    height: visualSize.height,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: -projectedBounds.left * scaleFactor,
+                          top: -projectedBounds.top * scaleFactor,
+                          child: Transform.scale(
+                            scale: scaleFactor,
+                            alignment: Alignment.topLeft,
+                            child: isometricBoard
+                                .animate()
+                                .fadeIn(duration: MotionDurations.slow.safe)
+                                .scale(
+                                  begin: const Offset(0.8, 0.8),
+                                  end: const Offset(1, 1),
+                                  duration: MotionDurations.slow.safe,
+                                  curve: Curves.easeOutBack,
+                                ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
     );
+  }
+
+  Rect _projectedBoardBounds(Matrix4 matrix, Size boardSize, double overflow) {
+    final center = Offset(boardSize.width / 2, boardSize.height / 2);
+    final right = boardSize.width + overflow;
+    final bottom = boardSize.height + overflow;
+    final points = <Offset>[
+      Offset.zero,
+      Offset(boardSize.width, 0),
+      Offset(0, boardSize.height),
+      Offset(boardSize.width, boardSize.height),
+      Offset(right, overflow),
+      Offset(overflow, bottom),
+      Offset(right, bottom),
+    ].map((point) => _transformAroundCenter(matrix, point, center));
+
+    final xs = points.map((point) => point.dx);
+    final ys = points.map((point) => point.dy);
+    return Rect.fromLTRB(
+      xs.reduce(math.min),
+      ys.reduce(math.min),
+      xs.reduce(math.max),
+      ys.reduce(math.max),
+    );
+  }
+
+  Offset _transformAroundCenter(Matrix4 matrix, Offset point, Offset center) {
+    final transformed = MatrixUtils.transformPoint(matrix, point - center);
+    return transformed + center;
   }
 }
