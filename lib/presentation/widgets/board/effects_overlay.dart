@@ -98,21 +98,37 @@ class EffectsOverlay extends ConsumerWidget {
 
     // Determine if score is positive based on text (starts with +)
     final isPositive = effect.text.startsWith('+');
+    final isLongMessage = effect.text.length > 10;
+    final margin = layout.kShortSide * 0.15;
+    final boxWidth = isLongMessage
+        ? math.min(260.0, layout.actualWidth - margin * 2)
+        : 140.0;
+    final boxHeight = isLongMessage ? 78.0 : 96.0;
+    final rawLeft = pawnCenter.dx - boxWidth / 2;
+    final rawTop = pawnCenter.dy - boxHeight - layout.kShortSide * 0.35;
+    final maxLeft = math.max(margin, layout.actualWidth - boxWidth - margin);
+    final maxTop = math.max(margin, layout.actualHeight - boxHeight - margin);
+    final left = rawLeft.clamp(margin, maxLeft).toDouble();
+    final top = rawTop.clamp(margin, maxTop).toDouble();
 
     return Positioned(
-      left: pawnCenter.dx - 60, // Center horizontally (approx text width/2)
-      top: pawnCenter.dy - 80, // Position above pawn
-      child: FloatingScore(
-        key: ValueKey(
-          'score_${effect.text}_${DateTime.now().millisecondsSinceEpoch}',
+      left: left,
+      top: top,
+      child: SizedBox(
+        width: boxWidth,
+        height: boxHeight,
+        child: FloatingScore(
+          key: ValueKey(
+            'score_${effect.text}_${DateTime.now().millisecondsSinceEpoch}',
+          ),
+          text: effect.text,
+          color: effect.color,
+          isPositive: isPositive,
+          onComplete: () {
+            // Effect is auto-cleared by game_notifier after delay
+            // No action needed here
+          },
         ),
-        text: effect.text,
-        color: effect.color,
-        isPositive: isPositive,
-        onComplete: () {
-          // Effect is auto-cleared by game_notifier after delay
-          // No action needed here
-        },
       ),
     );
   }
