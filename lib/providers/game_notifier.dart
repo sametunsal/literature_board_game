@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player.dart';
 import '../models/board_tile.dart';
+import '../models/book_ownership.dart';
 import '../models/game_enums.dart';
 import '../models/question.dart';
 import '../../core/utils/logger.dart';
@@ -82,6 +83,9 @@ class GameState {
   /// Track IDs of questions that have already been asked (to prevent repetition)
   final Set<String> askedQuestionIds;
 
+  /// Publishing Tycoon dormant state: book ID -> ownership state.
+  final Map<String, BookOwnership> bookOwnerships;
+
   GameState({
     required this.players,
     this.tiles = const [],
@@ -107,6 +111,7 @@ class GameState {
     this.tieBreakRound = 0,
     this.tieBreakRoundRolls = const {},
     this.askedQuestionIds = const {},
+    this.bookOwnerships = const {},
     this.isGamePaused = false,
   });
 
@@ -139,6 +144,7 @@ class GameState {
     int? tieBreakRound,
     Map<String, int>? tieBreakRoundRolls,
     Set<String>? askedQuestionIds,
+    Map<String, BookOwnership>? bookOwnerships,
     bool? isGamePaused,
   }) {
     return GameState(
@@ -167,6 +173,7 @@ class GameState {
       tieBreakRound: tieBreakRound ?? this.tieBreakRound,
       tieBreakRoundRolls: tieBreakRoundRolls ?? this.tieBreakRoundRolls,
       askedQuestionIds: askedQuestionIds ?? this.askedQuestionIds,
+      bookOwnerships: bookOwnerships ?? this.bookOwnerships,
       isGamePaused: isGamePaused ?? this.isGamePaused,
     );
   }
@@ -178,10 +185,12 @@ class GameNotifier extends StateNotifier<GameState> {
   final DiceService _diceService = DiceService();
   final MovementService _movementService = MovementService();
   final EconomyService _economyService = const EconomyService();
-  late final CardEffectService _cardEffectService =
-      CardEffectService(_economyService);
-  late final QuestionFlowService _questionFlowService =
-      QuestionFlowService(_economyService);
+  late final CardEffectService _cardEffectService = CardEffectService(
+    _economyService,
+  );
+  late final QuestionFlowService _questionFlowService = QuestionFlowService(
+    _economyService,
+  );
   final _random = Random();
   Timer? _animationTimer;
   final List<Timer> _activeTimers = [];
@@ -361,7 +370,9 @@ class GameNotifier extends StateNotifier<GameState> {
           '  - showLibraryPenaltyDialog: ${dialog.showLibraryPenaltyDialog}',
         );
         safePrint('  - showImzaGunuDialog: ${dialog.showImzaGunuDialog}');
-        safePrint('  - showPrinterIssueDialog: ${dialog.showPrinterIssueDialog}');
+        safePrint(
+          '  - showPrinterIssueDialog: ${dialog.showPrinterIssueDialog}',
+        );
         safePrint('  - showShopDialog: ${dialog.showShopDialog}');
         safePrint('  - showTurnOrderDialog: ${dialog.showTurnOrderDialog}');
         safePrint('  - phase: ${state.phase}');
@@ -459,7 +470,6 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     _addLog("Oyun baÅŸlatÄ±ldÄ±! ${uniquePlayers.length} oyuncu katÄ±ldÄ±.");
-
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -653,7 +663,9 @@ class GameNotifier extends StateNotifier<GameState> {
         );
 
         // Wait for animation then pass turn to next player
-        await Future.delayed(_botController.getDelay(humanMs: 1500, botMs: 300));
+        await Future.delayed(
+          _botController.getDelay(humanMs: 1500, botMs: 300),
+        );
         _isProcessing =
             false; // Reset before calling endTurn() to prevent blocking
         endTurn();
@@ -684,7 +696,9 @@ class GameNotifier extends StateNotifier<GameState> {
         );
 
         // Move player
-        await Future.delayed(_botController.getDelay(humanMs: 1500, botMs: 300));
+        await Future.delayed(
+          _botController.getDelay(humanMs: 1500, botMs: 300),
+        );
         await _movePlayer(roll);
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -778,63 +792,61 @@ class GameNotifier extends StateNotifier<GameState> {
     }
     _tileArrivalDepth++;
     try {
-
-    switch (tile.type) {
-      case TileType.category:
-        _logBot('Tile type: CATEGORY');
-        if (tile.category != null) {
+      switch (tile.type) {
+        case TileType.category:
+          _logBot('Tile type: CATEGORY');
+          if (tile.category != null) {
+            await _triggerQuestion(tile);
+          } else {
+            endTurn();
+          }
+          break;
+        case TileType.tesvik:
+          _logBot('Tile type: TEÅVÄ°K');
+          // TeÅŸvik tiles always trigger a bonus question
           await _triggerQuestion(tile);
-        } else {
+          break;
+        case TileType.start:
+          _logBot('Tile type: START');
+          // Start tile - award salary and end turn
+          await _handleStartTileLanding();
+          break;
+        case TileType.shop:
+          _logBot('Tile type: SHOP');
+          // KÄ±raathane - Open shop
+          await handleKiraathaneLanding();
+          break;
+        case TileType.library:
+          _logBot('Tile type: LIBRARY');
+          // KÃ¼tÃ¼phane - Apply 2-turn penalty
+          await _handleLibraryLanding();
+          break;
+        case TileType.signingDay:
+          _logBot('Tile type: SIGNING_DAY');
+          // Ä°mza GÃ¼nÃ¼ - Show dialog, no penalty
+          await _handleSigningDayLanding();
+          break;
+        case TileType.corner:
+          _logBot('Tile type: CORNER');
+          // Generic corners - end turn
           endTurn();
-        }
-        break;
-      case TileType.tesvik:
-        _logBot('Tile type: TEÅVÄ°K');
-        // TeÅŸvik tiles always trigger a bonus question
-        await _triggerQuestion(tile);
-        break;
-      case TileType.start:
-        _logBot('Tile type: START');
-        // Start tile - award salary and end turn
-        await _handleStartTileLanding();
-        break;
-      case TileType.shop:
-        _logBot('Tile type: SHOP');
-        // KÄ±raathane - Open shop
-        await handleKiraathaneLanding();
-        break;
-      case TileType.library:
-        _logBot('Tile type: LIBRARY');
-        // KÃ¼tÃ¼phane - Apply 2-turn penalty
-        await _handleLibraryLanding();
-        break;
-      case TileType.signingDay:
-        _logBot('Tile type: SIGNING_DAY');
-        // Ä°mza GÃ¼nÃ¼ - Show dialog, no penalty
-        await _handleSigningDayLanding();
-        break;
-      case TileType.corner:
-        _logBot('Tile type: CORNER');
-        // Generic corners - end turn
-        endTurn();
-        break;
-      case TileType.collection:
-        _logBot('Tile type: COLLECTION');
-        // Generic corners - end turn
-        endTurn();
-        break;
-      case TileType.chance:
-        _logBot('Tile type: CHANCE (ÅžANS)');
-        // ÅžANS - Draw a chance card
-        await _drawCardAndApply(CardType.sans);
-        break;
-      case TileType.fate:
-        _logBot('Tile type: FATE (KADER)');
-        // KADER - Draw a fate card
-        await _drawCardAndApply(CardType.kader);
-        break;
-    }
-
+          break;
+        case TileType.collection:
+          _logBot('Tile type: COLLECTION');
+          // Generic corners - end turn
+          endTurn();
+          break;
+        case TileType.chance:
+          _logBot('Tile type: CHANCE (ÅžANS)');
+          // ÅžANS - Draw a chance card
+          await _drawCardAndApply(CardType.sans);
+          break;
+        case TileType.fate:
+          _logBot('Tile type: FATE (KADER)');
+          // KADER - Draw a fate card
+          await _drawCardAndApply(CardType.kader);
+          break;
+      }
     } finally {
       _tileArrivalDepth--;
     }
@@ -1000,7 +1012,6 @@ class GameNotifier extends StateNotifier<GameState> {
     endTurn();
   }
 
-
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // 3. SORU & MASTERY SÄ°STEMÄ°
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1045,9 +1056,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       _activeTimers.add(
         Timer(
-          const Duration(
-            seconds: GameConstants.floatingEffectDurationSeconds,
-          ),
+          const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
           () {
             state = state.copyWith(floatingEffect: null);
           },
@@ -1104,8 +1113,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _questionDialogCompleter = null;
   }
-
-
 
   Future<void> answerQuestion(bool isCorrect) async {
     // UI Race Condition Guard
@@ -1170,8 +1177,6 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-
-
   /// Draw a card from Åžans or Kader deck
   /// Note: Currently unused - cards are handled through other mechanisms
   // ignore: unused_element
@@ -1223,7 +1228,6 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _cardDialogCompleter = null;
   }
-
 
   void closeCardDialog() {
     var scheduledChainedTileArrival = false;
@@ -1294,8 +1298,9 @@ class GameNotifier extends StateNotifier<GameState> {
         result.starsDelta != null &&
         result.starsDelta != 0) {
       final sign = result.starsDelta! > 0 ? '+' : '';
-      final color =
-          result.starsDelta! > 0 ? Colors.greenAccent : Colors.redAccent;
+      final color = result.starsDelta! > 0
+          ? Colors.greenAccent
+          : Colors.redAccent;
       state = state.copyWith(
         floatingEffect: FloatingEffect('$sign${result.starsDelta}', color),
       );
@@ -1365,7 +1370,10 @@ class GameNotifier extends StateNotifier<GameState> {
       ref.read(dialogProvider.notifier).hideCard();
 
       if (state.consecutiveDoubles > 0) {
-        _addLog("Çift atıldığı için sıra tekrar ${state.currentPlayer.name} oyuncusunda!", type: 'turn');
+        _addLog(
+          "Çift atıldığı için sıra tekrar ${state.currentPlayer.name} oyuncusunda!",
+          type: 'turn',
+        );
         state = state.copyWith(isDiceRolled: false, isDoubleTurn: true);
       } else {
         if (isSkipped) {
@@ -1400,7 +1408,9 @@ class GameNotifier extends StateNotifier<GameState> {
         }
       }
 
-      _logBot('endTurn() COMPLETED - next: ${nextPlayer.name}, skipped: $isSkipped');
+      _logBot(
+        'endTurn() COMPLETED - next: ${nextPlayer.name}, skipped: $isSkipped',
+      );
     } catch (e, stackTrace) {
       safePrint('ğŸš¨ ERROR in endTurn: $e');
       safePrint('Stack trace: $stackTrace');
@@ -1528,7 +1538,8 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> _handleSkippedTurnEntry() async {
-    if (state.phase != GamePhase.playerTurn || state.currentPlayer.turnsToSkip <= 0) {
+    if (state.phase != GamePhase.playerTurn ||
+        state.currentPlayer.turnsToSkip <= 0) {
       if (_isBotPlaying) {
         _scheduleBotTurn();
       }
@@ -1538,7 +1549,9 @@ class GameNotifier extends StateNotifier<GameState> {
     final player = state.currentPlayer;
     final remaining = player.turnsToSkip - 1;
     final newPlayers = List<Player>.from(state.players);
-    newPlayers[state.currentPlayerIndex] = player.copyWith(turnsToSkip: remaining);
+    newPlayers[state.currentPlayerIndex] = player.copyWith(
+      turnsToSkip: remaining,
+    );
     state = state.copyWith(players: newPlayers, isDiceRolled: false);
 
     if (remaining > 0) {
