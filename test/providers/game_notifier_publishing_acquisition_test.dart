@@ -33,8 +33,28 @@ void main() {
         expect(ownership, isNotNull);
         expect(ownership!.bookId, book.id);
         expect(ownership.level, BookLevel.telif);
+        expect(_telifLogs(container), hasLength(1));
       },
     );
+
+    test('Telif acquisition log includes book title', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = BookConfig.books.first;
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+
+      notifier.updateState(_stateFor(tile: tile));
+
+      await notifier.answerQuestion(true);
+
+      final telifLogs = _telifLogs(container);
+      expect(telifLogs, hasLength(1));
+      expect(telifLogs.single, contains('Telif'));
+      expect(telifLogs.single, contains(book.title));
+    });
 
     test('ownership belongs to the current player', () async {
       final container = ProviderContainer();
@@ -67,6 +87,7 @@ void main() {
       await notifier.answerQuestion(false);
 
       expect(container.read(gameProvider).bookOwnerships, isEmpty);
+      expect(_telifLogs(container), isEmpty);
     });
 
     test('non-book special tile does not create ownership', () async {
@@ -82,6 +103,7 @@ void main() {
       await notifier.answerQuestion(true);
 
       expect(container.read(gameProvider).bookOwnerships, isEmpty);
+      expect(_telifLogs(container), isEmpty);
     });
 
     test('already-owned book is not replaced', () async {
@@ -108,6 +130,7 @@ void main() {
         container.read(gameProvider).bookOwnerships[book.id],
         same(existingOwnership),
       );
+      expect(_telifLogs(container), isEmpty);
     });
 
     test('existing stars and quote behavior remains unchanged', () async {
@@ -128,6 +151,14 @@ void main() {
       expect(player.collectedQuotes, isEmpty);
     });
   });
+}
+
+List<String> _telifLogs(ProviderContainer container) {
+  return container
+      .read(gameProvider)
+      .logs
+      .where((log) => log.contains('Telif'))
+      .toList();
 }
 
 GameState _stateFor({

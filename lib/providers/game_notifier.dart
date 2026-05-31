@@ -1195,6 +1195,10 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     state = state.copyWith(bookOwnerships: updatedOwnerships);
+    _addLog(
+      'Telif alindi: ${state.currentPlayer.name} - ${book.title}',
+      type: 'success',
+    );
   }
 
   /// Draw a card from Åžans or Kader deck
