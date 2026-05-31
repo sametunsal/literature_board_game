@@ -370,32 +370,22 @@ Hot-seat local         WebSocket relay          Dedicated server
 │  Managers (Audio)                           │
 │  Utils (BoardLayout, Logger)                │
 ├─────────────────────────────────────────────┤
-│                   BRIDGE                    │
-│  MCP Command Listener (C# Unity Script)     │
-│  MCP Command Bridge (Python CLI)            │
-│  unity_commands.json (File-based IPC)       │
+│              DEVELOPMENT TOOLS              │
+│  Unity helper scripts are optional visual   │
+│  prototyping tools; runtime is Flutter-only │
 └─────────────────────────────────────────────┘
 ```
 
 ### 8.2 Unity Editor Entegrasyonu
 
 ```
-Flutter Game (Production)     Unity Editor (Development/AI Bridge)
+Flutter Game (Production)     Unity Editor (Optional Visual Prototyping)
 ─────────────────────        ──────────────────────────────────────
        │                                    │
        │  Game State (Riverpod)             │  Scene Hierarchy
        │  Board Layout                      │  BoardGenerator
-       │  MovementService                   │  McpCommandListener
-       │                                    │  Visual Preview
+       │  MovementService                   │  Visual Preview
        │                                    │
-       └──── unity_commands.json ───────────┘
-              (File-based Bridge)
-
-AI Agent (Kilo Code)
-    │
-    ├── mcp_command_bridge.py ──► unity_commands.json
-    │
-    └── MCP for Unity (HTTP 8080) ──► Unity Editor Direct Control
 ```
 
 ### 8.3 Teknoloji Yığını
@@ -405,9 +395,6 @@ AI Agent (Kilo Code)
 | Frontend | Flutter / Dart | 3.x |
 | State | Riverpod (StateNotifier) | 2.x |
 | Audio | audioplayers | Latest |
-| Unity Bridge | MCP for Unity | 9.6+ |
-| MCP Protocol | FastMCP (Python) | stdio/http |
-| AI Integration | Kilo Code + MCP | VS Code |
 | Sürüm Kontrol | Git + GitHub | — |
 | CI/CD | GitHub Actions | — |
 
@@ -443,8 +430,6 @@ Assets/
 │   ├── Network/
 │   │   ├── NetworkManager.cs
 │   │   └── StateSyncService.cs
-│   ├── MCP/
-│   │   └── McpCommandListener.cs
 │   └── Utilities/
 │       ├── Constants.cs
 │       └── Logger.cs
@@ -647,10 +632,6 @@ GameManager (Singleton, Scene-root)
 │   ├── İlerleme takibi
 │   ├── Terfi kontrolü
 │   └── Zorluk ölçekleme
-└── McpCommandListener
-    ├── JSON dosya izleme
-    ├── Komut kuyruğu
-    └── Hareket yürütme
 ```
 
 ### 11.2 Sorumluluk Ayrımı
@@ -908,7 +889,6 @@ OnTurnStart(playerIndex)
 - [x] Bot modu (AI karşıdan)
 - [x] Ses sistemi (BGM + SFX)
 - [x] Kazanma koşulu (20 alıntı + 3 usta)
-- [x] MCP entegrasyonu (Unity ↔ AI)
 
 ### Hariç (Out of Scope — Sonraki Faz)
 
@@ -930,17 +910,9 @@ OnTurnStart(playerIndex)
 ```
 VS Code (Kilo Code)
     │
-    ├─► Python Bridge (mcp_command_bridge.py)
-    │       └─► unity_commands.json
-    │               └─► Unity McpCommandListener.cs
-    │                       └─► Piyon hareketi, test
-    │
-    └─► MCP for Unity (HTTP :8080)
-            └─► Unity Editor doğrudan kontrol
-                    ├─► Sahne düzenleme
-                    ├─► Script oluşturma
-                    ├─► Asset yönetimi
-                    └─► Build & Deploy
+    ├─► Flutter codebase
+    ├─► Local JSON content files
+    └─► Automated tests
 ```
 
 ### 18.2 AI Kullanım Senaryoları
@@ -948,11 +920,11 @@ VS Code (Kilo Code)
 | Senaryo | Tool | Verimlilik |
 |---|---|---|
 | **Soru üretimi** | LLM + JSON format | 50 soru/saat |
-| **Kart dengesi** | MCP ile simülasyon | Anında test |
-| **Tahta düzeni** | BoardGenerator + MCP | Görsel iterasyon |
-| **Bug repro** | Bot modu + MCP bridge | Otomatik reproduksiyon |
+| **Kart dengesi** | Flutter testleri + simülasyon | Hızlı iterasyon |
+| **Tahta düzeni** | Flutter board layout + golden test | Görsel iterasyon |
+| **Bug repro** | Bot modu + test senaryoları | Otomatik reproduksiyon |
 | **Playtest** | AI bot modu (4 oyuncu) | 10 oyun/dakika |
-| **Script oluşturma** | Kilo Code + MCP | Tam Unity entegrasyonu |
+| **Script oluşturma** | Flutter/Dart kod üretimi | Uygulama içi iterasyon |
 | **Balance tuning** | Ekonomi simülasyonu | Veri odaklı denge |
 
 ### 18.3 Prompt Şablonları
