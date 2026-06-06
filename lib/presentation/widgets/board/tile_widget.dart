@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/motion/motion_constants.dart';
 import '../../../core/theme/game_theme.dart';
 import '../../../data/board_config.dart';
+import '../../../models/book_ownership.dart';
+import '../../../models/player.dart';
 import '../enhanced_tile_widget.dart';
 
 /// Individual tile widget with pulse animation support
@@ -15,6 +17,8 @@ class TileWidget extends StatefulWidget {
   final bool isSelected;
   final bool isPulsing;
   final bool isHovered;
+  final List<Player> players;
+  final Map<String, BookOwnership> bookOwnerships;
   final VoidCallback? onHoverEnter;
   final VoidCallback? onHoverExit;
   final VoidCallback? onPulseComplete;
@@ -30,6 +34,8 @@ class TileWidget extends StatefulWidget {
     this.isSelected = false,
     this.isPulsing = false,
     this.isHovered = false,
+    this.players = const [],
+    this.bookOwnerships = const {},
     this.onHoverEnter,
     this.onHoverExit,
     this.onPulseComplete,
@@ -66,6 +72,8 @@ class _TileWidgetState extends State<TileWidget> {
       },
       child: EnhancedTileWidget(
         tile: tile,
+        players: widget.players,
+        bookOwnerships: widget.bookOwnerships,
         width: widget.width,
         height: widget.height,
         quarterTurns: widget.rotation,

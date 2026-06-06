@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/services/board_book_lookup_service.dart';
 import '../../core/motion/motion_constants.dart';
+import '../../models/book_level.dart';
+import '../../models/book_ownership.dart';
 import '../../models/board_tile.dart';
 import '../../models/game_enums.dart';
+import '../../models/player.dart';
 import '../../models/tile_type.dart';
 
-/// Kutucuk widget'ı - tüm içerik FittedBox ile sığdırılır, overflow imkansız.
+/// Kutucuk widget'ı - tüm içerik sıkı bir şekilde sığdırılır, overflow kontrol edilir.
 class EnhancedTileWidget extends StatefulWidget {
   final BoardTile tile;
+  final List<Player> players;
+  final Map<String, BookOwnership> bookOwnerships;
   final double width;
   final double height;
   final int quarterTurns;
@@ -18,6 +23,8 @@ class EnhancedTileWidget extends StatefulWidget {
   const EnhancedTileWidget({
     super.key,
     required this.tile,
+    this.players = const [],
+    this.bookOwnerships = const {},
     required this.width,
     required this.height,
     this.quarterTurns = 0,
@@ -164,26 +171,33 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     final isVertical = widget.quarterTurns == 1 || widget.quarterTurns == 3;
 
     // Renk şeridi kalınlığı
-    const stripThickness = 5.0;
+    const stripThickness = 12.0;
 
     final book = BoardBookLookupService.bookForTile(widget.tile);
 
+    final ownership = book == null ? null : widget.bookOwnerships[book.id];
+    final owner = ownership == null
+        ? null
+        : _playerForOwnership(ownership.ownerPlayerId);
+
     final displayText = book != null ? book.title : widget.tile.name;
+    final ownershipChip = _buildOwnershipChip(
+      ownership: ownership,
+      owner: owner,
+    );
 
     final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-      child: Center(
-        child: Text(
-          displayText,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            height: 1.15,
-          ),
+      padding: const EdgeInsets.fromLTRB(3, 2, 3, 2),
+      child: Text(
+        displayText,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.poppins(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: Colors.black87,
+          height: 1.12,
         ),
       ),
     );
@@ -198,14 +212,22 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       case 0: // Alt kenar - şerit üstte
         return Column(
           children: [
-            Container(height: stripThickness, color: color),
+            Container(
+              height: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
             Expanded(child: rotatedContent),
           ],
         );
       case 1: // Sağ kenar - şerit solda
         return Row(
           children: [
-            Container(width: stripThickness, color: color),
+            Container(
+              width: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
             Expanded(child: rotatedContent),
           ],
         );
@@ -213,24 +235,88 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         return Column(
           children: [
             Expanded(child: rotatedContent),
-            Container(height: stripThickness, color: color),
+            Container(
+              height: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
           ],
         );
       case 3: // Sol kenar - şerit sağda
         return Row(
           children: [
             Expanded(child: rotatedContent),
-            Container(width: stripThickness, color: color),
+            Container(
+              width: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
           ],
         );
       default:
         return Column(
           children: [
-            Container(height: stripThickness, color: color),
+            Container(
+              height: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
             Expanded(child: rotatedContent),
           ],
         );
     }
+  }
+
+  Player? _playerForOwnership(String ownerPlayerId) {
+    for (final player in widget.players) {
+      if (player.id == ownerPlayerId) return player;
+    }
+    return null;
+  }
+
+  Widget? _buildOwnershipChip({
+    required BookOwnership? ownership,
+    required Player? owner,
+  }) {
+    if (ownership == null || owner == null) return null;
+
+    final ownerIndex = widget.players.indexWhere(
+      (player) => player.id == owner.id,
+    );
+    final hasLevel = ownership.level != BookLevel.none;
+    final label = hasLevel
+        ? switch (ownership.level) {
+            BookLevel.telif => 'T',
+            BookLevel.baski => 'B',
+            BookLevel.cilt => 'C',
+            BookLevel.none => '${ownerIndex >= 0 ? ownerIndex + 1 : '?'}',
+          }
+        : '${ownerIndex >= 0 ? ownerIndex + 1 : '?'}';
+
+    return Center(
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: owner.color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.92),
+            width: 0.6,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 5.8,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            height: 1.0,
+          ),
+        ),
+      ),
+    );
   }
 
   static const _categoryColors = <QuestionCategory, Color>{

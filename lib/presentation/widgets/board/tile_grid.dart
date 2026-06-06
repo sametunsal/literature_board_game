@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/board_layout_config.dart';
 import '../../../core/utils/board_layout_helper.dart';
+import '../../../models/book_ownership.dart';
+import '../../../models/player.dart';
 import 'tile_widget.dart';
 
 /// Grid widget containing all 26 tiles of the board (Monopoly-style layout)
@@ -12,6 +14,8 @@ import 'tile_widget.dart';
 class TileGrid extends StatelessWidget {
   final BoardLayoutConfig layout;
   final int currentPlayerPosition;
+  final List<Player> players;
+  final Map<String, BookOwnership> bookOwnerships;
   final int? pulsingTileId;
   final int? hoveredTileId;
   final ValueChanged<int>? onHoverEnter;
@@ -22,6 +26,8 @@ class TileGrid extends StatelessWidget {
     super.key,
     required this.layout,
     required this.currentPlayerPosition,
+    this.players = const [],
+    this.bookOwnerships = const {},
     this.pulsingTileId,
     this.hoveredTileId,
     this.onHoverEnter,
@@ -61,6 +67,8 @@ class TileGrid extends StatelessWidget {
           isSelected: id == currentPlayerPosition,
           isPulsing: pulsingTileId == id,
           isHovered: hoveredTileId == id,
+          players: players,
+          bookOwnerships: bookOwnerships,
           onHoverEnter: onHoverEnter != null ? () => onHoverEnter!(id) : null,
           onHoverExit: onHoverExit != null ? () => onHoverExit!(id) : null,
           onPulseComplete: onPulseComplete,

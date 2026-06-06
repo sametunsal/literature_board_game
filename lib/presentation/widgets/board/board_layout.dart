@@ -151,6 +151,8 @@ class _BoardLayoutState extends State<BoardLayout> {
                 TileGrid(
                   layout: widget.layout,
                   currentPlayerPosition: widget.state.currentPlayer.position,
+                  players: widget.state.players,
+                  bookOwnerships: widget.state.bookOwnerships,
                   hoveredTileId: _hoveredTileId,
                   onHoverEnter: (id) => setState(() => _hoveredTileId = id),
                   onHoverExit: (id) => setState(() => _hoveredTileId = null),
