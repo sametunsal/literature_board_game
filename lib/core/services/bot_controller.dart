@@ -32,10 +32,10 @@ class BotController {
     required CardEffectService cardEffectService,
     required QuestionFlowService questionFlowService,
     Random? random,
-  })  : _cb = callbacks,
-        _cardEffectService = cardEffectService,
-        _questionFlowService = questionFlowService,
-        _random = random ?? Random();
+  }) : _cb = callbacks,
+       _cardEffectService = cardEffectService,
+       _questionFlowService = questionFlowService,
+       _random = random ?? Random();
 
   @visibleForTesting
   void activateForTest() {
@@ -79,7 +79,9 @@ class BotController {
   void scheduleNextTurn() {
     log('scheduleNextTurn() called');
     if (!_isActive || _cb.readGamePhase() == GamePhase.gameOver) {
-      log('scheduleNextTurn() ABORTED - active: $_isActive, phase: ${_cb.readGamePhase()}');
+      log(
+        'scheduleNextTurn() ABORTED - active: $_isActive, phase: ${_cb.readGamePhase()}',
+      );
       return;
     }
 
@@ -117,6 +119,11 @@ class BotController {
     try {
       final categoryName = currentTile?.category;
       final difficulty = currentTile?.difficulty ?? Difficulty.medium;
+      final actualQuestionDifficulty =
+          QuestionFlowService.difficultyFromQuestionLabel(
+            question.difficulty,
+            fallback: difficulty,
+          );
 
       final isCorrect = _random.nextBool();
       _cb.addLog(
@@ -129,6 +136,7 @@ class BotController {
         player: allPlayers[currentPlayerIndex],
         categoryName: categoryName,
         difficulty: difficulty,
+        actualQuestionDifficulty: actualQuestionDifficulty,
         allPlayers: allPlayers,
         currentPlayerIndex: currentPlayerIndex,
         consecutiveDoubles: consecutiveDoubles,
@@ -194,9 +202,7 @@ class BotController {
         closeAction = _cb.closeShopDialog;
     }
 
-    _activeTimers.add(
-      Timer(Duration(milliseconds: delayMs), closeAction),
-    );
+    _activeTimers.add(Timer(Duration(milliseconds: delayMs), closeAction));
     return true;
   }
 

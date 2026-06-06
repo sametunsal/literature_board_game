@@ -29,6 +29,7 @@ class QuestionSelectionResult {
 class AnswerResult {
   final Player updatedPlayer;
   final List<LogEntry> logs;
+  final Difficulty? answeredDifficulty;
   final int baseStars;
   final int totalStars;
   final bool promoted;
@@ -42,6 +43,7 @@ class AnswerResult {
   const AnswerResult({
     required this.updatedPlayer,
     this.logs = const [],
+    this.answeredDifficulty,
     this.baseStars = 0,
     this.totalStars = 0,
     this.promoted = false,
@@ -69,6 +71,18 @@ class QuestionFlowService {
       case MasteryLevel.usta:
         return Difficulty.hard;
     }
+  }
+
+  static Difficulty difficultyFromQuestionLabel(
+    String? difficulty, {
+    Difficulty fallback = Difficulty.medium,
+  }) {
+    return switch (difficulty) {
+      'easy' => Difficulty.easy,
+      'medium' => Difficulty.medium,
+      'hard' => Difficulty.hard,
+      _ => fallback,
+    };
   }
 
   static String getCategoryDisplayName(String categoryId) {
@@ -258,6 +272,7 @@ class QuestionFlowService {
     required Player player,
     required String? categoryName,
     required Difficulty difficulty,
+    Difficulty? actualQuestionDifficulty,
     required List<Player> allPlayers,
     required int currentPlayerIndex,
     required int consecutiveDoubles,
@@ -274,11 +289,19 @@ class QuestionFlowService {
       } else {
         logs.add(LogEntry('Yanlış cevap. Yıldız kazanamadın.', type: 'error'));
       }
-      return AnswerResult(updatedPlayer: player, logs: logs);
+      return AnswerResult(
+        updatedPlayer: player,
+        logs: logs,
+        answeredDifficulty: actualQuestionDifficulty ?? difficulty,
+      );
     }
 
     if (categoryName == null) {
-      return AnswerResult(updatedPlayer: player, logs: logs);
+      return AnswerResult(
+        updatedPlayer: player,
+        logs: logs,
+        answeredDifficulty: actualQuestionDifficulty ?? difficulty,
+      );
     }
 
     final currentCount = player.getCorrectAnswerCount(categoryName, difficulty);
@@ -430,6 +453,7 @@ class QuestionFlowService {
     return AnswerResult(
       updatedPlayer: updatedPlayer,
       logs: logs,
+      answeredDifficulty: actualQuestionDifficulty ?? difficulty,
       baseStars: baseStars,
       totalStars: totalStars,
       promoted: newMastery != null,

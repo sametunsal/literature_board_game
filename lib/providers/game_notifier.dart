@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player.dart';
@@ -21,6 +22,7 @@ import '../core/services/movement_service.dart';
 import '../core/services/economy_service.dart';
 import '../core/services/bot_callbacks.dart';
 import '../core/services/bot_controller.dart';
+import '../core/services/book_progression_service.dart';
 import '../core/services/board_book_lookup_service.dart';
 import '../core/services/card_effect_service.dart';
 import '../core/services/question_flow_service.dart';
@@ -187,6 +189,8 @@ class GameNotifier extends StateNotifier<GameState> {
   final DiceService _diceService = DiceService();
   final MovementService _movementService = MovementService();
   final EconomyService _economyService = const EconomyService();
+  final BookProgressionService _bookProgressionService =
+      const BookProgressionService();
   late final CardEffectService _cardEffectService = CardEffectService(
     _economyService,
   );
@@ -528,6 +532,51 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     _addLog("SÄ±ra belirlendi! ${sortedPlayers.first.name} baÅŸlÄ±yor.");
+  }
+
+  void debugJumpCurrentPlayerToPosition(int position) {
+    if (!kDebugMode || state.players.isEmpty) return;
+
+    final tiles = state.tiles.isNotEmpty ? state.tiles : BoardConfig.tiles;
+    BoardTile? tile;
+    for (final candidate in tiles) {
+      if (candidate.position == position) {
+        tile = candidate;
+        break;
+      }
+    }
+
+    if (tile == null) {
+      _addLog('DEBUG: tile position $position not found', type: 'error');
+      return;
+    }
+
+    final players = List<Player>.from(state.players);
+    final playerIndex = state.currentPlayerIndex % players.length;
+    final player = players[playerIndex];
+    players[playerIndex] = player.copyWith(position: position);
+
+    state = state.copyWith(players: players, currentTile: tile);
+    _addLog(
+      'DEBUG: ${player.name} jumped to tile $position (${tile.name})',
+      type: 'info',
+    );
+  }
+
+  Future<void> debugTriggerCurrentTile() async {
+    if (!kDebugMode) return;
+
+    final tile = state.currentTile;
+    if (tile == null) {
+      _addLog('DEBUG: no current tile to trigger', type: 'error');
+      return;
+    }
+
+    _addLog(
+      'DEBUG: triggering tile ${tile.position} (${tile.name})',
+      type: 'info',
+    );
+    await _handleTileArrival(tile);
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1129,12 +1178,18 @@ class GameNotifier extends StateNotifier<GameState> {
       final tile = state.currentTile;
       final categoryName = tile?.category;
       final difficulty = tile?.difficulty ?? Difficulty.medium;
+      final actualQuestionDifficulty =
+          QuestionFlowService.difficultyFromQuestionLabel(
+            ref.read(dialogProvider).currentQuestion?.difficulty,
+            fallback: difficulty,
+          );
 
       final result = _questionFlowService.processAnswer(
         isCorrect: isCorrect,
         player: state.currentPlayer,
         categoryName: categoryName,
         difficulty: difficulty,
+        actualQuestionDifficulty: actualQuestionDifficulty,
         allPlayers: state.players,
         currentPlayerIndex: state.currentPlayerIndex,
         consecutiveDoubles: state.consecutiveDoubles,
@@ -1202,6 +1257,164 @@ class GameNotifier extends StateNotifier<GameState> {
     final feedbackText = 'Telif: ${book.title}';
     state = state.copyWith(
       floatingEffect: FloatingEffect(feedbackText, Colors.amberAccent),
+    );
+    _activeTimers.add(
+      Timer(
+        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+        () {
+          if (mounted && state.floatingEffect?.text == feedbackText) {
+            state = state.copyWith(floatingEffect: null);
+          }
+        },
+      ),
+    );
+  }
+
+  void _upgradeOwnedTelifToBaskiIfEligible(
+    BoardTile? tile,
+    bool isCorrect, {
+    required Map<String, BookOwnership> ownershipsBeforeAnswer,
+  }) {
+    if (!isCorrect || tile == null) return;
+
+    final book = BoardBookLookupService.bookForTile(tile);
+    if (book == null) return;
+
+    final ownership = ownershipsBeforeAnswer[book.id];
+    if (ownership == null ||
+        ownership.ownerPlayerId != state.currentPlayer.id ||
+        ownership.level != BookLevel.telif) {
+      return;
+    }
+
+    if (state.currentPlayer.akce < book.baskiCostAkce) {
+      _addLog(
+        'Yetersiz Akce: ${book.title} Baski yukseltilemedi',
+        type: 'error',
+      );
+      const feedbackText = 'Yetersiz Akce';
+      state = state.copyWith(
+        floatingEffect: FloatingEffect(feedbackText, Colors.redAccent),
+      );
+      _activeTimers.add(
+        Timer(
+          const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+          () {
+            if (mounted && state.floatingEffect?.text == feedbackText) {
+              state = state.copyWith(floatingEffect: null);
+            }
+          },
+        ),
+      );
+      return;
+    }
+
+    final result = _bookProgressionService.apply(
+      book: book,
+      players: state.players,
+      currentPlayerId: state.currentPlayer.id,
+      ownerships: state.bookOwnerships,
+      isCorrect: true,
+      difficulty: tile.difficulty,
+    );
+
+    if (result.actionType != BookProgressionActionType.upgradedToBaski) {
+      return;
+    }
+
+    state = state.copyWith(
+      players: result.updatedPlayers,
+      bookOwnerships: result.updatedOwnerships,
+    );
+    _addLog(
+      'Baski yukseltildi: ${state.currentPlayer.name} - ${book.title}',
+      type: 'success',
+    );
+    final feedbackText = 'Baski: ${book.title}';
+    state = state.copyWith(
+      floatingEffect: FloatingEffect(feedbackText, Colors.lightBlueAccent),
+    );
+    _activeTimers.add(
+      Timer(
+        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+        () {
+          if (mounted && state.floatingEffect?.text == feedbackText) {
+            state = state.copyWith(floatingEffect: null);
+          }
+        },
+      ),
+    );
+  }
+
+  void _upgradeOwnedBaskiToCiltIfEligible(
+    BoardTile? tile,
+    bool isCorrect, {
+    required Difficulty? answeredDifficulty,
+    required Map<String, BookOwnership> ownershipsBeforeAnswer,
+  }) {
+    if (!isCorrect || tile == null) return;
+
+    final book = BoardBookLookupService.bookForTile(tile);
+    if (book == null) return;
+
+    final ownership = ownershipsBeforeAnswer[book.id];
+    if (ownership == null ||
+        ownership.ownerPlayerId != state.currentPlayer.id ||
+        ownership.level != BookLevel.baski) {
+      return;
+    }
+
+    if (answeredDifficulty != Difficulty.hard) return;
+
+    final mastery = state.currentPlayer.getMasteryLevel(book.category.name);
+    if (mastery.value < MasteryLevel.kalfa.value) return;
+
+    if (state.currentPlayer.akce < book.ciltCostAkce) {
+      _addLog(
+        'Yetersiz Akce: ${book.title} Cilt yukseltilemedi',
+        type: 'error',
+      );
+      const feedbackText = 'Yetersiz Akce';
+      state = state.copyWith(
+        floatingEffect: FloatingEffect(feedbackText, Colors.redAccent),
+      );
+      _activeTimers.add(
+        Timer(
+          const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+          () {
+            if (mounted && state.floatingEffect?.text == feedbackText) {
+              state = state.copyWith(floatingEffect: null);
+            }
+          },
+        ),
+      );
+      return;
+    }
+
+    final result = _bookProgressionService.apply(
+      book: book,
+      players: state.players,
+      currentPlayerId: state.currentPlayer.id,
+      ownerships: state.bookOwnerships,
+      isCorrect: true,
+      difficulty: answeredDifficulty!,
+    );
+
+    if (result.actionType != BookProgressionActionType.upgradedToCilt) {
+      return;
+    }
+
+    state = state.copyWith(
+      players: result.updatedPlayers,
+      bookOwnerships: result.updatedOwnerships,
+    );
+    _addLog(
+      'Cilt yukseltildi: ${state.currentPlayer.name} - ${book.title}',
+      type: 'success',
+    );
+    final feedbackText = 'Cilt: ${book.title}';
+    state = state.copyWith(
+      floatingEffect: FloatingEffect(feedbackText, Colors.deepPurpleAccent),
     );
     _activeTimers.add(
       Timer(
@@ -1351,11 +1564,23 @@ class GameNotifier extends StateNotifier<GameState> {
   void _applyAnswerResult(AnswerResult result) {
     List<Player> newPlayers = List.from(state.players);
     newPlayers[state.currentPlayerIndex] = result.updatedPlayer;
+    final ownershipsBeforeAnswer = state.bookOwnerships;
     state = state.copyWith(players: newPlayers);
     for (final log in result.logs) {
       _addLog(log.message, type: log.type);
     }
     _acquireTelifForCurrentBookIfEligible(state.currentTile, result.wasCorrect);
+    _upgradeOwnedTelifToBaskiIfEligible(
+      state.currentTile,
+      result.wasCorrect,
+      ownershipsBeforeAnswer: ownershipsBeforeAnswer,
+    );
+    _upgradeOwnedBaskiToCiltIfEligible(
+      state.currentTile,
+      result.wasCorrect,
+      answeredDifficulty: result.answeredDifficulty,
+      ownershipsBeforeAnswer: ownershipsBeforeAnswer,
+    );
   }
 
   void closeDialogs() {
