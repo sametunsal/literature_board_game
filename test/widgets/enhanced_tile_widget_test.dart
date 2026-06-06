@@ -187,6 +187,24 @@ void main() {
     );
   });
 
+  testWidgets('long book title stays within two lines with ellipsis', (
+    tester,
+  ) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.title == 'Dokuzuncu Hariciye Kogusu',
+    );
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(_tileApp(tile, players: players));
+
+    final textWidget = tester.widget<Text>(find.text(book.title));
+    expect(textWidget.maxLines, 2);
+    expect(textWidget.overflow, TextOverflow.ellipsis);
+    expect(textWidget.softWrap, true);
+  });
+
   testWidgets('tile widget forwards ownership data to the tile renderer', (
     tester,
   ) async {

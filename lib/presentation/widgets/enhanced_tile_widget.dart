@@ -186,20 +186,32 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       owner: owner,
     );
 
-    final content = Padding(
-      padding: const EdgeInsets.fromLTRB(3, 2, 3, 2),
-      child: Text(
-        displayText,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.poppins(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          color: Colors.black87,
-          height: 1.12,
-        ),
-      ),
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final fontSize = _titleFontSize(displayText, constraints.maxWidth);
+
+        return ClipRect(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(3, 2, 3, 2),
+            child: Align(
+              alignment: Alignment.center,
+              child: Text(
+                displayText,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                style: GoogleFonts.poppins(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                  height: 1.0,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
 
     // Yatay kutucuklar için döndürülmüş içerik
@@ -317,6 +329,14 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         ),
       ),
     );
+  }
+
+  double _titleFontSize(String title, double maxWidth) {
+    final compactTitle = title.replaceAll(RegExp(r'\s+'), '');
+    if (compactTitle.length >= 24 || maxWidth < 44) return 7.2;
+    if (compactTitle.length >= 18 || maxWidth < 54) return 8.0;
+    if (compactTitle.length >= 14) return 8.4;
+    return 9.0;
   }
 
   static const _categoryColors = <QuestionCategory, Color>{
