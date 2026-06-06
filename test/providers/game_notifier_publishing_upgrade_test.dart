@@ -220,35 +220,32 @@ void main() {
       },
     );
 
-    test(
-      'opponent-owned book does not trigger royalty behavior in Phase 9A',
-      () async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-        final notifier = container.read(gameProvider.notifier);
-        final book = BookConfig.books.first;
-        final tile = _tileForBook(book.tilePosition);
+    test('opponent-owned book pays royalty after wrong answer', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = BookConfig.books.first;
+      final tile = _tileForBook(book.tilePosition);
 
-        notifier.updateState(
-          _stateFor(
-            tile: tile,
-            playerAkce: 5,
-            otherPlayerAkce: 10,
-            bookOwnerships: _ownedBy(playerId: 'p2', level: BookLevel.telif),
-          ),
-        );
+      notifier.updateState(
+        _stateFor(
+          tile: tile,
+          playerAkce: 5,
+          otherPlayerAkce: 10,
+          bookOwnerships: _ownedBy(playerId: 'p2', level: BookLevel.telif),
+        ),
+      );
 
-        await notifier.answerQuestion(false);
+      await notifier.answerQuestion(false);
 
-        final players = container.read(gameProvider).players;
-        expect(players[0].akce, 5);
-        expect(players[1].akce, 10);
-        expect(
-          container.read(gameProvider).bookOwnerships[book.id]?.level,
-          BookLevel.telif,
-        );
-      },
-    );
+      final players = container.read(gameProvider).players;
+      expect(players[0].akce, 4);
+      expect(players[1].akce, 11);
+      expect(
+        container.read(gameProvider).bookOwnerships[book.id]?.level,
+        BookLevel.telif,
+      );
+    });
 
     test(
       'own Baski + hard question + Kalfa + enough Akce upgrades to Cilt',
@@ -491,41 +488,38 @@ void main() {
       },
     );
 
-    test(
-      'opponent-owned Cilt does not trigger royalty through GameNotifier',
-      () async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-        final notifier = container.read(gameProvider.notifier);
-        final book = _bookWithTileDifficulty(Difficulty.hard);
-        final tile = _tileForBook(book.tilePosition);
+    test('opponent-owned Cilt pays royalty through GameNotifier', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.hard);
+      final tile = _tileForBook(book.tilePosition);
 
-        notifier.updateState(
-          _stateFor(
-            tile: tile,
-            playerAkce: 5,
-            otherPlayerAkce: 10,
-            currentPlayerCategoryLevels: {
-              book.category.name: MasteryLevel.kalfa.value,
-            },
-            bookOwnerships: _ownedBy(
-              bookId: book.id,
-              playerId: 'p2',
-              level: BookLevel.cilt,
-            ),
+      notifier.updateState(
+        _stateFor(
+          tile: tile,
+          playerAkce: 5,
+          otherPlayerAkce: 10,
+          currentPlayerCategoryLevels: {
+            book.category.name: MasteryLevel.kalfa.value,
+          },
+          bookOwnerships: _ownedBy(
+            bookId: book.id,
+            playerId: 'p2',
+            level: BookLevel.cilt,
           ),
-        );
-        _showQuestion(container, book: book, difficulty: 'hard');
+        ),
+      );
+      _showQuestion(container, book: book, difficulty: 'hard');
 
-        await notifier.answerQuestion(false);
+      await notifier.answerQuestion(false);
 
-        final state = container.read(gameProvider);
-        expect(state.players[0].akce, 5);
-        expect(state.players[1].akce, 10);
-        expect(state.bookOwnerships[book.id]?.level, BookLevel.cilt);
-        expect(_logsContaining(state, 'telif odendi'), isEmpty);
-      },
-    );
+      final state = container.read(gameProvider);
+      expect(state.players[0].akce, 2);
+      expect(state.players[1].akce, 13);
+      expect(state.bookOwnerships[book.id]?.level, BookLevel.cilt);
+      expect(_logsContaining(state, 'Royalty odendi'), isNotEmpty);
+    });
 
     test(
       'star reward behavior remains unchanged after Baski upgrade',

@@ -1490,6 +1490,67 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
+  void _payRoyaltyForOpponentBookIfEligible(
+    BoardTile? tile,
+    bool isCorrect, {
+    required Difficulty? answeredDifficulty,
+    required Map<String, BookOwnership> ownershipsBeforeAnswer,
+  }) {
+    if (isCorrect || tile == null) return;
+
+    final book = BoardBookLookupService.bookForTile(tile);
+    if (book == null) return;
+
+    final ownership = ownershipsBeforeAnswer[book.id];
+    if (ownership == null ||
+        ownership.ownerPlayerId == state.currentPlayer.id) {
+      return;
+    }
+
+    final result = _bookProgressionService.apply(
+      book: book,
+      players: state.players,
+      currentPlayerId: state.currentPlayer.id,
+      ownerships: state.bookOwnerships,
+      isCorrect: false,
+      difficulty: answeredDifficulty ?? tile.difficulty,
+    );
+
+    if (result.actionType != BookProgressionActionType.royaltyPaid) {
+      return;
+    }
+
+    state = state.copyWith(
+      players: result.updatedPlayers,
+      bookOwnerships: result.updatedOwnerships,
+    );
+
+    if (result.royaltyPaid <= 0) return;
+
+    final owner = state.players.firstWhere(
+      (player) => player.id == ownership.ownerPlayerId,
+    );
+    _addLog(
+      'Royalty odendi: ${state.currentPlayer.name} -> ${owner.name}, '
+      '${book.title}, -${result.royaltyPaid} Akce',
+      type: 'success',
+    );
+    final feedbackText = 'Royalty: -${result.royaltyPaid} Akce';
+    state = state.copyWith(
+      floatingEffect: FloatingEffect(feedbackText, Colors.orangeAccent),
+    );
+    _activeTimers.add(
+      Timer(
+        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+        () {
+          if (mounted && state.floatingEffect?.text == feedbackText) {
+            state = state.copyWith(floatingEffect: null);
+          }
+        },
+      ),
+    );
+  }
+
   /// Draw a card from Åžans or Kader deck
   /// Note: Currently unused - cards are handled through other mechanisms
   // ignore: unused_element
@@ -1638,6 +1699,12 @@ class GameNotifier extends StateNotifier<GameState> {
       ownershipsBeforeAnswer: ownershipsBeforeAnswer,
     );
     _upgradeOwnedBaskiToCiltIfEligible(
+      state.currentTile,
+      result.wasCorrect,
+      answeredDifficulty: result.answeredDifficulty,
+      ownershipsBeforeAnswer: ownershipsBeforeAnswer,
+    );
+    _payRoyaltyForOpponentBookIfEligible(
       state.currentTile,
       result.wasCorrect,
       answeredDifficulty: result.answeredDifficulty,
