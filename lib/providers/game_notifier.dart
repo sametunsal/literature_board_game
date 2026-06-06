@@ -563,6 +563,68 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
+  void debugPrepareBookForCiltTest(int tilePosition) {
+    if (!kDebugMode || state.players.isEmpty) return;
+
+    final tiles = state.tiles.isNotEmpty ? state.tiles : BoardConfig.tiles;
+    BoardTile? tile;
+    for (final candidate in tiles) {
+      if (candidate.position == tilePosition) {
+        tile = candidate;
+        break;
+      }
+    }
+
+    if (tile == null) {
+      _addLog(
+        'DEBUG: book tile position $tilePosition not found',
+        type: 'error',
+      );
+      return;
+    }
+
+    final book = BoardBookLookupService.bookForTile(tile);
+    if (book == null) {
+      _addLog(
+        'DEBUG: book tile position $tilePosition not found',
+        type: 'error',
+      );
+      return;
+    }
+
+    final players = List<Player>.from(state.players);
+    final playerIndex = state.currentPlayerIndex % players.length;
+    final player = players[playerIndex];
+    final categoryLevels = Map<String, int>.from(player.categoryLevels);
+    final currentMastery = player.getMasteryLevel(book.category.name);
+    if (currentMastery.value < MasteryLevel.kalfa.value) {
+      categoryLevels[book.category.name] = MasteryLevel.kalfa.value;
+    }
+
+    players[playerIndex] = player.copyWith(
+      position: tilePosition,
+      akce: player.akce < book.ciltCostAkce ? book.ciltCostAkce : player.akce,
+      categoryLevels: categoryLevels,
+    );
+
+    final ownerships = Map<String, BookOwnership>.from(state.bookOwnerships);
+    ownerships[book.id] = BookOwnership(
+      bookId: book.id,
+      ownerPlayerId: player.id,
+      level: BookLevel.baski,
+    );
+
+    state = state.copyWith(
+      players: players,
+      currentTile: tile,
+      bookOwnerships: ownerships,
+    );
+    _addLog(
+      'DEBUG: prepared ${book.title} for Cilt test (${book.category.name})',
+      type: 'info',
+    );
+  }
+
   Future<void> debugTriggerCurrentTile() async {
     if (!kDebugMode) return;
 

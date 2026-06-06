@@ -59,9 +59,16 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.byType(PopupMenuButton<int>));
+    await tester.tap(find.byTooltip('Publishing debug'));
     await tester.pumpAndSettle();
 
-    expect(find.text('${book.title} (${book.tilePosition})'), findsOneWidget);
+    expect(
+      find.text('Jump + Ask: ${book.title} (${book.tilePosition})'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Prep Cilt: ${book.title} (${book.tilePosition})'),
+      findsOneWidget,
+    );
   });
 }
