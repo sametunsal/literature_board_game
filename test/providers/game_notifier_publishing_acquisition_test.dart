@@ -155,6 +155,33 @@ void main() {
       expect(container.read(gameProvider).floatingEffect, isNull);
     });
 
+    test('already-owned book does not emit duplicate Telif effects', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = BookConfig.books.first;
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      const existingOwnership = BookOwnership(
+        bookId: 'intibah',
+        ownerPlayerId: 'p1',
+        level: BookLevel.telif,
+      );
+
+      notifier.updateState(
+        _stateFor(tile: tile, bookOwnerships: {book.id: existingOwnership}),
+      );
+
+      await notifier.answerQuestion(true);
+
+      final state = container.read(gameProvider);
+      expect(state.bookOwnerships, hasLength(1));
+      expect(state.bookOwnerships[book.id], same(existingOwnership));
+      expect(_telifLogs(container), isEmpty);
+      expect(state.floatingEffect?.text.contains('Telif') ?? false, isFalse);
+    });
+
     test('existing stars and quote behavior remains unchanged', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
