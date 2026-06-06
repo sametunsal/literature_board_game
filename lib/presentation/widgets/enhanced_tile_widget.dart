@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/services/board_book_lookup_service.dart';
-import '../../core/services/question_flow_service.dart';
 import '../../core/motion/motion_constants.dart';
 import '../../models/board_tile.dart';
+import '../../models/game_enums.dart';
 import '../../models/tile_type.dart';
 
 /// Kutucuk widget'ı - tüm içerik FittedBox ile sığdırılır, overflow imkansız.
@@ -167,58 +167,24 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     const stripThickness = 5.0;
 
     final book = BoardBookLookupService.bookForTile(widget.tile);
-    final categorySubtitle =
-        book != null &&
-            widget.tile.category != null &&
-            widget.tile.category!.isNotEmpty
-        ? QuestionFlowService.getCategoryDisplayName(widget.tile.category!)
-        : null;
 
-    final labelContent = book == null
-        ? Text(
-            _formatName(widget.tile.name),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-              height: 1.15,
-            ),
-          )
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _formatName(book.title),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                  height: 1.08,
-                ),
-              ),
-              if (categorySubtitle != null) ...[
-                const SizedBox(height: 1),
-                Text(
-                  _formatName(categorySubtitle),
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 7,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
-                    height: 1.05,
-                  ),
-                ),
-              ],
-            ],
-          );
+    final displayText = book != null ? book.title : widget.tile.name;
 
-    // İçerik widget'ı - FittedBox ile
     final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       child: Center(
-        child: FittedBox(fit: BoxFit.scaleDown, child: labelContent),
+        child: Text(
+          displayText,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+            height: 1.15,
+          ),
+        ),
       ),
     );
 
@@ -267,64 +233,25 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     }
   }
 
-  /// İsmi satırlara böl - her kelime kendi satırında
-  String _formatName(String name) {
-    // Tek kelimelik isimler
-    if (!name.contains(' ') && !name.contains('-')) {
-      return name;
-    }
-
-    // Çok uzun tek kelimeler için kısaltma
-    final words = name
-        .split(RegExp(r'[\s\-]+'))
-        .where((w) => w.isNotEmpty)
-        .toList();
-
-    if (words.isEmpty) return name;
-    if (words.length == 1) return words.first;
-
-    // Her kelimeyi ayrı satıra koy (max 3 satır)
-    if (words.length <= 3) {
-      return words.join('\n');
-    }
-
-    // 3'ten fazla kelime varsa, ilk 2 ve son kelimeleri grupla
-    return '${words[0]}\n${words.sublist(1, words.length - 1).join(' ')}\n${words.last}';
-  }
+  static const _categoryColors = <QuestionCategory, Color>{
+    QuestionCategory.turkEdebiyatindaIlkler: Color(0xFF2196F3),
+    QuestionCategory.edebiSanatlar: Color(0xFF9C27B0),
+    QuestionCategory.eserKarakter: Color(0xFFE65100),
+    QuestionCategory.edebiyatAkimlari: Color(0xFF2E7D32),
+    QuestionCategory.benKimim: Color(0xFFD32F2F),
+    QuestionCategory.tesvik: Color(0xFF00838F),
+  };
 
   Color _getTileColor() {
-    final id = int.tryParse(widget.tile.id) ?? 0;
-
-    // Kategori renklerini tile ID'sine göre belirle
-    final colors = [
-      Colors.green.shade500, // 0
-      Colors.blue.shade500, // 1
-      Colors.purple.shade500, // 2
-      Colors.orange.shade500, // 3
-      Colors.red.shade500, // 4
-      Colors.teal.shade500, // 5
-      Colors.pink.shade500, // 6
-      Colors.indigo.shade500, // 7
-      Colors.brown.shade500, // 8
-      Colors.cyan.shade500, // 9
-      Colors.amber.shade600, // 10
-      Colors.deepPurple.shade500, // 11
-      Colors.lightGreen.shade600, // 12
-      Colors.deepOrange.shade500, // 13
-      Colors.blueGrey.shade500, // 14
-      Colors.lime.shade600, // 15
-      Colors.indigo.shade400, // 16
-      Colors.pink.shade400, // 17
-      Colors.teal.shade400, // 18
-      Colors.amber.shade500, // 19
-      Colors.blue.shade400, // 20
-      Colors.purple.shade400, // 21
-      Colors.orange.shade400, // 22
-      Colors.red.shade400, // 23
-      Colors.green.shade400, // 24
-      Colors.brown.shade400, // 25
-    ];
-
-    return colors[id % colors.length];
+    final categoryName = widget.tile.category;
+    if (categoryName != null && categoryName.isNotEmpty) {
+      final category = QuestionCategory.values.where(
+        (c) => c.name == categoryName,
+      );
+      if (category.isNotEmpty) {
+        return _categoryColors[category.first] ?? Colors.grey.shade500;
+      }
+    }
+    return Colors.grey.shade500;
   }
 }
