@@ -100,6 +100,7 @@ class GameConstants {
   static const int requiredMasteries =
       3; // Number of categories to master (reduced from 6)
   static const int totalCategories = 6; // Total number of categories
+  static const int publishingCiltBooksToWin = 3;
 
   // ═══════════════════════════════════════════════════════════════════
   // CATCH-UP MECHANIC (Underdog Bonus)
@@ -137,12 +138,16 @@ class GameConstants {
   static const int hopAnimationDelay =
       450; // Slower, rhythmic pace for pawn steps (matches SFX)
   static const int cardAnimationDelay = 500;
+
   /// Fırlatma + dönüş (sonunda üst yüzey sonuca kilitlenir)
   static const int diceRollMotionDelayMs = 3600;
+
   /// Dönüş bittikten sonra zarların üst yüzü sabit kalarak oyuncuya gösterilir
   static const int diceSettleHoldMs = 1100;
+
   /// Sonuç paneli gösterildikten sonra bekleme süresi
   static const int diceResultHoldMs = 1400;
+
   /// İnsan oyuncu: hareket + sonuç bekleme (DiceService tek gecikme)
   static const int diceAnimationDelay =
       diceRollMotionDelayMs + diceSettleHoldMs + diceResultHoldMs;

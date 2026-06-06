@@ -26,6 +26,7 @@ import '../core/services/book_progression_service.dart';
 import '../core/services/board_book_lookup_service.dart';
 import '../core/services/card_effect_service.dart';
 import '../core/services/question_flow_service.dart';
+import '../core/services/win_condition_service.dart';
 import 'dialog_provider.dart';
 import 'repository_providers.dart';
 
@@ -191,6 +192,7 @@ class GameNotifier extends StateNotifier<GameState> {
   final EconomyService _economyService = const EconomyService();
   final BookProgressionService _bookProgressionService =
       const BookProgressionService();
+  final WinConditionService _winConditionService = const WinConditionService();
   late final CardEffectService _cardEffectService = CardEffectService(
     _economyService,
   );
@@ -1487,6 +1489,23 @@ class GameNotifier extends StateNotifier<GameState> {
           }
         },
       ),
+    );
+    _checkPublishingWinCondition();
+  }
+
+  void _checkPublishingWinCondition() {
+    final player = state.currentPlayer;
+    final ciltBookCount = _winConditionService.ciltBookCount(
+      playerId: player.id,
+      ownerships: state.bookOwnerships,
+    );
+    if (ciltBookCount < GameConstants.publishingCiltBooksToWin) return;
+
+    state = state.copyWith(winner: player, phase: GamePhase.gameOver);
+    _addLog(
+      'Yayincilik zaferi: ${player.name} '
+      '$ciltBookCount Cilt kitapla oyunu kazandi!',
+      type: 'gameover',
     );
   }
 
