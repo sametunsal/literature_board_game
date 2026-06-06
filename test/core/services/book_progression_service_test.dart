@@ -103,6 +103,42 @@ void main() {
       expect(result.akceDelta, -5);
     });
 
+    test('own Telif + correct answer uses configured Baski cost', () {
+      const configuredBook = Book(
+        id: 'ask_i_memnu',
+        title: 'Ask-i Memnu',
+        author: 'Halit Ziya Usakligil',
+        category: QuestionCategory.eserKarakter,
+        tilePosition: 4,
+        baskiCostAkce: 6,
+        ciltCostAkce: 12,
+      );
+      final player = makePlayer(id: 'p1', akce: 6);
+
+      final result = service.apply(
+        book: configuredBook,
+        players: [player],
+        currentPlayerId: player.id,
+        ownerships: {
+          configuredBook.id: BookOwnership(
+            bookId: configuredBook.id,
+            ownerPlayerId: player.id,
+            level: BookLevel.telif,
+          ),
+        },
+        isCorrect: true,
+        difficulty: Difficulty.medium,
+      );
+
+      expect(result.actionType, BookProgressionActionType.upgradedToBaski);
+      expect(
+        result.updatedOwnerships[configuredBook.id]?.level,
+        BookLevel.baski,
+      );
+      expect(result.updatedPlayers.single.akce, 0);
+      expect(result.akceDelta, -6);
+    });
+
     test('own Telif + enough Akce + wrong answer spends but stays Telif', () {
       final player = makePlayer(id: 'p1', akce: 7);
 

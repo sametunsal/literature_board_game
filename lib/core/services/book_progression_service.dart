@@ -148,7 +148,7 @@ class BookProgressionService {
         currentPlayerIndex: currentPlayerIndex,
         ownerships: ownerships,
         ownership: ownership,
-        costAkce: baskiUpgradeCostAkce,
+        costAkce: book.baskiCostAkce,
         targetLevel: BookLevel.baski,
         canUpgrade: isCorrect,
         successAction: BookProgressionActionType.upgradedToBaski,
@@ -160,7 +160,7 @@ class BookProgressionService {
         currentPlayerIndex: currentPlayerIndex,
         ownerships: ownerships,
         ownership: ownership,
-        costAkce: ciltUpgradeCostAkce,
+        costAkce: book.ciltCostAkce,
         targetLevel: BookLevel.cilt,
         canUpgrade:
             isCorrect &&
