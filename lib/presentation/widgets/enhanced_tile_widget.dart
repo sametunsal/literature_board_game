@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/services/board_book_lookup_service.dart';
+import '../../core/services/question_flow_service.dart';
 import '../../core/motion/motion_constants.dart';
 import '../../models/board_tile.dart';
 import '../../models/tile_type.dart';
@@ -164,13 +166,16 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     // Renk şeridi kalınlığı
     const stripThickness = 5.0;
 
-    // İçerik widget'ı - sadece isim (FittedBox ile)
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
+    final book = BoardBookLookupService.bookForTile(widget.tile);
+    final categorySubtitle =
+        book != null &&
+            widget.tile.category != null &&
+            widget.tile.category!.isNotEmpty
+        ? QuestionFlowService.getCategoryDisplayName(widget.tile.category!)
+        : null;
+
+    final labelContent = book == null
+        ? Text(
             _formatName(widget.tile.name),
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -179,8 +184,41 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
               color: Colors.black87,
               height: 1.15,
             ),
-          ),
-        ),
+          )
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _formatName(book.title),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                  height: 1.08,
+                ),
+              ),
+              if (categorySubtitle != null) ...[
+                const SizedBox(height: 1),
+                Text(
+                  _formatName(categorySubtitle),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 7,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                    height: 1.05,
+                  ),
+                ),
+              ],
+            ],
+          );
+
+    // İçerik widget'ı - FittedBox ile
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      child: Center(
+        child: FittedBox(fit: BoxFit.scaleDown, child: labelContent),
       ),
     );
 
@@ -237,8 +275,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     }
 
     // Çok uzun tek kelimeler için kısaltma
-    final words = name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
-    
+    final words = name
+        .split(RegExp(r'[\s\-]+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
     if (words.isEmpty) return name;
     if (words.length == 1) return words.first;
 
@@ -253,35 +294,35 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
   Color _getTileColor() {
     final id = int.tryParse(widget.tile.id) ?? 0;
-    
+
     // Kategori renklerini tile ID'sine göre belirle
     final colors = [
-      Colors.green.shade500,    // 0
-      Colors.blue.shade500,     // 1
-      Colors.purple.shade500,   // 2
-      Colors.orange.shade500,   // 3
-      Colors.red.shade500,      // 4
-      Colors.teal.shade500,     // 5
-      Colors.pink.shade500,     // 6
-      Colors.indigo.shade500,   // 7
-      Colors.brown.shade500,    // 8
-      Colors.cyan.shade500,     // 9
-      Colors.amber.shade600,    // 10
+      Colors.green.shade500, // 0
+      Colors.blue.shade500, // 1
+      Colors.purple.shade500, // 2
+      Colors.orange.shade500, // 3
+      Colors.red.shade500, // 4
+      Colors.teal.shade500, // 5
+      Colors.pink.shade500, // 6
+      Colors.indigo.shade500, // 7
+      Colors.brown.shade500, // 8
+      Colors.cyan.shade500, // 9
+      Colors.amber.shade600, // 10
       Colors.deepPurple.shade500, // 11
       Colors.lightGreen.shade600, // 12
       Colors.deepOrange.shade500, // 13
       Colors.blueGrey.shade500, // 14
-      Colors.lime.shade600,     // 15
-      Colors.indigo.shade400,   // 16
-      Colors.pink.shade400,     // 17
-      Colors.teal.shade400,     // 18
-      Colors.amber.shade500,    // 19
-      Colors.blue.shade400,     // 20
-      Colors.purple.shade400,   // 21
-      Colors.orange.shade400,   // 22
-      Colors.red.shade400,      // 23
-      Colors.green.shade400,    // 24
-      Colors.brown.shade400,    // 25
+      Colors.lime.shade600, // 15
+      Colors.indigo.shade400, // 16
+      Colors.pink.shade400, // 17
+      Colors.teal.shade400, // 18
+      Colors.amber.shade500, // 19
+      Colors.blue.shade400, // 20
+      Colors.purple.shade400, // 21
+      Colors.orange.shade400, // 22
+      Colors.red.shade400, // 23
+      Colors.green.shade400, // 24
+      Colors.brown.shade400, // 25
     ];
 
     return colors[id % colors.length];
