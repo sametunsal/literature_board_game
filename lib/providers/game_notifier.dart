@@ -1682,6 +1682,7 @@ class GameNotifier extends StateNotifier<GameState> {
           for (final log in result.logs) {
             _addLog(log.message, type: log.type);
           }
+          state = state.copyWith(isDiceRolled: false, isDiceRolling: false);
           ref.read(dialogProvider.notifier).hideCard();
           if (_cardDialogCompleter != null &&
               !_cardDialogCompleter!.isCompleted) {
