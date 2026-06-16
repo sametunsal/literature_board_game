@@ -42,7 +42,6 @@ This document summarizes the model refactoring work completed for the Literature
      - `hasCollectedQuote(String quote)` - Check if quote is collected
      - `getTotalCollectedQuotes()` - Get total collected quotes
      - `isMasterInAllCategories()` - Check if Master in all 6 categories
-     - `hasWon()` - Check win condition (50 quotes + Master in all categories)
    - Removed: No Monopoly-specific properties to remove (already clean)
    - Properties: stars, categoryLevels, collectedQuotes (already present)
    - Location: `lib/models/player.dart`
@@ -95,7 +94,7 @@ The 6 categories repeat 3 times around the board:
 - Stars replace money as currency
 - Category levels track progression (0=Novice, 1=Apprentice, 2=Journeyman, 3=Master)
 - Collected quotes list for tracking progress
-- Win condition: 50 quotes + Master in all 6 categories
+- Win condition now lives in publishing progression, not quote collection
 
 ### BoardTile Model
 - String ID instead of integer

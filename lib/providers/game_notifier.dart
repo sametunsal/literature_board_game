@@ -13,6 +13,7 @@ import '../../core/utils/logger.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
 import '../data/board_config.dart';
+import '../data/book_config.dart';
 import '../data/game_cards.dart';
 import '../core/constants/game_constants.dart';
 import '../core/managers/audio_manager.dart';
@@ -238,7 +239,7 @@ class GameNotifier extends StateNotifier<GameState> {
         addLog: (msg, {type = 'info'}) => _addLog(msg, type: type),
         applyAnswerResult: (r) => _applyAnswerResult(r),
         applyCardEffectResult: (r) => _applyCardEffectResult(r),
-        checkWinCondition: () => _checkWinCondition(),
+        checkWinCondition: () => _checkPublishingWinCondition(),
         closeCardDialog: () => closeCardDialog(),
         closeLibraryPenaltyDialog: () => closeLibraryPenaltyDialog(),
         closeImzaGunuDialog: () => closeImzaGunuDialog(),
@@ -1262,14 +1263,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       _applyAnswerResult(result);
 
-      if (result.checkWinCondition) {
-        _checkWinCondition();
-        if (state.phase != GamePhase.gameOver) {
-          shouldEndTurn = true;
-        }
-      } else {
-        shouldEndTurn = true;
-      }
+      shouldEndTurn = true;
 
       safePrint('🔷 TEARDOWN: Setting showQuestionDialog=false');
       ref.read(dialogProvider.notifier).hideQuestion();
@@ -2057,81 +2051,30 @@ class GameNotifier extends StateNotifier<GameState> {
 
     state = state.copyWith(players: newPlayers);
     _addLog('SÃ¶z satÄ±n alÄ±ndÄ±! (-$cost â­)', type: 'purchase');
-
-    _checkWinCondition();
   }
 
-  /// Check if current player has won (Ehil)
-  /// Win Condition: 50 quotes collected AND Usta in all 6 categories
-  void _checkWinCondition() {
-    final player = state.currentPlayer;
-
-    if (player.hasWon()) {
-      List<Player> newPlayers = List.from(state.players);
-      newPlayers[state.currentPlayerIndex] = player.copyWith(mainTitle: 'Ehil');
-
-      state = state.copyWith(
-        players: newPlayers,
-        winner: newPlayers[state.currentPlayerIndex],
-        phase: GamePhase.gameOver,
-      );
-
-      _addLog('ğŸ† ${player.name} EHÄ°L oldu! Oyun bitti!', type: 'gameover');
-    }
-  }
-
-  /// DEBUG: Instantly trigger win for current player
-  /// Sets all 6 categories to Hard (Usta) and gives 50 dummy quotes
+  /// DEBUG: Instantly trigger publishing win for current player.
   void debugTriggerWin() {
     final player = state.currentPlayer;
 
     safePrint('ğŸ† DEBUG: Triggering Instant Win for ${player.name}');
 
-    // Create mastery map with all categories set to Hard (Usta)
-    final masteryLevels = <String, int>{
-      'turkEdebiyatindaIlkler': MasteryLevel.usta.value,
-      'edebiSanatlar': MasteryLevel.usta.value,
-      'eserKarakter': MasteryLevel.usta.value,
-      'edebiyatAkimlari': MasteryLevel.usta.value,
-      'benKimim': MasteryLevel.usta.value,
-      'tesvik': MasteryLevel.usta.value,
-      'bonusBilgiler': MasteryLevel.usta.value,
-    };
-
-    // Create category progress map with Hard difficulty set
-    final categoryProgress = <String, Map<String, int>>{
-      'turkEdebiyatindaIlkler': {'hard': 3},
-      'edebiSanatlar': {'hard': 3},
-      'eserKarakter': {'hard': 3},
-      'edebiyatAkimlari': {'hard': 3},
-      'benKimim': {'hard': 3},
-      'tesvik': {'hard': 3},
-      'bonusBilgiler': {'hard': 3},
-    };
-
-    // Create 50 dummy quote IDs
-    final dummyQuoteIds = List<String>.generate(50, (i) => 'debug_quote_$i');
-
-    // Update player with all win conditions met
-    List<Player> newPlayers = List.from(state.players);
-    newPlayers[state.currentPlayerIndex] = player.copyWith(
-      mainTitle: 'Ehil',
-      categoryLevels: masteryLevels,
-      categoryProgress: categoryProgress,
-      collectedQuotes: dummyQuoteIds,
+    final debugOwnerships = Map<String, BookOwnership>.from(
+      state.bookOwnerships,
     );
+    for (final book in BookConfig.books.take(
+      GameConstants.publishingCiltBooksToWin,
+    )) {
+      debugOwnerships[book.id] = BookOwnership(
+        bookId: book.id,
+        ownerPlayerId: player.id,
+        level: BookLevel.cilt,
+      );
+    }
 
-    // Update state with winner and game over
-    state = state.copyWith(
-      players: newPlayers,
-      winner: newPlayers[state.currentPlayerIndex],
-      phase: GamePhase.gameOver,
-    );
+    state = state.copyWith(bookOwnerships: debugOwnerships);
 
-    _addLog(
-      'ğŸ† DEBUG: ${player.name} EHÄ°L oldu! (Instant Win Triggered)',
-      type: 'gameover',
-    );
+    _checkPublishingWinCondition();
   }
 
   Future<void> handleKiraathaneLanding() async {

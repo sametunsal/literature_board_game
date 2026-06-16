@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'difficulty.dart';
 import 'game_enums.dart';
-import '../core/constants/game_constants.dart';
 
 /// Mastery levels for categories
 enum MasteryLevel { novice, cirak, kalfa, usta }
@@ -228,16 +227,6 @@ class Player {
     }
     return true;
   }
-
-  /// Check if player has won the game
-  /// Win condition (Sprint Mode): X quotes collected AND Usta in Y categories
-  bool hasWon() {
-    return getTotalCollectedQuotes() >= GameConstants.quotesToCollect &&
-        ustaCategoryCount >= GameConstants.requiredMasteries;
-  }
-
-  /// Check if player qualifies for Ehil title
-  bool get isEhil => hasWon();
 
   /// Creates a copy of this player with optional new values
   Player copyWith({

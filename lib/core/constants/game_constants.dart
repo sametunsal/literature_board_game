@@ -92,13 +92,11 @@ class GameConstants {
   static const int maxLevelPerCategory = 3; // Maximum level (Usta)
 
   // ═══════════════════════════════════════════════════════════════════
-  // WIN CONDITION (Sprint Mode - ~15 min games)
+  // QUOTE COLLECTION
   // ═════════════════════════════════════════════════════════════════════
-  // Player wins when they have collected X quotes AND are Master in Y categories
+  // Kiraathane collection progress target.
   static const int quotesToCollect =
-      20; // Total quotes needed to win (reduced from 50)
-  static const int requiredMasteries =
-      3; // Number of categories to master (reduced from 6)
+      20; // Total quotes shown as collection completion target
   static const int totalCategories = 6; // Total number of categories
   static const int publishingCiltBooksToWin = 3;
 
