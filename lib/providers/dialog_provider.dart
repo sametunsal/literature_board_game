@@ -14,6 +14,7 @@ class DialogState {
   final bool showImzaGunuDialog;
   final bool showPrinterIssueDialog;
   final bool showTurnSkippedDialog;
+  final bool showKiraathaneDialog;
   final bool showShopDialog;
   final bool showTurnOrderDialog;
 
@@ -26,6 +27,7 @@ class DialogState {
     this.showImzaGunuDialog = false,
     this.showPrinterIssueDialog = false,
     this.showTurnSkippedDialog = false,
+    this.showKiraathaneDialog = false,
     this.showShopDialog = false,
     this.showTurnOrderDialog = false,
   });
@@ -39,6 +41,7 @@ class DialogState {
     bool? showImzaGunuDialog,
     bool? showPrinterIssueDialog,
     bool? showTurnSkippedDialog,
+    bool? showKiraathaneDialog,
     bool? showShopDialog,
     bool? showTurnOrderDialog,
     bool clearQuestion = false,
@@ -58,6 +61,7 @@ class DialogState {
           showPrinterIssueDialog ?? this.showPrinterIssueDialog,
       showTurnSkippedDialog:
           showTurnSkippedDialog ?? this.showTurnSkippedDialog,
+      showKiraathaneDialog: showKiraathaneDialog ?? this.showKiraathaneDialog,
       showShopDialog: showShopDialog ?? this.showShopDialog,
       showTurnOrderDialog: showTurnOrderDialog ?? this.showTurnOrderDialog,
     );
@@ -72,6 +76,7 @@ class DialogState {
       showImzaGunuDialog: false,
       showPrinterIssueDialog: false,
       showTurnSkippedDialog: false,
+      showKiraathaneDialog: false,
       showShopDialog: false,
       showTurnOrderDialog: false,
     );
@@ -85,6 +90,7 @@ class DialogState {
       showImzaGunuDialog ||
       showPrinterIssueDialog ||
       showTurnSkippedDialog ||
+      showKiraathaneDialog ||
       showShopDialog ||
       showTurnOrderDialog;
 }
@@ -124,6 +130,10 @@ class DialogNotifier extends StateNotifier<DialogState> {
     state = state.clearVisibility().copyWith(showTurnSkippedDialog: true);
   }
 
+  void showKiraathane() {
+    state = state.clearVisibility().copyWith(showKiraathaneDialog: true);
+  }
+
   void showShop() {
     state = state.clearVisibility().copyWith(showShopDialog: true);
   }
@@ -156,6 +166,10 @@ class DialogNotifier extends StateNotifier<DialogState> {
 
   void hideTurnSkipped() {
     state = state.copyWith(showTurnSkippedDialog: false);
+  }
+
+  void hideKiraathane() {
+    state = state.copyWith(showKiraathaneDialog: false);
   }
 
   void hideShop() {

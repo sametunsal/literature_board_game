@@ -252,6 +252,9 @@ class BotController {
       } else if (dialog.showPrinterIssueDialog) {
         log('Watchdog: Closing stuck printer issue dialog');
         _cb.closePrinterIssueDialog();
+      } else if (dialog.showKiraathaneDialog) {
+        log('Watchdog: Closing stuck kiraathane dialog');
+        _cb.closeKiraathaneDialog();
       } else if (dialog.showShopDialog) {
         log('Watchdog: Closing stuck shop dialog');
         _cb.closeShopDialog();
@@ -302,6 +305,9 @@ class BotController {
       } else if (dialog.showTurnSkippedDialog) {
         log('Closing TurnSkippedDialog');
         _cb.closeTurnSkippedDialog();
+      } else if (dialog.showKiraathaneDialog) {
+        log('Closing KiraathaneDialog');
+        _cb.closeKiraathaneDialog();
       } else if (dialog.showShopDialog) {
         log('Closing ShopDialog');
         _cb.closeShopDialog();

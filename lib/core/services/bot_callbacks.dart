@@ -2,11 +2,7 @@ import '../../models/game_enums.dart';
 import 'card_effect_service.dart';
 import 'question_flow_service.dart';
 
-enum BotDialogType {
-  library,
-  signingDay,
-  shop,
-}
+enum BotDialogType { library, signingDay, shop }
 
 class BotDialogSnapshot {
   final bool showQuestionDialog;
@@ -15,6 +11,7 @@ class BotDialogSnapshot {
   final bool showImzaGunuDialog;
   final bool showPrinterIssueDialog;
   final bool showTurnSkippedDialog;
+  final bool showKiraathaneDialog;
   final bool showShopDialog;
   final bool showTurnOrderDialog;
 
@@ -25,6 +22,7 @@ class BotDialogSnapshot {
     this.showImzaGunuDialog = false,
     this.showPrinterIssueDialog = false,
     this.showTurnSkippedDialog = false,
+    this.showKiraathaneDialog = false,
     this.showShopDialog = false,
     this.showTurnOrderDialog = false,
   });
@@ -36,6 +34,7 @@ class BotDialogSnapshot {
       showImzaGunuDialog ||
       showPrinterIssueDialog ||
       showTurnSkippedDialog ||
+      showKiraathaneDialog ||
       showShopDialog ||
       showTurnOrderDialog;
 }
@@ -51,6 +50,7 @@ class BotCallbacks {
   final void Function() closeLibraryPenaltyDialog;
   final void Function() closeImzaGunuDialog;
   final void Function() closePrinterIssueDialog;
+  final void Function() closeKiraathaneDialog;
   final void Function() closeShopDialog;
   final void Function() closeTurnOrderDialog;
   final void Function() closeTurnSkippedDialog;
@@ -72,6 +72,7 @@ class BotCallbacks {
     required this.closeLibraryPenaltyDialog,
     required this.closeImzaGunuDialog,
     required this.closePrinterIssueDialog,
+    required this.closeKiraathaneDialog,
     required this.closeShopDialog,
     required this.closeTurnOrderDialog,
     required this.closeTurnSkippedDialog,

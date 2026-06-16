@@ -22,6 +22,7 @@ import 'board/turn_order_dialog.dart';
 import 'animated_question_card.dart';
 import '../dialogs/card_dialog.dart';
 import '../dialogs/notification_dialogs.dart';
+import '../dialogs/kiraathane_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import 'animations/card_deal_transition.dart';
 import '../../models/game_card.dart';
@@ -227,7 +228,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // ═══════════════════════════════════════════════════════════════
           PlayerHudManager(state: state),
 
-          if (_showOpeningOverlay) Positioned.fill(child: _buildOpeningOverlay()),
+          if (_showOpeningOverlay)
+            Positioned.fill(child: _buildOpeningOverlay()),
 
           // CONFETTI (on top)
           Align(
@@ -440,6 +442,16 @@ class _BoardViewState extends ConsumerState<BoardView> {
               color: Colors.black.withValues(alpha: 0.5),
               alignment: Alignment.center,
               child: const ImzaGunuDialog(),
+            ),
+          ),
+
+        // Kıraathane action dialog
+        if (dialog.showKiraathaneDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              alignment: Alignment.center,
+              child: const KiraathaneDialog(),
             ),
           ),
 

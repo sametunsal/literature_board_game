@@ -68,7 +68,10 @@ void main() {
       fakeAsync((async) {
         controller.toggle();
         expect(controller.isActive, isTrue);
-        expect(tracker.logs, contains(predicate<String>((s) => s.contains('Bot Modu AKTİF'))));
+        expect(
+          tracker.logs,
+          contains(predicate<String>((s) => s.contains('Bot Modu AKTİF'))),
+        );
         // toggle no longer auto-schedules — caller owns scheduling
         async.elapse(const Duration(seconds: 2));
         expect(tracker.rollDiceCalls, 0);
@@ -80,7 +83,10 @@ void main() {
         controller.toggle();
         controller.toggle();
         expect(controller.isActive, isFalse);
-        expect(tracker.logs, contains(predicate<String>((s) => s.contains('Bot Modu KAPALI'))));
+        expect(
+          tracker.logs,
+          contains(predicate<String>((s) => s.contains('Bot Modu KAPALI'))),
+        );
       });
     });
   });
@@ -132,7 +138,9 @@ void main() {
         tracker.gamePhase = GamePhase.playerTurn;
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100),
+        );
         expect(tracker.rollDiceCalls, 1);
       });
     });
@@ -143,7 +151,9 @@ void main() {
         tracker.dialogSnapshot = const BotDialogSnapshot(showShopDialog: true);
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600),
+        );
         expect(tracker.rollDiceCalls, 0);
         expect(tracker.closeShopCalls, 1);
       });
@@ -155,7 +165,9 @@ void main() {
         tracker.isProcessing = true;
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100),
+        );
         expect(tracker.rollDiceCalls, 0);
       });
     });
@@ -166,7 +178,9 @@ void main() {
         tracker.isDiceRolling = true;
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 100),
+        );
         expect(tracker.rollDiceCalls, 0);
       });
     });
@@ -188,7 +202,9 @@ void main() {
         expect(handled, isTrue);
         expect(tracker.closeLibraryCalls, 0);
 
-        async.elapse(Duration(milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay),
+        );
         expect(tracker.closeLibraryCalls, 1);
       });
     });
@@ -197,7 +213,9 @@ void main() {
       fakeAsync((async) {
         controller.toggle();
         controller.handleDialogTile(BotDialogType.signingDay);
-        async.elapse(Duration(milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botPenaltyDialogAutoCloseDelay),
+        );
         expect(tracker.closeImzaGunuCalls, 1);
       });
     });
@@ -206,7 +224,9 @@ void main() {
       fakeAsync((async) {
         controller.toggle();
         controller.handleDialogTile(BotDialogType.shop);
-        async.elapse(Duration(milliseconds: GameConstants.botDialogAutoCloseDelay));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botDialogAutoCloseDelay),
+        );
         expect(tracker.closeShopCalls, 1);
       });
     });
@@ -228,7 +248,9 @@ void main() {
 
     test('closes question dialog when stuck', () {
       fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(showQuestionDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showQuestionDialog: true,
+        );
         controller.activateForTest();
         controller.startWatchdogForTest();
         async.elapse(const Duration(seconds: 4));
@@ -248,7 +270,9 @@ void main() {
 
     test('closes library dialog when stuck', () {
       fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(showLibraryPenaltyDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showLibraryPenaltyDialog: true,
+        );
         controller.activateForTest();
         controller.startWatchdogForTest();
         async.elapse(const Duration(seconds: 4));
@@ -258,7 +282,9 @@ void main() {
 
     test('closes imza günü dialog when stuck', () {
       fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(showImzaGunuDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showImzaGunuDialog: true,
+        );
         controller.activateForTest();
         controller.startWatchdogForTest();
         async.elapse(const Duration(seconds: 4));
@@ -268,7 +294,9 @@ void main() {
 
     test('closes printer issue dialog when stuck', () {
       fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(showPrinterIssueDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showPrinterIssueDialog: true,
+        );
         controller.activateForTest();
         controller.startWatchdogForTest();
         async.elapse(const Duration(seconds: 4));
@@ -288,7 +316,9 @@ void main() {
 
     test('closes turn order dialog and reschedules when stuck', () {
       fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(showTurnOrderDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showTurnOrderDialog: true,
+        );
         controller.activateForTest();
         controller.startWatchdogForTest();
         async.elapse(const Duration(seconds: 4));
@@ -298,7 +328,9 @@ void main() {
 
     test('closes turn skipped dialog when stuck', () {
       fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(showTurnSkippedDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showTurnSkippedDialog: true,
+        );
         controller.activateForTest();
         controller.startWatchdogForTest();
         async.elapse(const Duration(seconds: 4));
@@ -315,21 +347,24 @@ void main() {
       });
     });
 
-    test('priority: question > card > library > imzaGunu > printer > shop > turnOrder > turnSkipped', () {
-      fakeAsync((async) {
-        tracker.dialogSnapshot = const BotDialogSnapshot(
-          showQuestionDialog: true,
-          showCardDialog: true,
-          showLibraryPenaltyDialog: true,
-        );
-        controller.activateForTest();
-        controller.startWatchdogForTest();
-        async.elapse(const Duration(seconds: 4));
-        expect(tracker.answerQuestionCalls, 1);
-        expect(tracker.closeCardCalls, 0);
-        expect(tracker.closeLibraryCalls, 0);
-      });
-    });
+    test(
+      'priority: question > card > library > imzaGunu > printer > shop > turnOrder > turnSkipped',
+      () {
+        fakeAsync((async) {
+          tracker.dialogSnapshot = const BotDialogSnapshot(
+            showQuestionDialog: true,
+            showCardDialog: true,
+            showLibraryPenaltyDialog: true,
+          );
+          controller.activateForTest();
+          controller.startWatchdogForTest();
+          async.elapse(const Duration(seconds: 4));
+          expect(tracker.answerQuestionCalls, 1);
+          expect(tracker.closeCardCalls, 0);
+          expect(tracker.closeLibraryCalls, 0);
+        });
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -500,12 +535,14 @@ void main() {
     test('closes turn order dialog and reschedules', () {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
-        tracker.dialogSnapshot = const BotDialogSnapshot(showTurnOrderDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showTurnOrderDialog: true,
+        );
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(
-          milliseconds: GameConstants.botTurnScheduleDelay + 600,
-        ));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600),
+        );
         expect(tracker.closeTurnOrderCalls, 1);
       });
     });
@@ -513,12 +550,14 @@ void main() {
     test('closes library penalty dialog', () {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
-        tracker.dialogSnapshot = const BotDialogSnapshot(showLibraryPenaltyDialog: true);
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showLibraryPenaltyDialog: true,
+        );
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(
-          milliseconds: GameConstants.botTurnScheduleDelay + 600,
-        ));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600),
+        );
         expect(tracker.closeLibraryCalls, 1);
       });
     });
@@ -529,9 +568,9 @@ void main() {
         tracker.isProcessing = true;
         controller.activateForTest();
         controller.scheduleNextTurn();
-        async.elapse(Duration(
-          milliseconds: GameConstants.botTurnScheduleDelay + 600,
-        ));
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600),
+        );
         expect(tracker.setProcessingCalls, contains(false));
       });
     });
@@ -552,6 +591,7 @@ class _CallbackTracker {
   int closeLibraryCalls = 0;
   int closeImzaGunuCalls = 0;
   int closePrinterIssueCalls = 0;
+  int closeKiraathaneCalls = 0;
   int closeShopCalls = 0;
   int closeTurnOrderCalls = 0;
   int closeTurnSkippedCalls = 0;
@@ -585,6 +625,10 @@ class _CallbackTracker {
     },
     closePrinterIssueDialog: () {
       closePrinterIssueCalls++;
+      dialogSnapshot = const BotDialogSnapshot();
+    },
+    closeKiraathaneDialog: () {
+      closeKiraathaneCalls++;
       dialogSnapshot = const BotDialogSnapshot();
     },
     closeShopDialog: () {

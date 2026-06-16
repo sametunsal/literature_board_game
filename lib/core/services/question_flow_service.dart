@@ -466,6 +466,88 @@ class QuestionFlowService {
     );
   }
 
+  AnswerResult processPracticeAnswer({
+    required bool isCorrect,
+    required Player player,
+    required String categoryName,
+    required Difficulty difficulty,
+  }) {
+    final logs = <LogEntry>[];
+
+    if (!isCorrect) {
+      logs.add(LogEntry('Meşk başarısız. Akçe iade edilmez.', type: 'error'));
+      return AnswerResult(
+        updatedPlayer: player,
+        logs: logs,
+        answeredDifficulty: difficulty,
+        wasCorrect: false,
+      );
+    }
+
+    final currentCount = player.getCorrectAnswerCount(categoryName, difficulty);
+    final newAnswerCount = currentCount + 1;
+    final currentMastery = player.getMasteryLevel(categoryName);
+
+    MasteryLevel? newMastery;
+    String promotionMessage = '';
+
+    if (currentMastery == MasteryLevel.novice &&
+        difficulty == Difficulty.easy &&
+        newAnswerCount >= GameConstants.answersRequiredForPromotion) {
+      newMastery = MasteryLevel.cirak;
+      promotionMessage =
+          '${getCategoryDisplayName(categoryName)} kategorisinde Çırak oldun!';
+    } else if (currentMastery == MasteryLevel.cirak &&
+        difficulty == Difficulty.medium &&
+        newAnswerCount >= GameConstants.answersRequiredForPromotion) {
+      newMastery = MasteryLevel.kalfa;
+      promotionMessage =
+          '${getCategoryDisplayName(categoryName)} kategorisinde Kalfa oldun!';
+    } else if (currentMastery == MasteryLevel.kalfa &&
+        difficulty == Difficulty.hard &&
+        newAnswerCount >= GameConstants.answersRequiredForPromotion) {
+      newMastery = MasteryLevel.usta;
+      promotionMessage =
+          '${getCategoryDisplayName(categoryName)} kategorisinde Usta oldun!';
+    }
+
+    final newProgress = Map<String, Map<String, int>>.from(
+      player.categoryProgress,
+    );
+    if (!newProgress.containsKey(categoryName)) {
+      newProgress[categoryName] = {};
+    }
+    final categoryMap = Map<String, int>.from(newProgress[categoryName]!);
+    categoryMap[difficulty.name] = newAnswerCount;
+    newProgress[categoryName] = categoryMap;
+
+    var updatedPlayer = player.copyWith(categoryProgress: newProgress);
+    if (newMastery != null) {
+      final newLevels = Map<String, int>.from(player.categoryLevels);
+      newLevels[categoryName] = newMastery.value;
+      updatedPlayer = updatedPlayer.copyWith(categoryLevels: newLevels);
+    }
+
+    logs.add(
+      LogEntry(
+        'Meşk başarılı: ${getCategoryDisplayName(categoryName)} ilerledi.',
+        type: 'success',
+      ),
+    );
+    if (promotionMessage.isNotEmpty) {
+      logs.add(LogEntry(promotionMessage, type: 'success'));
+    }
+
+    return AnswerResult(
+      updatedPlayer: updatedPlayer,
+      logs: logs,
+      answeredDifficulty: difficulty,
+      promoted: newMastery != null,
+      newMastery: newMastery,
+      wasCorrect: true,
+    );
+  }
+
   Question? _pickQuestionPreferringShortLines(
     List<Question> pool,
     Random random, {

@@ -217,6 +217,10 @@ class GameNotifier extends StateNotifier<GameState> {
   // Cached questions for the session
   List<Question> _cachedQuestions = [];
 
+  bool _isMeskQuestionActive = false;
+  QuestionCategory? _activeMeskCategory;
+  Difficulty? _activeMeskDifficulty;
+
   // Guard against infinite card→tile→card chains
   int _tileArrivalDepth = 0;
   static const _maxTileArrivalDepth = 3;
@@ -226,6 +230,7 @@ class GameNotifier extends StateNotifier<GameState> {
   Completer<void>? _questionDialogCompleter;
   Completer<void>? _libraryPenaltyDialogCompleter;
   Completer<void>? _imzaGunuDialogCompleter;
+  Completer<void>? _kiraathaneDialogCompleter;
   Completer<void>? _shopDialogCompleter;
 
   // Dialog lock flag - prevents turn actions while dialog is open
@@ -244,6 +249,7 @@ class GameNotifier extends StateNotifier<GameState> {
         closeLibraryPenaltyDialog: () => closeLibraryPenaltyDialog(),
         closeImzaGunuDialog: () => closeImzaGunuDialog(),
         closePrinterIssueDialog: () => closePrinterIssueDialog(),
+        closeKiraathaneDialog: () => cancelKiraathane(),
         closeShopDialog: () => closeShopDialog(),
         closeTurnOrderDialog: () => closeTurnOrderDialog(),
         closeTurnSkippedDialog: () => closeTurnSkippedDialog(),
@@ -257,6 +263,7 @@ class GameNotifier extends StateNotifier<GameState> {
             showImzaGunuDialog: d.showImzaGunuDialog,
             showPrinterIssueDialog: d.showPrinterIssueDialog,
             showTurnSkippedDialog: d.showTurnSkippedDialog,
+            showKiraathaneDialog: d.showKiraathaneDialog,
             showShopDialog: d.showShopDialog,
             showTurnOrderDialog: d.showTurnOrderDialog,
           );
@@ -272,6 +279,17 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   bool get isProcessing => _isProcessing;
+
+  @visibleForTesting
+  bool get isMeskQuestionActive => _isMeskQuestionActive;
+
+  @visibleForTesting
+  QuestionCategory? get activeMeskCategory => _activeMeskCategory;
+
+  @visibleForTesting
+  void debugSetCachedQuestions(List<Question> questions) {
+    _cachedQuestions = List<Question>.from(questions);
+  }
 
   /// Exposes processing state for UI lock during automated turn order
   bool get isTurnOrderProcessing =>
@@ -382,6 +400,7 @@ class GameNotifier extends StateNotifier<GameState> {
         safePrint(
           '  - showPrinterIssueDialog: ${dialog.showPrinterIssueDialog}',
         );
+        safePrint('  - showKiraathaneDialog: ${dialog.showKiraathaneDialog}');
         safePrint('  - showShopDialog: ${dialog.showShopDialog}');
         safePrint('  - showTurnOrderDialog: ${dialog.showTurnOrderDialog}');
         safePrint('  - phase: ${state.phase}');
@@ -406,6 +425,9 @@ class GameNotifier extends StateNotifier<GameState> {
         } else if (dialog.showPrinterIssueDialog) {
           _logBot('Watchdog: Closing stuck printer issue dialog');
           closePrinterIssueDialog();
+        } else if (dialog.showKiraathaneDialog) {
+          _logBot('Watchdog: Closing stuck kiraathane dialog');
+          cancelKiraathane();
         } else if (dialog.showShopDialog) {
           _logBot('Watchdog: Closing stuck shop dialog');
           closeShopDialog();
@@ -1240,30 +1262,34 @@ class GameNotifier extends StateNotifier<GameState> {
     try {
       safePrint('🔹 answerQuestion called: isCorrect=$isCorrect');
 
-      final tile = state.currentTile;
-      final categoryName = tile?.category;
-      final difficulty = tile?.difficulty ?? Difficulty.medium;
-      final actualQuestionDifficulty =
-          QuestionFlowService.difficultyFromQuestionLabel(
-            ref.read(dialogProvider).currentQuestion?.difficulty,
-            fallback: difficulty,
-          );
+      if (_isMeskQuestionActive) {
+        _answerMeskQuestion(isCorrect);
+        shouldEndTurn = true;
+      } else {
+        final tile = state.currentTile;
+        final categoryName = tile?.category;
+        final difficulty = tile?.difficulty ?? Difficulty.medium;
+        final actualQuestionDifficulty =
+            QuestionFlowService.difficultyFromQuestionLabel(
+              ref.read(dialogProvider).currentQuestion?.difficulty,
+              fallback: difficulty,
+            );
 
-      final result = _questionFlowService.processAnswer(
-        isCorrect: isCorrect,
-        player: state.currentPlayer,
-        categoryName: categoryName,
-        difficulty: difficulty,
-        actualQuestionDifficulty: actualQuestionDifficulty,
-        allPlayers: state.players,
-        currentPlayerIndex: state.currentPlayerIndex,
-        consecutiveDoubles: state.consecutiveDoubles,
-        random: _random,
-      );
+        final result = _questionFlowService.processAnswer(
+          isCorrect: isCorrect,
+          player: state.currentPlayer,
+          categoryName: categoryName,
+          difficulty: difficulty,
+          actualQuestionDifficulty: actualQuestionDifficulty,
+          allPlayers: state.players,
+          currentPlayerIndex: state.currentPlayerIndex,
+          consecutiveDoubles: state.consecutiveDoubles,
+          random: _random,
+        );
 
-      _applyAnswerResult(result);
-
-      shouldEndTurn = true;
+        _applyAnswerResult(result);
+        shouldEndTurn = true;
+      }
 
       safePrint('🔷 TEARDOWN: Setting showQuestionDialog=false');
       ref.read(dialogProvider.notifier).hideQuestion();
@@ -1290,6 +1316,30 @@ class GameNotifier extends StateNotifier<GameState> {
     if (shouldEndTurn) {
       endTurn();
     }
+  }
+
+  void _answerMeskQuestion(bool isCorrect) {
+    final category = _activeMeskCategory;
+    final difficulty = _activeMeskDifficulty;
+    if (category == null || difficulty == null) return;
+
+    final result = _questionFlowService.processPracticeAnswer(
+      isCorrect: isCorrect,
+      player: state.currentPlayer,
+      categoryName: category.name,
+      difficulty: difficulty,
+    );
+
+    final players = List<Player>.from(state.players);
+    players[state.currentPlayerIndex] = result.updatedPlayer;
+    state = state.copyWith(players: players);
+    for (final log in result.logs) {
+      _addLog(log.message, type: log.type);
+    }
+
+    _isMeskQuestionActive = false;
+    _activeMeskCategory = null;
+    _activeMeskDifficulty = null;
   }
 
   void _acquireTelifForCurrentBookIfEligible(BoardTile? tile, bool isCorrect) {
@@ -1875,6 +1925,7 @@ class GameNotifier extends StateNotifier<GameState> {
                 !ref.read(dialogProvider).showCardDialog &&
                 !ref.read(dialogProvider).showLibraryPenaltyDialog &&
                 !ref.read(dialogProvider).showImzaGunuDialog &&
+                !ref.read(dialogProvider).showKiraathaneDialog &&
                 !ref.read(dialogProvider).showShopDialog &&
                 !ref.read(dialogProvider).showTurnOrderDialog &&
                 !state.isDiceRolling &&
@@ -1915,6 +1966,9 @@ class GameNotifier extends StateNotifier<GameState> {
     } else if (ref.read(dialogProvider).showTurnSkippedDialog) {
       _logBot('Closing TurnSkippedDialog');
       closeTurnSkippedDialog();
+    } else if (ref.read(dialogProvider).showKiraathaneDialog) {
+      _logBot('Closing KiraathaneDialog');
+      cancelKiraathane();
     } else if (ref.read(dialogProvider).showShopDialog) {
       _logBot('Closing ShopDialog');
       // Bot doesn't buy quotes, just close the shop
@@ -1990,6 +2044,110 @@ class GameNotifier extends StateNotifier<GameState> {
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // SHOP (KIRAATHANE) METHODS
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+  Future<void> openKiraathaneDialog() async {
+    if (_isBotPlaying) {
+      _addLog('Bot: Kıraathane pas geçildi.', type: 'info');
+      endTurn();
+      return;
+    }
+
+    _kiraathaneDialogCompleter = Completer<void>();
+    ref.read(dialogProvider.notifier).showKiraathane();
+    _addLog('Kıraathane\'ye hoş geldiniz!', type: 'info');
+    _isProcessingAction = false;
+
+    await _kiraathaneDialogCompleter!.future;
+    _kiraathaneDialogCompleter = null;
+  }
+
+  void _completeKiraathaneDialog() {
+    if (_kiraathaneDialogCompleter != null &&
+        !_kiraathaneDialogCompleter!.isCompleted) {
+      _kiraathaneDialogCompleter!.complete();
+    }
+  }
+
+  Future<void> openKiraathaneShop() async {
+    ref.read(dialogProvider.notifier).hideKiraathane();
+    await openShopDialog();
+    _completeKiraathaneDialog();
+  }
+
+  void cancelKiraathane() {
+    ref.read(dialogProvider.notifier).hideKiraathane();
+    _completeKiraathaneDialog();
+    _isProcessing = false;
+    endTurn();
+  }
+
+  Future<void> startMesk(QuestionCategory category) async {
+    if (state.currentPlayer.akce < GameConstants.meskCostAkce) {
+      _addLog('Meşk için yeterli Akçe yok.', type: 'error');
+      return;
+    }
+
+    final meskDifficulty = QuestionFlowService.getDifficultyForMastery(
+      state.currentPlayer.getMasteryLevel(category.name),
+    );
+    final syntheticTile = BoardTile(
+      id: 'mesk_${category.name}',
+      name: category.displayName,
+      position: GameConstants.shopPosition,
+      type: TileType.category,
+      category: category.name,
+      difficulty: meskDifficulty,
+    );
+
+    final selectionResult = _questionFlowService.selectQuestion(
+      tile: syntheticTile,
+      player: state.currentPlayer,
+      questionPool: _cachedQuestions,
+      askedQuestionIds: state.askedQuestionIds,
+      random: _random,
+      useLineEstimation: false,
+    );
+
+    for (final log in selectionResult.logs) {
+      _addLog(log.message, type: log.type);
+    }
+
+    if (selectionResult.noQuestionsFound || selectionResult.question == null) {
+      _addLog('Meşk için soru bulunamadı.', type: 'error');
+      ref.read(dialogProvider.notifier).hideKiraathane();
+      _completeKiraathaneDialog();
+      _isProcessing = false;
+      endTurn();
+      return;
+    }
+
+    final players = List<Player>.from(state.players);
+    players[state.currentPlayerIndex] = state.currentPlayer.copyWith(
+      akce: state.currentPlayer.akce - GameConstants.meskCostAkce,
+    );
+
+    final updatedAskedIds = Set<String>.from(state.askedQuestionIds)
+      ..add(selectionResult.question!.text);
+    state = state.copyWith(
+      players: players,
+      askedQuestionIds: selectionResult.shouldResetAskedIds
+          ? {selectionResult.question!.text}
+          : updatedAskedIds,
+    );
+
+    _isMeskQuestionActive = true;
+    _activeMeskCategory = category;
+    _activeMeskDifficulty = meskDifficulty;
+
+    ref.read(dialogProvider.notifier).hideKiraathane();
+    _questionDialogCompleter = Completer<void>();
+    ref.read(dialogProvider.notifier).showQuestion(selectionResult.question!);
+    _isProcessingAction = false;
+
+    await _questionDialogCompleter!.future;
+    _questionDialogCompleter = null;
+    _completeKiraathaneDialog();
+  }
 
   Future<void> openShopDialog() async {
     // BOT MODE: Auto-close dialog after short delay
@@ -2078,7 +2236,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> handleKiraathaneLanding() async {
-    await openShopDialog();
+    await openKiraathaneDialog();
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
