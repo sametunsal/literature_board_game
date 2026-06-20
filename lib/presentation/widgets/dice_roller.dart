@@ -165,7 +165,9 @@ class _AnimatedDieState extends State<AnimatedDie>
 /// Stateless Dice Roller controlled by GameState
 /// Shows spinning animation while rolling, static dice when done
 class DiceRoller extends ConsumerWidget {
-  const DiceRoller({super.key});
+  const DiceRoller({super.key, this.visualScale = 1});
+
+  final double visualScale;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -178,28 +180,37 @@ class DiceRoller extends ConsumerWidget {
 
     // Show rolling animation (SKIP if rolling for order, as we show status in button)
     if (state.isDiceRolling && state.phase != GamePhase.rollingForOrder) {
-      return _buildRollingIndicator(tokens, currentPlayerName, shortestSide);
+      return _scalePresentation(
+        _buildRollingIndicator(tokens, currentPlayerName, shortestSide),
+      );
     }
 
     // Show dice result after roll
     if (state.isDiceRolled && state.diceTotal > 0) {
-      return _buildDiceDisplay(
-        state.diceTotal,
-        tokens,
-        currentPlayerName,
-        state.dice1,
-        state.dice2,
-        shortestSide,
+      return _scalePresentation(
+        _buildDiceDisplay(
+          state.diceTotal,
+          tokens,
+          currentPlayerName,
+          state.dice1,
+          state.dice2,
+          shortestSide,
+        ),
       );
     }
 
     // Show roll button
-    return _buildRollButton(
-      state,
-      tokens,
-      currentPlayerName,
-      ref,
-      shortestSide,
+    return _scalePresentation(
+      _buildRollButton(state, tokens, currentPlayerName, ref, shortestSide),
+    );
+  }
+
+  Widget _scalePresentation(Widget child) {
+    return Transform.scale(
+      scale: visualScale,
+      alignment: Alignment.center,
+      transformHitTests: false,
+      child: child,
     );
   }
 
@@ -292,13 +303,11 @@ class DiceRoller extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AnimatedDie(
-                    value: dice1,
-                    size: dieSize,
-                    tokens: tokens,
-                  ),
+                  AnimatedDie(value: dice1, size: dieSize, tokens: tokens),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: shortestSide * 0.008),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: shortestSide * 0.008,
+                    ),
                     child: Text(
                       '+',
                       style: GoogleFonts.poppins(
@@ -308,11 +317,7 @@ class DiceRoller extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  AnimatedDie(
-                    value: dice2,
-                    size: dieSize,
-                    tokens: tokens,
-                  ),
+                  AnimatedDie(value: dice2, size: dieSize, tokens: tokens),
                   Padding(
                     padding: EdgeInsets.only(left: shortestSide * 0.01),
                     child: Text(
@@ -547,22 +552,25 @@ class DiceRoller extends ConsumerWidget {
             color: buttonColor,
             enabled: buttonEnabled,
             shortestSide: shortestSide,
-            onPressed: buttonEnabled &&
-                (!state.isDiceRolling || phase != GamePhase.rollingForOrder)
-              ? () {
-                  final isTurnOrderInProgress = ref
-                      .read(gameProvider.notifier)
-                      .isTurnOrderProcessing;
-                  
-                  if (!isTurnOrderInProgress) {
-                    if (phase == GamePhase.rollingForOrder) {
-                      ref.read(gameProvider.notifier).startAutomatedTurnOrder();
-                    } else {
-                      ref.read(gameProvider.notifier).rollDice();
+            onPressed:
+                buttonEnabled &&
+                    (!state.isDiceRolling || phase != GamePhase.rollingForOrder)
+                ? () {
+                    final isTurnOrderInProgress = ref
+                        .read(gameProvider.notifier)
+                        .isTurnOrderProcessing;
+
+                    if (!isTurnOrderInProgress) {
+                      if (phase == GamePhase.rollingForOrder) {
+                        ref
+                            .read(gameProvider.notifier)
+                            .startAutomatedTurnOrder();
+                      } else {
+                        ref.read(gameProvider.notifier).rollDice();
+                      }
                     }
                   }
-                }
-              : null,
+                : null,
           ),
         ],
       ),
@@ -595,10 +603,10 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
 
   Future<void> _handlePress() async {
     if (widget.onPressed == null) return;
-    
+
     setState(() => _isPressed = true);
     await Future.delayed(const Duration(milliseconds: 600));
-    
+
     if (mounted) {
       setState(() => _isPressed = false);
       widget.onPressed?.call();
@@ -608,157 +616,157 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
   @override
   Widget build(BuildContext context) {
     final buttonColor = widget.enabled ? widget.color : Colors.grey.shade400;
-    final darkColor = widget.enabled 
-        ? Color.lerp(widget.color, Colors.black, 0.3)! 
+    final darkColor = widget.enabled
+        ? Color.lerp(widget.color, Colors.black, 0.3)!
         : Colors.grey.shade600;
 
     // BoardLayout already applies the global isometric matrix to the whole
     // board stack (rotateX -0.55, rotateZ 0.785398). Do NOT repeat it here —
     // double rotation skews the button off the board plane.
     return GestureDetector(
-        onTap: widget.onPressed != null ? _handlePress : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-          transform: Matrix4.identity()
-            ..translate(0.0, _isPressed ? 6.0 : 0.0, 0.0),
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              // Deepest slab
-              Container(
-                margin: EdgeInsets.only(
-                  top: _isPressed ? 5 : 10,
-                  left: 4,
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.shortestSide * 0.028,
-                  vertical: widget.shortestSide * 0.02,
-                ),
-                decoration: BoxDecoration(
-                  color: Color.lerp(darkColor, Colors.black, 0.35)!,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.45),
-                      blurRadius: _isPressed ? 4 : 10,
-                      offset: Offset(1.5, _isPressed ? 2 : 6),
-                    ),
-                  ],
-                ),
-                child: Opacity(
-                  opacity: 0,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.03),
-                      SizedBox(width: widget.shortestSide * 0.01),
-                      Text(
-                        widget.label,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                          fontSize: widget.shortestSide * 0.021,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+      onTap: widget.onPressed != null ? _handlePress : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        transform: Matrix4.identity()
+          ..translateByDouble(0.0, _isPressed ? 6.0 : 0.0, 0.0, 1.0),
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            // Deepest slab
+            Container(
+              margin: EdgeInsets.only(top: _isPressed ? 5 : 10, left: 4),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.shortestSide * 0.028,
+                vertical: widget.shortestSide * 0.02,
               ),
-              // Mid slab
-              Container(
-                margin: EdgeInsets.only(
-                  top: _isPressed ? 3 : 5,
-                  left: 2,
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.shortestSide * 0.028,
-                  vertical: widget.shortestSide * 0.018,
-                ),
-                decoration: BoxDecoration(
-                  color: darkColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Opacity(
-                  opacity: 0,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.casino_rounded, size: widget.shortestSide * 0.03),
-                      SizedBox(width: widget.shortestSide * 0.01),
-                      Text(
-                        widget.label,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w700,
-                          fontSize: widget.shortestSide * 0.021,
-                        ),
-                      ),
-                    ],
+              decoration: BoxDecoration(
+                color: Color.lerp(darkColor, Colors.black, 0.35)!,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: _isPressed ? 4 : 10,
+                    offset: Offset(1.5, _isPressed ? 2 : 6),
                   ),
-                ),
+                ],
               ),
-              // Top layer (button surface)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.shortestSide * 0.028,
-                  vertical: widget.shortestSide * 0.02,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      buttonColor,
-                      Color.lerp(buttonColor, Colors.black, 0.15)!,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: buttonColor.withOpacity(0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
+              child: Opacity(
+                opacity: 0,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.casino_rounded, 
+                      Icons.casino_rounded,
                       size: widget.shortestSide * 0.03,
-                      color: Colors.white,
                     ),
                     SizedBox(width: widget.shortestSide * 0.01),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          widget.label,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w700,
-                            fontSize: widget.shortestSide * 0.021,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.5),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                        ),
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: widget.shortestSide * 0.021,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            // Mid slab
+            Container(
+              margin: EdgeInsets.only(top: _isPressed ? 3 : 5, left: 2),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.shortestSide * 0.028,
+                vertical: widget.shortestSide * 0.018,
+              ),
+              decoration: BoxDecoration(
+                color: darkColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Opacity(
+                opacity: 0,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.casino_rounded,
+                      size: widget.shortestSide * 0.03,
+                    ),
+                    SizedBox(width: widget.shortestSide * 0.01),
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: widget.shortestSide * 0.021,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Top layer (button surface)
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.shortestSide * 0.028,
+                vertical: widget.shortestSide * 0.02,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    buttonColor,
+                    Color.lerp(buttonColor, Colors.black, 0.15)!,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: buttonColor.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.casino_rounded,
+                    size: widget.shortestSide * 0.03,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: widget.shortestSide * 0.01),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.label,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: widget.shortestSide * 0.021,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }

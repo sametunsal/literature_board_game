@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/animation.dart';
 import '../../../core/constants/game_constants.dart';
 
 /// Gerçekçi 3D zar animasyonu - büyük, kare orantılı, görünür dönüş.
@@ -11,12 +10,14 @@ class DiceRollThreeView extends StatefulWidget {
     required this.height,
     required this.dice1,
     required this.dice2,
+    this.visualScale = 1,
   });
 
   final double width;
   final double height;
   final int dice1;
   final int dice2;
+  final double visualScale;
 
   @override
   State<DiceRollThreeView> createState() => _DiceRollThreeViewState();
@@ -45,9 +46,10 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
   Widget build(BuildContext context) {
     final w = math.max(widget.width, 1.0);
     final h = math.max(widget.height, 1.0);
-    
+
     // Daha büyük zarlar - ekranın önemli bir kısmını kaplasın
-    final dieSize = math.min(w * 0.22, h * 0.40).clamp(35.0, 65.0);
+    final dieSize =
+        math.min(w * 0.22, h * 0.40).clamp(35.0, 65.0) * widget.visualScale;
     final gap = dieSize * 0.4;
 
     return SizedBox(
@@ -58,10 +60,10 @@ class _DiceRollThreeViewState extends State<DiceRollThreeView>
           animation: _controller,
           builder: (context, child) {
             final t = _controller.value;
-            
+
             // Zıplama efekti - zarlar havadan düşer gibi
             final bounceY = _calculateBounce(t) * dieSize * 0.3;
-            
+
             return Transform.translate(
               offset: Offset(0, bounceY),
               child: Row(
@@ -151,7 +153,9 @@ class _AnimatedDie extends StatelessWidget {
     // Hafif sallanma (yerleştikten sonra)
     final settleCurve = ((progress - 0.8) / 0.2).clamp(0.0, 1.0);
     final wobble = progress > 0.8
-        ? math.sin((progress - 0.8) / 0.2 * math.pi * 3) * 0.02 * (1 - settleCurve)
+        ? math.sin((progress - 0.8) / 0.2 * math.pi * 3) *
+              0.02 *
+              (1 - settleCurve)
         : 0.0;
 
     return SizedBox(
@@ -174,13 +178,15 @@ class _AnimatedDie extends StatelessWidget {
   }
 
   (double, double) _findRotationForVisibleFace(int visibleValue) {
-    const faceValues = [5, 2, 6, 1, 4, 3]; // 0=arka,1=ön,2=alt,3=üst,4=sol,5=sağ
-    const quarterTurns = [
-      0.0,
-      math.pi / 2,
-      -math.pi / 2,
-      math.pi,
-    ];
+    const faceValues = [
+      5,
+      2,
+      6,
+      1,
+      4,
+      3,
+    ]; // 0=arka,1=ön,2=alt,3=üst,4=sol,5=sağ
+    const quarterTurns = [0.0, math.pi / 2, -math.pi / 2, math.pi];
 
     // Küp yüz merkezleri (birim küp).
     const faceCenters = <List<double>>[
@@ -226,7 +232,6 @@ class _AnimatedDie extends StatelessWidget {
 
     return [x1, y2, z2];
   }
-
 }
 
 const bool _kShowDiceDebugOverlay = false;
@@ -264,11 +269,13 @@ class _RealisticDiePainter extends CustomPainter {
     // 3D küp köşeleri (birim küp -1 ile 1 arası)
     final vertices = <List<double>>[
       [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], // Arka yüz
-      [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],     // Ön yüz
+      [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1], // Ön yüz
     ];
 
     // Rotasyon uygula
-    final rotated = vertices.map((v) => _rotate3D(v, rotationX, rotationY)).toList();
+    final rotated = vertices
+        .map((v) => _rotate3D(v, rotationX, rotationY))
+        .toList();
 
     // 2D'ye projeksiyon (isometric-like)
     final projected = rotated.map((v) {
@@ -296,18 +303,27 @@ class _RealisticDiePainter extends CustomPainter {
     const cullingEpsilon = 1e-4;
     for (int i = 0; i < faces.length; i++) {
       final f = faces[i];
-      final rawNormal = _calculateNormal(rotated[f[0]], rotated[f[1]], rotated[f[2]]);
+      final rawNormal = _calculateNormal(
+        rotated[f[0]],
+        rotated[f[1]],
+        rotated[f[2]],
+      );
       final faceCenter = _calculateFaceCenter(rotated, f);
       var normal = rawNormal;
 
       // Normal içeri bakıyorsa ters çevirerek winding farklarından etkilenmeyi azalt.
-      final outwardDot = normal[0] * faceCenter[0] + normal[1] * faceCenter[1] + normal[2] * faceCenter[2];
+      final outwardDot =
+          normal[0] * faceCenter[0] +
+          normal[1] * faceCenter[1] +
+          normal[2] * faceCenter[2];
       if (outwardDot < 0) {
         normal = [-normal[0], -normal[1], -normal[2]];
       }
 
       final dotProduct =
-          normal[0] * cameraDir[0] + normal[1] * cameraDir[1] + normal[2] * cameraDir[2];
+          normal[0] * cameraDir[0] +
+          normal[1] * cameraDir[1] +
+          normal[2] * cameraDir[2];
 
       // Yüz kameraya bakıyor mu? (sınır açılarda titreşim için epsilon)
       if (dotProduct > cullingEpsilon) {
@@ -323,15 +339,17 @@ class _RealisticDiePainter extends CustomPainter {
         final faceValue = _getFaceValue(i);
         // Parlaklık = kameraya dönüklük
         final brightness = dotProduct.clamp(0.0, 1.0);
-        faceData.add(_FaceData(
-          indices: f,
-          faceIndex: i,
-          depth: depth,
-          minDepth: minDepth,
-          maxDepth: maxDepth,
-          brightness: brightness,
-          faceValue: faceValue,
-        ));
+        faceData.add(
+          _FaceData(
+            indices: f,
+            faceIndex: i,
+            depth: depth,
+            minDepth: minDepth,
+            maxDepth: maxDepth,
+            brightness: brightness,
+            faceValue: faceValue,
+          ),
+        );
       }
     }
 
@@ -357,7 +375,12 @@ class _RealisticDiePainter extends CustomPainter {
     if (showDebugOverlay && faceData.isNotEmpty) {
       // En öndeki (kameraya en yakın) yüzü görünen yüz kabul et.
       final visibleFace = faceData.last;
-      _drawDebugOverlay(canvas, size, debugExpectedValue, visibleFace.faceValue);
+      _drawDebugOverlay(
+        canvas,
+        size,
+        debugExpectedValue,
+        visibleFace.faceValue,
+      );
     }
   }
 
@@ -377,16 +400,20 @@ class _RealisticDiePainter extends CustomPainter {
     return [x1, y2, z2];
   }
 
-  List<double> _calculateNormal(List<double> v0, List<double> v1, List<double> v2) {
+  List<double> _calculateNormal(
+    List<double> v0,
+    List<double> v1,
+    List<double> v2,
+  ) {
     // İki kenar vektörü
     final e1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
     final e2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
-    
+
     // Çapraz çarpım
     final nx = e1[1] * e2[2] - e1[2] * e2[1];
     final ny = e1[2] * e2[0] - e1[0] * e2[2];
     final nz = e1[0] * e2[1] - e1[1] * e2[0];
-    
+
     // Normalize
     final len = math.sqrt(nx * nx + ny * ny + nz * nz);
     if (len < 1e-8) {
@@ -395,18 +422,24 @@ class _RealisticDiePainter extends CustomPainter {
     return [nx / len, ny / len, nz / len];
   }
 
-  List<double> _calculateFaceCenter(List<List<double>> vertices, List<int> indices) {
-    final cx = (vertices[indices[0]][0] +
+  List<double> _calculateFaceCenter(
+    List<List<double>> vertices,
+    List<int> indices,
+  ) {
+    final cx =
+        (vertices[indices[0]][0] +
             vertices[indices[1]][0] +
             vertices[indices[2]][0] +
             vertices[indices[3]][0]) /
         4.0;
-    final cy = (vertices[indices[0]][1] +
+    final cy =
+        (vertices[indices[0]][1] +
             vertices[indices[1]][1] +
             vertices[indices[2]][1] +
             vertices[indices[3]][1]) /
         4.0;
-    final cz = (vertices[indices[0]][2] +
+    final cz =
+        (vertices[indices[0]][2] +
             vertices[indices[1]][2] +
             vertices[indices[2]][2] +
             vertices[indices[3]][2]) /
@@ -414,11 +447,16 @@ class _RealisticDiePainter extends CustomPainter {
     return [cx, cy, cz];
   }
 
-  void _drawShadow(Canvas canvas, List<Offset> projected, Offset center, double half) {
+  void _drawShadow(
+    Canvas canvas,
+    List<Offset> projected,
+    Offset center,
+    double half,
+  ) {
     final shadowPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.25)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    
+
     // Basit oval gölge
     canvas.drawOval(
       Rect.fromCenter(
@@ -476,8 +514,8 @@ class _RealisticDiePainter extends CustomPainter {
     final baseColor = face.brightness > 0.7
         ? _faceLight
         : face.brightness > 0.4
-            ? _faceMid
-            : _faceDark;
+        ? _faceMid
+        : _faceDark;
 
     // Yüzü doldur - expanded path kullan
     canvas.drawPath(
@@ -489,11 +527,14 @@ class _RealisticDiePainter extends CustomPainter {
     );
 
     // Kenarlık - expanded path kullan
-    canvas.drawPath(borderPath, Paint()
-      ..color = _border
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..isAntiAlias = true);
+    canvas.drawPath(
+      borderPath,
+      Paint()
+        ..color = _border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..isAntiAlias = true,
+    );
 
     // Köşe boşluklarını dolduracak ekstra "seam" katmanı
     // Kenarlıktan SONRA çiziyoruz ki border boşluklarını da kapatsın
@@ -503,35 +544,6 @@ class _RealisticDiePainter extends CustomPainter {
     if (face.brightness > 0.2) {
       _drawPips(canvas, projected, face);
     }
-  }
-
-  Path _buildRoundedQuadPath(
-    Offset p0,
-    Offset p1,
-    Offset p2,
-    Offset p3,
-    double radius,
-  ) {
-    final aIn = _pointTowards(p0, p3, radius);
-    final aOut = _pointTowards(p0, p1, radius);
-    final bIn = _pointTowards(p1, p0, radius);
-    final bOut = _pointTowards(p1, p2, radius);
-    final cIn = _pointTowards(p2, p1, radius);
-    final cOut = _pointTowards(p2, p3, radius);
-    final dIn = _pointTowards(p3, p2, radius);
-    final dOut = _pointTowards(p3, p0, radius);
-
-    return Path()
-      ..moveTo(aOut.dx, aOut.dy)
-      ..lineTo(bIn.dx, bIn.dy)
-      ..quadraticBezierTo(p1.dx, p1.dy, bOut.dx, bOut.dy)
-      ..lineTo(cIn.dx, cIn.dy)
-      ..quadraticBezierTo(p2.dx, p2.dy, cOut.dx, cOut.dy)
-      ..lineTo(dIn.dx, dIn.dy)
-      ..quadraticBezierTo(p3.dx, p3.dy, dOut.dx, dOut.dy)
-      ..lineTo(aIn.dx, aIn.dy)
-      ..quadraticBezierTo(p0.dx, p0.dy, aOut.dx, aOut.dy)
-      ..close();
   }
 
   Offset _expandFromCenter(Offset point, Offset center, double amount) {
@@ -608,7 +620,12 @@ class _RealisticDiePainter extends CustomPainter {
 
   /// Köşe boşluklarını dolduracak "seam" - ince ve uyumlu
   /// Kenarlıktan SONRA çağrılır, ancak çok subtle olmalı
-  void _drawCornerSeams(Canvas canvas, List<Offset> corners, double expansionPx, Color faceColor) {
+  void _drawCornerSeams(
+    Canvas canvas,
+    List<Offset> corners,
+    double expansionPx,
+    Color faceColor,
+  ) {
     // Çok daha küçük - sadece boşluğu doldursun, görünmesin
     final seamRadius = expansionPx * 0.5;
 
@@ -663,7 +680,7 @@ class _RealisticDiePainter extends CustomPainter {
     // Yüz merkezi ve eksenleri
     final centerX = (p0.dx + p1.dx + p2.dx + p3.dx) / 4;
     final centerY = (p0.dy + p1.dy + p2.dy + p3.dy) / 4;
-    
+
     // Yüz boyutu
     final faceW = (p1 - p0).distance;
     final faceH = (p3 - p0).distance;
@@ -674,9 +691,15 @@ class _RealisticDiePainter extends CustomPainter {
     final dirY = Offset((p3.dx - p0.dx) / faceH, (p3.dy - p0.dy) / faceH);
 
     void drawPip(double relX, double relY) {
-      final px = centerX + (relX - 0.5) * faceW * 0.6 * dirX.dx + (relY - 0.5) * faceH * 0.6 * dirY.dx;
-      final py = centerY + (relX - 0.5) * faceW * 0.6 * dirX.dy + (relY - 0.5) * faceH * 0.6 * dirY.dy;
-      
+      final px =
+          centerX +
+          (relX - 0.5) * faceW * 0.6 * dirX.dx +
+          (relY - 0.5) * faceH * 0.6 * dirY.dx;
+      final py =
+          centerY +
+          (relX - 0.5) * faceW * 0.6 * dirX.dy +
+          (relY - 0.5) * faceH * 0.6 * dirY.dy;
+
       // Pip gölgesi
       canvas.drawCircle(
         Offset(px + 0.5, py + 0.5),
@@ -745,8 +768,8 @@ class _RealisticDiePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RealisticDiePainter old) =>
-      old.value != value || 
-      old.rotationX != rotationX || 
+      old.value != value ||
+      old.rotationX != rotationX ||
       old.rotationY != rotationY ||
       old.cubeSize != cubeSize;
 }

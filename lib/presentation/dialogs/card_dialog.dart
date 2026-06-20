@@ -6,13 +6,14 @@ import 'package:auto_size_text/auto_size_text.dart';
 import '../../models/game_card.dart';
 import '../../models/game_enums.dart';
 import '../../providers/game_notifier.dart';
-import '../../core/theme/game_theme.dart';
-import '../../providers/theme_notifier.dart';
+import '../theme/card_visual_theme.dart';
 
 /// Card dialog with auto-dismiss timer (3 seconds)
 class CardDialog extends ConsumerStatefulWidget {
   final GameCard card;
-  const CardDialog({super.key, required this.card});
+  final VoidCallback? onDismiss;
+
+  const CardDialog({super.key, required this.card, this.onDismiss});
 
   @override
   ConsumerState<CardDialog> createState() => _CardDialogState();
@@ -48,15 +49,24 @@ class _CardDialogState extends ConsumerState<CardDialog> {
     // Auto dismiss after 3 seconds
     _autoDismissTimer = Timer(duration, () {
       if (mounted) {
-        ref.read(gameProvider.notifier).closeCardDialog();
+        _dismiss();
       }
     });
+  }
+
+  void _dismiss() {
+    final onDismiss = widget.onDismiss;
+    if (onDismiss != null) {
+      onDismiss();
+      return;
+    }
+    ref.read(gameProvider.notifier).closeCardDialog();
   }
 
   void _cancelTimerAndDismiss() {
     _autoDismissTimer?.cancel();
     _progressTimer?.cancel();
-    ref.read(gameProvider.notifier).closeCardDialog();
+    _dismiss();
   }
 
   @override
@@ -69,13 +79,8 @@ class _CardDialogState extends ConsumerState<CardDialog> {
   @override
   Widget build(BuildContext context) {
     final card = widget.card;
-    final isDarkMode = ref.watch(themeProvider).isDarkMode;
     final isSans = card.type == CardType.sans;
-    final cardColor = isSans
-        ? const Color(0xFFE91E63)
-        : const Color(0xFF00897B);
-    final cardTitle = isSans ? "ŞANS KARTI" : "KADER KARTI";
-    final cardIcon = isSans ? Icons.star : Icons.bolt;
+    final visualTheme = CardVisualTheme.forType(card.type);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -93,9 +98,26 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                   onTap: _cancelTimerAndDismiss,
                   child: Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: GameTheme.cardDecorationFor(
-                      isDarkMode,
-                    ).copyWith(color: GameTheme.parchmentColor),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: visualTheme.background,
+                        stops: const [0, 0.62, 1],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: visualTheme.metallic.withValues(alpha: 0.9),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: visualTheme.shadow.withValues(alpha: 0.5),
+                          blurRadius: 28,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
                         // PROGRESS BAR (auto-dismiss indicator)
@@ -103,9 +125,11 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                           borderRadius: BorderRadius.circular(2),
                           child: LinearProgressIndicator(
                             value: _progress,
-                            backgroundColor: Colors.grey.shade300,
+                            backgroundColor: visualTheme.foreground.withValues(
+                              alpha: 0.16,
+                            ),
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              cardColor,
+                              visualTheme.metallic,
                             ),
                             minHeight: 4,
                           ),
@@ -116,17 +140,31 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: cardColor.withValues(alpha: 0.15),
+                            color: visualTheme.surface.withValues(
+                              alpha: isSans ? 0.78 : 0.3,
+                            ),
                             shape: BoxShape.circle,
+                            border: Border.all(
+                              color: visualTheme.metallic,
+                              width: 1.5,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: cardColor.withValues(alpha: 0.3),
+                                color: visualTheme.accent.withValues(
+                                  alpha: 0.4,
+                                ),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
                             ],
                           ),
-                          child: Icon(cardIcon, size: 50, color: cardColor),
+                          child: Icon(
+                            visualTheme.icon,
+                            size: 50,
+                            color: isSans
+                                ? visualTheme.accent
+                                : visualTheme.metallic,
+                          ),
                         ),
                         const SizedBox(height: 16),
 
@@ -137,8 +175,15 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: cardColor,
+                            gradient: LinearGradient(
+                              colors: [visualTheme.accent, visualTheme.shadow],
+                            ),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: visualTheme.metallic.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.2),
@@ -148,11 +193,11 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                             ],
                           ),
                           child: Text(
-                            cardTitle,
+                            visualTheme.title,
                             style: GoogleFonts.playfairDisplay(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: Colors.white,
+                              color: visualTheme.foreground,
                             ),
                           ),
                         ),
@@ -166,7 +211,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                               textAlign: TextAlign.center,
                               style: GoogleFonts.poppins(
                                 fontSize: 15,
-                                color: GameTheme.textDark,
+                                color: visualTheme.foreground,
                                 height: 1.5,
                               ),
                               minFontSize: 12,
@@ -180,7 +225,9 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                           "Kapatmak için dokun",
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: GameTheme.textDark.withValues(alpha: 0.5),
+                            color: visualTheme.mutedForeground.withValues(
+                              alpha: 0.8,
+                            ),
                             fontStyle: FontStyle.italic,
                           ),
                         ),

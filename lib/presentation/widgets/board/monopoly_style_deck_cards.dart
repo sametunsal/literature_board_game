@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../models/game_enums.dart';
+import '../../theme/card_visual_theme.dart';
 
 class MonopolyStyleDeckCard extends StatelessWidget {
   const MonopolyStyleDeckCard({
@@ -19,178 +20,115 @@ class MonopolyStyleDeckCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (type == CardType.sans) {
-      return _SansCard(width: width, height: height);
-    }
-    return _KaderCard(width: width, height: height);
-  }
-}
-
-/// ŞANS (Chance) — warm gold/amber card with sunburst motif
-class _SansCard extends StatelessWidget {
-  final double width;
-  final double height;
-  const _SansCard({required this.width, required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = math.min(width, height);
-    final borderRadius = BorderRadius.circular(s * 0.08);
+    final visualTheme = CardVisualTheme.forType(type);
+    final size = math.min(width, height);
+    final radius = BorderRadius.circular(size * 0.09);
 
     return SizedBox(
       width: width,
       height: height,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: borderRadius,
+          borderRadius: radius,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF8F00).withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: -2,
+              color: visualTheme.shadow.withValues(alpha: 0.42),
+              blurRadius: size * 0.14,
+              offset: Offset(0, size * 0.07),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: size * 0.07,
+              offset: Offset(0, size * 0.035),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: borderRadius,
+          borderRadius: radius,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Base gradient
-              Container(
-                decoration: const BoxDecoration(
+              DecoratedBox(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFFFF8E1),
-                      Color(0xFFFFECB3),
-                      Color(0xFFFFD54F),
-                    ],
-                    stops: [0.0, 0.5, 1.0],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: visualTheme.background,
+                    stops: const [0, 0.58, 1],
                   ),
                 ),
               ),
-
-              // Decorative rays
-              CustomPaint(painter: _SunburstPainter()),
-
-              // Inner card border (classic card feel)
+              CustomPaint(
+                painter: _DeckPatternPainter(
+                  type: type,
+                  color: visualTheme.metallic,
+                ),
+              ),
               Positioned.fill(
-                child: Container(
-                  margin: EdgeInsets.all(s * 0.06),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(s * 0.05),
-                    border: Border.all(
-                      color: const Color(0xFFE65100).withValues(alpha: 0.35),
-                      width: 1.5,
+                child: Padding(
+                  padding: EdgeInsets.all(size * 0.055),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(size * 0.055),
+                      border: Border.all(
+                        color: visualTheme.metallic.withValues(alpha: 0.78),
+                        width: math.max(1, size * 0.015),
+                      ),
                     ),
                   ),
                 ),
               ),
-
-              // Content
               Padding(
-                padding: EdgeInsets.all(s * 0.1),
+                padding: EdgeInsets.symmetric(
+                  horizontal: size * 0.13,
+                  vertical: size * 0.16,
+                ),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top ornament
-                    _CardOrnament(
-                      color: const Color(0xFFE65100),
-                      width: s * 0.3,
-                    ),
-                    const Spacer(flex: 2),
-
-                    // Central question mark emblem
+                    _Ornament(color: visualTheme.metallic, size: size),
                     Container(
-                      width: s * 0.42,
-                      height: s * 0.42,
+                      width: size * 0.48,
+                      height: size * 0.48,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const RadialGradient(
-                          colors: [Color(0xFFFFE082), Color(0xFFFFB300)],
+                        color: visualTheme.surface.withValues(
+                          alpha: type == CardType.sans ? 0.78 : 0.34,
                         ),
                         border: Border.all(
-                          color: const Color(0xFFE65100),
-                          width: 2,
+                          color: visualTheme.metallic,
+                          width: math.max(1, size * 0.018),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                const Color(0xFFFF8F00).withValues(alpha: 0.5),
-                            blurRadius: 12,
-                            spreadRadius: 1,
+                            color: visualTheme.accent.withValues(alpha: 0.38),
+                            blurRadius: size * 0.12,
+                            spreadRadius: size * 0.01,
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Text(
-                          '?',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: s * 0.28,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFFBF360C),
-                            height: 1,
-                          ),
+                      child: Icon(
+                        visualTheme.icon,
+                        size: size * 0.25,
+                        color: type == CardType.sans
+                            ? visualTheme.accent
+                            : visualTheme.metallic,
+                      ),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        type == CardType.sans ? 'ŞANS' : 'KADER',
+                        maxLines: 1,
+                        style: GoogleFonts.playfairDisplay(
+                          color: visualTheme.foreground,
+                          fontSize: size * 0.16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: size * 0.015,
                         ),
                       ),
                     ),
-
-                    const Spacer(flex: 1),
-
-                    // Icon-only plaque (no text to avoid tiny-font artifacts)
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                          vertical: s * 0.04, horizontal: s * 0.06),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE65100), Color(0xFFBF360C)],
-                        ),
-                        borderRadius: BorderRadius.circular(s * 0.03),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFBF360C)
-                                .withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: s * 0.17,
-                          height: s * 0.17,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFFFFF8E1).withValues(alpha: 0.18),
-                            border: Border.all(
-                              color: const Color(0xFFFFF8E1).withValues(alpha: 0.6),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.wb_sunny_rounded,
-                            color: Color(0xFFFFF8E1),
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(flex: 1),
-
-                    // Bottom ornament
-                    _CardOrnament(
-                      color: const Color(0xFFE65100),
-                      width: s * 0.3,
-                    ),
+                    _Ornament(color: visualTheme.metallic, size: size),
                   ],
                 ),
               ),
@@ -202,277 +140,76 @@ class _SansCard extends StatelessWidget {
   }
 }
 
-/// KADER (Fate) — deep teal/mystical card with cosmic motif
-class _KaderCard extends StatelessWidget {
-  final double width;
-  final double height;
-  const _KaderCard({required this.width, required this.height});
+class _Ornament extends StatelessWidget {
+  const _Ornament({required this.color, required this.size});
 
-  @override
-  Widget build(BuildContext context) {
-    final s = math.min(width, height);
-    final borderRadius = BorderRadius.circular(s * 0.08);
-
-    return SizedBox(
-      width: width,
-      height: height,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: borderRadius,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF004D40).withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: -2,
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: borderRadius,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Base gradient — deep teal to dark
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF00695C),
-                      Color(0xFF004D40),
-                      Color(0xFF00332C),
-                    ],
-                    stops: [0.0, 0.5, 1.0],
-                  ),
-                ),
-              ),
-
-              // Star field
-              CustomPaint(painter: _StarFieldPainter()),
-
-              // Inner card border
-              Positioned.fill(
-                child: Container(
-                  margin: EdgeInsets.all(s * 0.06),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(s * 0.05),
-                    border: Border.all(
-                      color: const Color(0xFF80CBC4).withValues(alpha: 0.35),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Content
-              Padding(
-                padding: EdgeInsets.all(s * 0.1),
-                child: Column(
-                  children: [
-                    // Top ornament
-                    _CardOrnament(
-                      color: const Color(0xFF80CBC4),
-                      width: s * 0.3,
-                    ),
-                    const Spacer(flex: 2),
-
-                    // Central crystal ball / eye emblem
-                    Container(
-                      width: s * 0.42,
-                      height: s * 0.42,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const RadialGradient(
-                          center: Alignment(-0.2, -0.2),
-                          colors: [
-                            Color(0xFF80CBC4),
-                            Color(0xFF26A69A),
-                            Color(0xFF00695C),
-                          ],
-                          stops: [0.0, 0.5, 1.0],
-                        ),
-                        border: Border.all(
-                          color: const Color(0xFFB2DFDB),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF26A69A)
-                                .withValues(alpha: 0.5),
-                            blurRadius: 14,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.auto_awesome,
-                          size: s * 0.22,
-                          color: const Color(0xFFE0F2F1),
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(flex: 1),
-
-                    // Icon-only plaque (no text to avoid tiny-font artifacts)
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                          vertical: s * 0.04, horizontal: s * 0.06),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF26A69A), Color(0xFF00695C)],
-                        ),
-                        borderRadius: BorderRadius.circular(s * 0.03),
-                        border: Border.all(
-                          color:
-                              const Color(0xFFB2DFDB).withValues(alpha: 0.3),
-                          width: 0.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF004D40)
-                                .withValues(alpha: 0.4),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: s * 0.17,
-                          height: s * 0.17,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFFE0F2F1).withValues(alpha: 0.14),
-                            border: Border.all(
-                              color: const Color(0xFFE0F2F1).withValues(alpha: 0.55),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Color(0xFFE0F2F1),
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(flex: 1),
-
-                    // Bottom ornament
-                    _CardOrnament(
-                      color: const Color(0xFF80CBC4),
-                      width: s * 0.3,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Small decorative line ornament for card tops/bottoms
-class _CardOrnament extends StatelessWidget {
   final Color color;
-  final double width;
-  const _CardOrnament({required this.color, required this.width});
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: width * 0.25,
-          height: 1,
-          color: color.withValues(alpha: 0.4),
-        ),
-        const SizedBox(width: 4),
-        Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: 0.5),
+        Container(width: size * 0.12, height: 1, color: color),
+        SizedBox(width: size * 0.035),
+        Transform.rotate(
+          angle: math.pi / 4,
+          child: Container(
+            width: size * 0.045,
+            height: size * 0.045,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(size * 0.008),
+            ),
           ),
         ),
-        const SizedBox(width: 4),
-        Container(
-          width: width * 0.25,
-          height: 1,
-          color: color.withValues(alpha: 0.4),
-        ),
+        SizedBox(width: size * 0.035),
+        Container(width: size * 0.12, height: 1, color: color),
       ],
     );
   }
 }
 
-/// Subtle sunburst rays for ŞANS card background
-class _SunburstPainter extends CustomPainter {
+class _DeckPatternPainter extends CustomPainter {
+  const _DeckPatternPainter({required this.type, required this.color});
+
+  final CardType type;
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height * 0.42;
-    final maxR = math.max(size.width, size.height) * 0.7;
+    final center = Offset(size.width / 2, size.height * 0.48);
     final paint = Paint()
-      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.18)
-      ..style = PaintingStyle.fill;
+      ..color = color.withValues(alpha: type == CardType.sans ? 0.13 : 0.16)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(0.7, size.shortestSide * 0.008);
 
-    const rayCount = 12;
-    const halfAngle = math.pi / rayCount / 2.5;
-
-    for (int i = 0; i < rayCount; i++) {
-      final angle = (2 * math.pi / rayCount) * i;
-      final path = Path()
-        ..moveTo(cx, cy)
-        ..lineTo(
-          cx + math.cos(angle - halfAngle) * maxR,
-          cy + math.sin(angle - halfAngle) * maxR,
-        )
-        ..lineTo(
-          cx + math.cos(angle + halfAngle) * maxR,
-          cy + math.sin(angle + halfAngle) * maxR,
-        )
-        ..close();
-      canvas.drawPath(path, paint);
+    if (type == CardType.sans) {
+      for (var i = 0; i < 12; i++) {
+        final angle = i * math.pi / 6;
+        final start = size.shortestSide * 0.27;
+        final end = size.longestSide * 0.72;
+        canvas.drawLine(
+          center + Offset(math.cos(angle), math.sin(angle)) * start,
+          center + Offset(math.cos(angle), math.sin(angle)) * end,
+          paint,
+        );
+      }
+    } else {
+      final radius = size.shortestSide * 0.32;
+      canvas.drawCircle(center, radius, paint);
+      canvas.drawCircle(center, radius * 0.68, paint);
+      for (var i = 0; i < 8; i++) {
+        final angle = i * math.pi / 4;
+        final point =
+            center + Offset(math.cos(angle), math.sin(angle)) * radius;
+        canvas.drawCircle(point, size.shortestSide * 0.018, paint);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Tiny decorative stars for KADER card background
-class _StarFieldPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rng = math.Random(42);
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 20; i++) {
-      final x = rng.nextDouble() * size.width;
-      final y = rng.nextDouble() * size.height;
-      final r = 0.4 + rng.nextDouble() * 1.0;
-      paint.color = const Color(0xFFB2DFDB)
-          .withValues(alpha: 0.1 + rng.nextDouble() * 0.2);
-      canvas.drawCircle(Offset(x, y), r, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DeckPatternPainter oldDelegate) =>
+      oldDelegate.type != type || oldDelegate.color != color;
 }

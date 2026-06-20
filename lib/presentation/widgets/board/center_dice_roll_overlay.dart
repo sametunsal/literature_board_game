@@ -10,11 +10,13 @@ import 'dice_roll_three_view.dart';
 class CenterDiceRollOverlay extends StatefulWidget {
   final GameState state;
   final double minSide;
+  final double visualScale;
 
   const CenterDiceRollOverlay({
     super.key,
     required this.state,
     required this.minSide,
+    this.visualScale = 1,
   });
 
   @override
@@ -76,6 +78,7 @@ class _CenterDiceRollOverlayState extends State<CenterDiceRollOverlay> {
                         height: math.min(innerH * 0.6, 118),
                         dice1: d1,
                         dice2: d2,
+                        visualScale: widget.visualScale,
                       ),
                     ],
                   ),
@@ -89,52 +92,56 @@ class _CenterDiceRollOverlayState extends State<CenterDiceRollOverlay> {
         return Padding(
           padding: EdgeInsets.all(pad),
           child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: math.min(minSide * 0.035, 16),
-                  vertical: math.min(minSide * 0.015, 8),
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.amber.shade600,
-                    width: 1.5,
+            child: Transform.scale(
+              scale: widget.visualScale,
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: math.min(minSide * 0.035, 16),
+                    vertical: math.min(minSide * 0.015, 8),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.amber.shade600,
+                      width: 1.5,
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      name,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        fontSize: math.max(9, minSide * 0.025),
-                        fontWeight: FontWeight.w600,
-                        color: Colors.brown.shade700,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      '$d1 + $d2 = $total',
-                      style: GoogleFonts.poppins(
-                        fontSize: math.max(14, minSide * 0.04),
-                        fontWeight: FontWeight.w800,
-                        color: Colors.brown.shade900,
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: math.max(9, minSide * 0.025),
+                          fontWeight: FontWeight.w600,
+                          color: Colors.brown.shade700,
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 2),
+                      Text(
+                        '$d1 + $d2 = $total',
+                        style: GoogleFonts.poppins(
+                          fontSize: math.max(14, minSide * 0.04),
+                          fontWeight: FontWeight.w800,
+                          color: Colors.brown.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

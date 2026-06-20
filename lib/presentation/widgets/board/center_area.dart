@@ -5,6 +5,7 @@ import '../../../models/game_enums.dart';
 import '../../../providers/game_notifier.dart';
 import '../../../core/utils/board_layout_config.dart';
 import 'center_dice_roll_overlay.dart';
+import 'board_visual_constants.dart';
 import 'monopoly_style_deck_cards.dart';
 import '../dice_roller.dart';
 
@@ -91,6 +92,7 @@ class CenterArea extends StatelessWidget {
                 child: CenterDiceRollOverlay(
                   state: state,
                   minSide: minCenterSide,
+                  visualScale: kCenterDiceVisualScale,
                 ),
               ),
           ],
@@ -105,11 +107,7 @@ class CenterArea extends StatelessWidget {
     final baseW = kWidth;
     final baseH = kHeight;
 
-    return MonopolyStyleDeckCard(
-      type: type,
-      width: baseW,
-      height: baseH,
-    );
+    return MonopolyStyleDeckCard(type: type, width: baseW, height: baseH);
   }
 
   Widget _buildHUD(GameState state) {
@@ -163,7 +161,7 @@ class CenterArea extends StatelessWidget {
               ),
             ],
           ),
-          child: const DiceRoller(),
+          child: const DiceRoller(visualScale: kCenterDiceVisualScale),
         ),
       ],
     );
