@@ -99,7 +99,7 @@ class GameConstants {
       20; // Total quotes shown as collection completion target
   static const int totalCategories = 6; // Total number of categories
   static const int publishingCiltBooksToWin = 3;
-  static const int meskCostAkce = 3;
+  static const int meskCostAkce = 5;
 
   // ═══════════════════════════════════════════════════════════════════
   // CATCH-UP MECHANIC (Underdog Bonus)

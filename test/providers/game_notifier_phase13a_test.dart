@@ -102,50 +102,47 @@ void main() {
       expect(_logsContaining(state, 'Yayincilik zaferi'), isNotEmpty);
     });
 
-    test(
-      'Kiraathane shop opens and purchases quotes without win effect',
-      () async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-        final notifier = container.read(gameProvider.notifier);
+    test('legacy quote shop purchases quotes without win effect', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
 
-        notifier.updateState(
-          _stateFor(
-            players: [
-              _playerWithLegacyQuoteWinState(
-                stars: 5,
-                quoteCount: GameConstants.quotesToCollect - 1,
-              ),
-            ],
-          ),
-        );
+      notifier.updateState(
+        _stateFor(
+          players: [
+            _playerWithLegacyQuoteWinState(
+              stars: 5,
+              quoteCount: GameConstants.quotesToCollect - 1,
+            ),
+          ],
+        ),
+      );
 
-        final openFuture = notifier.openShopDialog();
-        await Future<void>.delayed(Duration.zero);
+      final openFuture = notifier.openShopDialog();
+      await Future<void>.delayed(Duration.zero);
 
-        expect(container.read(dialogProvider).showShopDialog, isTrue);
+      expect(container.read(dialogProvider).showShopDialog, isTrue);
 
-        notifier.purchaseQuote('shop_quote_reaches_legacy_threshold', 2);
+      notifier.purchaseQuote('shop_quote_reaches_legacy_threshold', 2);
 
-        var state = container.read(gameProvider);
-        expect(
-          state.currentPlayer.collectedQuotes,
-          hasLength(GameConstants.quotesToCollect),
-        );
-        expect(state.currentPlayer.stars, 3);
-        expect(state.phase, GamePhase.playerTurn);
-        expect(state.winner, isNull);
-        expect(container.read(dialogProvider).showShopDialog, isTrue);
+      var state = container.read(gameProvider);
+      expect(
+        state.currentPlayer.collectedQuotes,
+        hasLength(GameConstants.quotesToCollect),
+      );
+      expect(state.currentPlayer.stars, 3);
+      expect(state.phase, GamePhase.playerTurn);
+      expect(state.winner, isNull);
+      expect(container.read(dialogProvider).showShopDialog, isTrue);
 
-        notifier.closeShopDialog();
-        await openFuture;
+      notifier.closeShopDialog();
+      await openFuture;
 
-        expect(container.read(dialogProvider).showShopDialog, isFalse);
-        state = container.read(gameProvider);
-        expect(state.winner, isNull);
-        expect(_logsContaining(state, 'Yayincilik zaferi'), isEmpty);
-      },
-    );
+      expect(container.read(dialogProvider).showShopDialog, isFalse);
+      state = container.read(gameProvider);
+      expect(state.winner, isNull);
+      expect(_logsContaining(state, 'Yayincilik zaferi'), isEmpty);
+    });
   });
 }
 

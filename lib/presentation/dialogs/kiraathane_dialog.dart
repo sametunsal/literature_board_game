@@ -6,18 +6,11 @@ import '../../core/constants/game_constants.dart';
 import '../../models/game_enums.dart';
 import '../../providers/game_notifier.dart';
 
-class KiraathaneDialog extends ConsumerStatefulWidget {
+class KiraathaneDialog extends ConsumerWidget {
   const KiraathaneDialog({super.key});
 
   @override
-  ConsumerState<KiraathaneDialog> createState() => _KiraathaneDialogState();
-}
-
-class _KiraathaneDialogState extends ConsumerState<KiraathaneDialog> {
-  bool _choosingCategory = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(gameProvider);
     final player = state.currentPlayer;
     final canMesk = player.akce >= GameConstants.meskCostAkce;
@@ -40,51 +33,14 @@ class _KiraathaneDialogState extends ConsumerState<KiraathaneDialog> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: _choosingCategory
-                ? _buildCategoryChoice(canMesk)
-                : _buildActionChoice(canMesk),
+            child: _buildCategoryChoice(ref, canMesk),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActionChoice(bool canMesk) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildTitle('Kıraathane'),
-        const SizedBox(height: 16),
-        _buildActionButton(
-          icon: Icons.store_rounded,
-          label: 'Alışveriş',
-          onPressed: () {
-            ref.read(gameProvider.notifier).openKiraathaneShop();
-          },
-        ),
-        const SizedBox(height: 10),
-        _buildActionButton(
-          icon: Icons.school_rounded,
-          label: 'Meşk (${GameConstants.meskCostAkce} Akçe)',
-          onPressed: canMesk
-              ? () => setState(() => _choosingCategory = true)
-              : null,
-        ),
-        const SizedBox(height: 10),
-        _buildActionButton(
-          icon: Icons.close_rounded,
-          label: 'Vazgeç',
-          onPressed: () {
-            ref.read(gameProvider.notifier).cancelKiraathane();
-          },
-          muted: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryChoice(bool canMesk) {
+  Widget _buildCategoryChoice(WidgetRef ref, bool canMesk) {
     final categories = QuestionCategory.values
         .where((category) => category != QuestionCategory.bonusBilgiler)
         .toList();
@@ -94,6 +50,15 @@ class _KiraathaneDialogState extends ConsumerState<KiraathaneDialog> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildTitle('Meşk Kategorisi'),
+        const SizedBox(height: 8),
+        Text(
+          '${GameConstants.meskCostAkce} Akçe',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.brown.shade700,
+          ),
+        ),
         const SizedBox(height: 12),
         ...categories.map(
           (category) => Padding(
@@ -111,9 +76,11 @@ class _KiraathaneDialogState extends ConsumerState<KiraathaneDialog> {
         ),
         const SizedBox(height: 4),
         _buildActionButton(
-          icon: Icons.arrow_back_rounded,
-          label: 'Geri',
-          onPressed: () => setState(() => _choosingCategory = false),
+          icon: Icons.close_rounded,
+          label: 'Vazgeç',
+          onPressed: () {
+            ref.read(gameProvider.notifier).cancelKiraathane();
+          },
           muted: true,
         ),
       ],

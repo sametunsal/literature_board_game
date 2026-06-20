@@ -17,7 +17,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Kiraathane Mesk MVP', () {
-    test('landing on Kiraathane opens action dialog', () async {
+    test('Mesk configured cost is 5 Akce', () {
+      expect(GameConstants.meskCostAkce, 5);
+    });
+
+    test('landing on Kiraathane opens Mesk flow without shop', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);
@@ -31,26 +35,6 @@ void main() {
 
       notifier.cancelKiraathane();
       await openFuture;
-      await _waitForTurnEnd();
-    });
-
-    test('Alisveris opens existing shop dialog', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final notifier = container.read(gameProvider.notifier);
-      notifier.updateState(_stateFor(players: [_player(akce: 5)]));
-
-      final kiraathaneFuture = notifier.openKiraathaneDialog();
-      await Future<void>.delayed(Duration.zero);
-      final shopFuture = notifier.openKiraathaneShop();
-      await Future<void>.delayed(Duration.zero);
-
-      expect(container.read(dialogProvider).showKiraathaneDialog, isFalse);
-      expect(container.read(dialogProvider).showShopDialog, isTrue);
-
-      notifier.closeShopDialog();
-      await shopFuture;
-      await kiraathaneFuture;
       await _waitForTurnEnd();
     });
 
@@ -78,23 +62,23 @@ void main() {
       expect(state.currentPlayer.id, 'p2');
     });
 
-    test('Mesk is rejected below 3 Akce', () async {
+    test('Mesk is rejected below 5 Akce', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);
       notifier
-        ..updateState(_stateFor(players: [_player(akce: 2)]))
+        ..updateState(_stateFor(players: [_player(akce: 4)]))
         ..debugSetCachedQuestions(_questionsFor(QuestionCategory.benKimim));
 
       await notifier.startMesk(QuestionCategory.benKimim);
 
       final state = container.read(gameProvider);
-      expect(state.currentPlayer.akce, 2);
+      expect(state.currentPlayer.akce, 4);
       expect(container.read(dialogProvider).showQuestionDialog, isFalse);
       expect(_logsContaining(state, 'yeterli Akçe'), isNotEmpty);
     });
 
-    test('starting Mesk subtracts exactly 3 Akce', () async {
+    test('starting Mesk subtracts exactly 5 Akce', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);

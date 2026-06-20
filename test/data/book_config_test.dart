@@ -44,6 +44,31 @@ void main() {
       }
     });
 
+    test('uses Phase 14A configured upgrade cost tiers', () {
+      const expectedCosts = [
+        (baski: 8, cilt: 18),
+        (baski: 8, cilt: 18),
+        (baski: 10, cilt: 22),
+        (baski: 10, cilt: 22),
+        (baski: 10, cilt: 22),
+        (baski: 12, cilt: 26),
+        (baski: 12, cilt: 26),
+        (baski: 12, cilt: 26),
+        (baski: 14, cilt: 30),
+        (baski: 14, cilt: 30),
+        (baski: 14, cilt: 30),
+        (baski: 16, cilt: 34),
+        (baski: 16, cilt: 34),
+        (baski: 16, cilt: 34),
+        (baski: 16, cilt: 34),
+      ];
+
+      for (var i = 0; i < BookConfig.books.length; i++) {
+        expect(BookConfig.books[i].baskiCostAkce, expectedCosts[i].baski);
+        expect(BookConfig.books[i].ciltCostAkce, expectedCosts[i].cilt);
+      }
+    });
+
     test('looks up books by id and tile position', () {
       final byId = BookConfig.getById('intibah');
       final byTile = BookConfig.getByTilePosition(1);

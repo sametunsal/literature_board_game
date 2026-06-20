@@ -239,8 +239,8 @@ void main() {
       await notifier.answerQuestion(false);
 
       final players = container.read(gameProvider).players;
-      expect(players[0].akce, 4);
-      expect(players[1].akce, 11);
+      expect(players[0].akce, 3);
+      expect(players[1].akce, 12);
       expect(
         container.read(gameProvider).bookOwnerships[book.id]?.level,
         BookLevel.telif,
@@ -498,7 +498,7 @@ void main() {
       notifier.updateState(
         _stateFor(
           tile: tile,
-          playerAkce: 5,
+          playerAkce: 8,
           otherPlayerAkce: 10,
           currentPlayerCategoryLevels: {
             book.category.name: MasteryLevel.kalfa.value,
@@ -516,7 +516,7 @@ void main() {
 
       final state = container.read(gameProvider);
       expect(state.players[0].akce, 2);
-      expect(state.players[1].akce, 13);
+      expect(state.players[1].akce, 16);
       expect(state.bookOwnerships[book.id]?.level, BookLevel.cilt);
       expect(_logsContaining(state, 'Royalty odendi'), isNotEmpty);
     });

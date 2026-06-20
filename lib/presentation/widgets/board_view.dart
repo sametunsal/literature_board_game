@@ -445,7 +445,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
-        // Kıraathane action dialog
+        // Kiraathane Mesk dialog
         if (dialog.showKiraathaneDialog)
           Positioned.fill(
             child: Container(

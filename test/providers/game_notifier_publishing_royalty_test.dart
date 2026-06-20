@@ -17,7 +17,7 @@ import 'package:literature_board_game/providers/game_notifier.dart';
 
 void main() {
   group('GameNotifier Publishing Royalty', () {
-    test('opponent Telif wrong answer pays 1 Akce', () async {
+    test('opponent Telif wrong answer pays 2 Akce', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);
@@ -40,14 +40,14 @@ void main() {
       await notifier.answerQuestion(false);
 
       final state = container.read(gameProvider);
-      expect(state.players[0].akce, 4);
-      expect(state.players[1].akce, 11);
+      expect(state.players[0].akce, 3);
+      expect(state.players[1].akce, 12);
       expect(state.bookOwnerships[book.id]?.level, BookLevel.telif);
       expect(_logsContaining(state, 'Royalty odendi'), isNotEmpty);
-      expect(state.floatingEffect?.text, 'Royalty: -1 Akce');
+      expect(state.floatingEffect?.text, 'Royalty: -2 Akce');
     });
 
-    test('opponent Baski wrong answer pays 2 Akce', () async {
+    test('opponent Baski wrong answer pays 4 Akce', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);
@@ -70,13 +70,13 @@ void main() {
       await notifier.answerQuestion(false);
 
       final state = container.read(gameProvider);
-      expect(state.players[0].akce, 3);
-      expect(state.players[1].akce, 12);
+      expect(state.players[0].akce, 1);
+      expect(state.players[1].akce, 14);
       expect(state.bookOwnerships[book.id]?.level, BookLevel.baski);
-      expect(state.floatingEffect?.text, 'Royalty: -2 Akce');
+      expect(state.floatingEffect?.text, 'Royalty: -4 Akce');
     });
 
-    test('opponent Cilt wrong answer pays 3 Akce', () async {
+    test('opponent Cilt wrong answer pays 6 Akce', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);
@@ -86,7 +86,7 @@ void main() {
       notifier.updateState(
         _stateFor(
           tile: tile,
-          currentAkce: 5,
+          currentAkce: 8,
           ownerAkce: 10,
           bookOwnerships: _ownedBy(
             bookId: book.id,
@@ -100,9 +100,9 @@ void main() {
 
       final state = container.read(gameProvider);
       expect(state.players[0].akce, 2);
-      expect(state.players[1].akce, 13);
+      expect(state.players[1].akce, 16);
       expect(state.bookOwnerships[book.id]?.level, BookLevel.cilt);
-      expect(state.floatingEffect?.text, 'Royalty: -3 Akce');
+      expect(state.floatingEffect?.text, 'Royalty: -6 Akce');
     });
 
     test('royalty payment is capped by payer Akce', () async {

@@ -228,7 +228,7 @@ void main() {
       notifier.updateState(
         _stateFor(
           tile: tile,
-          currentAkce: 5,
+          currentAkce: 8,
           ownerAkce: 10,
           bookOwnerships: ownerships,
           phase: GamePhase.gameOver,
@@ -239,7 +239,7 @@ void main() {
 
       final state = container.read(gameProvider);
       expect(state.players[0].akce, 2);
-      expect(state.players[1].akce, 13);
+      expect(state.players[1].akce, 16);
       expect(state.winner, isNull);
       expect(_logsContaining(state, 'Yayincilik zaferi'), isEmpty);
     });

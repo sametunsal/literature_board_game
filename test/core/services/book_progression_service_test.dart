@@ -16,8 +16,8 @@ void main() {
     author: 'Namik Kemal',
     category: QuestionCategory.turkEdebiyatindaIlkler,
     tilePosition: 1,
-    baskiCostAkce: 5,
-    ciltCostAkce: 10,
+    baskiCostAkce: 8,
+    ciltCostAkce: 18,
   );
 
   Player makePlayer({
@@ -86,7 +86,7 @@ void main() {
     });
 
     test('own Telif + enough Akce + correct answer upgrades to Baski', () {
-      final player = makePlayer(id: 'p1', akce: 5);
+      final player = makePlayer(id: 'p1', akce: 8);
 
       final result = service.apply(
         book: book,
@@ -100,7 +100,7 @@ void main() {
       expect(result.actionType, BookProgressionActionType.upgradedToBaski);
       expect(result.updatedOwnerships[book.id]?.level, BookLevel.baski);
       expect(result.updatedPlayers.single.akce, 0);
-      expect(result.akceDelta, -5);
+      expect(result.akceDelta, -8);
     });
 
     test('own Telif + correct answer uses configured Baski cost', () {
@@ -110,10 +110,10 @@ void main() {
         author: 'Halit Ziya Usakligil',
         category: QuestionCategory.eserKarakter,
         tilePosition: 4,
-        baskiCostAkce: 6,
-        ciltCostAkce: 12,
+        baskiCostAkce: 10,
+        ciltCostAkce: 22,
       );
-      final player = makePlayer(id: 'p1', akce: 6);
+      final player = makePlayer(id: 'p1', akce: 10);
 
       final result = service.apply(
         book: configuredBook,
@@ -136,11 +136,11 @@ void main() {
         BookLevel.baski,
       );
       expect(result.updatedPlayers.single.akce, 0);
-      expect(result.akceDelta, -6);
+      expect(result.akceDelta, -10);
     });
 
     test('own Telif + enough Akce + wrong answer spends but stays Telif', () {
-      final player = makePlayer(id: 'p1', akce: 7);
+      final player = makePlayer(id: 'p1', akce: 11);
 
       final result = service.apply(
         book: book,
@@ -153,14 +153,14 @@ void main() {
 
       expect(result.actionType, BookProgressionActionType.failedUpgrade);
       expect(result.updatedOwnerships[book.id]?.level, BookLevel.telif);
-      expect(result.updatedPlayers.single.akce, 2);
-      expect(result.akceDelta, -5);
+      expect(result.updatedPlayers.single.akce, 3);
+      expect(result.akceDelta, -8);
     });
 
     test('own Baski + enough Akce + Kalfa + correct Hard upgrades to Cilt', () {
       final player = makePlayer(
         id: 'p1',
-        akce: 10,
+        akce: 18,
         masteryLevel: MasteryLevel.kalfa,
       );
 
@@ -176,13 +176,13 @@ void main() {
       expect(result.actionType, BookProgressionActionType.upgradedToCilt);
       expect(result.updatedOwnerships[book.id]?.level, BookLevel.cilt);
       expect(result.updatedPlayers.single.akce, 0);
-      expect(result.akceDelta, -10);
+      expect(result.akceDelta, -18);
     });
 
     test('own Baski + enough Akce + Usta + correct Hard upgrades to Cilt', () {
       final player = makePlayer(
         id: 'p1',
-        akce: 12,
+        akce: 20,
         masteryLevel: MasteryLevel.usta,
       );
 
@@ -205,7 +205,7 @@ void main() {
       () {
         final player = makePlayer(
           id: 'p1',
-          akce: 12,
+          akce: 20,
           masteryLevel: MasteryLevel.kalfa,
         );
 
@@ -221,14 +221,14 @@ void main() {
         expect(result.actionType, BookProgressionActionType.failedUpgrade);
         expect(result.updatedOwnerships[book.id]?.level, BookLevel.baski);
         expect(result.updatedPlayers.single.akce, 2);
-        expect(result.akceDelta, -10);
+        expect(result.akceDelta, -18);
       },
     );
 
     test('own Baski + enough Akce + below Kalfa spends but stays Baski', () {
       final player = makePlayer(
         id: 'p1',
-        akce: 12,
+        akce: 20,
         masteryLevel: MasteryLevel.cirak,
       );
 
@@ -244,7 +244,7 @@ void main() {
       expect(result.actionType, BookProgressionActionType.failedUpgrade);
       expect(result.updatedOwnerships[book.id]?.level, BookLevel.baski);
       expect(result.updatedPlayers.single.akce, 2);
-      expect(result.akceDelta, -10);
+      expect(result.akceDelta, -18);
     });
 
     test('insufficient Akce causes no attempt, no spend, and no upgrade', () {
@@ -309,7 +309,7 @@ void main() {
       expect(result.royaltyPaid, 0);
     });
 
-    test('wrong answer on opponent Telif pays royalty 1 to owner', () {
+    test('wrong answer on opponent Telif pays royalty 2 to owner', () {
       final current = makePlayer(id: 'p1', akce: 5);
       final owner = makePlayer(id: 'p2', akce: 10);
 
@@ -323,13 +323,13 @@ void main() {
       );
 
       expect(result.actionType, BookProgressionActionType.royaltyPaid);
-      expect(result.updatedPlayers[0].akce, 4);
-      expect(result.updatedPlayers[1].akce, 11);
-      expect(result.royaltyPaid, 1);
-      expect(result.akceDelta, -1);
+      expect(result.updatedPlayers[0].akce, 3);
+      expect(result.updatedPlayers[1].akce, 12);
+      expect(result.royaltyPaid, 2);
+      expect(result.akceDelta, -2);
     });
 
-    test('wrong answer on opponent Baski pays royalty 2 to owner', () {
+    test('wrong answer on opponent Baski pays royalty 4 to owner', () {
       final current = makePlayer(id: 'p1', akce: 5);
       final owner = makePlayer(id: 'p2', akce: 10);
 
@@ -342,13 +342,13 @@ void main() {
         difficulty: Difficulty.medium,
       );
 
-      expect(result.updatedPlayers[0].akce, 3);
-      expect(result.updatedPlayers[1].akce, 12);
-      expect(result.royaltyPaid, 2);
+      expect(result.updatedPlayers[0].akce, 1);
+      expect(result.updatedPlayers[1].akce, 14);
+      expect(result.royaltyPaid, 4);
     });
 
-    test('wrong answer on opponent Cilt pays royalty 3 to owner', () {
-      final current = makePlayer(id: 'p1', akce: 5);
+    test('wrong answer on opponent Cilt pays royalty 6 to owner', () {
+      final current = makePlayer(id: 'p1', akce: 7);
       final owner = makePlayer(id: 'p2', akce: 10);
 
       final result = service.apply(
@@ -360,9 +360,9 @@ void main() {
         difficulty: Difficulty.hard,
       );
 
-      expect(result.updatedPlayers[0].akce, 2);
-      expect(result.updatedPlayers[1].akce, 13);
-      expect(result.royaltyPaid, 3);
+      expect(result.updatedPlayers[0].akce, 1);
+      expect(result.updatedPlayers[1].akce, 16);
+      expect(result.royaltyPaid, 6);
     });
 
     test('royalty payment cannot make current player negative', () {

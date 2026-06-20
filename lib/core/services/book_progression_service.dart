@@ -37,8 +37,8 @@ class BookProgressionResult {
 class BookProgressionService {
   const BookProgressionService();
 
-  static const int baskiUpgradeCostAkce = 5;
-  static const int ciltUpgradeCostAkce = 10;
+  static const int baskiUpgradeCostAkce = 8;
+  static const int ciltUpgradeCostAkce = 18;
 
   BookProgressionResult apply({
     required Book book,
@@ -281,9 +281,9 @@ class BookProgressionService {
   int _royaltyFor(BookLevel level) {
     return switch (level) {
       BookLevel.none => 0,
-      BookLevel.telif => 1,
-      BookLevel.baski => 2,
-      BookLevel.cilt => 3,
+      BookLevel.telif => 2,
+      BookLevel.baski => 4,
+      BookLevel.cilt => 6,
     };
   }
 }
