@@ -1,10 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/game_theme.dart';
-import '../../core/motion/motion_constants.dart';
 import '../../models/game_enums.dart';
 import '../../providers/game_notifier.dart';
 import '../../providers/theme_notifier.dart';
@@ -185,18 +183,8 @@ class DiceRoller extends ConsumerWidget {
       );
     }
 
-    // Show dice result after roll
-    if (state.isDiceRolled && state.diceTotal > 0) {
-      return _scalePresentation(
-        _buildDiceDisplay(
-          state.diceTotal,
-          tokens,
-          currentPlayerName,
-          state.dice1,
-          state.dice2,
-          shortestSide,
-        ),
-      );
+    if (state.isDiceRolled) {
+      return const SizedBox.shrink();
     }
 
     // Show roll button
@@ -238,101 +226,6 @@ class DiceRoller extends ConsumerWidget {
           Icons.casino_rounded,
           size: shortestSide * 0.035,
           color: tokens.primary,
-        ),
-      ),
-    );
-  }
-
-  /// Kompakt zar sonuç gösterimi
-  Widget _buildDiceDisplay(
-    int total,
-    ThemeTokens tokens,
-    String playerName,
-    int dice1,
-    int dice2,
-    double shortestSide,
-  ) {
-    final dieSize = shortestSide * 0.06;
-
-    return Animate(
-      effects: [
-        ScaleEffect(
-          begin: const Offset(1.0, 1.0),
-          end: const Offset(1.12, 1.12),
-          duration: MotionDurations.fast.safe,
-          curve: Curves.easeOut,
-        ),
-        ScaleEffect(
-          begin: const Offset(1.12, 1.12),
-          end: const Offset(1.0, 1.0),
-          duration: MotionDurations.slow.safe,
-          curve: Curves.elasticOut,
-          delay: MotionDurations.fast.safe,
-        ),
-      ],
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: shortestSide * 0.018,
-            vertical: shortestSide * 0.012,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withValues(alpha: 0.35),
-                blurRadius: 14,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$playerName attı:',
-                style: GoogleFonts.poppins(
-                  fontSize: shortestSide * 0.014,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: shortestSide * 0.006),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedDie(value: dice1, size: dieSize, tokens: tokens),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: shortestSide * 0.008,
-                    ),
-                    child: Text(
-                      '+',
-                      style: GoogleFonts.poppins(
-                        fontSize: shortestSide * 0.018,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                  AnimatedDie(value: dice2, size: dieSize, tokens: tokens),
-                  Padding(
-                    padding: EdgeInsets.only(left: shortestSide * 0.01),
-                    child: Text(
-                      '= $total',
-                      style: GoogleFonts.poppins(
-                        fontSize: shortestSide * 0.022,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.brown.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );
