@@ -180,7 +180,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         ? null
         : _playerForOwnership(ownership.ownerPlayerId);
 
-    final displayText = book != null ? book.title : widget.tile.name;
+    final displayText = book != null
+        ? (book.boardLabel ?? book.title)
+        : widget.tile.name;
     final ownershipChip = _buildOwnershipChip(
       ownership: ownership,
       owner: owner,

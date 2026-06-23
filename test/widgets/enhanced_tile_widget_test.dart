@@ -191,7 +191,7 @@ void main() {
     tester,
   ) async {
     final book = BookConfig.books.singleWhere(
-      (book) => book.title == 'Dokuzuncu Hariciye Kogusu',
+      (book) => book.id == 'dokuzuncu_hariciye_kogusu',
     );
     final tile = BoardConfig.tiles.singleWhere(
       (tile) => tile.position == book.tilePosition,
@@ -199,10 +199,29 @@ void main() {
 
     await tester.pumpWidget(_tileApp(tile, players: players));
 
-    final textWidget = tester.widget<Text>(find.text(book.title));
+    expect(find.text(book.title), findsNothing);
+    expect(find.text(book.boardLabel!), findsOneWidget);
+
+    final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
     expect(textWidget.maxLines, 2);
     expect(textWidget.overflow, TextOverflow.ellipsis);
     expect(textWidget.softWrap, true);
+  });
+
+  testWidgets('board tile prefers boardLabel for long book titles', (
+    tester,
+  ) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.id == 'saatleri_ayarlama_enstitusu',
+    );
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(_tileApp(tile, players: players));
+
+    expect(find.text('Saatler Enstitüsü'), findsOneWidget);
+    expect(find.text('Saatleri Ayarlama Enstitüsü'), findsNothing);
   });
 
   testWidgets('tile widget forwards ownership data to the tile renderer', (

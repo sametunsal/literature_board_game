@@ -12,8 +12,8 @@ void main() {
   const service = BookProgressionService();
   const book = Book(
     id: 'intibah',
-    title: 'Intibah',
-    author: 'Namik Kemal',
+    title: 'İntibah',
+    author: 'Namık Kemal',
     category: QuestionCategory.turkEdebiyatindaIlkler,
     tilePosition: 1,
     baskiCostAkce: 8,
@@ -106,8 +106,8 @@ void main() {
     test('own Telif + correct answer uses configured Baski cost', () {
       const configuredBook = Book(
         id: 'ask_i_memnu',
-        title: 'Ask-i Memnu',
-        author: 'Halit Ziya Usakligil',
+        title: 'Aşk-ı Memnu',
+        author: 'Halit Ziya Uşaklıgil',
         category: QuestionCategory.eserKarakter,
         tilePosition: 4,
         baskiCostAkce: 10,

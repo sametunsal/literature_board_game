@@ -7,8 +7,9 @@ void main() {
     test('stores static board property metadata', () {
       const book = Book(
         id: 'intibah',
-        title: 'Intibah',
-        author: 'Namik Kemal',
+        title: 'İntibah',
+        author: 'Namık Kemal',
+        boardLabel: 'İntibah',
         category: QuestionCategory.turkEdebiyatindaIlkler,
         tilePosition: 1,
         telifRewardAkce: 3,
@@ -17,8 +18,9 @@ void main() {
       );
 
       expect(book.id, 'intibah');
-      expect(book.title, 'Intibah');
-      expect(book.author, 'Namik Kemal');
+      expect(book.title, 'İntibah');
+      expect(book.author, 'Namık Kemal');
+      expect(book.boardLabel, 'İntibah');
       expect(book.category, QuestionCategory.turkEdebiyatindaIlkler);
       expect(book.tilePosition, 1);
       expect(book.telifRewardAkce, 3);
@@ -29,17 +31,23 @@ void main() {
     test('copyWith updates selected fields and preserves the rest', () {
       const book = Book(
         id: 'intibah',
-        title: 'Intibah',
-        author: 'Namik Kemal',
+        title: 'İntibah',
+        author: 'Namık Kemal',
+        boardLabel: 'İntibah',
         category: QuestionCategory.turkEdebiyatindaIlkler,
         tilePosition: 1,
       );
 
-      final updated = book.copyWith(tilePosition: 4, baskiCostAkce: 7);
+      final updated = book.copyWith(
+        boardLabel: 'Kısa İntibah',
+        tilePosition: 4,
+        baskiCostAkce: 7,
+      );
 
       expect(updated.id, book.id);
       expect(updated.title, book.title);
       expect(updated.author, book.author);
+      expect(updated.boardLabel, 'Kısa İntibah');
       expect(updated.category, book.category);
       expect(updated.tilePosition, 4);
       expect(updated.baskiCostAkce, 7);

@@ -9,8 +9,8 @@ class BookConfig {
   static const List<Book> books = [
     Book(
       id: 'intibah',
-      title: 'Intibah',
-      author: 'Namik Kemal',
+      title: 'İntibah',
+      author: 'Namık Kemal',
       category: QuestionCategory.turkEdebiyatindaIlkler,
       tilePosition: 1,
       baskiCostAkce: 8,
@@ -18,7 +18,7 @@ class BookConfig {
     ),
     Book(
       id: 'araba_sevdasi',
-      title: 'Araba Sevdasi',
+      title: 'Araba Sevdası',
       author: 'Recaizade Mahmut Ekrem',
       category: QuestionCategory.edebiSanatlar,
       tilePosition: 2,
@@ -27,8 +27,8 @@ class BookConfig {
     ),
     Book(
       id: 'ask_i_memnu',
-      title: 'Ask-i Memnu',
-      author: 'Halit Ziya Usakligil',
+      title: 'Aşk-ı Memnu',
+      author: 'Halit Ziya Uşaklıgil',
       category: QuestionCategory.eserKarakter,
       tilePosition: 4,
       baskiCostAkce: 10,
@@ -37,7 +37,7 @@ class BookConfig {
     Book(
       id: 'sinekli_bakkal',
       title: 'Sinekli Bakkal',
-      author: 'Halide Edib Adivar',
+      author: 'Halide Edib Adıvar',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 5,
       baskiCostAkce: 10,
@@ -45,8 +45,8 @@ class BookConfig {
     ),
     Book(
       id: 'calikusu',
-      title: 'Calikusu',
-      author: 'Resat Nuri Guntekin',
+      title: 'Çalıkuşu',
+      author: 'Reşat Nuri Güntekin',
       category: QuestionCategory.benKimim,
       tilePosition: 7,
       baskiCostAkce: 10,
@@ -54,7 +54,7 @@ class BookConfig {
     ),
     Book(
       id: 'kuyucakli_yusuf',
-      title: 'Kuyucakli Yusuf',
+      title: 'Kuyucaklı Yusuf',
       author: 'Sabahattin Ali',
       category: QuestionCategory.turkEdebiyatindaIlkler,
       tilePosition: 9,
@@ -63,7 +63,8 @@ class BookConfig {
     ),
     Book(
       id: 'dokuzuncu_hariciye_kogusu',
-      title: 'Dokuzuncu Hariciye Kogusu',
+      title: 'Dokuzuncu Hariciye Koğuşu',
+      boardLabel: 'Dokuzuncu Koğuş',
       author: 'Peyami Safa',
       category: QuestionCategory.edebiSanatlar,
       tilePosition: 11,
@@ -82,7 +83,7 @@ class BookConfig {
     Book(
       id: 'tutunamayanlar',
       title: 'Tutunamayanlar',
-      author: 'Oguz Atay',
+      author: 'Oğuz Atay',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 14,
       baskiCostAkce: 14,
@@ -90,8 +91,8 @@ class BookConfig {
     ),
     Book(
       id: 'ince_memed',
-      title: 'Ince Memed',
-      author: 'Yasar Kemal',
+      title: 'İnce Memed',
+      author: 'Yaşar Kemal',
       category: QuestionCategory.benKimim,
       tilePosition: 15,
       baskiCostAkce: 14,
@@ -99,8 +100,9 @@ class BookConfig {
     ),
     Book(
       id: 'saatleri_ayarlama_enstitusu',
-      title: 'Saatleri Ayarlama Enstitusu',
-      author: 'Ahmet Hamdi Tanpinar',
+      title: 'Saatleri Ayarlama Enstitüsü',
+      boardLabel: 'Saatler Enstitüsü',
+      author: 'Ahmet Hamdi Tanpınar',
       category: QuestionCategory.turkEdebiyatindaIlkler,
       tilePosition: 18,
       baskiCostAkce: 14,
@@ -109,7 +111,7 @@ class BookConfig {
     Book(
       id: 'huzur',
       title: 'Huzur',
-      author: 'Ahmet Hamdi Tanpinar',
+      author: 'Ahmet Hamdi Tanpınar',
       category: QuestionCategory.edebiSanatlar,
       tilePosition: 20,
       baskiCostAkce: 16,
@@ -118,7 +120,7 @@ class BookConfig {
     Book(
       id: 'yaban',
       title: 'Yaban',
-      author: 'Yakup Kadri Karaosmanoglu',
+      author: 'Yakup Kadri Karaosmanoğlu',
       category: QuestionCategory.eserKarakter,
       tilePosition: 21,
       baskiCostAkce: 16,
@@ -126,8 +128,8 @@ class BookConfig {
     ),
     Book(
       id: 'kiralik_konak',
-      title: 'Kiralik Konak',
-      author: 'Yakup Kadri Karaosmanoglu',
+      title: 'Kiralık Konak',
+      author: 'Yakup Kadri Karaosmanoğlu',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 23,
       baskiCostAkce: 16,
@@ -136,7 +138,7 @@ class BookConfig {
     Book(
       id: 'mai_ve_siyah',
       title: 'Mai ve Siyah',
-      author: 'Halit Ziya Usakligil',
+      author: 'Halit Ziya Uşaklıgil',
       category: QuestionCategory.benKimim,
       tilePosition: 24,
       baskiCostAkce: 16,
