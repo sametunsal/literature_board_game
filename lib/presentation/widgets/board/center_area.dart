@@ -9,7 +9,7 @@ import 'board_visual_constants.dart';
 import 'monopoly_style_deck_cards.dart';
 import '../dice_roller.dart';
 
-/// Center area widget containing card decks and HUD
+/// Center area widget containing card decks and HUD.
 class CenterArea extends StatelessWidget {
   final GameState state;
   final BoardLayoutConfig layout;
@@ -24,6 +24,10 @@ class CenterArea extends StatelessWidget {
 
     final deckSize = math.min(centerWidth, centerHeight) * 0.21;
     final minCenterSide = math.min(centerWidth, centerHeight);
+    final watermarkFontSize = math.min(
+      math.max(minCenterSide * 0.16, 36.0),
+      72.0,
+    );
     final showDiceRollOverlay = state.isDiceRolling;
 
     return Positioned(
@@ -60,19 +64,45 @@ class CenterArea extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.hardEdge,
           children: [
-            // ŞANS — üst sol
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Center(
+                  child: Text(
+                    'EDEBİNA',
+                    textAlign: TextAlign.center,
+                    style: GameTheme.hudTitleStyle.copyWith(
+                      color: GameTheme.ottomanGold.withValues(alpha: 0.10),
+                      fontSize: watermarkFontSize,
+                      letterSpacing: 3,
+                      shadows: [
+                        Shadow(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          blurRadius: 2,
+                          offset: const Offset(0, -1),
+                        ),
+                        Shadow(
+                          color: GameTheme.ottomanGoldShadow.withValues(
+                            alpha: 0.10,
+                          ),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               top: 10 + minCenterSide * 0.025,
               left: 10 + centerWidth * 0.045,
               child: _buildElevatedCard(CardType.sans, deckSize),
             ),
-            // KADER — alt sağ
             Positioned(
               bottom: 10 + minCenterSide * 0.025,
               right: 10 + centerWidth * 0.045,
               child: _buildElevatedCard(CardType.kader, deckSize),
             ),
-            // HUD — FittedBox ile sığdır; layout taşmasını önle
             if (!showDiceRollOverlay)
               Positioned.fill(
                 child: Padding(
@@ -80,13 +110,9 @@ class CenterArea extends StatelessWidget {
                     horizontal: centerWidth * 0.18,
                     vertical: centerHeight * 0.08,
                   ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: _buildHUD(state),
-                  ),
+                  child: FittedBox(fit: BoxFit.scaleDown, child: _buildHUD()),
                 ),
               ),
-            // Zar animasyonu
             if (showDiceRollOverlay)
               Positioned.fill(
                 child: CenterDiceRollOverlay(
@@ -110,46 +136,10 @@ class CenterArea extends StatelessWidget {
     return MonopolyStyleDeckCard(type: type, width: baseW, height: baseH);
   }
 
-  Widget _buildHUD(GameState state) {
+  Widget _buildHUD() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.amber.shade100.withValues(alpha: 0.25),
-                Colors.amber.shade50.withValues(alpha: 0.15),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withValues(alpha: 0.25),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Text(
-            'EDEBİNA',
-            style: GameTheme.hudTitleStyle.copyWith(
-              color: GameTheme.goldAccent,
-              fontSize: 18,
-              shadows: [
-                Shadow(
-                  color: Colors.amber.withValues(alpha: 0.4),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),

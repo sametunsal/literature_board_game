@@ -5,6 +5,7 @@ import 'player_hud.dart';
 /// Manages the placement of PlayerHUDs around the perimeter of the game board.
 class PlayerHudManager extends StatelessWidget {
   final GameState state;
+  static const double _rightHudInset = 12;
 
   const PlayerHudManager({super.key, required this.state});
 
@@ -43,11 +44,11 @@ class PlayerHudManager extends StatelessWidget {
               break;
             case 1: // Top-Right
               top = 0;
-              right = 0;
+              right = _rightHudInset;
               break;
             case 2: // Bottom-Right
               bottom = 0;
-              right = 0;
+              right = _rightHudInset;
               break;
             case 3: // Bottom-Left
               bottom = 0;
@@ -63,17 +64,17 @@ class PlayerHudManager extends StatelessWidget {
               break;
             case 1: // Top-Right
               top = 0;
-              right = 0;
+              right = _rightHudInset;
               break;
             case 2: // Middle-Right
               // Vertical centering handled via Alignment in Positioned.fill/Align combo below
               top = 0;
               bottom = 0;
-              right = 0;
+              right = _rightHudInset;
               break;
             case 3: // Bottom-Right
               bottom = 0;
-              right = 0;
+              right = _rightHudInset;
               break;
             case 4: // Bottom-Left
               bottom = 0;
@@ -98,7 +99,7 @@ class PlayerHudManager extends StatelessWidget {
             top: 0,
             bottom: 0,
             left: index == 5 ? 0 : null,
-            right: index == 2 ? 0 : null,
+            right: index == 2 ? _rightHudInset : null,
             child: Align(
               alignment: index == 2
                   ? Alignment.centerRight
