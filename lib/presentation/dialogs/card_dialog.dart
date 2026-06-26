@@ -88,6 +88,28 @@ class _CardDialogState extends ConsumerState<CardDialog> {
         minimum: const EdgeInsets.all(12),
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final compactHeight = constraints.maxHeight < 420;
+            final tightHeight = constraints.maxHeight < 320;
+            final outerPadding = tightHeight
+                ? 12.0
+                : compactHeight
+                ? 16.0
+                : 24.0;
+            final iconPadding = tightHeight ? 8.0 : 16.0;
+            final iconSize = tightHeight
+                ? 32.0
+                : compactHeight
+                ? 40.0
+                : 50.0;
+            final gap = tightHeight
+                ? 8.0
+                : compactHeight
+                ? 12.0
+                : 16.0;
+            final descriptionGap = tightHeight ? 8.0 : 20.0;
+            final footerGap = tightHeight ? 8.0 : 16.0;
+            final titleFontSize = tightHeight ? 15.0 : 18.0;
+
             return Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -97,7 +119,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                 child: GestureDetector(
                   onTap: _cancelTimerAndDismiss,
                   child: Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(outerPadding),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -134,11 +156,11 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                             minHeight: 4,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: gap),
 
                         // CARD ICON with glow effect
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(iconPadding),
                           decoration: BoxDecoration(
                             color: visualTheme.surface.withValues(
                               alpha: isSans ? 0.78 : 0.3,
@@ -160,19 +182,19 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                           ),
                           child: Icon(
                             visualTheme.icon,
-                            size: 50,
+                            size: iconSize,
                             color: isSans
                                 ? visualTheme.accent
                                 : visualTheme.metallic,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: gap),
 
                         // TITLE with styled badge
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tightHeight ? 12 : 16,
+                            vertical: tightHeight ? 6 : 8,
                           ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -196,12 +218,12 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                             visualTheme.title,
                             style: GoogleFonts.playfairDisplay(
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: titleFontSize,
                               color: visualTheme.foreground,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: descriptionGap),
 
                         // DESCRIPTION
                         Expanded(
@@ -218,7 +240,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: footerGap),
 
                         // TAP TO DISMISS HINT
                         Text(
