@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/theme_notifier.dart';
+
+import '../../core/constants/game_constants.dart';
+import '../../core/services/book_progression_service.dart';
 import '../../core/theme/game_theme.dart';
+import '../../models/book_level.dart';
+import '../../providers/theme_notifier.dart';
 
 class RulesDialog extends ConsumerWidget {
   const RulesDialog({super.key});
@@ -39,7 +43,6 @@ class RulesDialog extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              // Header
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -60,7 +63,7 @@ class RulesDialog extends ConsumerWidget {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              "Oyun Kuralları",
+                              'Oyun Kuralları',
                               style: GoogleFonts.playfairDisplay(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -85,8 +88,6 @@ class RulesDialog extends ConsumerWidget {
                   ],
                 ),
               ),
-
-              // Content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -96,48 +97,52 @@ class RulesDialog extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSection(tokens, "Oyunun Amacı", Icons.flag, [
-                        "Nihai hedef \"Ehil\" unvanını kazanmaktır.",
-                        "Bunun için 6 farklı kategoride (İlkler, Edebi Sanatlar, vb.) \"Usta\" seviyesine ulaşmalısınız.",
-                        "Ayrıca \"Kıraathane\"den (Mağaza) 50 adet Edebi Söz Kartı biriktirmelisiniz.",
+                      _buildSection(tokens, 'Amaç', Icons.flag, [
+                        '${GameConstants.publishingCiltBooksToWin} Cilt kitaba sahip olan ilk oyuncu kazanır.',
+                        'Telif ve Baskı ilerleme basamaklarıdır; yalnızca Cilt kitaplar zafere sayılır.',
+                        'Söz kartları ve alıntılar koleksiyon/flavor içindir, kazanma şartı değildir.',
                       ]),
                       const SizedBox(height: 24),
                       _buildSection(
                         tokens,
-                        "Nasıl Oynanır?",
-                        Icons.directions_walk,
+                        'Yayıncılık Akışı',
+                        Icons.library_books,
                         [
-                          "Sırası gelen oyuncu zar atar ve piyonunu ilerletir.",
-                          "Üzerine geldiğiniz kutucuktaki kategoriden bir soru sorulur.",
-                          "Soruyu doğru bilirseniz \"Yıldız\" (⭐) kazanırsınız ve o kategorideki ustalığınız artar.",
+                          'Zar at, ilerle ve kitap karesine geldiğinde soruyu cevapla.',
+                          'Sahipsiz kitapta doğru cevap Telif kazandırır.',
+                          'Kendi kitabını Akçe harcayarak Telif -> Baskı -> Cilt şeklinde yükseltirsin.',
                         ],
                       ),
                       const SizedBox(height: 24),
-                      _buildSection(tokens, "Seviye Sistemi", Icons.trending_up, [
-                        "Her kategori için sırasıyla: Acemi → Çırak → Kalfa → Usta seviyeleri vardır.",
-                        "Soruları bildikçe seviye atlarsınız.",
-                        "Zorluk seviyesi arttıkça kazanılan Yıldız miktarı da artar.",
+                      _buildSection(tokens, 'Akçe ve Ustalık', Icons.trending_up, [
+                        'Akçe doğru cevaplardan ve bazı bonuslardan kazanılır.',
+                        'Akçe Baskı, Cilt ve Meşk için harcanır.',
+                        'Kategoriler doğru cevaplarla Acemi, Çırak, Kalfa, Usta diye ilerler.',
+                        'Cilt yükseltmesi için ilgili kategoride en az Kalfa gerekir.',
                       ]),
                       const SizedBox(height: 24),
-                      _buildSection(
-                        tokens,
-                        "Yıldızlar ve Kıraathane",
-                        Icons.store,
-                        [
-                          "Kazandığınız yıldızları \"Kıraathane\" bölümünde harcayabilirsiniz.",
-                          "Buradan farklı dönemlere ait \"Edebi Söz Kartları\" satın alarak koleksiyonunuzu genişletin.",
-                        ],
-                      ),
+                      _buildSection(tokens, 'Royalty', Icons.payments, [
+                        'Rakibin kitabında yanlış cevap verirsen sahibine Royalty ödersin.',
+                        'Telif: ${BookProgressionService.royaltyForLevel(BookLevel.telif)} Akçe, Baskı: ${BookProgressionService.royaltyForLevel(BookLevel.baski)} Akçe, Cilt: ${BookProgressionService.royaltyForLevel(BookLevel.cilt)} Akçe.',
+                        'Doğru cevapta Royalty ödenmez.',
+                      ]),
                       const SizedBox(height: 24),
-                      _buildSection(tokens, "Şans ve Kader", Icons.casino, [
-                        "Köşelerdeki Şans ve Kader kutucukları size sürpriz avantajlar veya dezavantajlar sağlayabilir.",
+                      _buildSection(tokens, 'Kıraathane ve Meşk', Icons.store, [
+                        'Kıraathane doğrudan Meşk açar.',
+                        'Meşk ${GameConstants.meskCostAkce} Akçe tutar ve seçtiğin kategoriden soru sorar.',
+                        'Meşk doğru cevapta yalnızca ustalık ilerlemesi verir; Akçe, Telif veya Royalty oluşturmaz.',
+                      ]),
+                      const SizedBox(height: 24),
+                      _buildSection(tokens, 'Özel Kareler', Icons.casino, [
+                        'Şans ve Kader kartları olumlu ya da olumsuz özel olaylar getirir.',
+                        'Kütüphane bekleme/ceza etkisi yaratabilir.',
+                        'Başlangıçtan geçince Akçe bonusu alınır.',
+                        'Tahtadaki sahip çipi kitabın sahibini, T/B/C işaretleri seviyesini gösterir.',
                       ]),
                     ],
                   ),
                 ),
               ),
-
-              // Footer
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -149,7 +154,7 @@ class RulesDialog extends ConsumerWidget {
                 ),
                 child: Center(
                   child: Text(
-                    "Bol şans, edebiyat yolculuğunuzda!",
+                    'İyi oyunlar, yayıncılık yolculuğunuzda başarılar!',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: tokens.textSecondary,
@@ -239,7 +244,7 @@ class RulesDialog extends ConsumerWidget {
                         color: tokens.textSecondary,
                         height: 1.5,
                       ),
-                      maxLines: 3,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

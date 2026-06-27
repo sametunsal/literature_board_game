@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/constants/game_constants.dart';
+
 class HowToPlayDialog extends StatefulWidget {
   const HowToPlayDialog({super.key});
 
@@ -14,41 +16,53 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
 
   final List<Map<String, dynamic>> _pages = [
     {
-      "title": "GİRİŞ",
-      "icon": Icons.auto_stories_rounded,
-      "color": Color(0xFF00695C),
-      "content":
-          "Hoş geldin! Edebina, edebiyat bilgisini stratejiyle birleştiren 3 boyutlu bir masa oyunudur.\n\n"
-          "Amacınız: Edebi eserleri toplamak, soruları doğru cevaplamak ve haritadaki tüm durakları tamamlayarak Üniversite'ye ulaşan ilk kişi olmaktır.",
+      'title': 'GİRİŞ',
+      'icon': Icons.auto_stories_rounded,
+      'color': Color(0xFF00695C),
+      'content':
+          "Edebina'da ana hedef yayıncılıktır.\n\n"
+          '${GameConstants.publishingCiltBooksToWin} Cilt kitaba sahip olan ilk oyuncu oyunu kazanır.\n\n'
+          'Söz kartları ve alıntılar koleksiyon tadındadır; kazanma şartı değildir.',
     },
     {
-      "title": "KARTLAR",
-      "icon": Icons.style_rounded,
-      "color": Color(0xFF3949AB),
-      "content":
-          "Oyun iki ana kart destesiyle yönetilir:\n\n"
-          "✨ ŞANS KARTLARI (Yeşil): Size beklenmedik avantajlar veya küçük sürprizler sunar.\n\n"
-          "🔥 KADER KARTLARI (Mavi): Oyunun gidişatını değiştirebilecek zorlu sınavlar veya büyük ödüller içerir.",
+      'title': 'YAYINCILIK',
+      'icon': Icons.library_books_rounded,
+      'color': Color(0xFF3949AB),
+      'content':
+          'Kitap karelerine gelince soru cevaplanır.\n\n'
+          'Sahipsiz bir kitapta doğru cevap verirsen Telif alırsın.\n\n'
+          'Kendi kitabını doğru cevaplarla ve Akçe harcayarak geliştirirsin:\n'
+          'Telif -> Baskı -> Cilt.',
     },
     {
-      "title": "KARELER",
-      "icon": Icons.map_rounded,
-      "color": Color(0xFFD84315),
-      "content":
-          "Haritada farklı efektlere sahip kareler bulunur:\n\n"
-          "📚 KÜTÜPHANE: Bilgi hazinesidir ama sessiz olunmalıdır. Sıra bekleyebilirsiniz.\n\n"
-          "🏫 KİTAPÇI: Eser toplamak için en iyi yerdir.\n\n"
-          "🎓 ÜNİVERSİTE: Oyunun final noktasıdır.",
+      'title': 'AKÇE VE USTALIK',
+      'icon': Icons.trending_up_rounded,
+      'color': Color(0xFFD84315),
+      'content':
+          'Akçe doğru cevaplardan ve bazı bonuslardan kazanılır.\n\n'
+          'Baskı, Cilt ve Meşk için Akçe harcarsın. Baskı ve Cilt bedeli kitaba göre değişir.\n\n'
+          'Kategoriler doğru cevaplarla ilerler: Acemi, Çırak, Kalfa, Usta.\n\n'
+          'Bir kitabı Cilt yapmak için ilgili kategoride en az Kalfa olman gerekir.',
     },
     {
-      "title": "KURALLAR",
-      "icon": Icons.gavel_rounded,
-      "color": Color(0xFF455A64),
-      "content":
-          "1. Her tur sırasıyla zar atılır.\n"
-          "2. Çift atan oyuncu tekrar oynar.\n"
-          "3. Soruları doğru bilen ekstra puan kazanır.\n"
-          "4. En çok eseri toplayan ve bitişe ulaşan kazanır!",
+      'title': 'KARELER',
+      'icon': Icons.map_rounded,
+      'color': Color(0xFF455A64),
+      'content':
+          'Telif, Baskı ve Cilt kareleri yayıncılık yolunu gösterir.\n\n'
+          'Royalty karelerinde rakip sahipliği önemlidir: rakibin kitabında yanlış cevap verirsen ödeme yaparsın.\n\n'
+          'Akçe kareleri bonus kazandırabilir. Şans ve Kader kartları olumlu ya da olumsuz özel olaylar getirir.\n\n'
+          'Kütüphane bekleme/ceza etkisi yaratabilir. Başlangıçtan geçince Akçe bonusu alınır.',
+    },
+    {
+      'title': 'KIRAATHANE',
+      'icon': Icons.local_cafe_rounded,
+      'color': Color(0xFF6A1B9A),
+      'content':
+          'Kıraathane doğrudan Meşk açar.\n\n'
+          'Meşk ${GameConstants.meskCostAkce} Akçe tutar. Bir kategori seçer ve soru cevaplarsın.\n\n'
+          'Meşk doğru cevapta yalnızca ustalık ilerlemesi verir; Akçe, Telif veya Royalty oluşturmaz.\n\n'
+          'Tahtada sahip çipi kitabın sahibini, T/B/C işaretleri de Telif, Baskı ve Cilt seviyesini gösterir.',
     },
   ];
 
@@ -72,9 +86,8 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Book Theme Colors
-    const bgColor = Color(0xFFF9F7F2); // Paper
-    const coverColor = Color(0xFF5D4037); // Leather Brown
+    const bgColor = Color(0xFFF9F7F2);
+    const coverColor = Color(0xFF5D4037);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -95,7 +108,6 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
         ),
         child: Column(
           children: [
-            // HEADER (Book Spine Look)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
               decoration: const BoxDecoration(
@@ -111,7 +123,7 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                   Icon(Icons.menu_book, color: Colors.amber.shade100),
                   const SizedBox(width: 12),
                   Text(
-                    "OYUN REHBERİ",
+                    'OYUN REHBERİ',
                     style: GoogleFonts.cinzelDecorative(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -122,8 +134,6 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                 ],
               ),
             ),
-
-            // CONTENT (PageView)
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -132,14 +142,15 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                 itemBuilder: (context, index) {
                   final page = _pages[index];
                   return Padding(
-                    padding: const EdgeInsets.all(32.0),
+                    padding: const EdgeInsets.all(32),
                     child: Column(
                       children: [
-                        // Section Icon
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: (page['color'] as Color).withValues(alpha: 0.1),
+                            color: (page['color'] as Color).withValues(
+                              alpha: 0.1,
+                            ),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -149,10 +160,9 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                           ),
                         ),
                         const SizedBox(height: 24),
-
-                        // Title
                         Text(
                           page['title'] as String,
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.cormorantGaramond(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -161,14 +171,14 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                         ),
                         const SizedBox(height: 8),
                         Divider(
-                          color: (page['color'] as Color).withValues(alpha: 0.2),
+                          color: (page['color'] as Color).withValues(
+                            alpha: 0.2,
+                          ),
                           thickness: 1,
                           indent: 60,
                           endIndent: 60,
                         ),
                         const SizedBox(height: 24),
-
-                        // Content
                         Expanded(
                           child: SingleChildScrollView(
                             child: Text(
@@ -188,25 +198,20 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                 },
               ),
             ),
-
-            // FOOTER (Navigation)
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Prev Button
                   if (_currentPage > 0)
                     TextButton.icon(
                       onPressed: _prevPage,
                       icon: const Icon(Icons.arrow_back_ios, size: 16),
-                      label: const Text("GERİ"),
+                      label: const Text('GERİ'),
                       style: TextButton.styleFrom(foregroundColor: coverColor),
                     )
                   else
                     const SizedBox(width: 80),
-
-                  // Page Indicator
                   Row(
                     children: List.generate(_pages.length, (index) {
                       return Container(
@@ -222,20 +227,18 @@ class _HowToPlayDialogState extends State<HowToPlayDialog> {
                       );
                     }),
                   ),
-
-                  // Next/Close Button
                   if (_currentPage < _pages.length - 1)
                     TextButton.icon(
                       onPressed: _nextPage,
                       icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                      label: const Text("İLERİ"),
+                      label: const Text('İLERİ'),
                       style: TextButton.styleFrom(foregroundColor: coverColor),
                     )
                   else
                     TextButton.icon(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.check, size: 18),
-                      label: const Text("ANLADIM"),
+                      label: const Text('ANLADIM'),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.green.shade800,
                         backgroundColor: Colors.green.withValues(alpha: 0.1),
