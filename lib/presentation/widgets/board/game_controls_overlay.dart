@@ -9,6 +9,7 @@ import '../../../../models/book_level.dart';
 import '../../../providers/game_notifier.dart';
 import '../../../providers/theme_notifier.dart';
 import '../../dialogs/pause_dialog.dart';
+import '../../dialogs/publishing_portfolio_dialog.dart';
 import '../../dialogs/settings_dialog.dart';
 import '../../screens/collection_screen.dart';
 import '../../screens/main_menu_screen.dart';
@@ -47,6 +48,8 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildPauseButton(),
+                const SizedBox(height: 8),
+                _buildPortfolioButton(),
                 const SizedBox(height: 8),
                 _buildBotModeButton(),
                 if (kDebugMode) ...[
@@ -96,6 +99,58 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
               ],
             ),
             child: Icon(Icons.pause, color: tokens.accent, size: 28),
+          ),
+        )
+        .animate()
+        .fadeIn(
+          delay: MotionDurations.slow.safe,
+          duration: MotionDurations.pulse.safe,
+        )
+        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+  }
+
+  Widget _buildPortfolioButton() {
+    final themeState = ref.watch(themeProvider);
+    final isDarkMode = themeState.isDarkMode;
+    final tokens = themeState.tokens;
+
+    return Tooltip(
+          message: 'Publishing portfolio',
+          child: GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => const PublishingPortfolioDialog(),
+              );
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: tokens.surface.withValues(
+                  alpha: isDarkMode ? 0.15 : 0.85,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: tokens.surface.withValues(
+                    alpha: isDarkMode ? 0.2 : 0.5,
+                  ),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.library_books_rounded,
+                color: tokens.accent,
+                size: 26,
+              ),
+            ),
           ),
         )
         .animate()
