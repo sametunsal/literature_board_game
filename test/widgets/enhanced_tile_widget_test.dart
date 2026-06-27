@@ -220,7 +220,7 @@ void main() {
 
     await tester.pumpWidget(_tileApp(tile, players: players));
 
-    expect(find.text('Saatler Enstitüsü'), findsOneWidget);
+    expect(find.text('Saatler Enst.'), findsOneWidget);
     expect(find.text('Saatleri Ayarlama Enstitüsü'), findsNothing);
   });
 

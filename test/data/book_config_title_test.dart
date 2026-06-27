@@ -36,11 +36,8 @@ void main() {
   test('BookConfig keeps short board labels only where useful', () {
     final byId = {for (final book in BookConfig.books) book.id: book};
 
-    expect(byId['dokuzuncu_hariciye_kogusu']!.boardLabel, 'Dokuzuncu Koğuş');
-    expect(
-      byId['saatleri_ayarlama_enstitusu']!.boardLabel,
-      'Saatler Enstitüsü',
-    );
+    expect(byId['dokuzuncu_hariciye_kogusu']!.boardLabel, '9. Koğuş');
+    expect(byId['saatleri_ayarlama_enstitusu']!.boardLabel, 'Saatler Enst.');
     expect(byId['ask_i_memnu']!.boardLabel, isNull);
   });
 }

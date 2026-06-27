@@ -64,7 +64,7 @@ class BookConfig {
     Book(
       id: 'dokuzuncu_hariciye_kogusu',
       title: 'Dokuzuncu Hariciye Koğuşu',
-      boardLabel: 'Dokuzuncu Koğuş',
+      boardLabel: '9. Koğuş',
       author: 'Peyami Safa',
       category: QuestionCategory.edebiSanatlar,
       tilePosition: 11,
@@ -101,7 +101,7 @@ class BookConfig {
     Book(
       id: 'saatleri_ayarlama_enstitusu',
       title: 'Saatleri Ayarlama Enstitüsü',
-      boardLabel: 'Saatler Enstitüsü',
+      boardLabel: 'Saatler Enst.',
       author: 'Ahmet Hamdi Tanpınar',
       category: QuestionCategory.turkEdebiyatindaIlkler,
       tilePosition: 18,
