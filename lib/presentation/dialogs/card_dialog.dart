@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import '../../core/constants/game_constants.dart';
 import '../../models/game_card.dart';
 import '../../models/game_enums.dart';
 import '../../providers/game_notifier.dart';
 import '../theme/card_visual_theme.dart';
 
-/// Card dialog with auto-dismiss timer (3 seconds)
+/// Card dialog with auto-dismiss timer.
 class CardDialog extends ConsumerStatefulWidget {
   final GameCard card;
   final VoidCallback? onDismiss;
@@ -32,7 +33,7 @@ class _CardDialogState extends ConsumerState<CardDialog> {
 
   void _startAutoDismiss() {
     // Progress bar animation
-    const duration = Duration(milliseconds: 3000);
+    const duration = Duration(milliseconds: GameConstants.cardDialogDurationMs);
     const tickRate = Duration(milliseconds: 50);
     final totalTicks = duration.inMilliseconds / tickRate.inMilliseconds;
     int currentTick = 0;
@@ -46,7 +47,6 @@ class _CardDialogState extends ConsumerState<CardDialog> {
       }
     });
 
-    // Auto dismiss after 3 seconds
     _autoDismissTimer = Timer(duration, () {
       if (mounted) {
         _dismiss();

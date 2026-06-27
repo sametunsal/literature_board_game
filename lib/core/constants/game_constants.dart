@@ -156,6 +156,7 @@ class GameConstants {
   static const int diceResetDelay = 150;
   static const int botDialogAutoCloseDelay = 500;
   static const int botPenaltyDialogAutoCloseDelay = 300;
+  static const int cardDialogDurationMs = 5000;
   static const int botTurnScheduleDelay = 800;
   static const int pauseCheckInterval = 500;
   static const int floatingEffectDurationSeconds = 2;
