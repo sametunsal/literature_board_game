@@ -182,7 +182,6 @@ class QuestionFlowService {
       final notAskedBefore = !askedQuestionIds.contains(q.text);
       return matchesCategory && matchesDifficulty && notAskedBefore;
     }).toList();
-    filteredQuestions.shuffle(random);
 
     Question? selectedQuestion;
     bool shouldResetAskedIds = false;
@@ -201,13 +200,11 @@ class QuestionFlowService {
         final matchesDifficulty = q.difficulty == difficultyFilter;
         return matchesCategory && matchesDifficulty;
       }).toList();
-      allCategoryQuestions.shuffle(random);
 
       if (allCategoryQuestions.isEmpty) {
         final anyCategoryQuestions = questionPool
             .where((q) => categoryNames.contains(q.category.name))
             .toList();
-        anyCategoryQuestions.shuffle(random);
 
         if (anyCategoryQuestions.isEmpty) {
           if (tile.type == TileType.tesvik) {
@@ -567,12 +564,27 @@ class QuestionFlowService {
       );
     }
     scored.sort((a, b) => a.value.compareTo(b.value));
-    final minLines = scored.first.value;
-    final ties = scored
-        .where((e) => e.value == minLines)
+    final shortestLineCount = scored.first.value;
+    final readableLineLimit = shortestLineCount + 1;
+    final preferredCount = (scored.length * 0.35).ceil().clamp(2, 5).toInt();
+    final readableTier = scored
+        .where((entry) => entry.value <= readableLineLimit)
+        .take(preferredCount)
         .map((e) => e.key)
         .toList();
-    ties.shuffle(random);
-    return ties.first;
+    final candidates = readableTier.isNotEmpty
+        ? readableTier
+        : scored.take(preferredCount).map((e) => e.key).toList();
+    candidates.shuffle(random);
+    return candidates.first;
+  }
+
+  List<Question> shuffledForNewGameSession(
+    List<Question> questions,
+    Random random,
+  ) {
+    final shuffled = List<Question>.from(questions);
+    shuffled.shuffle(random);
+    return shuffled;
   }
 }

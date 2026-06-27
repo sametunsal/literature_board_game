@@ -482,9 +482,13 @@ class GameNotifier extends StateNotifier<GameState> {
     // Load questions from repository (non-blocking: game starts even if Firestore fails)
     try {
       final questionRepository = ref.read(questionRepositoryProvider);
-      _cachedQuestions = await questionRepository.getAllQuestions();
-      // Shuffle questions for random order each game
-      _cachedQuestions.shuffle(_random);
+      final loadedQuestions = await questionRepository.getAllQuestions();
+      // Shuffle questions once per game session so selection is varied across
+      // new games while remaining stable within the current session.
+      _cachedQuestions = _questionFlowService.shuffledForNewGameSession(
+        loadedQuestions,
+        _random,
+      );
       safePrint('ℹ️ Questions shuffled for random order this game');
     } catch (e, stackTrace) {
       safePrint('JSON Yükleme Hatası: $e');

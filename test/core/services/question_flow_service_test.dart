@@ -248,6 +248,36 @@ void main() {
       expect(result.question!.text, 'Medium');
     });
 
+    test(
+      'new game session order varies first question when pool has options',
+      () {
+        final pool = List.generate(
+          8,
+          (index) =>
+              makeQuestion(text: 'Easy question $index', difficulty: 'easy'),
+        );
+        final firstQuestions = <String>{};
+
+        for (var seed = 1; seed <= 8; seed++) {
+          final sessionPool = service.shuffledForNewGameSession(
+            pool,
+            Random(seed),
+          );
+          final result = service.selectQuestion(
+            tile: categoryTile(),
+            player: makePlayer(),
+            questionPool: sessionPool,
+            askedQuestionIds: {},
+            random: Random(seed),
+            useLineEstimation: false,
+          );
+          firstQuestions.add(result.question!.text);
+        }
+
+        expect(firstQuestions.length, greaterThan(1));
+      },
+    );
+
     test('filters out already-asked questions', () {
       final pool = [
         makeQuestion(text: 'Asked', difficulty: 'easy'),

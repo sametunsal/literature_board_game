@@ -55,13 +55,13 @@ class MovementService {
         if (currentPos == BoardConfig.startPosition && !isLastStep) {
           List<Player> startPlayers = List.from(notifier.currentState.players);
           startPlayers[notifier.currentState.currentPlayerIndex] = player
-              .copyWith(stars: player.stars + GameConstants.passingStartBonus);
-          
+              .copyWith(akce: player.akce + GameConstants.passingStartBonus);
+
           notifier.updateState(
             notifier.currentState.copyWith(
               players: startPlayers,
               floatingEffect: FloatingEffect(
-                '+${GameConstants.passingStartBonus} ⭐',
+                '+${GameConstants.passingStartBonus} Akçe Başlangıç',
                 const Color(0xFFFFD700),
               ),
             ),
@@ -69,14 +69,16 @@ class MovementService {
           player = notifier.currentState.currentPlayer;
 
           notifier.addLog(
-            "Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!",
+            "Başlangıç bonusu: +${GameConstants.passingStartBonus} Akçe",
             type: 'success',
           );
-          
+
           AudioManager.instance.playSfx('audio/star_collect.wav');
-          
+
           Future.delayed(
-            const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+            const Duration(
+              seconds: GameConstants.floatingEffectDurationSeconds,
+            ),
             () {
               if (notifier.mounted) {
                 notifier.updateState(
@@ -85,8 +87,6 @@ class MovementService {
               }
             },
           );
-          
-          await Future.delayed(const Duration(milliseconds: 600));
         }
 
         // Update position for each step

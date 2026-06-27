@@ -40,6 +40,15 @@ class BookProgressionService {
   static const int baskiUpgradeCostAkce = 8;
   static const int ciltUpgradeCostAkce = 18;
 
+  static int royaltyForLevel(BookLevel level) {
+    return switch (level) {
+      BookLevel.none => 0,
+      BookLevel.telif => 2,
+      BookLevel.baski => 4,
+      BookLevel.cilt => 6,
+    };
+  }
+
   BookProgressionResult apply({
     required Book book,
     required List<Player> players,
@@ -261,7 +270,7 @@ class BookProgressionService {
 
     final payer = players[currentPlayerIndex];
     final owner = players[ownerIndex];
-    final royalty = _royaltyFor(ownership.level);
+    final royalty = royaltyForLevel(ownership.level);
     final paid = payer.akce < royalty ? payer.akce : royalty;
 
     final updatedPlayers = List<Player>.from(players);
@@ -276,14 +285,5 @@ class BookProgressionService {
       royaltyPaid: paid,
       logs: ['${book.title} için $paid Akçe telif ödendi.'],
     );
-  }
-
-  int _royaltyFor(BookLevel level) {
-    return switch (level) {
-      BookLevel.none => 0,
-      BookLevel.telif => 2,
-      BookLevel.baski => 4,
-      BookLevel.cilt => 6,
-    };
   }
 }
