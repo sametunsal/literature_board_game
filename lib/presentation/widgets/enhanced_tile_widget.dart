@@ -37,6 +37,19 @@ class EnhancedTileWidget extends StatefulWidget {
 }
 
 class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
+  /// Shared line height for board labels. Kept identical between the painter
+  /// used for font fitting and the rendered Text so measurement matches paint.
+  static const double _kLabelLineHeight = 1.05;
+
+  /// Slight negative tracking lets long single words ("Kuyucaklı",
+  /// "Enstitüsü") pack more tightly so the fitter can keep a larger font.
+  static const double _kLabelLetterSpacing = -0.3;
+
+  /// Font-fit search bounds. The ceiling is well above the old 9.0 cap so
+  /// labels grow to fill generously sized tiles instead of looking tiny.
+  static const double _kMaxLabelFontSize = 14.0;
+  static const double _kMinLabelFontSize = 6.2;
+
   bool _isPressed = false;
 
   @override
@@ -188,27 +201,30 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       owner: owner,
     );
 
+    final maxLines = _maxLinesFor(displayText);
+
     final content = LayoutBuilder(
       builder: (context, constraints) {
-        final fontSize = _titleFontSize(displayText, constraints.maxWidth);
+        final fontSize = _titleFontSize(
+          displayText,
+          constraints.maxWidth,
+          constraints.maxHeight,
+          maxLines,
+        );
 
         return ClipRect(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(3, 2, 3, 2),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
             child: Align(
               alignment: Alignment.center,
               child: Text(
                 displayText,
                 textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: maxLines,
+                overflow: TextOverflow.visible,
                 softWrap: true,
-                style: GoogleFonts.poppins(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                  height: 1.0,
-                ),
+                strutStyle: _labelStrut(fontSize),
+                style: _labelStyle(fontSize),
               ),
             ),
           ),
@@ -333,12 +349,69 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     );
   }
 
-  double _titleFontSize(String title, double maxWidth) {
-    final compactTitle = title.replaceAll(RegExp(r'\s+'), '');
-    if (compactTitle.length >= 24 || maxWidth < 44) return 7.2;
-    if (compactTitle.length >= 18 || maxWidth < 54) return 8.0;
-    if (compactTitle.length >= 14) return 8.4;
-    return 9.0;
+  /// Allow up to 3 lines so full canonical titles can break cleanly via
+  /// explicit "\n" board labels (e.g. Saatleri / Ayarlama / Enstitüsü).
+  /// Single-line text still gets 2 lines of head-room for soft wrapping.
+  int _maxLinesFor(String text) {
+    final explicitLines = '\n'.allMatches(text).length + 1;
+    return explicitLines.clamp(2, 3);
+  }
+
+  /// Single source of truth for label typography, shared by the fit painter
+  /// and the rendered Text so measurement always matches paint.
+  TextStyle _labelStyle(double fontSize) => GoogleFonts.poppins(
+    fontSize: fontSize,
+    fontWeight: FontWeight.w700,
+    color: Colors.black87,
+    height: _kLabelLineHeight,
+    letterSpacing: _kLabelLetterSpacing,
+  );
+
+  StrutStyle _labelStrut(double fontSize) => StrutStyle(
+    fontSize: fontSize,
+    height: _kLabelLineHeight,
+    forceStrutHeight: true,
+  );
+
+  double _titleFontSize(
+    String title,
+    double maxWidth,
+    double maxHeight,
+    int maxLines,
+  ) {
+    final textBoxWidth = (maxWidth - 4).clamp(1.0, double.infinity);
+    final textBoxHeight = (maxHeight - 4).clamp(1.0, double.infinity);
+
+    for (
+      double fontSize = _kMaxLabelFontSize;
+      fontSize >= _kMinLabelFontSize;
+      fontSize -= 0.2
+    ) {
+      if (_titleFits(title, textBoxWidth, textBoxHeight, fontSize, maxLines)) {
+        return fontSize;
+      }
+    }
+    return _kMinLabelFontSize;
+  }
+
+  bool _titleFits(
+    String title,
+    double maxWidth,
+    double maxHeight,
+    double fontSize,
+    int maxLines,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: title, style: _labelStyle(fontSize)),
+      textAlign: TextAlign.center,
+      strutStyle: _labelStrut(fontSize),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+
+    return !painter.didExceedMaxLines &&
+        painter.size.width <= maxWidth &&
+        painter.size.height <= maxHeight;
   }
 
   static const _categoryColors = <QuestionCategory, Color>{

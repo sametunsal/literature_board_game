@@ -186,6 +186,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
                   minScale: 0.5,
                   maxScale: 2.0,
                   constrained: true,
+                  clipBehavior: Clip.none,
                   child: BoardLayout(
                     state: state,
                     layout: layout,
@@ -255,7 +256,7 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
           // ═════════════════════════════════════════════════════════════════════
           // FLAT DIALOG LAYER - All dialogs appear flat (orthogonal to screen)
-          // This is ABOVE the isometric transform to prevent inheriting the 3D effect
+          // This stays above the board transform so dialogs remain screen-aligned.
           // ═══════════════════════════════════════════════════════════════════════════
           _buildFlatDialogLayer(state, ref),
 
@@ -347,8 +348,8 @@ class _BoardViewState extends ConsumerState<BoardView> {
     );
   }
 
-  /// Build flat dialog layer - all dialogs appear orthogonal to screen
-  /// This prevents dialogs from inheriting the isometric transform
+  /// Build flat dialog layer - all dialogs appear orthogonal to screen.
+  /// This prevents dialogs from inheriting the board transform.
   Widget _buildFlatDialogLayer(GameState state, WidgetRef ref) {
     final dialog = ref.watch(dialogProvider);
 

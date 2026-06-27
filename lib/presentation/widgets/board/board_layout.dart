@@ -59,27 +59,32 @@ class _BoardLayoutState extends State<BoardLayout> {
             containerSize.height - mediaPadding.bottom,
           ),
         );
+        final adjustedSafeRect = Rect.fromLTRB(
+          safeRect.left,
+          safeRect.top,
+          safeRect.right,
+          math.max(safeRect.top, safeRect.bottom - 8),
+        );
 
-        final shortestSide = safeRect.size.shortestSide;
-        final isMobile = safeRect.width < 900;
-        final isSmallMobile = safeRect.width < 600;
+        final shortestSide = adjustedSafeRect.size.shortestSide;
+        final isMobile = adjustedSafeRect.width < 900;
+        final isSmallMobile = adjustedSafeRect.width < 600;
         final isTinyScreen = shortestSide < 400;
 
-        final boardMatrix = Matrix4.identity()
-          ..setEntry(3, 2, 0.0008)
-          ..rotateX(-0.28);
+        final boardMatrix = Matrix4.identity();
         const boardDepth = 6.0;
 
         final screenUsageRatio = isTinyScreen
-            ? 1.05
-            : (isSmallMobile ? 1.02 : (isMobile ? 0.98 : 0.95));
-        final targetWidth = safeRect.width * screenUsageRatio;
-        final targetHeight = safeRect.height * 0.88;
+            ? 1.0
+            : (isSmallMobile ? 1.0 : (isMobile ? 0.98 : 0.95));
+        final targetWidth = adjustedSafeRect.width * screenUsageRatio;
+        final targetHeight = adjustedSafeRect.height * 0.99;
+        const fitSafetyScale = 0.97;
 
         final projectedBounds = _projectedBoardBounds(
           boardMatrix,
           Size(
-            widget.layout.actualWidth,
+            widget.layout.actualWidth + boardDepth,
             widget.layout.actualHeight + boardDepth,
           ),
         );
@@ -89,10 +94,10 @@ class _BoardLayoutState extends State<BoardLayout> {
           targetHeight / projectedBounds.height,
         );
         final fitScale = math.min(
-          safeRect.width / projectedBounds.width,
-          safeRect.height / projectedBounds.height,
+          adjustedSafeRect.width / projectedBounds.width,
+          adjustedSafeRect.height / projectedBounds.height,
         );
-        final scaleFactor = math.min(policyScale, fitScale);
+        final scaleFactor = math.min(policyScale, fitScale) * fitSafetyScale;
         final visualSize = Size(
           projectedBounds.width * scaleFactor,
           projectedBounds.height * scaleFactor,
@@ -105,26 +110,30 @@ class _BoardLayoutState extends State<BoardLayout> {
           child: Stack(
             children: [
               Positioned.fromRect(
-                rect: safeRect,
+                rect: adjustedSafeRect,
                 child: Center(
                   child: SizedBox(
                     width: visualSize.width,
                     height: visualSize.height,
-                    child: Transform(
-                      transform: boardMatrix,
+                    child: Transform.scale(
+                      scale: scaleFactor,
                       alignment: Alignment.center,
-                      child: SizedBox(
-                        width: widget.layout.actualWidth,
-                        height: widget.layout.actualHeight + boardDepth,
-                        child: boardSurface
-                            .animate()
-                            .fadeIn(duration: MotionDurations.slow.safe)
-                            .scale(
-                              begin: const Offset(0.92, 0.92),
-                              end: const Offset(1, 1),
-                              duration: MotionDurations.slow.safe,
-                              curve: Curves.easeOutBack,
-                            ),
+                      child: Transform(
+                        transform: boardMatrix,
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: widget.layout.actualWidth + boardDepth,
+                          height: widget.layout.actualHeight + boardDepth,
+                          child: boardSurface
+                              .animate()
+                              .fadeIn(duration: MotionDurations.slow.safe)
+                              .scale(
+                                begin: const Offset(0.92, 0.92),
+                                end: const Offset(1, 1),
+                                duration: MotionDurations.slow.safe,
+                                curve: Curves.easeOutBack,
+                              ),
+                        ),
                       ),
                     ),
                   ),

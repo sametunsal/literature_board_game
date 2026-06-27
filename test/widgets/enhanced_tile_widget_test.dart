@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:literature_board_game/core/utils/board_layout_config.dart';
+import 'package:literature_board_game/core/utils/board_layout_helper.dart';
 import 'package:literature_board_game/data/board_config.dart';
 import 'package:literature_board_game/data/book_config.dart';
 import 'package:literature_board_game/models/book_level.dart';
@@ -105,7 +107,7 @@ void main() {
       ),
     );
 
-    expect(find.text(book.title), findsOneWidget);
+    expect(find.text(book.boardLabel ?? book.title), findsOneWidget);
     expect(find.text('B'), findsOneWidget);
     expect(find.text('T'), findsNothing);
     expect(find.text('C'), findsNothing);
@@ -132,7 +134,7 @@ void main() {
       ),
     );
 
-    expect(find.text(book.title), findsOneWidget);
+    expect(find.text(book.boardLabel ?? book.title), findsOneWidget);
     expect(find.text('C'), findsOneWidget);
     expect(find.text('T'), findsNothing);
     expect(find.text('B'), findsNothing);
@@ -187,7 +189,7 @@ void main() {
     );
   });
 
-  testWidgets('long book title stays within two lines with ellipsis', (
+  testWidgets('long book title stays within two lines without ellipsis', (
     tester,
   ) async {
     final book = BookConfig.books.singleWhere(
@@ -204,8 +206,29 @@ void main() {
 
     final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
     expect(textWidget.maxLines, 2);
-    expect(textWidget.overflow, TextOverflow.ellipsis);
+    expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
     expect(textWidget.softWrap, true);
+  });
+
+  testWidgets('label grows past the old 9pt cap on a generous tile', (
+    tester,
+  ) async {
+    final book = BookConfig.books.singleWhere((book) => book.id == 'huzur');
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(
+      _tileApp(tile, players: players, width: 240, height: 150),
+    );
+
+    final label = book.boardLabel ?? book.title;
+    final textWidget = tester.widget<Text>(find.text(label));
+    // Old behavior pinned every label at 9.0; it should now scale up.
+    expect(textWidget.style!.fontSize, greaterThan(9.0));
+    // Negative tracking is applied so long words pack tighter.
+    expect(textWidget.style!.letterSpacing, lessThan(0));
+    expect(textWidget.strutStyle, isNotNull);
   });
 
   testWidgets('board tile prefers boardLabel for long book titles', (
@@ -220,8 +243,73 @@ void main() {
 
     await tester.pumpWidget(_tileApp(tile, players: players));
 
-    expect(find.text('Saatler Enst.'), findsOneWidget);
+    expect(find.text('Saatleri\nAyarlama\nEnstitüsü'), findsOneWidget);
     expect(find.text('Saatleri Ayarlama Enstitüsü'), findsNothing);
+  });
+
+  testWidgets('three-line board label renders with maxLines 3', (tester) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.id == 'saatleri_ayarlama_enstitusu',
+    );
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(_tileApp(tile, players: players));
+
+    final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
+    expect(textWidget.maxLines, 3);
+    expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+    expect(textWidget.softWrap, true);
+    expect('\n'.allMatches(textWidget.data!).length, 2);
+  });
+
+  testWidgets('two-line board label renders with maxLines 2', (tester) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.id == 'ince_memed',
+    );
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(_tileApp(tile, players: players));
+
+    expect(find.text(book.title), findsNothing);
+    final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
+    expect(textWidget.maxLines, 2);
+    expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+  });
+
+  testWidgets('all rendered board book labels avoid ellipsis at board scale', (
+    tester,
+  ) async {
+    final layout = BoardLayoutConfig(screenWidth: 1920, screenHeight: 1080);
+
+    for (final book in BookConfig.books) {
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      final size = BoardLayoutHelper.getTileSize(tile.position, layout);
+      final label = book.boardLabel ?? book.title;
+
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          width: size.width,
+          height: size.height,
+          quarterTurns: _rotationQuarter(tile.position),
+        ),
+      );
+
+      final textWidget = tester.widget<Text>(find.text(label));
+      expect(
+        textWidget.overflow,
+        isNot(TextOverflow.ellipsis),
+        reason: '${book.id} should render without ellipsis',
+      );
+      expect(textWidget.softWrap, true);
+    }
   });
 
   testWidgets('tile widget forwards ownership data to the tile renderer', (
@@ -283,6 +371,9 @@ Widget _tileApp(
   BoardTile tile, {
   List<Player> players = const [],
   Map<String, BookOwnership> bookOwnerships = const {},
+  double width = 100,
+  double height = 60,
+  int quarterTurns = 0,
 }) {
   return MaterialApp(
     home: Scaffold(
@@ -291,12 +382,21 @@ Widget _tileApp(
           tile: tile,
           players: players,
           bookOwnerships: bookOwnerships,
-          width: 100,
-          height: 60,
+          width: width,
+          height: height,
+          quarterTurns: quarterTurns,
         ),
       ),
     ),
   );
+}
+
+int _rotationQuarter(int id) {
+  if ([0, 6, 13, 19].contains(id)) return 0;
+  if (id >= 1 && id <= 5) return 0;
+  if (id >= 7 && id <= 12) return 3;
+  if (id >= 14 && id <= 18) return 2;
+  return 1;
 }
 
 Color _tileColor(BoardTile tile) {

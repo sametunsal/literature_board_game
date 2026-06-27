@@ -19,6 +19,7 @@ class BookConfig {
     Book(
       id: 'araba_sevdasi',
       title: 'Araba Sevdası',
+      boardLabel: 'Araba\nSevdası',
       author: 'Recaizade Mahmut Ekrem',
       category: QuestionCategory.edebiSanatlar,
       tilePosition: 2,
@@ -28,6 +29,7 @@ class BookConfig {
     Book(
       id: 'ask_i_memnu',
       title: 'Aşk-ı Memnu',
+      boardLabel: 'Aşk-ı\nMemnu',
       author: 'Halit Ziya Uşaklıgil',
       category: QuestionCategory.eserKarakter,
       tilePosition: 4,
@@ -37,6 +39,7 @@ class BookConfig {
     Book(
       id: 'sinekli_bakkal',
       title: 'Sinekli Bakkal',
+      boardLabel: 'Sinekli\nBakkal',
       author: 'Halide Edib Adıvar',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 5,
@@ -55,6 +58,7 @@ class BookConfig {
     Book(
       id: 'kuyucakli_yusuf',
       title: 'Kuyucaklı Yusuf',
+      boardLabel: 'Kuyucaklı\nYusuf',
       author: 'Sabahattin Ali',
       category: QuestionCategory.turkEdebiyatindaIlkler,
       tilePosition: 9,
@@ -74,6 +78,7 @@ class BookConfig {
     Book(
       id: 'fatih_harbiye',
       title: 'Fatih-Harbiye',
+      boardLabel: 'Fatih-\nHarbiye',
       author: 'Peyami Safa',
       category: QuestionCategory.eserKarakter,
       tilePosition: 12,
@@ -83,6 +88,7 @@ class BookConfig {
     Book(
       id: 'tutunamayanlar',
       title: 'Tutunamayanlar',
+      boardLabel: 'Tutuna-\nmayanlar',
       author: 'Oğuz Atay',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 14,
@@ -92,6 +98,7 @@ class BookConfig {
     Book(
       id: 'ince_memed',
       title: 'İnce Memed',
+      boardLabel: 'İnce\nMemed',
       author: 'Yaşar Kemal',
       category: QuestionCategory.benKimim,
       tilePosition: 15,
@@ -101,7 +108,7 @@ class BookConfig {
     Book(
       id: 'saatleri_ayarlama_enstitusu',
       title: 'Saatleri Ayarlama Enstitüsü',
-      boardLabel: 'Saatler Enst.',
+      boardLabel: 'Saatleri\nAyarlama\nEnstitüsü',
       author: 'Ahmet Hamdi Tanpınar',
       category: QuestionCategory.turkEdebiyatindaIlkler,
       tilePosition: 18,
@@ -129,6 +136,7 @@ class BookConfig {
     Book(
       id: 'kiralik_konak',
       title: 'Kiralık Konak',
+      boardLabel: 'Kiralık\nKonak',
       author: 'Yakup Kadri Karaosmanoğlu',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 23,
@@ -138,6 +146,7 @@ class BookConfig {
     Book(
       id: 'mai_ve_siyah',
       title: 'Mai ve Siyah',
+      boardLabel: 'Mai ve\nSiyah',
       author: 'Halit Ziya Uşaklıgil',
       category: QuestionCategory.benKimim,
       tilePosition: 24,
