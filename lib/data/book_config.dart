@@ -98,7 +98,6 @@ class BookConfig {
     Book(
       id: 'ince_memed',
       title: 'İnce Memed',
-      boardLabel: 'İnce\nMemed',
       author: 'Yaşar Kemal',
       category: QuestionCategory.benKimim,
       tilePosition: 15,

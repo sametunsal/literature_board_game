@@ -189,7 +189,7 @@ void main() {
     );
   });
 
-  testWidgets('long book title stays within two lines without ellipsis', (
+  testWidgets('long book title uses compact board label without ellipsis', (
     tester,
   ) async {
     final book = BookConfig.books.singleWhere(
@@ -226,8 +226,7 @@ void main() {
     final textWidget = tester.widget<Text>(find.text(label));
     // Old behavior pinned every label at 9.0; it should now scale up.
     expect(textWidget.style!.fontSize, greaterThan(9.0));
-    // Negative tracking is applied so long words pack tighter.
-    expect(textWidget.style!.letterSpacing, lessThan(0));
+    expect(textWidget.style!.letterSpacing, 0);
     expect(textWidget.strutStyle, isNotNull);
   });
 
@@ -266,7 +265,7 @@ void main() {
 
   testWidgets('two-line board label renders with maxLines 2', (tester) async {
     final book = BookConfig.books.singleWhere(
-      (book) => book.id == 'ince_memed',
+      (book) => book.id == 'araba_sevdasi',
     );
     final tile = BoardConfig.tiles.singleWhere(
       (tile) => tile.position == book.tilePosition,
@@ -278,6 +277,80 @@ void main() {
     final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
     expect(textWidget.maxLines, 2);
     expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+  });
+
+  testWidgets('side book tile labels rotate using the long-axis constraint', (
+    tester,
+  ) async {
+    for (final bookId in ['calikusu', 'huzur', 'yaban']) {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      final label = book.boardLabel ?? book.title;
+
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          width: 60,
+          height: 150,
+          quarterTurns: _rotationQuarter(tile.position),
+        ),
+      );
+
+      expect(find.text(label), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text(label),
+          matching: find.byKey(const ValueKey('side-book-label-long-axis-box')),
+        ),
+        findsOneWidget,
+        reason: '$bookId should be laid out in the side long-axis box',
+      );
+
+      final longAxisBox = tester.getSize(
+        find.byKey(const ValueKey('side-book-label-long-axis-box')),
+      );
+      expect(longAxisBox.width, greaterThan(longAxisBox.height));
+      expect(longAxisBox.width, greaterThanOrEqualTo(130));
+
+      final textWidget = tester.widget<Text>(find.text(label));
+      expect(textWidget.style!.fontSize, greaterThan(9));
+      expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+      expect(label, isNot(contains('\n')));
+    }
+  });
+
+  testWidgets('top and bottom book labels render normally without rotation', (
+    tester,
+  ) async {
+    for (final bookId in ['intibah', 'ince_memed']) {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      final label = book.boardLabel ?? book.title;
+
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          width: 60,
+          height: 150,
+          quarterTurns: _rotationQuarter(tile.position),
+        ),
+      );
+
+      expect(find.text(label), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text(label),
+          matching: find.byKey(const ValueKey('side-book-label-long-axis-box')),
+        ),
+        findsNothing,
+      );
+    }
   });
 
   testWidgets('all rendered board book labels avoid ellipsis at board scale', (

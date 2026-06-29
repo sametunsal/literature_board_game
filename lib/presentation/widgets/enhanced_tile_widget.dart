@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/services/board_book_lookup_service.dart';
@@ -41,9 +43,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   /// used for font fitting and the rendered Text so measurement matches paint.
   static const double _kLabelLineHeight = 1.05;
 
-  /// Slight negative tracking lets long single words ("Kuyucaklı",
-  /// "Enstitüsü") pack more tightly so the fitter can keep a larger font.
-  static const double _kLabelLetterSpacing = -0.3;
+  /// Keep tracking neutral so labels render as normal readable words.
+  static const double _kLabelLetterSpacing = 0.0;
 
   /// Font-fit search bounds. The ceiling is well above the old 9.0 cap so
   /// labels grow to fill generously sized tiles instead of looking tiny.
@@ -193,7 +194,8 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         ? null
         : _playerForOwnership(ownership.ownerPlayerId);
 
-    final displayText = book != null
+    final isBookTile = book != null;
+    final displayText = isBookTile
         ? (book.boardLabel ?? book.title)
         : widget.tile.name;
     final ownershipChip = _buildOwnershipChip(
@@ -203,7 +205,75 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
     final maxLines = _maxLinesFor(displayText);
 
-    final content = LayoutBuilder(
+    final content = _buildLabelText(displayText, maxLines);
+    final labelContent = isVertical && isBookTile
+        ? _buildSideBookLabel(displayText, maxLines)
+        : isVertical
+        ? RotatedBox(quarterTurns: widget.quarterTurns, child: content)
+        : content;
+
+    // Kenar pozisyonuna göre renk şeridi yerleşimi
+    switch (widget.quarterTurns) {
+      case 0: // Alt kenar - şerit üstte
+        return Column(
+          children: [
+            Container(
+              height: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
+            Expanded(child: labelContent),
+          ],
+        );
+      case 1: // Sağ kenar - şerit solda
+        return Row(
+          children: [
+            Container(
+              width: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
+            Expanded(child: labelContent),
+          ],
+        );
+      case 2: // Üst kenar - şerit altta
+        return Column(
+          children: [
+            Expanded(child: labelContent),
+            Container(
+              height: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
+          ],
+        );
+      case 3: // Sol kenar - şerit sağda
+        return Row(
+          children: [
+            Expanded(child: labelContent),
+            Container(
+              width: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
+          ],
+        );
+      default:
+        return Column(
+          children: [
+            Container(
+              height: stripThickness,
+              color: color,
+              child: ownershipChip,
+            ),
+            Expanded(child: labelContent),
+          ],
+        );
+    }
+  }
+
+  Widget _buildLabelText(String displayText, int maxLines) {
+    return LayoutBuilder(
       builder: (context, constraints) {
         final fontSize = _titleFontSize(
           displayText,
@@ -231,70 +301,37 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         );
       },
     );
+  }
 
-    // Yatay kutucuklar için döndürülmüş içerik
-    final rotatedContent = isVertical
-        ? RotatedBox(quarterTurns: 3, child: content)
-        : content;
+  Widget _buildSideBookLabel(String displayText, int maxLines) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableSize = constraints.biggest;
+        final longAxis = availableSize.longestSide;
+        final shortAxis = availableSize.shortestSide;
+        final angle = widget.quarterTurns == 1 ? math.pi / 2 : -math.pi / 2;
 
-    // Kenar pozisyonuna göre renk şeridi yerleşimi
-    switch (widget.quarterTurns) {
-      case 0: // Alt kenar - şerit üstte
-        return Column(
-          children: [
-            Container(
-              height: stripThickness,
-              color: color,
-              child: ownershipChip,
+        return ClipRect(
+          child: Center(
+            child: Transform.rotate(
+              angle: angle,
+              child: OverflowBox(
+                minWidth: longAxis,
+                maxWidth: longAxis,
+                minHeight: shortAxis,
+                maxHeight: shortAxis,
+                child: SizedBox(
+                  key: const ValueKey('side-book-label-long-axis-box'),
+                  width: longAxis,
+                  height: shortAxis,
+                  child: _buildLabelText(displayText, maxLines),
+                ),
+              ),
             ),
-            Expanded(child: rotatedContent),
-          ],
+          ),
         );
-      case 1: // Sağ kenar - şerit solda
-        return Row(
-          children: [
-            Container(
-              width: stripThickness,
-              color: color,
-              child: ownershipChip,
-            ),
-            Expanded(child: rotatedContent),
-          ],
-        );
-      case 2: // Üst kenar - şerit altta
-        return Column(
-          children: [
-            Expanded(child: rotatedContent),
-            Container(
-              height: stripThickness,
-              color: color,
-              child: ownershipChip,
-            ),
-          ],
-        );
-      case 3: // Sol kenar - şerit sağda
-        return Row(
-          children: [
-            Expanded(child: rotatedContent),
-            Container(
-              width: stripThickness,
-              color: color,
-              child: ownershipChip,
-            ),
-          ],
-        );
-      default:
-        return Column(
-          children: [
-            Container(
-              height: stripThickness,
-              color: color,
-              child: ownershipChip,
-            ),
-            Expanded(child: rotatedContent),
-          ],
-        );
-    }
+      },
+    );
   }
 
   Player? _playerForOwnership(String ownerPlayerId) {

@@ -42,7 +42,6 @@ void main() {
       byId['saatleri_ayarlama_enstitusu']!.boardLabel,
       'Saatleri\nAyarlama\nEnstitüsü',
     );
-    expect(byId['ince_memed']!.boardLabel, 'İnce\nMemed');
     expect(byId['araba_sevdasi']!.boardLabel, 'Araba\nSevdas\u0131');
     expect(byId['ask_i_memnu']!.boardLabel, 'A\u015Fk-\u0131\nMemnu');
     expect(byId['sinekli_bakkal']!.boardLabel, 'Sinekli\nBakkal');
@@ -56,7 +55,7 @@ void main() {
   test('Books without cramped titles keep a null board label', () {
     final byId = {for (final book in BookConfig.books) book.id: book};
 
-    for (final id in ['intibah', 'calikusu', 'huzur', 'yaban']) {
+    for (final id in ['intibah', 'calikusu', 'ince_memed', 'huzur', 'yaban']) {
       expect(byId[id]!.boardLabel, isNull, reason: 'boardLabel for $id');
     }
   });
@@ -95,9 +94,14 @@ void main() {
     expect(byId['tutunamayanlar']!.tilePosition, 14);
     expect(byId['tutunamayanlar']!.baskiCostAkce, 14);
     expect(byId['tutunamayanlar']!.ciltCostAkce, 30);
+    expect(byId['tutunamayanlar']!.id, 'tutunamayanlar');
+    expect(byId['tutunamayanlar']!.title, 'Tutunamayanlar');
     expect(byId['saatleri_ayarlama_enstitusu']!.tilePosition, 18);
+    expect(byId['saatleri_ayarlama_enstitusu']!.baskiCostAkce, 14);
+    expect(byId['saatleri_ayarlama_enstitusu']!.ciltCostAkce, 30);
     expect(byId['ask_i_memnu']!.tilePosition, 4);
     expect(byId['ask_i_memnu']!.baskiCostAkce, 10);
+    expect(byId['ask_i_memnu']!.ciltCostAkce, 22);
     expect(BookConfig.books.length, 15);
   });
 }
