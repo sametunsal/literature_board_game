@@ -49,6 +49,14 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   /// Font-fit search bounds. The ceiling is well above the old 9.0 cap so
   /// labels grow to fill generously sized tiles instead of looking tiny.
   static const double _kMaxLabelFontSize = 14.0;
+
+  /// Lower ceiling for rotated side book labels. They measure against the
+  /// tile's long axis, so without a tighter cap short titles balloon to the
+  /// full [_kMaxLabelFontSize] and dwarf the top/bottom labels. Capping them
+  /// here keeps board typography visually consistent without touching the
+  /// long-axis measurement that prevents words from fragmenting.
+  static const double _kMaxSideLabelFontSize = 11.0;
+
   static const double _kMinLabelFontSize = 6.2;
 
   bool _isPressed = false;
@@ -272,7 +280,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     }
   }
 
-  Widget _buildLabelText(String displayText, int maxLines) {
+  Widget _buildLabelText(
+    String displayText,
+    int maxLines, {
+    bool isSideLabel = false,
+  }) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final fontSize = _titleFontSize(
@@ -280,6 +292,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
           constraints.maxWidth,
           constraints.maxHeight,
           maxLines,
+          maxFontSize: isSideLabel
+              ? _kMaxSideLabelFontSize
+              : _kMaxLabelFontSize,
         );
 
         return ClipRect(
@@ -324,7 +339,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   key: const ValueKey('side-book-label-long-axis-box'),
                   width: longAxis,
                   height: shortAxis,
-                  child: _buildLabelText(displayText, maxLines),
+                  child: _buildLabelText(
+                    displayText,
+                    maxLines,
+                    isSideLabel: true,
+                  ),
                 ),
               ),
             ),
@@ -414,13 +433,14 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     String title,
     double maxWidth,
     double maxHeight,
-    int maxLines,
-  ) {
+    int maxLines, {
+    double maxFontSize = _kMaxLabelFontSize,
+  }) {
     final textBoxWidth = (maxWidth - 4).clamp(1.0, double.infinity);
     final textBoxHeight = (maxHeight - 4).clamp(1.0, double.infinity);
 
     for (
-      double fontSize = _kMaxLabelFontSize;
+      double fontSize = maxFontSize;
       fontSize >= _kMinLabelFontSize;
       fontSize -= 0.2
     ) {

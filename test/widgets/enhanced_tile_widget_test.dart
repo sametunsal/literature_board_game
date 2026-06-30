@@ -322,6 +322,46 @@ void main() {
     }
   });
 
+  testWidgets('side book labels are capped below the normal max font size', (
+    tester,
+  ) async {
+    // Side labels measure against the tile long axis, so on a generous tile a
+    // short title would otherwise grow to the full 14.0 cap. Verify the
+    // orientation-aware cap keeps them at or below 11.0 while the top/bottom
+    // label of the same content on the same dimensions is allowed to grow
+    // larger — proving the cap is side-specific, not a global shrink.
+    final book = BookConfig.books.singleWhere((book) => book.id == 'huzur');
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+    final label = book.boardLabel ?? book.title;
+
+    await tester.pumpWidget(
+      _tileApp(
+        tile,
+        players: players,
+        width: 60,
+        height: 240,
+        quarterTurns: 1,
+      ),
+    );
+    final sideFont = tester.widget<Text>(find.text(label)).style!.fontSize!;
+    expect(sideFont, lessThanOrEqualTo(11.0));
+    expect(sideFont, greaterThan(9.0));
+
+    await tester.pumpWidget(
+      _tileApp(
+        tile,
+        players: players,
+        width: 240,
+        height: 240,
+        quarterTurns: 0,
+      ),
+    );
+    final topFont = tester.widget<Text>(find.text(label)).style!.fontSize!;
+    expect(topFont, greaterThan(sideFont));
+  });
+
   testWidgets('top and bottom book labels render normally without rotation', (
     tester,
   ) async {
