@@ -1,11 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:literature_board_game/presentation/widgets/board/board_layout.dart';
 import 'package:literature_board_game/providers/game_notifier.dart';
@@ -14,20 +15,24 @@ import 'package:literature_board_game/models/player.dart';
 import 'package:literature_board_game/data/board_config.dart';
 
 void main() {
-  testWidgets('BoardLayout Isometric Full Screen Golden Test', (WidgetTester tester) async {
+  testWidgets('BoardLayout Isometric Full Screen Golden Test', (
+    WidgetTester tester,
+  ) async {
     // SharedPreferences test mock
     SharedPreferences.setMockInitialValues({});
 
-    // Mock path_provider for Google Fonts caching
-    const MethodChannel channel = MethodChannel('plugins.flutter.io/path_provider');
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+    final fontCacheDir = Directory.systemTemp.createTempSync(
+      'literature_board_game_google_fonts_',
+    );
+    const channel = MethodChannel('plugins.flutter.io/path_provider');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      methodCall,
+    ) async {
       if (methodCall.method == 'getApplicationSupportDirectory') {
-        return '.';
+        return fontCacheDir.path;
       }
       return null;
     });
-
-    // Allow GoogleFonts to fetch over network by overriding the test HTTP client blocker
     HttpOverrides.global = null;
     GoogleFonts.config.allowRuntimeFetching = true;
 
@@ -38,6 +43,14 @@ void main() {
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
+      GoogleFonts.config.allowRuntimeFetching = false;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      );
+      if (fontCacheDir.existsSync()) {
+        fontCacheDir.deleteSync(recursive: true);
+      }
     });
 
     // Logical sizes according to pixel ratio
@@ -83,7 +96,6 @@ void main() {
       // Animasyonların (giriş animasyonu vb) tamamlanması için zaman ver.
       await tester.pump(const Duration(seconds: 3));
       await tester.pump(const Duration(seconds: 3));
-      // Give google fonts HTTP requests time to finish
       await Future.delayed(const Duration(seconds: 3));
     });
 
