@@ -288,13 +288,14 @@ void main() {
         (tile) => tile.position == book.tilePosition,
       );
       final label = book.boardLabel ?? book.title;
+      final size = _realTileSize(tile.position);
 
       await tester.pumpWidget(
         _tileApp(
           tile,
           players: players,
-          width: 60,
-          height: 150,
+          width: size.width,
+          height: size.height,
           quarterTurns: _rotationQuarter(tile.position),
         ),
       );
@@ -309,16 +310,20 @@ void main() {
         reason: '$bookId should be laid out in the side long-axis box',
       );
 
+      // The label measures against the longer side of the (wide-short) tile.
       final longAxisBox = tester.getSize(
         find.byKey(const ValueKey('side-book-label-long-axis-box')),
       );
       expect(longAxisBox.width, greaterThan(longAxisBox.height));
-      expect(longAxisBox.width, greaterThanOrEqualTo(130));
 
       final textWidget = tester.widget<Text>(find.text(label));
-      expect(textWidget.style!.fontSize, greaterThan(9));
+      // Single words stay whole on one rotated line, never fragmented.
+      expect(textWidget.maxLines, 1, reason: bookId);
+      expect(textWidget.data, isNot(contains('\n')), reason: bookId);
       expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
-      expect(label, isNot(contains('\n')));
+      final fontSize = textWidget.style!.fontSize!;
+      expect(fontSize, greaterThanOrEqualTo(5.0), reason: bookId);
+      expect(fontSize, lessThanOrEqualTo(11.0), reason: bookId);
     }
   });
 
@@ -329,7 +334,9 @@ void main() {
     // short title would otherwise grow to the full 14.0 cap. Verify the
     // orientation-aware cap keeps them at or below 11.0 while the top/bottom
     // label of the same content on the same dimensions is allowed to grow
-    // larger — proving the cap is side-specific, not a global shrink.
+    // larger — proving the cap is side-specific, not a global shrink. A
+    // generous tablet-shaped tile is used so both orientations reach their cap;
+    // the side tile keeps the production wide-short shape (width > height).
     final book = BookConfig.books.singleWhere((book) => book.id == 'huzur');
     final tile = BoardConfig.tiles.singleWhere(
       (tile) => tile.position == book.tilePosition,
@@ -340,8 +347,8 @@ void main() {
       _tileApp(
         tile,
         players: players,
-        width: 60,
-        height: 240,
+        width: 240,
+        height: 160,
         quarterTurns: 1,
       ),
     );
@@ -354,7 +361,7 @@ void main() {
         tile,
         players: players,
         width: 240,
-        height: 240,
+        height: 160,
         quarterTurns: 0,
       ),
     );
@@ -362,56 +369,142 @@ void main() {
     expect(topFont, greaterThan(sideFont));
   });
 
-  testWidgets('multi-line side labels use a tighter cap than single-line ones', (
+  testWidgets('side label collapses an explicit break to one line when it fits', (
     tester,
   ) async {
-    // Both rendered on the same generous side tile. The single-word label can
-    // reach the normal 11.0 side cap, while the two-line label is held to the
-    // tighter 10.5 multi-line cap so it does not read larger/bolder than its
-    // single-line neighbours.
-    final huzur = BookConfig.books.singleWhere((book) => book.id == 'huzur');
-    final huzurTile = BoardConfig.tiles.singleWhere(
-      (tile) => tile.position == huzur.tilePosition,
-    );
-    await tester.pumpWidget(
-      _tileApp(
-        huzurTile,
-        players: players,
-        width: 60,
-        height: 240,
-        quarterTurns: 1,
-      ),
-    );
-    final singleLineFont = tester
-        .widget<Text>(find.text(huzur.boardLabel ?? huzur.title))
-        .style!
-        .fontSize!;
-
+    // On a large/tablet-scale side tile the rotated long axis is roomy enough to
+    // hold the whole title on one real-word line, so Fatih-Harbiye renders
+    // "Fatih Harbiye" instead of the blocky two-line "Fatih\nHarbiye". (At phone
+    // scale the long axis is far too short — see the fallback test below.)
     final fatih = BookConfig.books.singleWhere(
       (book) => book.id == 'fatih_harbiye',
     );
-    final fatihTile = BoardConfig.tiles.singleWhere(
+    final tile = BoardConfig.tiles.singleWhere(
       (tile) => tile.position == fatih.tilePosition,
     );
+
     await tester.pumpWidget(
       _tileApp(
-        fatihTile,
+        tile,
         players: players,
-        width: 60,
-        height: 240,
+        width: 240,
+        height: 120,
         quarterTurns: 3,
       ),
     );
-    final multiLineLabel = fatih.boardLabel!;
-    expect(multiLineLabel, contains('\n'));
-    final multiLineFont = tester
-        .widget<Text>(find.text(multiLineLabel))
-        .style!
-        .fontSize!;
 
-    expect(multiLineFont, lessThanOrEqualTo(10.5));
-    expect(multiLineFont, greaterThan(9.0));
-    expect(multiLineFont, lessThan(singleLineFont));
+    expect(find.text('Fatih Harbiye'), findsOneWidget);
+    expect(find.text('Fatih\nHarbiye'), findsNothing);
+    final textWidget = tester.widget<Text>(find.text('Fatih Harbiye'));
+    expect(textWidget.maxLines, 1);
+    expect(textWidget.data, isNot(contains('\n')));
+    expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+  });
+
+  testWidgets('multi-word side label collapses when the long axis fits it', (
+    tester,
+  ) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.id == 'kuyucakli_yusuf',
+    );
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(
+      _tileApp(
+        tile,
+        players: players,
+        width: 240,
+        height: 120,
+        quarterTurns: 3,
+      ),
+    );
+
+    expect(find.text('Kuyucaklı Yusuf'), findsOneWidget);
+    expect(find.text(book.boardLabel!), findsNothing);
+    expect(tester.widget<Text>(find.text('Kuyucaklı Yusuf')).maxLines, 1);
+  });
+
+  testWidgets('multi-word side labels stay two clean lines at phone scale', (
+    tester,
+  ) async {
+    // At real phone geometry the rotated long axis (~45px) cannot hold these
+    // titles on one readable line, so they keep their explicit word break
+    // ("Fatih\nHarbiye", "Kuyucaklı\nYusuf") — never fragmented, never
+    // abbreviated, never ellipsised — using the tighter multi-line side cap.
+    for (final bookId in ['fatih_harbiye', 'kuyucakli_yusuf']) {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      final size = _realTileSize(tile.position);
+
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          width: size.width,
+          height: size.height,
+          quarterTurns: _rotationQuarter(tile.position),
+        ),
+      );
+
+      expect(find.text(book.boardLabel!), findsOneWidget, reason: bookId);
+      final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
+      expect(textWidget.maxLines, 2, reason: bookId);
+      expect(textWidget.style!.fontSize, lessThanOrEqualTo(10.5), reason: bookId);
+      expect(textWidget.overflow, isNot(TextOverflow.ellipsis), reason: bookId);
+      // Each line is a whole word — no mid-word fragment.
+      for (final line in book.boardLabel!.split('\n')) {
+        expect(line.trim(), isNotEmpty, reason: bookId);
+      }
+    }
+  });
+
+  testWidgets('single-word side labels never split into fragments at phone scale', (
+    tester,
+  ) async {
+    // Regression for the real bug: at production phone geometry the rotated long
+    // axis is only ~45px, so without the lower single-line side floor an
+    // 8-letter word like "Çalıkuşu" fragmented into "Çalık/uşu". It must stay
+    // whole on one line.
+    for (final bookId in ['calikusu', 'huzur', 'yaban']) {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      final label = book.boardLabel ?? book.title;
+      final size = _realTileSize(tile.position);
+
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          width: size.width,
+          height: size.height,
+          quarterTurns: _rotationQuarter(tile.position),
+        ),
+      );
+
+      final textWidget = tester.widget<Text>(find.text(label));
+      expect(
+        textWidget.maxLines,
+        1,
+        reason: '$bookId side label should stay on one rotated line',
+      );
+      expect(textWidget.data, isNot(contains('\n')), reason: bookId);
+      expect(
+        textWidget.overflow,
+        isNot(TextOverflow.ellipsis),
+        reason: bookId,
+      );
+      expect(
+        textWidget.style!.fontSize,
+        greaterThanOrEqualTo(5.0),
+        reason: bookId,
+      );
+    }
   });
 
   testWidgets('top and bottom book labels render normally without rotation', (
@@ -455,7 +548,6 @@ void main() {
         (tile) => tile.position == book.tilePosition,
       );
       final size = BoardLayoutHelper.getTileSize(tile.position, layout);
-      final label = book.boardLabel ?? book.title;
 
       await tester.pumpWidget(
         _tileApp(
@@ -467,13 +559,23 @@ void main() {
         ),
       );
 
-      final textWidget = tester.widget<Text>(find.text(label));
+      // The exact rendered string may differ from the configured boardLabel
+      // (side tiles can collapse an explicit break to a single line), so assert
+      // against the single label Text the tile actually renders.
+      final labelFinder = find.byType(Text);
+      expect(labelFinder, findsOneWidget, reason: book.id);
+      final textWidget = tester.widget<Text>(labelFinder);
       expect(
         textWidget.overflow,
         isNot(TextOverflow.ellipsis),
         reason: '${book.id} should render without ellipsis',
       );
       expect(textWidget.softWrap, true);
+      expect(
+        textWidget.data,
+        isNot(contains('-\n')),
+        reason: '${book.id} must not fragment with a hyphenated break',
+      );
     }
   });
 
@@ -674,6 +776,19 @@ int _rotationQuarter(int id) {
   if (id >= 7 && id <= 12) return 3;
   if (id >= 14 && id <= 18) return 2;
   return 1;
+}
+
+/// Real production tile size for [position] at a given phone [screen]. Side
+/// (left/right) tiles are wide-and-short (kLongSide × kShortSide), so the
+/// rotated long axis is only ~45–55px at phone scale. Tests must use this
+/// geometry — an oversized fake side tile (e.g. 60×240) inverts the long axis
+/// and hides what actually renders on a phone.
+Size _realTileSize(int position, {Size screen = const Size(360, 800)}) {
+  final layout = BoardLayoutConfig(
+    screenWidth: screen.width,
+    screenHeight: screen.height,
+  );
+  return BoardLayoutHelper.getTileSize(position, layout);
 }
 
 Color _tileColor(BoardTile tile) {

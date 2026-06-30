@@ -73,6 +73,23 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
   static const double _kMinLabelFontSize = 6.2;
 
+  /// Lower floor used only when trying to keep a *single word* on one line on a
+  /// rotated side tile. Side tiles are wide-and-short, so after the colour strip
+  /// the rotated long axis is only ~45–52px at phone scale — just shy of fitting
+  /// an 8-letter title like "Çalıkuşu" at [_kMinLabelFontSize], which would
+  /// otherwise force an ugly mid-word break ("Çalık/uşu"). Allowing the
+  /// single-line attempt to shrink a little further keeps such words whole.
+  ///
+  /// This is a *minimum*, not the rendered size: a label always uses the largest
+  /// font that fits, so on roomier tiles it is already larger (≈6.2pt @411dp,
+  /// ≈5.6pt @390dp) regardless of this floor. The floor only binds on the
+  /// tightest phones (~360dp), where the rotated axis caps "Çalıkuşu" at ≈5.0pt.
+  /// Raising it (5.2/5.4) cannot enlarge the label — it only makes such words
+  /// fragment to two lines there — so it is held at 5.0 to keep them whole.
+  /// Multi-line fallbacks still use the readable [_kMinLabelFontSize] floor, so
+  /// multi-word labels (e.g. "Fatih\nHarbiye") are never crushed to fit.
+  static const double _kMinSideSingleLineFontSize = 5.0;
+
   bool _isPressed = false;
 
   @override
@@ -308,23 +325,15 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     bool isSideLabel = false,
     double? maxFontSize,
   }) {
-    final isMultilineSideLabel = isSideLabel && displayText.contains('\n');
-    final cap =
-        maxFontSize ??
-        (isSideLabel
-            ? (isMultilineSideLabel
-                  ? _kMaxMultilineSideLabelFontSize
-                  : _kMaxSideLabelFontSize)
-            : _kMaxLabelFontSize);
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final fit = _resolveLabelFit(
+        final resolved = _resolveRenderedLabel(
           displayText,
           constraints.maxWidth,
           constraints.maxHeight,
-          maxLines,
-          cap,
+          maxLines: maxLines,
+          isSideLabel: isSideLabel,
+          maxFontSize: maxFontSize,
         );
 
         return ClipRect(
@@ -333,19 +342,76 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
             child: Align(
               alignment: Alignment.center,
               child: Text(
-                displayText,
+                resolved.text,
                 textAlign: TextAlign.center,
-                maxLines: fit.maxLines,
+                maxLines: resolved.maxLines,
                 overflow: TextOverflow.visible,
                 softWrap: true,
-                strutStyle: _labelStrut(fit.fontSize),
-                style: _labelStyle(fit.fontSize),
+                strutStyle: _labelStrut(resolved.fontSize),
+                style: _labelStyle(resolved.fontSize),
               ),
             ),
           ),
         );
       },
     );
+  }
+
+  /// Chooses the actual string, font size, and line count to render.
+  ///
+  /// Top/bottom labels render their [displayText] verbatim. Side labels rotate
+  /// along the tile's long axis, so a label that needs an explicit "\n" break
+  /// on the top/bottom row frequently fits as a single real-word line when
+  /// rotated. For those we collapse the break to a space and render one line
+  /// when it fits at the single-line side cap; otherwise we keep the explicit
+  /// multi-line label (with the tighter multi-line cap) so words never
+  /// fragment and no abbreviation/ellipsis is needed.
+  ({String text, double fontSize, int maxLines}) _resolveRenderedLabel(
+    String displayText,
+    double maxWidth,
+    double maxHeight, {
+    required int maxLines,
+    required bool isSideLabel,
+    double? maxFontSize,
+  }) {
+    if (isSideLabel && maxFontSize == null && displayText.contains('\n')) {
+      final singleLine = displayText.replaceAll('\n', ' ');
+      final textBoxWidth = (maxWidth - 4).clamp(1.0, double.infinity);
+      final textBoxHeight = (maxHeight - 4).clamp(1.0, double.infinity);
+      for (
+        double fontSize = _kMaxSideLabelFontSize;
+        fontSize >= _kMinLabelFontSize;
+        fontSize -= 0.2
+      ) {
+        if (_titleFits(singleLine, textBoxWidth, textBoxHeight, fontSize, 1)) {
+          return (text: singleLine, fontSize: fontSize, maxLines: 1);
+        }
+      }
+      // Falls through: the collapsed line does not fit even at the minimum
+      // size, so keep the explicit multi-line label below.
+    }
+
+    final isMultilineSideLabel = isSideLabel && displayText.contains('\n');
+    final cap =
+        maxFontSize ??
+        (isSideLabel
+            ? (isMultilineSideLabel
+                  ? _kMaxMultilineSideLabelFontSize
+                  : _kMaxSideLabelFontSize)
+            : _kMaxLabelFontSize);
+    final fit = _resolveLabelFit(
+      displayText,
+      maxWidth,
+      maxHeight,
+      maxLines,
+      cap,
+      // Single-word side labels (e.g. "Çalıkuşu") may shrink a little further
+      // to stay whole on the short rotated axis rather than fragmenting.
+      singleLineFloor: isSideLabel
+          ? _kMinSideSingleLineFontSize
+          : _kMinLabelFontSize,
+    );
+    return (text: displayText, fontSize: fit.fontSize, maxLines: fit.maxLines);
   }
 
   Widget _buildSideBookLabel(String displayText, int maxLines) {
@@ -471,8 +537,9 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     double maxWidth,
     double maxHeight,
     int maxLines,
-    double maxFontSize,
-  ) {
+    double maxFontSize, {
+    double singleLineFloor = _kMinLabelFontSize,
+  }) {
     final textBoxWidth = (maxWidth - 4).clamp(1.0, double.infinity);
     final textBoxHeight = (maxHeight - 4).clamp(1.0, double.infinity);
 
@@ -482,7 +549,7 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     if (isSingleWord && maxLines > 1) {
       for (
         double fontSize = maxFontSize;
-        fontSize >= _kMinLabelFontSize;
+        fontSize >= singleLineFloor;
         fontSize -= 0.2
       ) {
         if (_titleFits(title, textBoxWidth, textBoxHeight, fontSize, 1)) {
