@@ -362,6 +362,58 @@ void main() {
     expect(topFont, greaterThan(sideFont));
   });
 
+  testWidgets('multi-line side labels use a tighter cap than single-line ones', (
+    tester,
+  ) async {
+    // Both rendered on the same generous side tile. The single-word label can
+    // reach the normal 11.0 side cap, while the two-line label is held to the
+    // tighter 10.5 multi-line cap so it does not read larger/bolder than its
+    // single-line neighbours.
+    final huzur = BookConfig.books.singleWhere((book) => book.id == 'huzur');
+    final huzurTile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == huzur.tilePosition,
+    );
+    await tester.pumpWidget(
+      _tileApp(
+        huzurTile,
+        players: players,
+        width: 60,
+        height: 240,
+        quarterTurns: 1,
+      ),
+    );
+    final singleLineFont = tester
+        .widget<Text>(find.text(huzur.boardLabel ?? huzur.title))
+        .style!
+        .fontSize!;
+
+    final fatih = BookConfig.books.singleWhere(
+      (book) => book.id == 'fatih_harbiye',
+    );
+    final fatihTile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == fatih.tilePosition,
+    );
+    await tester.pumpWidget(
+      _tileApp(
+        fatihTile,
+        players: players,
+        width: 60,
+        height: 240,
+        quarterTurns: 3,
+      ),
+    );
+    final multiLineLabel = fatih.boardLabel!;
+    expect(multiLineLabel, contains('\n'));
+    final multiLineFont = tester
+        .widget<Text>(find.text(multiLineLabel))
+        .style!
+        .fontSize!;
+
+    expect(multiLineFont, lessThanOrEqualTo(10.5));
+    expect(multiLineFont, greaterThan(9.0));
+    expect(multiLineFont, lessThan(singleLineFont));
+  });
+
   testWidgets('top and bottom book labels render normally without rotation', (
     tester,
   ) async {
@@ -461,6 +513,85 @@ void main() {
 
     expect(find.text(book.title), findsOneWidget);
     expect(find.text('T'), findsOneWidget);
+  });
+
+  testWidgets('short single-word title stays on one line on a roomy tile', (
+    tester,
+  ) async {
+    for (final bookId in ['calikusu', 'intibah', 'huzur', 'yaban']) {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      final label = book.boardLabel ?? book.title;
+
+      await tester.pumpWidget(
+        _tileApp(tile, players: players, width: 240, height: 150),
+      );
+
+      final textWidget = tester.widget<Text>(find.text(label));
+      expect(
+        textWidget.maxLines,
+        1,
+        reason: '$bookId should prefer a single line by shrinking the font',
+      );
+      expect(textWidget.data, isNot(contains('\n')), reason: bookId);
+      expect(textWidget.overflow, isNot(TextOverflow.ellipsis), reason: bookId);
+    }
+  });
+
+  testWidgets('single word breaks only when it cannot fit on one line', (
+    tester,
+  ) async {
+    final book = BookConfig.books.singleWhere((book) => book.id == 'calikusu');
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+    final label = book.boardLabel ?? book.title;
+
+    // A very narrow, short tile cannot hold the word on one line even at the
+    // minimum font size, so a controlled wrap (not an ellipsis) is allowed.
+    await tester.pumpWidget(
+      _tileApp(tile, players: players, width: 24, height: 44),
+    );
+
+    final textWidget = tester.widget<Text>(find.text(label));
+    expect(textWidget.maxLines, greaterThan(1));
+    expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+  });
+
+  testWidgets('Teşvik label is readable but capped below book labels', (
+    tester,
+  ) async {
+    final tesvikTile = BoardConfig.tiles.firstWhere(
+      (tile) => tile.type == TileType.tesvik,
+    );
+
+    await tester.pumpWidget(
+      _tileApp(tesvikTile, players: players, width: 240, height: 240),
+    );
+    final tesvikFont = tester
+        .widget<Text>(find.text(tesvikTile.name))
+        .style!
+        .fontSize!;
+    // Readable, but reduced so it does not dwarf neighbouring labels.
+    expect(tesvikFont, greaterThan(8.0));
+    expect(tesvikFont, lessThanOrEqualTo(10.5));
+
+    // The same generous tile lets a single-word book label grow larger,
+    // proving the cap is specific to short action tiles.
+    final book = BookConfig.books.singleWhere((book) => book.id == 'huzur');
+    final bookTile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+    await tester.pumpWidget(
+      _tileApp(bookTile, players: players, width: 240, height: 240),
+    );
+    final bookFont = tester
+        .widget<Text>(find.text(book.boardLabel ?? book.title))
+        .style!
+        .fontSize!;
+    expect(bookFont, greaterThan(tesvikFont));
   });
 
   testWidgets('book strip thickness is 12.0', (tester) async {

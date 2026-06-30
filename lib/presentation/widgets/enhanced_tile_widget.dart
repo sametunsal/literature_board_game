@@ -57,6 +57,20 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   /// long-axis measurement that prevents words from fragmenting.
   static const double _kMaxSideLabelFontSize = 11.0;
 
+  /// Slightly tighter ceiling for multi-line side labels (e.g. the rotated
+  /// "Fatih\nHarbiye"). A two-line side label stacks across the short axis and
+  /// each short line easily reaches [_kMaxSideLabelFontSize], making it read
+  /// larger and bolder than the single-line side labels beside it. Shaving the
+  /// cap here evens them out without shrinking single-word side labels.
+  static const double _kMaxMultilineSideLabelFontSize = 10.5;
+
+  /// Reduced ceiling for short special/action tile labels (e.g. "Teşvik").
+  /// These are single short words with no book attached, so against the full
+  /// [_kMaxLabelFontSize] they grow large enough to dwarf the surrounding
+  /// multi-line book labels. Capping them keeps the action tiles visually
+  /// balanced with their neighbours without shrinking book typography.
+  static const double _kMaxActionLabelFontSize = 10.5;
+
   static const double _kMinLabelFontSize = 6.2;
 
   bool _isPressed = false;
@@ -213,7 +227,15 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
 
     final maxLines = _maxLinesFor(displayText);
 
-    final content = _buildLabelText(displayText, maxLines);
+    // Short action tiles (e.g. "Teşvik") carry no book and use a lower font
+    // ceiling so they stay visually consistent with neighbouring labels.
+    final labelMaxFont = isBookTile ? null : _kMaxActionLabelFontSize;
+
+    final content = _buildLabelText(
+      displayText,
+      maxLines,
+      maxFontSize: labelMaxFont,
+    );
     final labelContent = isVertical && isBookTile
         ? _buildSideBookLabel(displayText, maxLines)
         : isVertical
@@ -284,17 +306,25 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     String displayText,
     int maxLines, {
     bool isSideLabel = false,
+    double? maxFontSize,
   }) {
+    final isMultilineSideLabel = isSideLabel && displayText.contains('\n');
+    final cap =
+        maxFontSize ??
+        (isSideLabel
+            ? (isMultilineSideLabel
+                  ? _kMaxMultilineSideLabelFontSize
+                  : _kMaxSideLabelFontSize)
+            : _kMaxLabelFontSize);
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final fontSize = _titleFontSize(
+        final fit = _resolveLabelFit(
           displayText,
           constraints.maxWidth,
           constraints.maxHeight,
           maxLines,
-          maxFontSize: isSideLabel
-              ? _kMaxSideLabelFontSize
-              : _kMaxLabelFontSize,
+          cap,
         );
 
         return ClipRect(
@@ -305,11 +335,11 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
               child: Text(
                 displayText,
                 textAlign: TextAlign.center,
-                maxLines: maxLines,
+                maxLines: fit.maxLines,
                 overflow: TextOverflow.visible,
                 softWrap: true,
-                strutStyle: _labelStrut(fontSize),
-                style: _labelStyle(fontSize),
+                strutStyle: _labelStrut(fit.fontSize),
+                style: _labelStyle(fit.fontSize),
               ),
             ),
           ),
@@ -429,15 +459,39 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     forceStrutHeight: true,
   );
 
-  double _titleFontSize(
+  /// Resolves the font size and the number of lines a label should render with.
+  ///
+  /// Short/medium single-word titles (no whitespace, no explicit break) prefer
+  /// staying on a single line: the font is shrunk first, and only if the word
+  /// cannot fit on one line even at [_kMinLabelFontSize] is a controlled wrap
+  /// to the supplied [maxLines] allowed. Multi-word and pre-broken labels keep
+  /// the original behaviour.
+  ({double fontSize, int maxLines}) _resolveLabelFit(
     String title,
     double maxWidth,
     double maxHeight,
-    int maxLines, {
-    double maxFontSize = _kMaxLabelFontSize,
-  }) {
+    int maxLines,
+    double maxFontSize,
+  ) {
     final textBoxWidth = (maxWidth - 4).clamp(1.0, double.infinity);
     final textBoxHeight = (maxHeight - 4).clamp(1.0, double.infinity);
+
+    final isSingleWord =
+        !title.contains('\n') && !RegExp(r'\s').hasMatch(title);
+
+    if (isSingleWord && maxLines > 1) {
+      for (
+        double fontSize = maxFontSize;
+        fontSize >= _kMinLabelFontSize;
+        fontSize -= 0.2
+      ) {
+        if (_titleFits(title, textBoxWidth, textBoxHeight, fontSize, 1)) {
+          return (fontSize: fontSize, maxLines: 1);
+        }
+      }
+      // Falls through: the word will not fit on one line even at the minimum
+      // size, so a controlled multi-line wrap is the lesser evil.
+    }
 
     for (
       double fontSize = maxFontSize;
@@ -445,10 +499,10 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
       fontSize -= 0.2
     ) {
       if (_titleFits(title, textBoxWidth, textBoxHeight, fontSize, maxLines)) {
-        return fontSize;
+        return (fontSize: fontSize, maxLines: maxLines);
       }
     }
-    return _kMinLabelFontSize;
+    return (fontSize: _kMinLabelFontSize, maxLines: maxLines);
   }
 
   bool _titleFits(
