@@ -18,8 +18,8 @@ void main() {
       byId['dokuzuncu_hariciye_kogusu']!.title,
       'Dokuzuncu Hariciye Koğuşu',
     );
-    expect(byId['tutunamayanlar']!.title, 'Tutunamayanlar');
-    expect(byId['tutunamayanlar']!.author, 'Oğuz Atay');
+    expect(byId['tehlikeli_oyunlar']!.title, 'Tehlikeli Oyunlar');
+    expect(byId['tehlikeli_oyunlar']!.author, 'Oğuz Atay');
     expect(byId['ince_memed']!.title, 'İnce Memed');
     expect(byId['ince_memed']!.author, 'Yaşar Kemal');
     expect(
@@ -46,8 +46,8 @@ void main() {
     expect(byId['ask_i_memnu']!.boardLabel, 'A\u015Fk-\u0131\nMemnu');
     expect(byId['sinekli_bakkal']!.boardLabel, 'Sinekli\nBakkal');
     expect(byId['kuyucakli_yusuf']!.boardLabel, 'Kuyucakl\u0131\nYusuf');
-    expect(byId['fatih_harbiye']!.boardLabel, 'Fatih-\nHarbiye');
-    expect(byId['tutunamayanlar']!.boardLabel, 'Tutuna-\nmayanlar');
+    expect(byId['fatih_harbiye']!.boardLabel, 'Fatih\nHarbiye');
+    expect(byId['tehlikeli_oyunlar']!.boardLabel, 'Tehlikeli\nOyunlar');
     expect(byId['kiralik_konak']!.boardLabel, 'Kiral\u0131k\nKonak');
     expect(byId['mai_ve_siyah']!.boardLabel, 'Mai ve\nSiyah');
   });
@@ -62,8 +62,8 @@ void main() {
 
   test('Board labels use real words, never abbreviations or ellipsis', () {
     // Reject a letter followed by a lone trailing period (fake abbreviation
-    // like "Araba S."), but allow numeric ordinals ("9. Koğuş") and valid
-    // hyphenated line breaks like "Tutuna-\nmayanlar".
+    // like "Araba S."), but allow numeric ordinals ("9. Koğuş"). Labels break
+    // on whole words ("Tehlikeli\nOyunlar"), never mid-word with a hyphen.
     final abbreviation = RegExp(r'[A-Za-z]\.(\s|$)');
     for (final book in BookConfig.books) {
       final label = book.boardLabel;
@@ -91,11 +91,11 @@ void main() {
   test('Board label changes do not alter gameplay fields', () {
     final byId = {for (final book in BookConfig.books) book.id: book};
 
-    expect(byId['tutunamayanlar']!.tilePosition, 14);
-    expect(byId['tutunamayanlar']!.baskiCostAkce, 14);
-    expect(byId['tutunamayanlar']!.ciltCostAkce, 30);
-    expect(byId['tutunamayanlar']!.id, 'tutunamayanlar');
-    expect(byId['tutunamayanlar']!.title, 'Tutunamayanlar');
+    expect(byId['tehlikeli_oyunlar']!.tilePosition, 14);
+    expect(byId['tehlikeli_oyunlar']!.baskiCostAkce, 14);
+    expect(byId['tehlikeli_oyunlar']!.ciltCostAkce, 30);
+    expect(byId['tehlikeli_oyunlar']!.id, 'tehlikeli_oyunlar');
+    expect(byId['tehlikeli_oyunlar']!.title, 'Tehlikeli Oyunlar');
     expect(byId['saatleri_ayarlama_enstitusu']!.tilePosition, 18);
     expect(byId['saatleri_ayarlama_enstitusu']!.baskiCostAkce, 14);
     expect(byId['saatleri_ayarlama_enstitusu']!.ciltCostAkce, 30);

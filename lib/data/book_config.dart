@@ -78,7 +78,7 @@ class BookConfig {
     Book(
       id: 'fatih_harbiye',
       title: 'Fatih-Harbiye',
-      boardLabel: 'Fatih-\nHarbiye',
+      boardLabel: 'Fatih\nHarbiye',
       author: 'Peyami Safa',
       category: QuestionCategory.eserKarakter,
       tilePosition: 12,
@@ -86,9 +86,9 @@ class BookConfig {
       ciltCostAkce: 26,
     ),
     Book(
-      id: 'tutunamayanlar',
-      title: 'Tutunamayanlar',
-      boardLabel: 'Tutuna-\nmayanlar',
+      id: 'tehlikeli_oyunlar',
+      title: 'Tehlikeli Oyunlar',
+      boardLabel: 'Tehlikeli\nOyunlar',
       author: 'Oğuz Atay',
       category: QuestionCategory.edebiyatAkimlari,
       tilePosition: 14,

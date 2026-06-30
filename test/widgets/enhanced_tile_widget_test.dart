@@ -594,6 +594,39 @@ void main() {
     expect(bookFont, greaterThan(tesvikFont));
   });
 
+  testWidgets('Fatih-Harbiye renders as a clean two-word break', (tester) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.id == 'fatih_harbiye',
+    );
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(_tileApp(tile, players: players));
+
+    expect(find.text('Fatih\nHarbiye'), findsOneWidget);
+    final textWidget = tester.widget<Text>(find.text('Fatih\nHarbiye'));
+    expect(textWidget.data, isNot(contains('-')));
+    expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
+  });
+
+  testWidgets('Tehlikeli Oyunlar replaces the former tile 14 book', (
+    tester,
+  ) async {
+    final book = BookConfig.books.singleWhere(
+      (book) => book.id == 'tehlikeli_oyunlar',
+    );
+    expect(book.tilePosition, 14);
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(_tileApp(tile, players: players));
+
+    expect(find.text('Tehlikeli\nOyunlar'), findsOneWidget);
+    expect(find.textContaining('Tutuna'), findsNothing);
+  });
+
   testWidgets('book strip thickness is 12.0', (tester) async {
     final book = BookConfig.books.first;
     final tile = BoardConfig.tiles.singleWhere(
