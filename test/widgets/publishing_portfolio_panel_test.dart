@@ -51,6 +51,9 @@ void main() {
     expect(find.text('Telif 1'), findsOneWidget);
     expect(find.text('Bask\u0131 1'), findsOneWidget);
     expect(find.text('Cilt 1'), findsWidgets);
+    expect(find.text('S\u0131ra'), findsWidgets);
+    expect(find.text('Cilt: 0/3'), findsWidgets);
+    expect(find.text('Cilt: 1/3'), findsWidgets);
 
     expect(find.text(books[0].title), findsOneWidget);
     expect(find.text(books[1].title), findsOneWidget);
@@ -64,10 +67,57 @@ void main() {
       find.text('Kategori: ${books[0].category.displayName}'),
       findsOneWidget,
     );
-    expect(find.text('Telif 2'), findsOneWidget);
-    expect(find.text('Telif 4'), findsOneWidget);
-    expect(find.text('Telif 6'), findsNWidgets(2));
+    expect(find.text('Gelir: 2 Ak\u00e7e'), findsOneWidget);
+    expect(find.text('Gelir: 4 Ak\u00e7e'), findsOneWidget);
+    expect(find.text('Gelir: 6 Ak\u00e7e'), findsNWidgets(2));
     expect(find.text('Hen\u00fcz kitap yok'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('portfolio shows global empty state when no books are owned', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_panelApp(const {}));
+
+    expect(
+      find.text('Hen\u00fcz yay\u0131n portf\u00f6y\u00fc olu\u015fmad\u0131.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Kitap sat\u0131n al\u0131nd\u0131\u011f\u0131nda burada g\u00f6r\u00fcnecek.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('S\u0131ra'), findsWidgets);
+    expect(find.text('Cilt: 0/3'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('portfolio renders Cilt win progress per player', (tester) async {
+    final books = BookConfig.books;
+    final ownerships = {
+      books[0].id: BookOwnership(
+        bookId: books[0].id,
+        ownerPlayerId: 'p1',
+        level: BookLevel.cilt,
+      ),
+      books[1].id: BookOwnership(
+        bookId: books[1].id,
+        ownerPlayerId: 'p1',
+        level: BookLevel.cilt,
+      ),
+      books[2].id: BookOwnership(
+        bookId: books[2].id,
+        ownerPlayerId: 'p2',
+        level: BookLevel.baski,
+      ),
+    };
+
+    await tester.pumpWidget(_panelApp(ownerships));
+
+    expect(find.text('Cilt: 2/3'), findsWidgets);
+    expect(find.text('Cilt: 0/3'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -113,12 +163,13 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Publishing portfolio'));
+    await tester.tap(find.byTooltip('Yay\u0131n portf\u00f6y\u00fc'));
     await tester.pumpAndSettle();
 
     expect(find.text('Yay\u0131n Portf\u00f6y\u00fc'), findsOneWidget);
     expect(find.text(book.title), findsOneWidget);
     expect(find.text('24 Ak\u00e7e'), findsWidgets);
+    expect(find.byTooltip('Portf\u00f6y\u00fc kapat'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
@@ -132,6 +183,7 @@ Widget _panelApp(Map<String, BookOwnership> ownerships) {
           child: PublishingPortfolioPanel(
             players: _players,
             bookOwnerships: ownerships,
+            currentPlayerIndex: 1,
           ),
         ),
       ),

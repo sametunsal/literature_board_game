@@ -66,7 +66,7 @@ class PublishingPortfolioDialog extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Close portfolio',
+                      tooltip: 'Portf\u00f6y\u00fc kapat',
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close_rounded),
                       color: const Color(0xFF1A4D42),
@@ -82,6 +82,7 @@ class PublishingPortfolioDialog extends ConsumerWidget {
                   child: PublishingPortfolioPanel(
                     players: state.players,
                     bookOwnerships: state.bookOwnerships,
+                    currentPlayerIndex: state.currentPlayerIndex,
                   ),
                 ),
               ),

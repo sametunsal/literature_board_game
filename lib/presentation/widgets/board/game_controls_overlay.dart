@@ -115,7 +115,7 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
     final tokens = themeState.tokens;
 
     return Tooltip(
-          message: 'Publishing portfolio',
+          message: 'Yay\u0131n portf\u00f6y\u00fc',
           child: GestureDetector(
             onTap: () {
               showDialog(
