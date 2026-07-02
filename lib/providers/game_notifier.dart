@@ -791,7 +791,7 @@ class GameNotifier extends StateNotifier<GameState> {
         // Move player to jail immediately
         List<Player> temp = List.from(state.players);
         temp[state.currentPlayerIndex] = state.currentPlayer.copyWith(
-          position: GameConstants.jailPosition,
+          position: BoardConfig.libraryPosition,
           turnsToSkip: GameConstants.jailTurns,
         );
 
@@ -2098,7 +2098,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final syntheticTile = BoardTile(
       id: 'mesk_${category.name}',
       name: category.displayName,
-      position: GameConstants.shopPosition,
+      position: BoardConfig.shopPosition,
       type: TileType.category,
       category: category.name,
       difficulty: meskDifficulty,

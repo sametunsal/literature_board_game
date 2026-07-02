@@ -207,7 +207,7 @@ class CardEffectService {
     final List<Player> updated = List.from(players);
 
     updated[currentPlayerIndex] = player.copyWith(
-      position: BoardConfig.shopPosition,
+      position: BoardConfig.libraryPosition,
       turnsToSkip: GameConstants.jailTurns,
     );
 

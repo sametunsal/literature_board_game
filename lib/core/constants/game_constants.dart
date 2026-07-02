@@ -6,28 +6,14 @@ class GameConstants {
   GameConstants._();
 
   // ═══════════════════════════════════════════════════════════════
-  // BOARD CONFIGURATION (RPG Style: 26 tiles - 7-6-7-6 SPLIT)
+  // BOARD POSITIONS
   // ═══════════════════════════════════════════════════════════════
-  static const int boardSize = 26;
-  static const int startPosition = 0;
-
-  // Corner Positions (7-6-7-6 split: indices 0, 7, 13, 20)
-  static const int signingDayPosition =
-      7; // İMZA GÜNÜ (Bottom-Left corner) - CORNER 1
-  static const int shopPosition = 13; // KIRAATHANE (Top-Left corner) - CORNER 2
-  static const int libraryPosition =
-      20; // KÜTÜPHANE (Top-Right corner) - CORNER 3
-
-  // Special Tile Positions (Şans and Kader)
-  static const int chancePosition1 = 3; // ŞANS (Bottom edge)
-  static const int chancePosition2 = 16; // ŞANS (Top edge)
-  static const int fatePosition1 = 10; // KADER (Left edge)
-  static const int fatePosition2 = 22; // KADER (Right edge)
+  // Board size, corner, and special tile positions live in BoardConfig
+  // (derived from BoardTopology). Do not duplicate position literals here.
 
   // ═══════════════════════════════════════════════════════════════
   // PENALTY SYSTEM (Library Watch)
   // ═══════════════════════════════════════════════════════════════
-  static const int jailPosition = 20; // KÜTÜPHANE (Library)
   static const int jailTurns = 2; // 2 turns suspension penalty
 
   // ═══════════════════════════════════════════════════════════════════

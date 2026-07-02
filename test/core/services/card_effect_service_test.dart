@@ -7,6 +7,7 @@ import 'package:literature_board_game/data/board_config.dart';
 import 'package:literature_board_game/models/game_card.dart';
 import 'package:literature_board_game/models/game_enums.dart';
 import 'package:literature_board_game/models/player.dart';
+import 'package:literature_board_game/models/tile_type.dart';
 
 void main() {
   late CardEffectService service;
@@ -335,7 +336,7 @@ void main() {
   // ═══════════════════════════════════════════════════════════════
 
   group('jail', () {
-    test('sends player to shopPosition with jailTurns skip', () {
+    test('sends player to the library corner with jailTurns skip', () {
       final players = [makePlayer(position: 5)];
       final card = GameCard(
         description: 'Go to jail',
@@ -348,7 +349,11 @@ void main() {
         currentPlayerIndex: 0,
       );
 
-      expect(result.updatedPlayers[0].position, BoardConfig.shopPosition);
+      final position = result.updatedPlayers[0].position;
+      expect(position, BoardConfig.libraryPosition);
+      // The destination must actually be the library tile, whatever its
+      // index becomes under future topologies.
+      expect(BoardConfig.getTile(position).type, TileType.library);
       expect(result.updatedPlayers[0].turnsToSkip, GameConstants.jailTurns);
       expect(result.movementOccurred, true);
       expect(result.logs.first.type, 'error');
