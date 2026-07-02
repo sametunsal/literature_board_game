@@ -2,6 +2,7 @@ import '../models/board_tile.dart';
 import '../models/tile_type.dart';
 import '../models/difficulty.dart';
 import '../models/game_enums.dart';
+import '../core/utils/board_topology.dart';
 import '../core/utils/logger.dart';
 import 'book_config.dart';
 
@@ -15,20 +16,25 @@ class BoardConfig {
     QuestionCategory.tesvik,
   ];
 
-  /// GEOMETRY SETTINGS
+  /// GEOMETRY SETTINGS — single source of truth for the perimeter shape.
+  /// Standard topology: 5 middle tiles bottom/top, 6 left/right → 26 tiles.
+  static const BoardTopology topology = BoardTopology.standard;
+
   /// Width: 7 tiles (5 middle + 2 corners)
+  static int get boardWidth => topology.horizontalMiddleCount + 2;
+
   /// Height: 8 tiles (6 middle + 2 corners)
-  static const int boardWidth = 7;
-  static const int boardHeight = 8;
-  static const int boardSize = 26;
+  static int get boardHeight => topology.verticalMiddleCount + 2;
+
+  static int get boardSize => topology.boardSize;
 
   /// CRITICAL: CORNER INDICES (Symmetric Rectangle)
-  static const int startPosition = 0; // Bottom-Right
-  static const int signingDayPosition = 6; // Bottom-Left Corner
-  static const int shopPosition = 13; // Top-Left Corner
-  static const int libraryPosition = 19; // Top-Right Corner
+  static int get startPosition => topology.bottomRightCorner; // 0
+  static int get signingDayPosition => topology.bottomLeftCorner; // 6
+  static int get shopPosition => topology.topLeftCorner; // 13
+  static int get libraryPosition => topology.topRightCorner; // 19
 
-  static const List<int> cornerIndices = [0, 6, 13, 19];
+  static List<int> get cornerIndices => topology.cornerIndices;
 
   /// SPECIAL TILES (Centered in their rows/cols)
   static const int chancePosition1 = 3; // Bottom Middle
@@ -351,7 +357,7 @@ class BoardConfig {
     tiles[13],
     tiles[19],
   ];
-  static bool isCorner(int id) => cornerIndices.contains(id);
+  static bool isCorner(int id) => topology.isCorner(id);
   static List<BoardTile> getSpecialTiles() => [
     tiles[3],
     tiles[10],
@@ -361,7 +367,7 @@ class BoardConfig {
   static bool isSpecialTile(int id) => [3, 10, 16, 22].contains(id);
   static TilePosition? getTilePosition(int id) {
     // Logic layer fallback (Visual layer handles exact placement)
-    if (id < 0 || id >= 26) return null;
+    if (!topology.isValidTile(id)) return null;
     return TilePosition(row: 0, col: 0, isCorner: isCorner(id));
   }
 }

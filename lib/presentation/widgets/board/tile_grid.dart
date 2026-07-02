@@ -5,10 +5,11 @@ import '../../../models/book_ownership.dart';
 import '../../../models/player.dart';
 import 'tile_widget.dart';
 
-/// Grid widget containing all 26 tiles of the board (Monopoly-style layout)
+/// Grid widget containing all perimeter tiles of the board (Monopoly-style
+/// layout, driven by [BoardLayoutConfig.topology])
 ///
 /// **HYBRID GEOMETRY:**
-/// - Corner tiles (0, 6, 13, 19): Square (kLong × kLong)
+/// - Corner tiles: Square (kLong × kLong)
 /// - Bottom/Top middle: Vertical rectangles (kShort × kLong)
 /// - Left/Right middle: Horizontal rectangles (kLong × kShort)
 class TileGrid extends StatelessWidget {
@@ -40,11 +41,11 @@ class TileGrid extends StatelessWidget {
     return Stack(children: _buildAllTiles());
   }
 
-  /// Generate all 26 tiles with dynamic sizing
+  /// Generate all perimeter tiles with dynamic sizing
   List<Widget> _buildAllTiles() {
     final List<Widget> tiles = [];
 
-    for (int id = 0; id < 26; id++) {
+    for (int id = 0; id < BoardLayoutConfig.topology.boardSize; id++) {
       // Get center position and size from layout helper
       final center = BoardLayoutHelper.getTileCenter(id, layout);
       final size = BoardLayoutHelper.getTileSize(id, layout);
@@ -84,16 +85,6 @@ class TileGrid extends StatelessWidget {
   /// - 1: Right column (90° clockwise)
   /// - 2: Top row (180°)
   /// - 3: Left column (270° / -90°)
-  int _getRotationQuarter(int id) {
-    // Corners: no rotation
-    if ([0, 6, 13, 19].contains(id)) return 0;
-    // Bottom middle
-    if (id >= 1 && id <= 5) return 0;
-    // Left middle
-    if (id >= 7 && id <= 12) return 3;
-    // Top middle
-    if (id >= 14 && id <= 18) return 2;
-    // Right middle
-    return 1;
-  }
+  int _getRotationQuarter(int id) =>
+      BoardLayoutConfig.topology.rotationQuarterTurns(id);
 }

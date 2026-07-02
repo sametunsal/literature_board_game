@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
+import 'board_topology.dart';
 
 /// Configuration class for HYBRID MONOPOLY-STYLE board layout
 ///
 /// **MIXED TILE ORIENTATIONS:**
-/// - Corner tiles (0, 6, 13, 19): SQUARE (kLong × kLong)
+/// - Corner tiles: SQUARE (kLong × kLong)
 /// - Bottom/Top middle tiles: VERTICAL (kShort width × kLong height)
 /// - Left/Right middle tiles: HORIZONTAL (kLong width × kShort height)
 ///
-/// **Tile Distribution (26 tiles):**
-/// - Bottom (0-6): Corner 0 (BR), Middle 1-5, Corner 6 (BL) = 7 tiles
-/// - Left (7-13): Middle 7-12, Corner 13 (TL) = 7 tiles
-/// - Top (14-19): Middle 14-18, Corner 19 (TR) = 6 tiles
-/// - Right (20-25): Middle 20-25 = 6 tiles (connects to Corner 0)
+/// Tile distribution, corner indices, and side ranges all come from
+/// [BoardTopology] — see [topology].
 class BoardLayoutConfig {
   final double screenWidth;
   final double screenHeight;
@@ -19,11 +17,14 @@ class BoardLayoutConfig {
   /// Short side of category tiles
   late final double kShortSide;
 
-  /// Long side of category tiles (1.5x short side)
+  /// Long side of category tiles ([sideRatio]x short side)
   late final double kLongSide;
 
+  /// Perimeter topology driving all tile counts, indices, and unit math.
+  static const BoardTopology topology = BoardTopology.standard;
+
   /// Ratio of long side to short side
-  static const double sideRatio = 1.5;
+  static const double sideRatio = BoardTopology.defaultSideRatio;
 
   /// Board size ratio relative to screen (will be adjusted dynamically)
   static const double boardToScreenRatio = 0.94;
@@ -35,13 +36,13 @@ class BoardLayoutConfig {
   static const double maxBoardToScreenRatio = 0.94;
 
   /// Number of middle tiles on Bottom/Top rows (between corners)
-  static const int middleTilesHorizontal = 5;
+  static int get middleTilesHorizontal => topology.horizontalMiddleCount;
 
   /// Number of middle tiles on Left/Right columns (between corners)
-  static const int middleTilesVertical = 6;
+  static int get middleTilesVertical => topology.verticalMiddleCount;
 
   /// Corner indices
-  static const List<int> cornerIndices = [0, 6, 13, 19];
+  static List<int> get cornerIndices => topology.cornerIndices;
 
   BoardLayoutConfig({required this.screenWidth, required this.screenHeight}) {
     // Board dimensions formula:
@@ -64,8 +65,8 @@ class BoardLayoutConfig {
     final availableHeight = screenHeight * dynamicRatio;
 
     // Calculate kShort based on which dimension is constraining
-    final widthUnits = 2 * sideRatio + middleTilesHorizontal; // 3 + 5 = 8
-    final heightUnits = 2 * sideRatio + middleTilesVertical; // 3 + 6 = 9
+    final widthUnits = topology.widthUnits; // 2*1.5 + 5 = 8
+    final heightUnits = topology.heightUnits; // 2*1.5 + 6 = 9
 
     final kShortByWidth = availableWidth / widthUnits;
     final kShortByHeight = availableHeight / heightUnits;
@@ -88,22 +89,20 @@ class BoardLayoutConfig {
 
   /// Tile width for a specific tile
   double getTileWidth(int tileId) {
-    if (cornerIndices.contains(tileId)) return kLongSide;
+    final side = topology.middleSideOf(tileId);
     // Bottom/Top middle tiles: VERTICAL (narrow width)
-    if (tileId >= 1 && tileId <= 5) return kShortSide; // Bottom middle
-    if (tileId >= 14 && tileId <= 18) return kShortSide; // Top middle
-    // Left/Right middle tiles: HORIZONTAL (wide)
+    if (side == BoardSide.bottom || side == BoardSide.top) return kShortSide;
+    // Corners and Left/Right middle tiles: wide (kLong)
     return kLongSide;
   }
 
   /// Tile height for a specific tile
   double getTileHeight(int tileId) {
-    if (cornerIndices.contains(tileId)) return kLongSide;
-    // Bottom/Top middle tiles: VERTICAL (tall)
-    if (tileId >= 1 && tileId <= 5) return kLongSide; // Bottom middle
-    if (tileId >= 14 && tileId <= 18) return kLongSide; // Top middle
+    final side = topology.middleSideOf(tileId);
     // Left/Right middle tiles: HORIZONTAL (short height)
-    return kShortSide;
+    if (side == BoardSide.left || side == BoardSide.right) return kShortSide;
+    // Corners and Bottom/Top middle tiles: tall (kLong)
+    return kLongSide;
   }
 
   /// Actual board dimensions
