@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:literature_board_game/core/utils/board_layout_config.dart';
 import 'package:literature_board_game/core/utils/board_layout_helper.dart';
+import 'package:literature_board_game/core/utils/board_topology.dart';
 import 'package:literature_board_game/data/board_config.dart';
 import 'package:literature_board_game/data/book_config.dart';
 import 'package:literature_board_game/models/book_level.dart';
@@ -429,24 +430,32 @@ void main() {
   testWidgets('multi-word side labels stay two clean lines at phone scale', (
     tester,
   ) async {
-    // At real phone geometry the rotated long axis (~45px) cannot hold these
-    // titles on one readable line, so they keep their explicit word break
-    // ("Fatih\nHarbiye", "Kuyucaklı\nYusuf") — never fragmented, never
-    // abbreviated, never ellipsised — using the tighter multi-line side cap.
+    // The 10:7 board deliberately keeps multi-word titles off the rotated
+    // sides, so this pins the fallback path with real side-tile geometry:
+    // were such a book ever placed on a side tile, the rotated long axis
+    // (~52px at phone scale) cannot hold these titles on one readable line,
+    // so they must keep their explicit word break ("Fatih\nHarbiye",
+    // "Kuyucaklı\nYusuf") — never fragmented, never abbreviated, never
+    // ellipsised — using the tighter multi-line side cap.
+    final sideTilePosition = BoardConfig.topology
+        .middleRangeOf(BoardSide.left)
+        .first;
+    final sideTileSize = _realTileSize(sideTilePosition);
+    final sideQuarterTurns = _rotationQuarter(sideTilePosition);
+
     for (final bookId in ['fatih_harbiye', 'kuyucakli_yusuf']) {
       final book = BookConfig.books.singleWhere((book) => book.id == bookId);
       final tile = BoardConfig.tiles.singleWhere(
         (tile) => tile.position == book.tilePosition,
       );
-      final size = _realTileSize(tile.position);
 
       await tester.pumpWidget(
         _tileApp(
           tile,
           players: players,
-          width: size.width,
-          height: size.height,
-          quarterTurns: _rotationQuarter(tile.position),
+          width: sideTileSize.width,
+          height: sideTileSize.height,
+          quarterTurns: sideQuarterTurns,
         ),
       );
 
@@ -770,20 +779,15 @@ Widget _tileApp(
   );
 }
 
-int _rotationQuarter(int id) {
-  if ([0, 6, 13, 19].contains(id)) return 0;
-  if (id >= 1 && id <= 5) return 0;
-  if (id >= 7 && id <= 12) return 3;
-  if (id >= 14 && id <= 18) return 2;
-  return 1;
-}
+int _rotationQuarter(int id) => BoardConfig.topology.rotationQuarterTurns(id);
 
-/// Real production tile size for [position] at a given phone [screen]. Side
+/// Real production tile size for [position] at a given phone [screen]. The
+/// game is landscape-locked, so the reference screen is landscape. Side
 /// (left/right) tiles are wide-and-short (kLongSide × kShortSide), so the
-/// rotated long axis is only ~45–55px at phone scale. Tests must use this
+/// rotated long axis is only ~50–55px at phone scale. Tests must use this
 /// geometry — an oversized fake side tile (e.g. 60×240) inverts the long axis
 /// and hides what actually renders on a phone.
-Size _realTileSize(int position, {Size screen = const Size(360, 800)}) {
+Size _realTileSize(int position, {Size screen = const Size(800, 360)}) {
   final layout = BoardLayoutConfig(
     screenWidth: screen.width,
     screenHeight: screen.height,

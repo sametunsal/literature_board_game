@@ -121,18 +121,25 @@ class _BoardLayoutState extends State<BoardLayout> {
                       child: Transform(
                         transform: boardMatrix,
                         alignment: Alignment.center,
-                        child: SizedBox(
-                          width: widget.layout.actualWidth + boardDepth,
-                          height: widget.layout.actualHeight + boardDepth,
-                          child: boardSurface
-                              .animate()
-                              .fadeIn(duration: MotionDurations.slow.safe)
-                              .scale(
-                                begin: const Offset(0.92, 0.92),
-                                end: const Offset(1, 1),
-                                duration: MotionDurations.slow.safe,
-                                curve: Curves.easeOutBack,
-                              ),
+                        // Center breaks the outer SizedBox's tight constraints:
+                        // without it the inner SizedBox is inflated to
+                        // visualSize and Transform.scale enlarges it a second
+                        // time, pushing the board past the safe rect on small
+                        // screens whenever scaleFactor > 1.
+                        child: Center(
+                          child: SizedBox(
+                            width: widget.layout.actualWidth + boardDepth,
+                            height: widget.layout.actualHeight + boardDepth,
+                            child: boardSurface
+                                .animate()
+                                .fadeIn(duration: MotionDurations.slow.safe)
+                                .scale(
+                                  begin: const Offset(0.92, 0.92),
+                                  end: const Offset(1, 1),
+                                  duration: MotionDurations.slow.safe,
+                                  curve: Curves.easeOutBack,
+                                ),
+                          ),
                         ),
                       ),
                     ),

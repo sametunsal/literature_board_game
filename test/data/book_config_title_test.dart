@@ -99,7 +99,7 @@ void main() {
     expect(byId['saatleri_ayarlama_enstitusu']!.tilePosition, 18);
     expect(byId['saatleri_ayarlama_enstitusu']!.baskiCostAkce, 14);
     expect(byId['saatleri_ayarlama_enstitusu']!.ciltCostAkce, 30);
-    expect(byId['ask_i_memnu']!.tilePosition, 4);
+    expect(byId['ask_i_memnu']!.tilePosition, 3);
     expect(byId['ask_i_memnu']!.baskiCostAkce, 10);
     expect(byId['ask_i_memnu']!.ciltCostAkce, 22);
     expect(BookConfig.books.length, 15);

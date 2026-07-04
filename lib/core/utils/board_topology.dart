@@ -39,11 +39,14 @@ class BoardTopology {
     this.sideRatio = defaultSideRatio,
   });
 
-  /// The topology currently shipped: 5 middles on bottom/top, 6 on
-  /// left/right → 26 tiles, board aspect 8:9.
+  /// The topology currently shipped: 7 middles on bottom/top, 4 on
+  /// left/right → 26 tiles, landscape board aspect 10:7 ≈ 1.43.
+  ///
+  /// The pre-redesign portrait topology was (5, 6) → aspect 8:9 ≈ 0.89,
+  /// which wasted ~half the width of landscape-locked phone screens.
   static const BoardTopology standard = BoardTopology(
-    horizontalMiddleCount: 5,
-    verticalMiddleCount: 6,
+    horizontalMiddleCount: 7,
+    verticalMiddleCount: 4,
   );
 
   /// Total tiles on the perimeter path.

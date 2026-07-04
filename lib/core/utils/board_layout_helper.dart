@@ -10,16 +10,14 @@ import 'board_topology.dart';
 /// - Left/Right middle: Horizontal rectangles (kLong × kShort)
 ///
 /// Tile counts, corner indices, and side runs come from
-/// [BoardLayoutConfig.topology]. With the standard 5/6 topology:
+/// [BoardLayoutConfig.topology]. With the standard 7/4 topology:
 /// ```
-/// [13-TL]  [14] [15] [16] [17] [18]  [19-TR]
-/// [12]                                [20]
-/// [11]                                [21]
-/// [10]          CENTER AREA           [22]
-/// [9]                                 [23]
-/// [8]                                 [24]
-/// [7]                                 [25]
-/// [6-BL]   [5]  [4]  [3]  [2]  [1]   [0-BR]
+/// [13-TL]  [14] [15] [16] [17] [18] [19] [20]  [21-TR]
+/// [12]                                          [22]
+/// [11]              CENTER AREA                 [23]
+/// [10]                                          [24]
+/// [9]                                           [25]
+/// [8-BL]   [7]  [6]  [5]  [4]  [3]  [2]  [1]   [0-BR]
 /// ```
 class BoardLayoutHelper {
   static BoardTopology get _topology => BoardLayoutConfig.topology;

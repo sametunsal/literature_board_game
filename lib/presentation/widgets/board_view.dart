@@ -28,23 +28,19 @@ import 'animations/card_deal_transition.dart';
 import '../../models/game_card.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAYOUT CONFIGURATION - 7x8 RECTANGULAR GRID (26 tiles)
+// LAYOUT CONFIGURATION - 9x6 RECTANGULAR GRID (26 tiles, landscape)
 // ════════════════════════════════════════════════════════════════════════════
 
-/// Cached layout calculations for the 7x8 rectangular game board
+/// Board layout (26 tiles on perimeter, standard 7/4 topology):
 ///
-/// Board Layout (26 tiles on perimeter):
+///   [13-Shop] [14] [15] [16] [17-Şans] [18] [19] [20] [21-Library]
+///   [12-Cat ]                                        [22-Cat ]
+///   [11-Teşvik]              CENTER AREA             [23-Cat ]
+///   [10-Fate]                  (7x4)                 [24-Fate]
+///   [9-Cat  ]                                        [25-Teşvik]
+///   [8-Imza ] [7]  [6]  [5]  [4-Şans ] [3]  [2] [1] [0-Start]
 ///
-///   [13-Shop] [14-Cat] [15-Cat] [16-Şans] [17-Cat] [18-Cat] [19-Cat]   -- Top row (up to corner)
-///   [12-Cat ]                                                  [20-Library] -- Top-Right Corner
-///   [11-Cat ]                                                  [21-Cat ]
-///   [10-Fate]                  CENTER AREA                      [22-Fate]
-///   [9-Cat  ]                    (5x6 empty)                    [23-Cat ]
-///   [8-Cat  ]                                                   [24-Cat ]
-///   [7-Imza ]                                                  [25-Cat ]   -- Bottom-Left Corner
-///   [6-Cat ] [5-Cat ] [4-Cat ] [3-Şans ] [2-Cat ] [1-Cat ] [0-Start]  -- Bottom row
-///
-/// Corners: 0 (Start/BR), 7 (Imza Günü/BL), 13 (Shop/TL), 20 (Library/TR)
+/// Corners: 0 (Start/BR), 8 (İmza Günü/BL), 13 (Shop/TL), 21 (Library/TR)
 
 // ════════════════════════════════════════════════════════════════════════════
 // MAIN BOARD VIEW

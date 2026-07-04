@@ -45,15 +45,15 @@ class BoardLayoutConfig {
   static List<int> get cornerIndices => topology.cornerIndices;
 
   BoardLayoutConfig({required this.screenWidth, required this.screenHeight}) {
-    // Board dimensions formula:
-    // actualWidth = 2*kLong + 5*kShort (2 corners + 5 vertical middle tiles)
-    // actualHeight = 2*kLong + 6*kShort (2 corners + 6 horizontal middle tiles)
+    // Board dimensions formula (counts from topology):
+    // actualWidth = 2*kLong + horizontalMiddleCount*kShort
+    // actualHeight = 2*kLong + verticalMiddleCount*kShort
     //
-    // With kLong = kShort * 1.5:
-    // actualWidth = 2*(1.5*kShort) + 5*kShort = 3*kShort + 5*kShort = 8*kShort
-    // actualHeight = 2*(1.5*kShort) + 6*kShort = 3*kShort + 6*kShort = 9*kShort
+    // With the standard 7/4 topology and kLong = kShort * 1.5:
+    // actualWidth = 3*kShort + 7*kShort = 10*kShort
+    // actualHeight = 3*kShort + 4*kShort = 7*kShort
     //
-    // Aspect ratio = 8/9 ≈ 0.889
+    // Aspect ratio = 10/7 ≈ 1.43 (landscape)
 
     // Dynamic board-to-screen ratio based on screen size
     final shortestSide = screenWidth < screenHeight
@@ -65,8 +65,8 @@ class BoardLayoutConfig {
     final availableHeight = screenHeight * dynamicRatio;
 
     // Calculate kShort based on which dimension is constraining
-    final widthUnits = topology.widthUnits; // 2*1.5 + 5 = 8
-    final heightUnits = topology.heightUnits; // 2*1.5 + 6 = 9
+    final widthUnits = topology.widthUnits; // 2*1.5 + 7 = 10
+    final heightUnits = topology.heightUnits; // 2*1.5 + 4 = 7
 
     final kShortByWidth = availableWidth / widthUnits;
     final kShortByHeight = availableHeight / heightUnits;
