@@ -15,11 +15,20 @@ class PlayerHud extends StatelessWidget {
     this.isNextPlayer = false,
   });
 
+  /// Card width on tablets/desktops.
+  static const double _wideWidth = 172;
+
+  /// Card width on phone-sized screens: corner cards must leave the
+  /// landscape board visible and stay clear of the device frame.
+  static const double _compactWidth = 148;
+
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).shortestSide < 500;
+
     // Single player HUD with constrained width for perimeter layout
     return SizedBox(
-      width: 172,
+      width: isCompact ? _compactWidth : _wideWidth,
       child:
           PlayerScoreboard(
                 player: player,

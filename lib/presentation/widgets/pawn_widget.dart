@@ -25,6 +25,10 @@ class PawnWidget extends StatefulWidget {
 }
 
 class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
+  /// Glow halo diameter relative to the pawn size. Purely decorative — it
+  /// paints beyond the pawn's layout bounds without affecting them.
+  static const double _glowExtent = 1.5;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -133,40 +137,52 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
       builder: (context, child) {
         final glowIntensity = isCurrentTurn ? _glowAnimation.value : 0.0;
 
-        return Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            // Active turn glow (behind icon)
-            if (isCurrentTurn)
-              Container(
-                width: size * 1.5,
-                height: size * 1.5,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(
-                        alpha: 0.4 + (glowIntensity * 0.4),
-                      ),
-                      blurRadius: 10 + (glowIntensity * 10),
-                      spreadRadius: 2 + (glowIntensity * 4),
+        // The layout box must always be exactly size x size: PawnManager
+        // positions this widget by that assumption. The glow is larger than
+        // the pawn, so it renders through an OverflowBox (painted outside
+        // the bounds via clipBehavior none) instead of inflating the Stack.
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Active turn glow (behind icon)
+              if (isCurrentTurn)
+                OverflowBox(
+                  maxWidth: size * _glowExtent,
+                  maxHeight: size * _glowExtent,
+                  child: Container(
+                    width: size * _glowExtent,
+                    height: size * _glowExtent,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(
+                            alpha: 0.4 + (glowIntensity * 0.4),
+                          ),
+                          blurRadius: 10 + (glowIntensity * 10),
+                          spreadRadius: 2 + (glowIntensity * 4),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+
+              Center(
+                child: IsometricIcon(
+                  icon:
+                      GameConstants.iconPalette[widget.player.iconIndex %
+                          GameConstants.iconPalette.length],
+                  color: color,
+                  size: size,
+                  depth: 5.0, // Fixed depth
                 ),
               ),
-
-            Center(
-              child: IsometricIcon(
-                icon:
-                    GameConstants.iconPalette[widget.player.iconIndex %
-                        GameConstants.iconPalette.length],
-                color: color,
-                size: size,
-                depth: 5.0, // Fixed depth
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

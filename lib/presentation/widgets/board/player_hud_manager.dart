@@ -5,7 +5,11 @@ import 'player_hud.dart';
 /// Manages the placement of PlayerHUDs around the perimeter of the game board.
 class PlayerHudManager extends StatelessWidget {
   final GameState state;
-  static const double _rightHudInset = 12;
+
+  /// Uniform gap between every HUD card and the screen edge (applied on all
+  /// sides in addition to SafeArea), so corner cards never touch the device
+  /// frame on landscape phones.
+  static const double _hudInset = 10;
 
   const PlayerHudManager({super.key, required this.state});
 
@@ -39,59 +43,60 @@ class PlayerHudManager extends StatelessWidget {
           // STANDARD CORNER LAYOUT (<= 4 Players)
           switch (index) {
             case 0: // Top-Left
-              top = 0;
-              left = 0;
+              top = _hudInset;
+              left = _hudInset;
               break;
             case 1: // Top-Right
-              top = 0;
-              right = _rightHudInset;
+              top = _hudInset;
+              right = _hudInset;
               break;
             case 2: // Bottom-Right
-              bottom = 0;
-              right = _rightHudInset;
+              bottom = _hudInset;
+              right = _hudInset;
               break;
             case 3: // Bottom-Left
-              bottom = 0;
-              left = 0;
+              bottom = _hudInset;
+              left = _hudInset;
               break;
           }
         } else {
           // PERIMETER 6-POINT LAYOUT (> 4 Players)
           switch (index) {
             case 0: // Top-Left
-              top = 0;
-              left = 0;
+              top = _hudInset;
+              left = _hudInset;
               break;
             case 1: // Top-Right
-              top = 0;
-              right = _rightHudInset;
+              top = _hudInset;
+              right = _hudInset;
               break;
             case 2: // Middle-Right
               // Vertical centering handled via Alignment in Positioned.fill/Align combo below
-              top = 0;
-              bottom = 0;
-              right = _rightHudInset;
+              top = _hudInset;
+              bottom = _hudInset;
+              right = _hudInset;
               break;
             case 3: // Bottom-Right
-              bottom = 0;
-              right = _rightHudInset;
+              bottom = _hudInset;
+              right = _hudInset;
               break;
             case 4: // Bottom-Left
-              bottom = 0;
-              left = 0;
+              bottom = _hudInset;
+              left = _hudInset;
               break;
             case 5: // Middle-Left
               // Vertical centering handled via Alignment below
-              top = 0;
-              bottom = 0;
-              left = 0;
+              top = _hudInset;
+              bottom = _hudInset;
+              left = _hudInset;
               break;
           }
         }
 
-        // Safe Area flags
-        bool safeTop = (top == 0 && bottom == 0) ? false : (top == 0);
-        bool safeBottom = (top == 0 && bottom == 0) ? false : (bottom == 0);
+        // Safe Area flags: pad only the edge the card is anchored to
+        // (middle slots anchor both edges and handle placement themselves).
+        final safeTop = top != null && bottom == null;
+        final safeBottom = bottom != null && top == null;
 
         // Special handling for Middle slots (Index 2 & 5 when > 4)
         if (isMoreThanFour && (index == 2 || index == 5)) {
@@ -99,7 +104,7 @@ class PlayerHudManager extends StatelessWidget {
             top: 0,
             bottom: 0,
             left: index == 5 ? 0 : null,
-            right: index == 2 ? _rightHudInset : null,
+            right: index == 2 ? _hudInset : null,
             child: Align(
               alignment: index == 2
                   ? Alignment.centerRight

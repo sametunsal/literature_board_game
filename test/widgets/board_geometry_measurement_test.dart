@@ -7,6 +7,7 @@ import 'package:literature_board_game/data/board_config.dart';
 import 'package:literature_board_game/models/player.dart';
 import 'package:literature_board_game/presentation/widgets/board/board_layout.dart';
 import 'package:literature_board_game/presentation/widgets/enhanced_tile_widget.dart';
+import 'package:literature_board_game/presentation/widgets/pawn_widget.dart';
 import 'package:literature_board_game/providers/game_notifier.dart';
 
 /// Phase 2 usability measurements: the landscape 10:7 board must not merely
@@ -44,12 +45,20 @@ Future<void> _measureBoard(WidgetTester tester, Size size) async {
         home: Scaffold(
           body: BoardLayout(
             state: GameState(
+              // Two players on the start corner: pins both single-pawn
+              // placement and the multi-pawn slot layout on a corner tile.
               players: const [
                 Player(
                   id: 'p1',
                   name: 'Oyuncu 1',
                   color: Colors.blue,
                   iconIndex: 0,
+                ),
+                Player(
+                  id: 'p2',
+                  name: 'Oyuncu 2',
+                  color: Colors.red,
+                  iconIndex: 1,
                 ),
               ],
               tiles: BoardConfig.tiles,
@@ -130,6 +139,26 @@ Future<void> _measureBoard(WidgetTester tester, Size size) async {
     greaterThanOrEqualTo(50),
     reason: 'Side label long axis too short at $size: $sideLabelAxis',
   );
+
+  // 5. Pawn anchoring: every pawn's layout box must sit inside its tile —
+  // both players start on tile 0 (the BAŞLA corner), where a former
+  // half-pawn offset pushed pawns over the tile edge.
+  final startTileRect = tester.getRect(
+    find.byWidgetPredicate(
+      (widget) => widget is EnhancedTileWidget && widget.tile.position == 0,
+    ),
+  );
+  final pawnFinder = find.byType(PawnWidget);
+  expect(pawnFinder, findsNWidgets(2));
+  for (var i = 0; i < 2; i++) {
+    final pawnRect = tester.getRect(pawnFinder.at(i));
+    expect(
+      startTileRect.inflate(0.5).contains(pawnRect.topLeft) &&
+          startTileRect.inflate(0.5).contains(pawnRect.bottomRight),
+      isTrue,
+      reason: 'pawn $i $pawnRect outside start tile $startTileRect at $size',
+    );
+  }
 
   debugPrint(
     'BOARD GEOMETRY ${size.width.toInt()}x${size.height.toInt()}: '
