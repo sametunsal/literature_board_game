@@ -9,7 +9,7 @@ class PlayerHudManager extends StatelessWidget {
   /// Uniform gap between every HUD card and the screen edge (applied on all
   /// sides in addition to SafeArea), so corner cards never touch the device
   /// frame on landscape phones.
-  static const double _hudInset = 10;
+  static const double _hudInset = 8;
 
   const PlayerHudManager({super.key, required this.state});
 

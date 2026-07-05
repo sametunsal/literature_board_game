@@ -6,6 +6,7 @@ import '../../../providers/game_notifier.dart';
 import '../../../core/utils/board_layout_config.dart';
 import 'center_dice_roll_overlay.dart';
 import 'board_visual_constants.dart';
+import 'flapping_deck_card.dart';
 import 'monopoly_style_deck_cards.dart';
 import '../dice_roller.dart';
 
@@ -22,7 +23,8 @@ class CenterArea extends StatelessWidget {
     final centerWidth = layout.actualWidth - 2 * kL;
     final centerHeight = layout.actualHeight - 2 * kL;
 
-    final deckSize = math.min(centerWidth, centerHeight) * 0.21;
+    final deckSize =
+        math.min(centerWidth, centerHeight) * 0.21 * kCenterDeckVisualScale;
     final minCenterSide = math.min(centerWidth, centerHeight);
     final watermarkFontSize = math.min(
       math.max(minCenterSide * 0.16, 36.0),
@@ -96,12 +98,17 @@ class CenterArea extends StatelessWidget {
             Positioned(
               top: 10 + minCenterSide * 0.025,
               left: 10 + centerWidth * 0.045,
-              child: _buildElevatedCard(CardType.sans, deckSize),
+              child: FlappingDeckCard(
+                child: _buildElevatedCard(CardType.sans, deckSize),
+              ),
             ),
             Positioned(
               bottom: 10 + minCenterSide * 0.025,
               right: 10 + centerWidth * 0.045,
-              child: _buildElevatedCard(CardType.kader, deckSize),
+              child: FlappingDeckCard(
+                phase: 0.5,
+                child: _buildElevatedCard(CardType.kader, deckSize),
+              ),
             ),
             if (!showDiceRollOverlay)
               Positioned.fill(
@@ -151,7 +158,7 @@ class CenterArea extends StatelessWidget {
               ),
             ],
           ),
-          child: const DiceRoller(visualScale: kCenterDiceVisualScale),
+          child: const DiceRoller(visualScale: kCenterControlsVisualScale),
         ),
       ],
     );

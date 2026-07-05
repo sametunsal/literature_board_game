@@ -62,21 +62,80 @@ void main() {
       expect(state.currentPlayer.id, 'p2');
     });
 
-    test('Mesk is rejected below 5 Akce', () async {
+    test('Mesk is rejected below 5 Akce and flow closes safely', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(gameProvider.notifier);
       notifier
-        ..updateState(_stateFor(players: [_player(akce: 4)]))
+        ..updateState(
+          _stateFor(
+            players: [
+              _player(id: 'p1', akce: 4),
+              _player(id: 'p2', color: Colors.blue),
+            ],
+          ),
+        )
         ..debugSetCachedQuestions(_questionsFor(QuestionCategory.benKimim));
 
       await notifier.startMesk(QuestionCategory.benKimim);
+      await _waitForTurnEnd();
 
       final state = container.read(gameProvider);
-      expect(state.currentPlayer.akce, 4);
+      expect(state.players.first.akce, 4);
       expect(container.read(dialogProvider).showQuestionDialog, isFalse);
-      expect(_logsContaining(state, 'yeterli Akçe'), isNotEmpty);
+      expect(container.read(dialogProvider).showKiraathaneDialog, isFalse);
+      expect(_logsContaining(state, 'Yeterli Akçen yok'), isNotEmpty);
+      // Turn must continue: flow passes to the next player, no stuck flags.
+      expect(state.currentPlayer.id, 'p2');
+      expect(notifier.isProcessing, isFalse);
     });
+
+    test(
+      'landing on Kiraathane below 5 Akce skips dialog and continues turn',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(gameProvider.notifier);
+        notifier.updateState(
+          _stateFor(
+            players: [
+              _player(id: 'p1', akce: 4),
+              _player(id: 'p2', color: Colors.blue),
+            ],
+          ),
+        );
+
+        await notifier.handleKiraathaneLanding();
+        await _waitForTurnEnd();
+
+        final state = container.read(gameProvider);
+        expect(container.read(dialogProvider).showKiraathaneDialog, isFalse);
+        expect(container.read(dialogProvider).isAnyDialogOpen, isFalse);
+        expect(_logsContaining(state, 'Yeterli Akçen yok'), isNotEmpty);
+        expect(state.currentPlayer.id, 'p2');
+        expect(notifier.isProcessing, isFalse);
+      },
+    );
+
+    test(
+      'landing on Kiraathane with exactly 5 Akce opens the dialog',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(gameProvider.notifier);
+        notifier.updateState(_stateFor(players: [_player(akce: 5)]));
+
+        final openFuture = notifier.handleKiraathaneLanding();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(container.read(dialogProvider).showKiraathaneDialog, isTrue);
+
+        notifier.cancelKiraathane();
+        await openFuture;
+        await _waitForTurnEnd();
+        expect(container.read(dialogProvider).showKiraathaneDialog, isFalse);
+      },
+    );
 
     test('starting Mesk subtracts exactly 5 Akce', () async {
       final container = ProviderContainer();

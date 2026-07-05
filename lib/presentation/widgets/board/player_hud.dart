@@ -16,11 +16,11 @@ class PlayerHud extends StatelessWidget {
   });
 
   /// Card width on tablets/desktops.
-  static const double _wideWidth = 172;
+  static const double _wideWidth = 158;
 
   /// Card width on phone-sized screens: corner cards must leave the
   /// landscape board visible and stay clear of the device frame.
-  static const double _compactWidth = 148;
+  static const double _compactWidth = 134;
 
   @override
   Widget build(BuildContext context) {

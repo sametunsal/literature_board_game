@@ -2057,6 +2057,19 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
+    // Player cannot afford the Meşk option — inform and continue the turn
+    // instead of opening a dialog with no usable action.
+    if (state.currentPlayer.akce < GameConstants.meskCostAkce) {
+      _addLog(
+        'Yeterli Akçen yok. Kıraathane fırsatını kullanamıyorsun.',
+        type: 'error',
+      );
+      _isProcessing = false;
+      _isProcessingAction = false;
+      endTurn();
+      return;
+    }
+
     _kiraathaneDialogCompleter = Completer<void>();
     ref.read(dialogProvider.notifier).showKiraathane();
     _addLog('Kıraathane\'ye hoş geldiniz!', type: 'info');
@@ -2088,7 +2101,17 @@ class GameNotifier extends StateNotifier<GameState> {
 
   Future<void> startMesk(QuestionCategory category) async {
     if (state.currentPlayer.akce < GameConstants.meskCostAkce) {
-      _addLog('Meşk için yeterli Akçe yok.', type: 'error');
+      // Close the Kıraathane flow safely so the game never stalls on a dialog
+      // whose only affordable action would be disabled.
+      _addLog(
+        'Yeterli Akçen yok. Kıraathane fırsatını kullanamıyorsun.',
+        type: 'error',
+      );
+      ref.read(dialogProvider.notifier).hideKiraathane();
+      _completeKiraathaneDialog();
+      _isProcessing = false;
+      _isProcessingAction = false;
+      endTurn();
       return;
     }
 

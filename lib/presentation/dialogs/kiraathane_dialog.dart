@@ -14,11 +14,19 @@ class KiraathaneDialog extends ConsumerWidget {
     final state = ref.watch(gameProvider);
     final player = state.currentPlayer;
     final canMesk = player.akce >= GameConstants.meskCostAkce;
+    final screenSize = MediaQuery.sizeOf(context);
+    // Landscape phones leave very little height — keep the dialog compact and
+    // scroll the category list instead of overflowing.
+    final isCompact = screenSize.height < 480;
 
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: screenSize.height * 0.92,
+        ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -32,15 +40,15 @@ class KiraathaneDialog extends ConsumerWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: _buildCategoryChoice(ref, canMesk),
+            padding: EdgeInsets.all(isCompact ? 12 : 20),
+            child: _buildCategoryChoice(ref, canMesk, isCompact),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryChoice(WidgetRef ref, bool canMesk) {
+  Widget _buildCategoryChoice(WidgetRef ref, bool canMesk, bool isCompact) {
     final categories = QuestionCategory.values
         .where((category) => category != QuestionCategory.bonusBilgiler)
         .toList();
@@ -49,28 +57,43 @@ class KiraathaneDialog extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTitle('Meşk Kategorisi'),
-        const SizedBox(height: 8),
+        _buildTitle('Meşk Kategorisi', isCompact),
+        SizedBox(height: isCompact ? 4 : 8),
         Text(
           '${GameConstants.meskCostAkce} Akçe',
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: isCompact ? 12 : 14,
             fontWeight: FontWeight.w600,
             color: Colors.brown.shade700,
           ),
         ),
-        const SizedBox(height: 12),
-        ...categories.map(
-          (category) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildActionButton(
-              icon: Icons.menu_book_rounded,
-              label: category.displayName,
-              onPressed: canMesk
-                  ? () {
-                      ref.read(gameProvider.notifier).startMesk(category);
-                    }
-                  : null,
+        SizedBox(height: isCompact ? 8 : 12),
+        // Category list scrolls when the screen is too short for all options;
+        // Vazgeç stays pinned below so it is always reachable.
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: categories
+                  .map(
+                    (category) => Padding(
+                      padding: EdgeInsets.only(bottom: isCompact ? 6 : 8),
+                      child: _buildActionButton(
+                        icon: Icons.menu_book_rounded,
+                        label: category.displayName,
+                        isCompact: isCompact,
+                        onPressed: canMesk
+                            ? () {
+                                ref
+                                    .read(gameProvider.notifier)
+                                    .startMesk(category);
+                              }
+                            : null,
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
         ),
@@ -78,6 +101,7 @@ class KiraathaneDialog extends ConsumerWidget {
         _buildActionButton(
           icon: Icons.close_rounded,
           label: 'Vazgeç',
+          isCompact: isCompact,
           onPressed: () {
             ref.read(gameProvider.notifier).cancelKiraathane();
           },
@@ -87,16 +111,20 @@ class KiraathaneDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildTitle(String title) {
+  Widget _buildTitle(String title, bool isCompact) {
     return Row(
       children: [
-        const Icon(Icons.local_cafe_rounded, color: Colors.brown, size: 28),
+        Icon(
+          Icons.local_cafe_rounded,
+          color: Colors.brown,
+          size: isCompact ? 22 : 28,
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             title,
             style: GoogleFonts.poppins(
-              fontSize: 22,
+              fontSize: isCompact ? 17 : 22,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
@@ -111,9 +139,10 @@ class KiraathaneDialog extends ConsumerWidget {
     required String label,
     required VoidCallback? onPressed,
     bool muted = false,
+    bool isCompact = false,
   }) {
     return ElevatedButton.icon(
-      icon: Icon(icon, size: 20),
+      icon: Icon(icon, size: isCompact ? 18 : 20),
       label: Text(label),
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -121,10 +150,14 @@ class KiraathaneDialog extends ConsumerWidget {
         disabledBackgroundColor: Colors.grey.shade300,
         foregroundColor: muted ? Colors.black87 : Colors.white,
         disabledForegroundColor: Colors.grey.shade600,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: isCompact ? 8 : 14,
+        ),
+        minimumSize: const Size(0, 36),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: GoogleFonts.poppins(
-          fontSize: 15,
+          fontSize: isCompact ? 13 : 15,
           fontWeight: FontWeight.w600,
         ),
       ),

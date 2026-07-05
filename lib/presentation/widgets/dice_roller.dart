@@ -530,8 +530,8 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
             Container(
               margin: EdgeInsets.only(top: _isPressed ? 5 : 10, left: 4),
               padding: EdgeInsets.symmetric(
-                horizontal: widget.shortestSide * 0.028,
-                vertical: widget.shortestSide * 0.02,
+                horizontal: widget.shortestSide * 0.033,
+                vertical: widget.shortestSide * 0.024,
               ),
               decoration: BoxDecoration(
                 color: Color.lerp(darkColor, Colors.black, 0.35)!,
@@ -551,14 +551,14 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                   children: [
                     Icon(
                       Icons.casino_rounded,
-                      size: widget.shortestSide * 0.03,
+                      size: widget.shortestSide * 0.035,
                     ),
                     SizedBox(width: widget.shortestSide * 0.01),
                     Text(
                       widget.label,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
-                        fontSize: widget.shortestSide * 0.021,
+                        fontSize: widget.shortestSide * 0.025,
                       ),
                     ),
                   ],
@@ -569,8 +569,8 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
             Container(
               margin: EdgeInsets.only(top: _isPressed ? 3 : 5, left: 2),
               padding: EdgeInsets.symmetric(
-                horizontal: widget.shortestSide * 0.028,
-                vertical: widget.shortestSide * 0.018,
+                horizontal: widget.shortestSide * 0.033,
+                vertical: widget.shortestSide * 0.022,
               ),
               decoration: BoxDecoration(
                 color: darkColor,
@@ -583,14 +583,14 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                   children: [
                     Icon(
                       Icons.casino_rounded,
-                      size: widget.shortestSide * 0.03,
+                      size: widget.shortestSide * 0.035,
                     ),
                     SizedBox(width: widget.shortestSide * 0.01),
                     Text(
                       widget.label,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
-                        fontSize: widget.shortestSide * 0.021,
+                        fontSize: widget.shortestSide * 0.025,
                       ),
                     ),
                   ],
@@ -600,8 +600,8 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
             // Top layer (button surface)
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: widget.shortestSide * 0.028,
-                vertical: widget.shortestSide * 0.02,
+                horizontal: widget.shortestSide * 0.033,
+                vertical: widget.shortestSide * 0.024,
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -641,7 +641,7 @@ class _Isometric3DDiceButtonState extends State<_Isometric3DDiceButton> {
                         widget.label,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,
-                          fontSize: widget.shortestSide * 0.021,
+                          fontSize: widget.shortestSide * 0.025,
                           color: Colors.white,
                           shadows: [
                             Shadow(
