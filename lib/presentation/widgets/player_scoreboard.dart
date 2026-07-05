@@ -54,14 +54,14 @@ class PlayerScoreboard extends StatelessWidget {
                   Colors.green.shade50.withValues(alpha: 0.95),
                 ]
               : isNext
-                  ? [
-                      Colors.amber.shade100.withValues(alpha: 0.98),
-                      Colors.amber.shade50.withValues(alpha: 0.95),
-                    ]
-                  : [
-                      Colors.grey.shade100.withValues(alpha: 0.3),
-                      Colors.white.withValues(alpha: 0.98),
-                    ],
+              ? [
+                  Colors.amber.shade100.withValues(alpha: 0.98),
+                  Colors.amber.shade50.withValues(alpha: 0.95),
+                ]
+              : [
+                  Colors.grey.shade100.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.98),
+                ],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor, width: borderWidth),
@@ -70,8 +70,8 @@ class PlayerScoreboard extends StatelessWidget {
             color: isCurrentPlayer
                 ? Colors.green.withValues(alpha: 0.3)
                 : isNext
-                    ? Colors.amber.withValues(alpha: 0.25)
-                    : Colors.black.withValues(alpha: 0.12),
+                ? Colors.amber.withValues(alpha: 0.25)
+                : Colors.black.withValues(alpha: 0.12),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -129,8 +129,8 @@ class PlayerScoreboard extends StatelessWidget {
       ),
       child: Center(
         child: IsometricIcon(
-          icon: GameConstants.iconPalette[
-              player.iconIndex % GameConstants.iconPalette.length],
+          icon: GameConstants
+              .iconPalette[player.iconIndex % GameConstants.iconPalette.length],
           color: player.color,
           size: 18,
           depth: 3,
@@ -179,39 +179,45 @@ class PlayerScoreboard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 3),
-        // Stats row — compact
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.star_rounded, color: Colors.amber, size: 13),
-            const SizedBox(width: 2),
-            Text(
-              '${player.stars}',
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+        // Stats row — compact; scales down instead of overflowing when the
+        // panel width is tight (e.g. compact landscape phones).
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.star_rounded, color: Colors.amber, size: 13),
+              const SizedBox(width: 2),
+              Text(
+                '${player.stars}',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(
-              Icons.emoji_events_rounded,
-              color:
-                  masteriesCount > 0 ? Colors.orange : Colors.grey.shade400,
-              size: 13,
-            ),
-            const SizedBox(width: 2),
-            Text(
-              '$masteriesCount/6',
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+              const SizedBox(width: 6),
+              Icon(
+                Icons.emoji_events_rounded,
                 color: masteriesCount > 0
                     ? Colors.orange
-                    : Colors.grey.shade600,
+                    : Colors.grey.shade400,
+                size: 13,
               ),
-            ),
-          ],
+              const SizedBox(width: 2),
+              Text(
+                '$masteriesCount/6',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: masteriesCount > 0
+                      ? Colors.orange
+                      : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

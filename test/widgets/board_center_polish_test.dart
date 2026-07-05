@@ -28,6 +28,14 @@ void main() {
       );
 
       expect(find.byType(MonopolyStyleDeckCard), findsOneWidget);
+      // Deck identity is conveyed by iconography alone — no text labels.
+      expect(
+        find.descendant(
+          of: find.byType(MonopolyStyleDeckCard),
+          matching: find.byType(Text),
+        ),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     });
 
