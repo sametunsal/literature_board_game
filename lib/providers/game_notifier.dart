@@ -35,7 +35,26 @@ import 'repository_providers.dart';
 class FloatingEffect {
   final String text;
   final Color color;
-  FloatingEffect(this.text, this.color);
+
+  /// Optional small-caps heading rendered above [text] in the reward toast
+  /// (e.g. "DOĞRU CEVAP", "TELİF ALINDI"). Presentation only.
+  final String? title;
+
+  /// Optional icon rendered in the toast's accent medallion.
+  final IconData? icon;
+
+  /// Board tile the toast is anchored above, captured when the reward fires.
+  /// Keeps the toast over the pawn that earned it even if the turn passes to
+  /// another player while it is still visible.
+  final int? anchorTilePosition;
+
+  FloatingEffect(
+    this.text,
+    this.color, {
+    this.title,
+    this.icon,
+    this.anchorTilePosition,
+  });
 }
 
 class GameState {
@@ -139,6 +158,7 @@ class GameState {
     GamePhase? phase,
     List<String>? logs,
     FloatingEffect? floatingEffect,
+    bool clearFloatingEffect = false,
     bool? isDoubleTurn,
     BoardTile? currentTile,
     Player? winner,
@@ -166,7 +186,13 @@ class GameState {
       isDiceRolling: isDiceRolling ?? this.isDiceRolling,
       phase: phase ?? this.phase,
       logs: logs ?? this.logs,
-      floatingEffect: floatingEffect,
+      // Reward toasts are sticky: they survive unrelated state updates (dice,
+      // movement steps, turn handoff) and are removed only by their own timer
+      // via [clearFloatingEffect], so a reward earned mid-move stays visible
+      // for its full display window.
+      floatingEffect: clearFloatingEffect
+          ? null
+          : (floatingEffect ?? this.floatingEffect),
       isDoubleTurn: isDoubleTurn ?? this.isDoubleTurn,
       currentTile: currentTile ?? this.currentTile,
       winner: winner ?? this.winner,
@@ -524,6 +550,37 @@ class GameNotifier extends StateNotifier<GameState> {
 
   GameState get currentState => state;
   void updateState(GameState newState) => state = newState;
+
+  /// Single entry point for the polished reward toast family (Akçe, Telif,
+  /// Baskı, Cilt, royalty, bonuses). Anchors the toast to the current
+  /// player's tile and schedules its dismissal. The timer clears only *its
+  /// own* toast, so when rewards fire back-to-back the newest toast keeps
+  /// its full display window instead of being wiped by an older timer.
+  void showRewardToast(
+    String text,
+    Color color, {
+    String? title,
+    IconData? icon,
+  }) {
+    final effect = FloatingEffect(
+      text,
+      color,
+      title: title,
+      icon: icon,
+      anchorTilePosition: state.currentPlayer.position,
+    );
+    state = state.copyWith(floatingEffect: effect);
+    _activeTimers.add(
+      Timer(
+        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+        () {
+          if (mounted && identical(state.floatingEffect, effect)) {
+            state = state.copyWith(clearFloatingEffect: true);
+          }
+        },
+      ),
+    );
+  }
   void addLog(String message, {String? type}) =>
       _addLog(message, type: type ?? 'info');
   void logBot(String message) => _botController.log(message);
@@ -1191,18 +1248,12 @@ class GameNotifier extends StateNotifier<GameState> {
       newPlayers[state.currentPlayerIndex] = player.copyWith(
         stars: player.stars + bonusStars,
       );
-      state = state.copyWith(
-        players: newPlayers,
-        floatingEffect: FloatingEffect('+$bonusStars ⭐', Colors.amber),
-      );
-
-      _activeTimers.add(
-        Timer(
-          const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-          () {
-            state = state.copyWith(floatingEffect: null);
-          },
-        ),
+      state = state.copyWith(players: newPlayers);
+      showRewardToast(
+        '+$bonusStars ⭐',
+        Colors.amber,
+        title: 'TEŞVİK BONUSU',
+        icon: Icons.trending_up_rounded,
       );
 
       _addLog(
@@ -1366,19 +1417,11 @@ class GameNotifier extends StateNotifier<GameState> {
       'Telif alindi: ${state.currentPlayer.name} - ${book.title}',
       type: 'success',
     );
-    final feedbackText = 'Telif: ${book.title}';
-    state = state.copyWith(
-      floatingEffect: FloatingEffect(feedbackText, Colors.amberAccent),
-    );
-    _activeTimers.add(
-      Timer(
-        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-        () {
-          if (mounted && state.floatingEffect?.text == feedbackText) {
-            state = state.copyWith(floatingEffect: null);
-          }
-        },
-      ),
+    showRewardToast(
+      'Telif: ${book.title}',
+      Colors.amberAccent,
+      title: 'TELİF ALINDI',
+      icon: Icons.history_edu_rounded,
     );
   }
 
@@ -1404,19 +1447,11 @@ class GameNotifier extends StateNotifier<GameState> {
         'Yetersiz Akce: ${book.title} Baski yukseltilemedi',
         type: 'error',
       );
-      const feedbackText = 'Yetersiz Akce';
-      state = state.copyWith(
-        floatingEffect: FloatingEffect(feedbackText, Colors.redAccent),
-      );
-      _activeTimers.add(
-        Timer(
-          const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-          () {
-            if (mounted && state.floatingEffect?.text == feedbackText) {
-              state = state.copyWith(floatingEffect: null);
-            }
-          },
-        ),
+      showRewardToast(
+        'Yetersiz Akce',
+        Colors.redAccent,
+        title: 'YÜKSELTME BAŞARISIZ',
+        icon: Icons.account_balance_wallet_rounded,
       );
       return;
     }
@@ -1442,19 +1477,11 @@ class GameNotifier extends StateNotifier<GameState> {
       'Baski yukseltildi: ${state.currentPlayer.name} - ${book.title}',
       type: 'success',
     );
-    final feedbackText = 'Baski: ${book.title}';
-    state = state.copyWith(
-      floatingEffect: FloatingEffect(feedbackText, Colors.lightBlueAccent),
-    );
-    _activeTimers.add(
-      Timer(
-        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-        () {
-          if (mounted && state.floatingEffect?.text == feedbackText) {
-            state = state.copyWith(floatingEffect: null);
-          }
-        },
-      ),
+    showRewardToast(
+      'Baski: ${book.title}',
+      Colors.lightBlueAccent,
+      title: 'BASKI YÜKSELTİLDİ',
+      icon: Icons.print_rounded,
     );
   }
 
@@ -1486,19 +1513,11 @@ class GameNotifier extends StateNotifier<GameState> {
         'Yetersiz Akce: ${book.title} Cilt yukseltilemedi',
         type: 'error',
       );
-      const feedbackText = 'Yetersiz Akce';
-      state = state.copyWith(
-        floatingEffect: FloatingEffect(feedbackText, Colors.redAccent),
-      );
-      _activeTimers.add(
-        Timer(
-          const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-          () {
-            if (mounted && state.floatingEffect?.text == feedbackText) {
-              state = state.copyWith(floatingEffect: null);
-            }
-          },
-        ),
+      showRewardToast(
+        'Yetersiz Akce',
+        Colors.redAccent,
+        title: 'YÜKSELTME BAŞARISIZ',
+        icon: Icons.account_balance_wallet_rounded,
       );
       return;
     }
@@ -1524,19 +1543,11 @@ class GameNotifier extends StateNotifier<GameState> {
       'Cilt yukseltildi: ${state.currentPlayer.name} - ${book.title}',
       type: 'success',
     );
-    final feedbackText = 'Cilt: ${book.title}';
-    state = state.copyWith(
-      floatingEffect: FloatingEffect(feedbackText, Colors.deepPurpleAccent),
-    );
-    _activeTimers.add(
-      Timer(
-        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-        () {
-          if (mounted && state.floatingEffect?.text == feedbackText) {
-            state = state.copyWith(floatingEffect: null);
-          }
-        },
-      ),
+    showRewardToast(
+      'Cilt: ${book.title}',
+      Colors.deepPurpleAccent,
+      title: 'CİLT YÜKSELTİLDİ',
+      icon: Icons.auto_stories_rounded,
     );
     _checkPublishingWinCondition();
   }
@@ -1602,19 +1613,11 @@ class GameNotifier extends StateNotifier<GameState> {
       '${book.title}, -${result.royaltyPaid} Akce',
       type: 'success',
     );
-    final feedbackText = 'Royalty: -${result.royaltyPaid} Akce';
-    state = state.copyWith(
-      floatingEffect: FloatingEffect(feedbackText, Colors.orangeAccent),
-    );
-    _activeTimers.add(
-      Timer(
-        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-        () {
-          if (mounted && state.floatingEffect?.text == feedbackText) {
-            state = state.copyWith(floatingEffect: null);
-          }
-        },
-      ),
+    showRewardToast(
+      'Royalty: -${result.royaltyPaid} Akce',
+      Colors.orangeAccent,
+      title: 'ROYALTY ÖDENDİ',
+      icon: Icons.receipt_long_rounded,
     );
   }
 
@@ -1743,8 +1746,11 @@ class GameNotifier extends StateNotifier<GameState> {
       final color = result.starsDelta! > 0
           ? Colors.greenAccent
           : Colors.redAccent;
-      state = state.copyWith(
-        floatingEffect: FloatingEffect('$sign${result.starsDelta}', color),
+      showRewardToast(
+        '$sign${result.starsDelta} Akçe',
+        color,
+        title: 'KART ETKİSİ',
+        icon: Icons.style_rounded,
       );
     }
     if (result.showPrinterIssue) {

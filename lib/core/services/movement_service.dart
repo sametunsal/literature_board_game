@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/material.dart' show Color;
+import 'package:flutter/material.dart' show Color, Icons;
 import '../constants/game_constants.dart';
 import '../managers/audio_manager.dart';
 import '../../data/board_config.dart';
@@ -58,13 +58,16 @@ class MovementService {
               .copyWith(akce: player.akce + GameConstants.passingStartBonus);
 
           notifier.updateState(
-            notifier.currentState.copyWith(
-              players: startPlayers,
-              floatingEffect: FloatingEffect(
-                '+${GameConstants.passingStartBonus} Akçe Başlangıç',
-                const Color(0xFFFFD700),
-              ),
-            ),
+            notifier.currentState.copyWith(players: startPlayers),
+          );
+          // Sticky toast + guarded timer via the notifier: survives the
+          // per-step state updates of the remaining hops instead of being
+          // wiped on the very next hop.
+          notifier.showRewardToast(
+            '+${GameConstants.passingStartBonus} Akçe Başlangıç',
+            const Color(0xFFFFD700),
+            title: 'BAŞLANGIÇ BONUSU',
+            icon: Icons.flag_rounded,
           );
           player = notifier.currentState.currentPlayer;
 
@@ -74,19 +77,6 @@ class MovementService {
           );
 
           AudioManager.instance.playSfx('audio/star_collect.wav');
-
-          Future.delayed(
-            const Duration(
-              seconds: GameConstants.floatingEffectDurationSeconds,
-            ),
-            () {
-              if (notifier.mounted) {
-                notifier.updateState(
-                  notifier.currentState.copyWith(floatingEffect: null),
-                );
-              }
-            },
-          );
         }
 
         // Update position for each step

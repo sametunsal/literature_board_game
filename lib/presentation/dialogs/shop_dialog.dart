@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/literary_quote_model.dart';
 import '../../data/repositories/quote_repository.dart';
 import '../../providers/game_notifier.dart';
+import '../widgets/reward_toast.dart';
 
 /// Shop dialog where players can spend stars to buy literary quotes
 /// Features rotating stock system - shows only 6 random unowned quotes each visit
@@ -412,16 +413,42 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
   void _purchaseQuote(LiteraryQuoteModel quote) {
     ref.read(gameProvider.notifier).purchaseQuote(quote.id, quote.starCost);
 
-    // Show feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${quote.author} sözü satın alındı!'),
-        backgroundColor: Colors.amber,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    _showPurchaseToast(quote);
 
     setState(() {}); // Refresh UI
+  }
+
+  /// Purchase feedback in the polished reward-toast family. The shop dialog
+  /// covers the board (where pawn-anchored toasts render), so this one is
+  /// shown through the app overlay above the dialog. The toast removes its
+  /// own entry when its intro/hold/outro animation completes, independent of
+  /// this dialog's lifetime.
+  void _showPurchaseToast(LiteraryQuoteModel quote) {
+    final overlay = Overlay.of(context, rootOverlay: true);
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => IgnorePointer(
+        child: SafeArea(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: SizedBox(
+                height: 72,
+                child: RewardToast(
+                  text: '${quote.author} sözü (-${quote.starCost} ⭐)',
+                  color: Colors.amber,
+                  title: 'KIRAATHANE',
+                  icon: Icons.format_quote_rounded,
+                  onComplete: () => entry.remove(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
   }
 
   Widget _buildCloseButton() {

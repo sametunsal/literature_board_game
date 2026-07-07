@@ -1,10 +1,10 @@
 /// Visual-only scale for the 3D dice animation in the board center.
-const double kCenterDiceVisualScale = 0.68;
+const double kCenterDiceVisualScale = 0.64;
 
 /// Visual scale for the Şans/Kader deck cards in the board center.
 /// Kept separate from the dice/controls scales so the decks can grow to
 /// balance the center area without touching the roll controls.
-const double kCenterDeckVisualScale = 1.10;
+const double kCenterDeckVisualScale = 1.18;
 
 /// Shared dimensions for every player HUD panel. All players — current, next,
 /// or waiting — use the same panel size for a given screen class; turn

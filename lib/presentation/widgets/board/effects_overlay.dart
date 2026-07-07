@@ -7,7 +7,7 @@ import '../../../core/utils/board_layout_helper.dart';
 
 import '../../../providers/game_notifier.dart';
 import '../../../providers/dialog_provider.dart';
-import '../floating_score.dart';
+import '../reward_toast.dart';
 
 /// Overlay widget containing all effects and dialogs
 class EffectsOverlay extends ConsumerWidget {
@@ -90,20 +90,19 @@ class EffectsOverlay extends ConsumerWidget {
     ];
   }
 
-  /// Build floating score effect positioned over current player's pawn
+  /// Build the reward toast positioned above the current player's pawn,
+  /// clamped so it never leaves the board.
   Widget _buildFloatingScore(GameState state) {
     final effect = state.floatingEffect!;
-    final playerPosition = state.currentPlayer.position;
+    // Anchor to the tile captured when the reward fired; the toast can
+    // outlive the turn that earned it, so currentPlayer is only a fallback.
+    final playerPosition =
+        effect.anchorTilePosition ?? state.currentPlayer.position;
     final pawnCenter = BoardLayoutHelper.getTileCenter(playerPosition, layout);
 
-    // Determine if score is positive based on text (starts with +)
-    final isPositive = effect.text.startsWith('+');
-    final isLongMessage = effect.text.length > 10;
     final margin = layout.kShortSide * 0.15;
-    final boxWidth = isLongMessage
-        ? math.min(260.0, layout.actualWidth - margin * 2)
-        : 140.0;
-    final boxHeight = isLongMessage ? 78.0 : 96.0;
+    final boxWidth = math.min(300.0, layout.actualWidth - margin * 2);
+    const boxHeight = 72.0;
     final rawLeft = pawnCenter.dx - boxWidth / 2;
     final rawTop = pawnCenter.dy - boxHeight - layout.kShortSide * 0.35;
     final maxLeft = math.max(margin, layout.actualWidth - boxWidth - margin);
@@ -117,13 +116,14 @@ class EffectsOverlay extends ConsumerWidget {
       child: SizedBox(
         width: boxWidth,
         height: boxHeight,
-        child: FloatingScore(
+        child: RewardToast(
           key: ValueKey(
             'score_${effect.text}_${DateTime.now().millisecondsSinceEpoch}',
           ),
           text: effect.text,
           color: effect.color,
-          isPositive: isPositive,
+          title: effect.title,
+          icon: effect.icon,
           onComplete: () {
             // Effect is auto-cleared by game_notifier after delay
             // No action needed here

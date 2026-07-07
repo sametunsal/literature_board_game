@@ -36,58 +36,85 @@ class FlyingStar extends StatelessWidget {
     );
   }
 
+  static const _ink = Color(0xFF241A10);
+  static const _inkDeep = Color(0xFF17100A);
+  static const _gold = Color(0xFFFFD54F);
+  static const _ivory = Color(0xFFF8EEDC);
+
   Widget _buildStarCountText() {
     return Material(
       color: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.amber.shade600,
-              Colors.orange.shade700,
-            ],
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_ink, _inkDeep],
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _gold.withValues(alpha: 0.8), width: 1.6),
           boxShadow: [
             BoxShadow(
-              color: Colors.amber.withValues(alpha: 0.6),
-              blurRadius: 20,
-              spreadRadius: 4,
+              color: Colors.black.withValues(alpha: 0.38),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: _gold.withValues(alpha: 0.35),
+              blurRadius: 26,
+              spreadRadius: -2,
             ),
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.star_rounded,
-              color: Colors.white,
-              size: 32,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '+$starCount',
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 1,
-                shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                    color: Colors.black38,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _gold.withValues(alpha: 0.16),
+                border: Border.all(
+                  color: _gold.withValues(alpha: 0.85),
+                  width: 1.4,
+                ),
               ),
+              child: const Icon(Icons.paid_rounded, color: _gold, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'DOĞRU CEVAP',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
+                    color: _gold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '+$starCount Akçe',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: _ivory,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 6,
+                        color: Colors.black45,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
