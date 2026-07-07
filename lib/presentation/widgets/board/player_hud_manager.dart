@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../providers/game_notifier.dart';
+import 'board_visual_constants.dart';
 import 'player_hud.dart';
 
 /// Manages the placement of PlayerHUDs around the perimeter of the game board.
@@ -8,8 +9,9 @@ class PlayerHudManager extends StatelessWidget {
 
   /// Uniform gap between every HUD card and the screen edge (applied on all
   /// sides in addition to SafeArea), so corner cards never touch the device
-  /// frame on landscape phones.
-  static const double _hudInset = 8;
+  /// frame on landscape phones. Shared with the edge menu buttons so cards
+  /// and buttons sit on the same edge line.
+  static const double _hudInset = kEdgeControlsInset;
 
   const PlayerHudManager({super.key, required this.state});
 
@@ -70,11 +72,7 @@ class PlayerHudManager extends StatelessWidget {
               top = _hudInset;
               right = _hudInset;
               break;
-            case 2: // Middle-Right
-              // Vertical centering handled via Alignment in Positioned.fill/Align combo below
-              top = _hudInset;
-              bottom = _hudInset;
-              right = _hudInset;
+            case 2: // Middle-Right (anchored above BR card; handled below)
               break;
             case 3: // Bottom-Right
               bottom = _hudInset;
@@ -84,11 +82,7 @@ class PlayerHudManager extends StatelessWidget {
               bottom = _hudInset;
               left = _hudInset;
               break;
-            case 5: // Middle-Left
-              // Vertical centering handled via Alignment below
-              top = _hudInset;
-              bottom = _hudInset;
-              left = _hudInset;
+            case 5: // Middle-Left (anchored above BL card; handled below)
               break;
           }
         }
@@ -98,26 +92,22 @@ class PlayerHudManager extends StatelessWidget {
         final safeTop = top != null && bottom == null;
         final safeBottom = bottom != null && top == null;
 
-        // Special handling for Middle slots (Index 2 & 5 when > 4)
+        // Special handling for Middle slots (Index 2 & 5 when > 4): anchored
+        // just above the bottom corner cards. This keeps the middle-right
+        // card clear of the menu button column (which stacks downward from
+        // below the top-right card) and the middle-left card clear of the
+        // centered mobile log button.
         if (isMoreThanFour && (index == 2 || index == 5)) {
           return Positioned(
-            top: 0,
-            bottom: 0,
-            left: index == 5 ? 0 : null,
+            bottom: kHudEdgeClearance,
+            left: index == 5 ? _hudInset : null,
             right: index == 2 ? _hudInset : null,
-            child: Align(
-              alignment: index == 2
-                  ? Alignment.centerRight
-                  : Alignment.centerLeft,
-              child: Padding(
-                // Add vertical offset to Middle-Right (Index 2) to avoid PAUSE buttons if needed
-                // Pushing down by 80px to clear the top-right button area
-                padding: EdgeInsets.only(top: index == 2 ? 100 : 0),
-                child: PlayerHud(
-                  player: player,
-                  isCurrentPlayer: isCurrent,
-                  isNextPlayer: isNext,
-                ),
+            child: SafeArea(
+              top: false,
+              child: PlayerHud(
+                player: player,
+                isCurrentPlayer: isCurrent,
+                isNextPlayer: isNext,
               ),
             ),
           );

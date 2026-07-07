@@ -16,6 +16,7 @@ import '../../providers/dialog_provider.dart';
 import '../../core/utils/board_layout_config.dart';
 import '../../core/managers/audio_manager.dart';
 import 'board/board_layout.dart';
+import 'board/board_visual_constants.dart';
 import 'board/player_hud_manager.dart';
 import 'board/game_controls_overlay.dart';
 import 'board/turn_order_dialog.dart';
@@ -200,17 +201,25 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
-          // MOBILE MENU BUTTON (Opens Drawer)
+          // MOBILE LOG BUTTON (Opens Drawer) - centered on the left edge so
+          // it never overlaps the corner HUD cards, mirroring the menu button
+          // column hugging the right edge.
           if (isMobile)
             Positioned(
-              left: 8,
-              bottom: 12,
+              left: kEdgeControlsInset,
+              top: 0,
+              bottom: 0,
               child: SafeArea(
-                child: FloatingActionButton.small(
-                  backgroundColor: GameTheme.goldAccent.withValues(alpha: 0.9),
-                  foregroundColor: GameTheme.tableBackgroundColor,
-                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  child: const Icon(Icons.bar_chart_rounded, size: 20),
+                right: false,
+                child: Center(
+                  child: FloatingActionButton.small(
+                    backgroundColor: GameTheme.goldAccent.withValues(
+                      alpha: 0.9,
+                    ),
+                    foregroundColor: GameTheme.tableBackgroundColor,
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                    child: const Icon(Icons.bar_chart_rounded, size: 20),
+                  ),
                 ),
               ),
             ),

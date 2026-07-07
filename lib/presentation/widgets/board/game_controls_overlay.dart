@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +13,7 @@ import '../../dialogs/publishing_portfolio_dialog.dart';
 import '../../dialogs/settings_dialog.dart';
 import '../../screens/collection_screen.dart';
 import '../../screens/main_menu_screen.dart';
+import 'board_visual_constants.dart';
 
 enum _PublishingDebugActionType { jumpAndAsk, prepCilt }
 
@@ -39,23 +40,28 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // PAUSE BUTTON (top-right) - Buttons float below the P2 Profile Card
+        // MENU BUTTONS (right edge) - anchored on the same edge line as the
+        // player HUD cards, directly below the top-right HUD's clearance so
+        // the column hugs the device edge instead of floating over the board.
         Positioned(
-          top: 140, // Moved down to clear the player panel
-          right: 16,
+          top: kHudEdgeClearance,
+          right: kEdgeControlsInset,
           child: SafeArea(
+            left: false,
+            bottom: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 _buildPauseButton(),
-                const SizedBox(height: 8),
+                const SizedBox(height: kMenuButtonSpacing),
                 _buildPortfolioButton(),
-                const SizedBox(height: 8),
+                const SizedBox(height: kMenuButtonSpacing),
                 _buildBotModeButton(),
                 if (kDebugMode) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: kMenuButtonSpacing),
                   _buildPublishingDebugMenu(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: kMenuButtonSpacing),
                   _buildPublishingDebugPanel(),
                 ],
               ],
@@ -81,8 +87,8 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
             setState(() => _showPauseMenu = true);
           },
           child: Container(
-            width: 48,
-            height: 48,
+            width: kMenuButtonSize,
+            height: kMenuButtonSize,
             decoration: BoxDecoration(
               color: tokens.surface.withValues(alpha: isDarkMode ? 0.15 : 0.85),
               borderRadius: BorderRadius.circular(12),
@@ -124,8 +130,8 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
               );
             },
             child: Container(
-              width: 48,
-              height: 48,
+              width: kMenuButtonSize,
+              height: kMenuButtonSize,
               decoration: BoxDecoration(
                 color: tokens.surface.withValues(
                   alpha: isDarkMode ? 0.15 : 0.85,
@@ -174,8 +180,8 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
             ref.read(gameProvider.notifier).toggleBotMode();
           },
           child: Container(
-            width: 48,
-            height: 48,
+            width: kMenuButtonSize,
+            height: kMenuButtonSize,
             decoration: BoxDecoration(
               color: isBotPlaying
                   ? Colors.green.withValues(alpha: 0.9)
@@ -334,8 +340,8 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
           ),
       ],
       child: Container(
-        width: 48,
-        height: 48,
+        width: kMenuButtonSize,
+        height: kMenuButtonSize,
         decoration: BoxDecoration(
           color: tokens.surface.withValues(alpha: isDarkMode ? 0.15 : 0.85),
           borderRadius: BorderRadius.circular(12),

@@ -738,6 +738,82 @@ void main() {
     expect(find.textContaining('Tutuna'), findsNothing);
   });
 
+  testWidgets('level badges wear their publication accent with an owner rim', (
+    tester,
+  ) async {
+    final expectedTopAccents = {
+      BookLevel.telif: const Color(0xFFD8A05C), // bronze
+      BookLevel.baski: const Color(0xFF4F94DC), // ink blue
+      BookLevel.cilt: const Color(0xFFA476DC), // bound purple
+    };
+
+    for (final level in [BookLevel.telif, BookLevel.baski, BookLevel.cilt]) {
+      final book = BookConfig.books.first;
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          bookOwnerships: {
+            book.id: BookOwnership(
+              bookId: book.id,
+              ownerPlayerId: players.first.id,
+              level: level,
+            ),
+          },
+        ),
+      );
+
+      final badgeFinder = find.byKey(const ValueKey('ownership-level-badge'));
+      expect(badgeFinder, findsOneWidget, reason: '$level');
+
+      // Must fit inside the 12px colour strip.
+      final badgeSize = tester.getSize(badgeFinder);
+      expect(badgeSize.width, lessThanOrEqualTo(12.0), reason: '$level');
+      expect(badgeSize.height, lessThanOrEqualTo(12.0), reason: '$level');
+
+      final decoration =
+          tester.widget<Container>(badgeFinder).decoration! as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
+      expect(gradient.colors.first, expectedTopAccents[level],
+          reason: '$level should use its own accent');
+      expect(decoration.border!.top.color, players.first.color,
+          reason: '$level rim should name the owner');
+    }
+  });
+
+  testWidgets('unlevelled ownership badge keeps the flat owner disc', (
+    tester,
+  ) async {
+    final book = BookConfig.books.first;
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+
+    await tester.pumpWidget(
+      _tileApp(
+        tile,
+        players: players,
+        bookOwnerships: {
+          book.id: BookOwnership(
+            bookId: book.id,
+            ownerPlayerId: players.first.id,
+            level: BookLevel.none,
+          ),
+        },
+      ),
+    );
+
+    final badgeFinder = find.byKey(const ValueKey('ownership-level-badge'));
+    final decoration =
+        tester.widget<Container>(badgeFinder).decoration! as BoxDecoration;
+    expect(decoration.gradient, isNull);
+    expect(decoration.color, players.first.color);
+  });
+
   testWidgets('book strip thickness is 12.0', (tester) async {
     final book = BookConfig.books.first;
     final tile = BoardConfig.tiles.singleWhere(

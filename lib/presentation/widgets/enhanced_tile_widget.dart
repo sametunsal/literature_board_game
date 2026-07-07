@@ -456,6 +456,19 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
     return null;
   }
 
+  /// Accent gradients for the publication-level badges, themed on the
+  /// publishing steps: Telif = bronze quill, Baskı = printer's ink blue,
+  /// Cilt = bound-volume purple. The owner is encoded by the badge's rim
+  /// colour so the level accent never hides who holds the book.
+  static const _levelAccents = <BookLevel, List<Color>>{
+    BookLevel.telif: [Color(0xFFD8A05C), Color(0xFF8C5A24)],
+    BookLevel.baski: [Color(0xFF4F94DC), Color(0xFF1D4F8C)],
+    BookLevel.cilt: [Color(0xFFA476DC), Color(0xFF5B2E91)],
+  };
+
+  /// Badge diameter: must stay inside the 12px colour strip.
+  static const double _kOwnershipBadgeSize = 11.0;
+
   Widget? _buildOwnershipChip({
     required BookOwnership? ownership,
     required Player? owner,
@@ -474,27 +487,56 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
             BookLevel.none => '${ownerIndex >= 0 ? ownerIndex + 1 : '?'}',
           }
         : '${ownerIndex >= 0 ? ownerIndex + 1 : '?'}';
+    final accent = hasLevel ? _levelAccents[ownership.level] : null;
 
     return Center(
       child: Container(
-        width: 10,
-        height: 10,
+        key: const ValueKey('ownership-level-badge'),
+        width: _kOwnershipBadgeSize,
+        height: _kOwnershipBadgeSize,
         decoration: BoxDecoration(
-          color: owner.color,
+          // Levelled books wear their publication accent; a merely-owned book
+          // keeps the flat owner-colour disc.
+          color: accent == null ? owner.color : null,
+          gradient: accent == null
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: accent,
+                ),
           shape: BoxShape.circle,
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.92),
-            width: 0.6,
+            // The rim always names the owner; on flat discs a white rim
+            // keeps the old look against the colour strip.
+            color: accent == null
+                ? Colors.white.withValues(alpha: 0.92)
+                : owner.color,
+            width: accent == null ? 0.6 : 1.1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 1.6,
+              offset: const Offset(0, 0.6),
+            ),
+          ],
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 5.8,
+            fontSize: 6.0,
             fontWeight: FontWeight.w800,
             color: Colors.white,
             height: 1.0,
+            shadows: const [
+              Shadow(
+                color: Colors.black38,
+                offset: Offset(0, 0.5),
+                blurRadius: 0.8,
+              ),
+            ],
           ),
         ),
       ),

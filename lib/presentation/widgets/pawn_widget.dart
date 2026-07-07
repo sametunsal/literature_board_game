@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/player.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/motion/motion_constants.dart';
-import 'isometric_icon.dart';
 
 /// Animated pawn widget with polished 2D appearance
 /// Features smooth slide animation with subtle scale pulse
@@ -132,6 +131,20 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
     final isCurrentTurn = widget.isCurrentTurn;
     final color = widget.player.color;
 
+    // Derived shades for the token body: light catches the top-left,
+    // the rim reads as the piece's turned edge.
+    final hsl = HSLColor.fromColor(color);
+    final lightShade = hsl
+        .withLightness((hsl.lightness + 0.18).clamp(0.0, 1.0))
+        .withSaturation((hsl.saturation - 0.05).clamp(0.0, 1.0))
+        .toColor();
+    final darkShade = hsl
+        .withLightness((hsl.lightness - 0.22).clamp(0.0, 1.0))
+        .toColor();
+    final rimShade = hsl
+        .withLightness((hsl.lightness - 0.32).clamp(0.0, 1.0))
+        .toColor();
+
     return AnimatedBuilder(
       animation: _glowAnimation,
       builder: (context, child) {
@@ -148,7 +161,7 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
             alignment: Alignment.center,
             clipBehavior: Clip.none,
             children: [
-              // Active turn glow (behind icon)
+              // Active turn glow (behind the token)
               if (isCurrentTurn)
                 OverflowBox(
                   maxWidth: size * _glowExtent,
@@ -171,14 +184,109 @@ class _PawnWidgetState extends State<PawnWidget> with TickerProviderStateMixin {
                   ),
                 ),
 
-              Center(
-                child: IsometricIcon(
-                  icon:
-                      GameConstants.iconPalette[widget.player.iconIndex %
-                          GameConstants.iconPalette.length],
-                  color: color,
-                  size: size,
-                  depth: 5.0, // Fixed depth
+              // Ground shadow: a flattened ellipse under the token gives it
+              // the "sitting on the board" contact point of a real piece.
+              Positioned(
+                bottom: 0,
+                child: Container(
+                  width: size * 0.72,
+                  height: size * 0.18,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(
+                      Radius.elliptical(size * 0.36, size * 0.09),
+                    ),
+                    color: Colors.black.withValues(alpha: 0.30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: size * 0.08,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Token body: radial gradient lit from the top-left with a
+              // darker rim border, like a lacquered game piece.
+              Positioned(
+                top: size * 0.02,
+                child: Container(
+                  width: size * 0.90,
+                  height: size * 0.90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.35, -0.45),
+                      radius: 1.15,
+                      colors: [lightShade, color, darkShade],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+                    border: Border.all(
+                      color: rimShade,
+                      width: (size * 0.05).clamp(0.8, 2.0),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.28),
+                        blurRadius: size * 0.10,
+                        offset: Offset(0, size * 0.06),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Inner highlight ring: subtle bevel inside the rim.
+                      Container(
+                        margin: EdgeInsets.all(size * 0.045),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.30),
+                            width: (size * 0.03).clamp(0.5, 1.2),
+                          ),
+                        ),
+                      ),
+
+                      // Player icon, embossed with a soft drop shadow.
+                      Icon(
+                        GameConstants.iconPalette[widget.player.iconIndex %
+                            GameConstants.iconPalette.length],
+                        size: size * 0.50,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.40),
+                            offset: Offset(0, size * 0.035),
+                            blurRadius: size * 0.06,
+                          ),
+                        ],
+                      ),
+
+                      // Top sheen: small specular highlight on the upper-left.
+                      Positioned(
+                        top: size * 0.09,
+                        left: size * 0.18,
+                        child: Container(
+                          width: size * 0.26,
+                          height: size * 0.14,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.all(
+                              Radius.elliptical(size * 0.13, size * 0.07),
+                            ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.white.withValues(alpha: 0.55),
+                                Colors.white.withValues(alpha: 0.0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
