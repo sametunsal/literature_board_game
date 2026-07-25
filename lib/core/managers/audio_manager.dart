@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import '../utils/logger.dart';
 
 /// Audio context for different game states
@@ -320,11 +321,26 @@ class AudioManager {
   // SFX CONTROLS
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
+  /// Test-only seam: when set, [playSfx] reports the requested asset here and
+  /// skips playback. Widget tests can assert which SFX fired without a real
+  /// audio backend (the plugin needs platform channels, unavailable in tests).
+  ///
+  /// Installed *after* the sound-enabled gate, so a test also sees the gate
+  /// honoured: with sound off, nothing is reported.
+  @visibleForTesting
+  static void Function(String fileName)? debugSfxHandler;
+
   /// Play a sound effect
   /// [fileName] should be relative to assets/ (e.g., 'audio/click.wav')
   /// or use provided helper methods
   Future<void> playSfx(String fileName) async {
     if (!_isSoundEnabled) return;
+
+    final handler = debugSfxHandler;
+    if (handler != null) {
+      handler(fileName);
+      return;
+    }
 
     try {
       // Create a temporary player for overlapping SFX if needed,
@@ -351,7 +367,11 @@ class AudioManager {
 
   Future<void> playClick() => playSfx('audio/ui_click.wav');
   Future<void> playDiceRoll() => playSfx('audio/dice_roll.wav');
-  Future<void> playVictory() => playSfx('audio/correct.wav');
+
+  /// Success sting. Also stands in for the end-of-game fanfare — there is no
+  /// dedicated victory asset shipped, so victory reuses this rather than
+  /// referencing a file that does not exist.
+  Future<void> playCorrect() => playSfx('audio/correct.wav');
   Future<void> playWrong() => playSfx('audio/wrong.wav');
   Future<void> playCardFlip() => playSfx('audio/card_flip.wav');
   Future<void> playPawnStep() => playSfx('audio/pawn_step.wav');

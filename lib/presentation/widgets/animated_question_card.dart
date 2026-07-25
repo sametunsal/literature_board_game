@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/question.dart';
 import '../../models/game_enums.dart';
 import '../../core/constants/game_constants.dart';
+import '../../core/managers/audio_manager.dart';
 import 'flying_star.dart';
 
 /// Dikey soru kartı — ekrana **sığdırılır** (FittedBox), kaydırma yok.
@@ -100,7 +101,16 @@ class _AnimatedQuestionCardState extends State<AnimatedQuestionCard>
           showStarEffect = true;
         }
       });
-      
+
+      // Sound lands with the reveal, not the tap, so it matches the moment the
+      // option turns green/red. _handleAnswer returns early once hasAnswered is
+      // set, so this fires exactly once per card — rebuilds cannot repeat it.
+      if (isCorrect) {
+        AudioManager.instance.playCorrect();
+      } else {
+        AudioManager.instance.playWrong();
+      }
+
       // After revealing + star animation, callback
       final callbackDelay = isCorrect ? 1600 : 800;
       Future.delayed(Duration(milliseconds: callbackDelay), () {

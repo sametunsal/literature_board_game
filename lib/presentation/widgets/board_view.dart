@@ -108,7 +108,9 @@ class _BoardViewState extends ConsumerState<BoardView> {
       if (previous?.phase != GamePhase.gameOver &&
           next.phase == GamePhase.gameOver) {
         _confettiController.play();
-        AudioManager.instance.playVictory();
+        // No dedicated victory asset ships with the game; the success sting
+        // stands in for the fanfare.
+        AudioManager.instance.playCorrect();
 
         // Determine Winner
         final sortedPlayers = List<Player>.from(next.players)

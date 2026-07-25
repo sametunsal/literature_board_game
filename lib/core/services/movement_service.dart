@@ -76,7 +76,9 @@ class MovementService {
             type: 'success',
           );
 
-          AudioManager.instance.playSfx('audio/star_collect.wav');
+          // Was 'audio/star_collect.wav', which does not ship in assets/audio/
+          // and failed silently inside playSfx's catch on every pass-start.
+          AudioManager.instance.playCorrect();
         }
 
         // Update position for each step
