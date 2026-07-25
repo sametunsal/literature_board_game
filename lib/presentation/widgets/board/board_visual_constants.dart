@@ -42,3 +42,34 @@ const double kMenuButtonSpacing = 8.0;
 /// edge inset + panel height + a breathing gap. Controls stacked on the same
 /// edge anchor beyond this so they never overlap the corner HUD cards.
 const double kHudEdgeClearance = kEdgeControlsInset + kPlayerHudHeight + 8.0;
+
+// ─── Right-side HUD column (board-first two-zone gameplay layout) ────────────
+// The gameplay screen is a Row: [ board area | HUD column ]. The column takes
+// a fixed width out of the viewport and the board area gets the rest, so the
+// two zones can never overlap.
+
+/// Inner padding of the right-side HUD column.
+const double kHudColumnPadding = 10.0;
+
+/// HUD column width on phone-class landscape screens (viewport width < 900).
+/// Fits a compact player panel (134) plus column padding on both sides.
+const double kHudColumnCompactWidth = 156.0;
+
+/// HUD column width on larger screens. Fits a wide player panel (158) plus
+/// column padding on both sides.
+const double kHudColumnWideWidth = 180.0;
+
+/// HUD column width when the column also hosts the game log inline. Sized to
+/// the log panel's fixed 280dp width plus column padding on both sides.
+const double kHudColumnLogWidth = 304.0;
+
+/// Minimum viewport width before the game log may move from the drawer into
+/// the HUD column. Below this the wider column would eat too much board area.
+const double kHudColumnLogMinWidth = 1000.0;
+
+/// Minimum viewport height before the game log may move from the drawer into
+/// the HUD column. Short landscape screens keep the drawer/FAB affordance.
+const double kHudColumnLogMinHeight = 620.0;
+
+/// Vertical gap between the player panels stacked in the HUD column.
+const double kHudColumnItemSpacing = 6.0;

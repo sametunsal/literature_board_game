@@ -3,9 +3,27 @@ import '../../../providers/game_notifier.dart';
 import 'board_visual_constants.dart';
 import 'player_hud.dart';
 
-/// Manages the placement of PlayerHUDs around the perimeter of the game board.
+/// How [PlayerHudManager] arranges the player panels.
+enum PlayerHudLayoutMode {
+  /// Panels are absolutely positioned around the screen perimeter. The root
+  /// widget is a [Stack]; it expects to fill the viewport.
+  perimeter,
+
+  /// Panels are stacked top-to-bottom in a scrollable list, sized to whatever
+  /// box the parent gives it. Used by the right-side HUD column so the panels
+  /// never float over the board.
+  column,
+}
+
+/// Manages the placement of PlayerHUDs around the perimeter of the game board,
+/// or — in [PlayerHudLayoutMode.column] — as a vertical list inside the
+/// right-side HUD column.
 class PlayerHudManager extends StatelessWidget {
   final GameState state;
+
+  /// Arrangement of the panels. Defaults to the perimeter stack so the widget
+  /// stays pumpable on its own exactly as before.
+  final PlayerHudLayoutMode mode;
 
   /// Uniform gap between every HUD card and the screen edge (applied on all
   /// sides in addition to SafeArea), so corner cards never touch the device
@@ -13,11 +31,19 @@ class PlayerHudManager extends StatelessWidget {
   /// and buttons sit on the same edge line.
   static const double _hudInset = kEdgeControlsInset;
 
-  const PlayerHudManager({super.key, required this.state});
+  const PlayerHudManager({
+    super.key,
+    required this.state,
+    this.mode = PlayerHudLayoutMode.perimeter,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (state.players.isEmpty) return const SizedBox.shrink();
+
+    if (mode == PlayerHudLayoutMode.column) {
+      return _buildColumn();
+    }
 
     final players = state.players;
     final isMoreThanFour = players.length > 4;
@@ -130,6 +156,48 @@ class PlayerHudManager extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+
+  /// Vertical list of panels for the right-side HUD column.
+  ///
+  /// Scrollable so six players still fit a 360dp-tall landscape viewport, and
+  /// each panel is scaled down rather than overflowing if the column is
+  /// narrower than the panel's fixed width.
+  Widget _buildColumn() {
+    final players = state.players;
+    final currentPlayerId = players[state.currentPlayerIndex].id;
+    final nextIndex = (state.currentPlayerIndex + 1) % players.length;
+    final nextPlayerId = players[nextIndex].id;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var index = 0; index < players.length; index++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: index == players.length - 1
+                    ? 0
+                    : kHudColumnItemSpacing,
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: PlayerHud(
+                    player: players[index],
+                    isCurrentPlayer: players[index].id == currentPlayerId,
+                    isNextPlayer: players[index].id == nextPlayerId,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

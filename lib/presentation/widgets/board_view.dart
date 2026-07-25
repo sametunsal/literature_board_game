@@ -47,6 +47,13 @@ import '../../models/game_card.dart';
 // MAIN BOARD VIEW
 // ════════════════════════════════════════════════════════════════════════════
 
+/// Key of the board zone (left side of the gameplay Row). Exposed so layout
+/// tests can assert the board and HUD rects never intersect.
+const Key kBoardAreaKey = ValueKey('board_area');
+
+/// Key of the right-side HUD column zone.
+const Key kHudColumnKey = ValueKey('hud_column');
+
 class BoardView extends ConsumerStatefulWidget {
   const BoardView({super.key});
 
@@ -131,15 +138,25 @@ class _BoardViewState extends ConsumerState<BoardView> {
       }
     });
 
-    // Calculate layout dimensions (use full screen size for landscape optimization)
+    // Two-zone gameplay layout: [ board area | right HUD column ]. The column
+    // takes a fixed slice of the viewport width and the board area gets the
+    // rest, so the two zones cannot overlap. The board is then sized from the
+    // board area's own constraints (see _buildBoardArea), never from the full
+    // screen size.
     final screenSize = MediaQuery.of(context).size;
-    final layout = BoardLayoutConfig.fromScreen(screenSize);
     final isMobile = screenSize.width < 900;
+    final showLogInColumn =
+        screenSize.width >= kHudColumnLogMinWidth &&
+        screenSize.height >= kHudColumnLogMinHeight;
+    final hudColumnWidth = showLogInColumn
+        ? kHudColumnLogWidth
+        : (isMobile ? kHudColumnCompactWidth : kHudColumnWideWidth);
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: tokens.background,
-      drawer: isMobile
+      // The log lives in the drawer whenever it is not hosted in the column.
+      drawer: !showLogInColumn
           ? Drawer(
               width: 300,
               backgroundColor: Colors.transparent,
@@ -158,83 +175,40 @@ class _BoardViewState extends ConsumerState<BoardView> {
       body: Stack(
         children: [
           // ═══════════════════════════════════════════════════════════════
-          // LAYER 1: Base Background Table Image
+          // LAYER 1: Quiet premium backdrop
+          // The board surface itself carries the visual richness now, so the
+          // background stays a plain themed wash instead of a photographic
+          // table that competes with the board for attention.
           // ═══════════════════════════════════════════════════════════════
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/wooden_table_bg.png',
-              key: const ValueKey('bg_updated_v2'), // Force refresh
-              fit: BoxFit.cover,
-            ),
-          ),
-          // LAYER 2: Contrast Overlay
-          Positioned.fill(
-            child: Container(color: Colors.black.withValues(alpha: 0.3)),
-          ),
+          Positioned.fill(child: _buildBackdrop(tokens)),
 
           // ═══════════════════════════════════════════════════════════════
-          // LAYER 3: Game Board Content
+          // LAYER 2: Two-zone content — [ board area | HUD column ]
           // ═══════════════════════════════════════════════════════════════
-          // FREEZE ANIMATIONS ON PAUSE
-          TickerMode(
-            enabled: !state.isGamePaused,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 2.0,
-                  constrained: true,
-                  clipBehavior: Clip.none,
-                  child: BoardLayout(
-                    state: state,
-                    layout: layout,
-                    isDarkMode: isDarkMode,
-                    confettiController: _confettiController,
-                    onQuestionConfirm: () {
-                      ref.read(gameProvider.notifier).answerQuestion(true);
-                    },
-                    onQuestionCancel: () {
-                      ref.read(gameProvider.notifier).answerQuestion(false);
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // MOBILE LOG BUTTON (Opens Drawer) - centered on the left edge so
-          // it never overlaps the corner HUD cards, mirroring the menu button
-          // column hugging the right edge.
-          if (isMobile)
-            Positioned(
-              left: kEdgeControlsInset,
-              top: 0,
-              bottom: 0,
-              child: SafeArea(
-                right: false,
-                child: Center(
-                  child: FloatingActionButton.small(
-                    backgroundColor: GameTheme.goldAccent.withValues(
-                      alpha: 0.9,
+          Positioned.fill(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: KeyedSubtree(
+                    key: kBoardAreaKey,
+                    // The HUD column absorbs the right system inset, so the
+                    // board area must not pad for it a second time.
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeRight: true,
+                      child: _buildBoardArea(state, isDarkMode),
                     ),
-                    foregroundColor: GameTheme.tableBackgroundColor,
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                    child: const Icon(Icons.bar_chart_rounded, size: 20),
                   ),
                 ),
-              ),
+                _buildHudColumn(
+                  state: state,
+                  width: hudColumnWidth,
+                  showLogInColumn: showLogInColumn,
+                ),
+              ],
             ),
-
-          // ═══════════════════════════════════════════════════════════════
-          // GAME CONTROLS (Pause, Bot Mode)
-          // ═══════════════════════════════════════════════════════════════
-          const GameControlsOverlay(),
-
-          // ═══════════════════════════════════════════════════════════════
-          // PERIMETER PLAYER HUD (Corners & Sides)
-          // ═══════════════════════════════════════════════════════════════
-          PlayerHudManager(state: state),
+          ),
 
           if (_showOpeningOverlay)
             Positioned.fill(child: _buildOpeningOverlay()),
@@ -269,6 +243,145 @@ class _BoardViewState extends ConsumerState<BoardView> {
 
           // GAME OVER DIALOG REMOVED - Handled by Navigation
         ],
+      ),
+    );
+  }
+
+  /// Quiet themed wash behind both zones.
+  Widget _buildBackdrop(ThemeTokens tokens) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: const Alignment(-0.15, -0.2),
+          radius: 1.15,
+          colors: [
+            tokens.backgroundHighlight,
+            tokens.background,
+            Color.lerp(tokens.background, Colors.black, 0.18) ??
+                tokens.background,
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+      ),
+    );
+  }
+
+  /// Left zone: the board, sized from this zone's own constraints.
+  Widget _buildBoardArea(GameState state, bool isDarkMode) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boardAreaSize = Size(constraints.maxWidth, constraints.maxHeight);
+        final layout = BoardLayoutConfig.fromScreen(boardAreaSize);
+
+        // FREEZE ANIMATIONS ON PAUSE
+        return TickerMode(
+          enabled: !state.isGamePaused,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 2.0,
+                constrained: true,
+                clipBehavior: Clip.none,
+                child: BoardLayout(
+                  state: state,
+                  layout: layout,
+                  isDarkMode: isDarkMode,
+                  confettiController: _confettiController,
+                  onQuestionConfirm: () {
+                    ref.read(gameProvider.notifier).answerQuestion(true);
+                  },
+                  onQuestionCancel: () {
+                    ref.read(gameProvider.notifier).answerQuestion(false);
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Right zone: menu controls, the player panel list, and — where the
+  /// viewport is large enough — the game log. Dice/roll controls deliberately
+  /// stay in the board center.
+  Widget _buildHudColumn({
+    required GameState state,
+    required double width,
+    required bool showLogInColumn,
+  }) {
+    final tokens = ref.watch(themeProvider).tokens;
+
+    return Container(
+      key: kHudColumnKey,
+      width: width,
+      decoration: BoxDecoration(
+        color: tokens.surface.withValues(alpha: 0.10),
+        border: Border(
+          left: BorderSide(
+            color: GameTheme.goldAccent.withValues(alpha: 0.18),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        left: false,
+        child: Padding(
+          padding: const EdgeInsets.all(kHudColumnPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const GameControlsOverlay(embedded: true),
+              const SizedBox(height: kHudColumnItemSpacing),
+
+              // Player panels: scrollable so six players survive a 360dp-tall
+              // landscape viewport without overflowing.
+              Expanded(
+                child: PlayerHudManager(
+                  state: state,
+                  mode: PlayerHudLayoutMode.column,
+                ),
+              ),
+
+              if (showLogInColumn) ...[
+                const SizedBox(height: kHudColumnItemSpacing),
+                GameLog(
+                  logs: state.logs,
+                  players: state.players,
+                  currentPlayerIndex: state.currentPlayerIndex,
+                ),
+              ] else ...[
+                const SizedBox(height: kHudColumnItemSpacing),
+                _buildLogDrawerButton(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Opens the game-log drawer on viewports too short to host the log inline.
+  Widget _buildLogDrawerButton() {
+    return SizedBox(
+      height: kMenuButtonSize * 0.75,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: GameTheme.goldAccent.withValues(alpha: 0.9),
+          foregroundColor: GameTheme.tableBackgroundColor,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        icon: const Icon(Icons.bar_chart_rounded, size: 18),
+        label: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('Geçmiş'),
+        ),
       ),
     );
   }

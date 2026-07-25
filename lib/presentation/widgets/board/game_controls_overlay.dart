@@ -25,8 +25,18 @@ class _PublishingDebugAction {
 }
 
 /// Overlay widget providing global board controls like Pause menu and Bot mode toggle
+///
+/// By default this is a full-viewport [Stack] that pins the button column to
+/// the right screen edge. Set [embedded] to place the same buttons inline in a
+/// parent-sized box (the right-side HUD column of the gameplay screen); in
+/// that mode the pause menu is raised into the root [Overlay] so it still
+/// covers the whole screen instead of being clipped to the column.
 class GameControlsOverlay extends ConsumerStatefulWidget {
-  const GameControlsOverlay({super.key});
+  /// When true, build only the button block sized to the parent's constraints
+  /// instead of a screen-edge [Positioned] stack.
+  final bool embedded;
+
+  const GameControlsOverlay({super.key, this.embedded = false});
 
   @override
   ConsumerState<GameControlsOverlay> createState() =>
@@ -35,9 +45,45 @@ class GameControlsOverlay extends ConsumerStatefulWidget {
 
 class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
   bool _showPauseMenu = false;
+  OverlayEntry? _pauseEntry;
+
+  @override
+  void dispose() {
+    _removePauseEntry();
+    super.dispose();
+  }
+
+  void _removePauseEntry() {
+    _pauseEntry?.remove();
+    _pauseEntry = null;
+  }
+
+  void _openPauseMenu() {
+    ref.read(gameProvider.notifier).pauseGame();
+    if (!widget.embedded) {
+      setState(() => _showPauseMenu = true);
+      return;
+    }
+    // Embedded in the HUD column: the pause surface must cover the whole
+    // screen, so it goes into the root overlay rather than this subtree.
+    _removePauseEntry();
+    final entry = OverlayEntry(builder: (_) => _buildPauseSurface());
+    _pauseEntry = entry;
+    Overlay.of(context, rootOverlay: true).insert(entry);
+  }
+
+  void _closePauseMenu() {
+    if (widget.embedded) {
+      _removePauseEntry();
+      return;
+    }
+    setState(() => _showPauseMenu = false);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildEmbeddedControls();
+
     return Stack(
       children: [
         // MENU BUTTONS (right edge) - anchored on the same edge line as the
@@ -75,6 +121,41 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
     );
   }
 
+  /// Inline button block for the right-side HUD column.
+  ///
+  /// A [Wrap] reflows the square buttons to however many fit the column width,
+  /// so a narrow column stacks them into more rows instead of overflowing.
+  Widget _buildEmbeddedControls() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The fixed-width debug panel only fits a column wide enough to host
+        // the game log; narrower columns show the debug menu button alone.
+        final hasRoomForDebugPanel = constraints.maxWidth >= 220;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: kMenuButtonSpacing,
+              runSpacing: kMenuButtonSpacing,
+              alignment: WrapAlignment.end,
+              children: [
+                _buildPauseButton(),
+                _buildPortfolioButton(),
+                _buildBotModeButton(),
+                if (kDebugMode) _buildPublishingDebugMenu(),
+              ],
+            ),
+            if (kDebugMode && hasRoomForDebugPanel) ...[
+              const SizedBox(height: kMenuButtonSpacing),
+              _buildPublishingDebugPanel(),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
   /// Build the pause button with glass decoration
   Widget _buildPauseButton() {
     final themeState = ref.watch(themeProvider);
@@ -82,10 +163,7 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
     final tokens = themeState.tokens;
 
     return GestureDetector(
-          onTap: () {
-            ref.read(gameProvider.notifier).pauseGame();
-            setState(() => _showPauseMenu = true);
-          },
+          onTap: _openPauseMenu,
           child: Container(
             width: kMenuButtonSize,
             height: kMenuButtonSize,
@@ -368,48 +446,53 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
 
   /// Build the pause menu overlay
   Widget _buildPauseOverlay() {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.6),
-        child: PauseDialog(
-          onResume: () {
-            ref.read(gameProvider.notifier).resumeGame();
-            setState(() => _showPauseMenu = false);
-          },
-          onSettings: () {
-            showDialog(
-              context: context,
-              builder: (context) => const SettingsDialog(),
-            );
-          },
+    return Positioned.fill(child: _buildPauseSurface());
+  }
 
-          onCollection: () {
-            setState(() => _showPauseMenu = false);
-            final state = ref.read(gameProvider);
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => CollectionScreen(
-                  players: state.players,
-                  initialPlayerIndex: state.currentPlayerIndex,
-                ),
+  /// The scrim + pause dialog itself, without any positioning, so it can be
+  /// used either as a [Positioned.fill] child or as a root [OverlayEntry].
+  Widget _buildPauseSurface() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.6),
+      child: PauseDialog(
+        onResume: () {
+          ref.read(gameProvider.notifier).resumeGame();
+          _closePauseMenu();
+        },
+        onSettings: () {
+          showDialog(
+            context: context,
+            builder: (context) => const SettingsDialog(),
+          );
+        },
+
+        onCollection: () {
+          _closePauseMenu();
+          final state = ref.read(gameProvider);
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CollectionScreen(
+                players: state.players,
+                initialPlayerIndex: state.currentPlayerIndex,
               ),
-            );
-          },
-          onEndGame: () {
-            setState(() => _showPauseMenu = false);
-            ref.read(gameProvider.notifier).endGame();
-          },
-          onExit: () {
-            SystemChrome.setPreferredOrientations([
-              DeviceOrientation.portraitUp,
-              DeviceOrientation.portraitDown,
-            ]);
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const MainMenuScreen()),
-              (route) => false,
-            );
-          },
-        ),
+            ),
+          );
+        },
+        onEndGame: () {
+          _closePauseMenu();
+          ref.read(gameProvider.notifier).endGame();
+        },
+        onExit: () {
+          _removePauseEntry();
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ]);
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainMenuScreen()),
+            (route) => false,
+          );
+        },
       ),
     );
   }
