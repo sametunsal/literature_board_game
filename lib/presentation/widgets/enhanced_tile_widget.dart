@@ -55,14 +55,22 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   /// full [_kMaxLabelFontSize] and dwarf the top/bottom labels. Capping them
   /// here keeps board typography visually consistent without touching the
   /// long-axis measurement that prevents words from fragmenting.
-  static const double _kMaxSideLabelFontSize = 11.0;
+  ///
+  /// Held one step below the top/bottom [_kMaxLabelFontSize] so side labels
+  /// read a touch larger than before while still staying visually subordinate
+  /// to the unrotated ones. Raising this ceiling can never cause an overflow:
+  /// the fit search starts here and steps down until the label actually fits,
+  /// so long titles ("Saatleri Ayarlama Enstitüsü") are unaffected and only
+  /// short titles that already had headroom grow.
+  static const double _kMaxSideLabelFontSize = 12.0;
 
   /// Slightly tighter ceiling for multi-line side labels (e.g. the rotated
   /// "Fatih\nHarbiye"). A two-line side label stacks across the short axis and
   /// each short line easily reaches [_kMaxSideLabelFontSize], making it read
   /// larger and bolder than the single-line side labels beside it. Shaving the
-  /// cap here evens them out without shrinking single-word side labels.
-  static const double _kMaxMultilineSideLabelFontSize = 10.5;
+  /// cap here evens them out without shrinking single-word side labels. Kept
+  /// 0.5 below [_kMaxSideLabelFontSize] so the two side ceilings move together.
+  static const double _kMaxMultilineSideLabelFontSize = 11.5;
 
   /// Reduced ceiling for short special/action tile labels (e.g. "Teşvik").
   /// These are single short words with no book attached, so against the full
@@ -70,6 +78,47 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
   /// multi-line book labels. Capping them keeps the action tiles visually
   /// balanced with their neighbours without shrinking book typography.
   static const double _kMaxActionLabelFontSize = 10.5;
+
+  /// Per-title shave for the two left-column book labels that read cramped on
+  /// device: "Çalıkuşu" is one long unbroken word and "9. Koğuş" wraps to two
+  /// lines under a full stop, so both crowd the rotated short axis even though
+  /// they measure as fitting.
+  ///
+  /// Applied to the *resolved* font size rather than to the ceiling. Lowering
+  /// the ceiling only bites where a label is cap-constrained — at phone and
+  /// emulator sizes these two are fit-constrained (they land well under the
+  /// ceiling), so a lower cap left them untouched and, because the fit search
+  /// steps down in 0.2 increments from the cap, could even shift the ladder's
+  /// phase and land a hair *larger*. Scaling the resolved size shrinks them
+  /// consistently at every geometry.
+  ///
+  /// Keyed by the exact rendered board label, so it applies to these titles
+  /// alone — every other label (book or action tile) is untouched.
+  static const Map<String, double> _kCompactLabelScales = <String, double>{
+    'Çalıkuşu': 0.92,
+    '9. Koğuş': 0.92,
+  };
+
+  /// Returns [resolvedFontSize] shaved for the titles listed in
+  /// [_kCompactLabelScales], and unchanged for everything else.
+  ///
+  /// The result is clamped to [floor] so the shave can never push a label below
+  /// the minimum the fit algorithm already guarantees, and to
+  /// [resolvedFontSize] so it can only ever shrink. Shrinking is always safe
+  /// for overflow: the fit search already proved the label fits at the larger
+  /// size on the same line count, and this does not change that line count.
+  static double _compactFontSize(
+    String displayText,
+    double resolvedFontSize, {
+    required double floor,
+  }) {
+    final scale = _kCompactLabelScales[displayText];
+    if (scale == null) return resolvedFontSize;
+    return (resolvedFontSize * scale).clamp(
+      math.min(floor, resolvedFontSize),
+      resolvedFontSize,
+    );
+  }
 
   static const double _kMinLabelFontSize = 6.2;
 
@@ -384,7 +433,15 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
         fontSize -= 0.2
       ) {
         if (_titleFits(singleLine, textBoxWidth, textBoxHeight, fontSize, 1)) {
-          return (text: singleLine, fontSize: fontSize, maxLines: 1);
+          return (
+            text: singleLine,
+            fontSize: _compactFontSize(
+              singleLine,
+              fontSize,
+              floor: _kMinLabelFontSize,
+            ),
+            maxLines: 1,
+          );
         }
       }
       // Falls through: the collapsed line does not fit even at the minimum
@@ -399,19 +456,30 @@ class _EnhancedTileWidgetState extends State<EnhancedTileWidget> {
                   ? _kMaxMultilineSideLabelFontSize
                   : _kMaxSideLabelFontSize)
             : _kMaxLabelFontSize);
+    // Single-word side labels (e.g. "Çalıkuşu") may shrink a little further
+    // to stay whole on the short rotated axis rather than fragmenting.
+    final singleLineFloor = isSideLabel
+        ? _kMinSideSingleLineFontSize
+        : _kMinLabelFontSize;
     final fit = _resolveLabelFit(
       displayText,
       maxWidth,
       maxHeight,
       maxLines,
       cap,
-      // Single-word side labels (e.g. "Çalıkuşu") may shrink a little further
-      // to stay whole on the short rotated axis rather than fragmenting.
-      singleLineFloor: isSideLabel
-          ? _kMinSideSingleLineFontSize
-          : _kMinLabelFontSize,
+      singleLineFloor: singleLineFloor,
     );
-    return (text: displayText, fontSize: fit.fontSize, maxLines: fit.maxLines);
+    return (
+      text: displayText,
+      fontSize: _compactFontSize(
+        displayText,
+        fit.fontSize,
+        // Multi-line fits bottom out at the readable floor, single-line fits at
+        // the lower whole-word floor.
+        floor: fit.maxLines == 1 ? singleLineFloor : _kMinLabelFontSize,
+      ),
+      maxLines: fit.maxLines,
+    );
   }
 
   Widget _buildSideBookLabel(String displayText, int maxLines) {

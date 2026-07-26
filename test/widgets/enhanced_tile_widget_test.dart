@@ -324,7 +324,7 @@ void main() {
       expect(textWidget.overflow, isNot(TextOverflow.ellipsis));
       final fontSize = textWidget.style!.fontSize!;
       expect(fontSize, greaterThanOrEqualTo(5.0), reason: bookId);
-      expect(fontSize, lessThanOrEqualTo(11.0), reason: bookId);
+      expect(fontSize, lessThanOrEqualTo(12.0), reason: bookId);
     }
   });
 
@@ -333,7 +333,7 @@ void main() {
   ) async {
     // Side labels measure against the tile long axis, so on a generous tile a
     // short title would otherwise grow to the full 14.0 cap. Verify the
-    // orientation-aware cap keeps them at or below 11.0 while the top/bottom
+    // orientation-aware cap keeps them at or below 12.0 while the top/bottom
     // label of the same content on the same dimensions is allowed to grow
     // larger — proving the cap is side-specific, not a global shrink. A
     // generous tablet-shaped tile is used so both orientations reach their cap;
@@ -354,7 +354,7 @@ void main() {
       ),
     );
     final sideFont = tester.widget<Text>(find.text(label)).style!.fontSize!;
-    expect(sideFont, lessThanOrEqualTo(11.0));
+    expect(sideFont, lessThanOrEqualTo(12.0));
     expect(sideFont, greaterThan(9.0));
 
     await tester.pumpWidget(
@@ -368,6 +368,172 @@ void main() {
     );
     final topFont = tester.widget<Text>(find.text(label)).style!.fontSize!;
     expect(topFont, greaterThan(sideFont));
+  });
+
+  testWidgets('roomy side book labels use the raised side ceiling', (
+    tester,
+  ) async {
+    // Pins the side-label polish: on a tile with headroom to spare, a short
+    // side title now grows past the previous 11.0 ceiling to the raised 12.0
+    // one. Guards against the bump being silently reverted, and against it
+    // drifting up into the top/bottom 14.0 cap — side labels must stay a step
+    // below their unrotated counterparts.
+    final book = BookConfig.books.singleWhere((book) => book.id == 'huzur');
+    final tile = BoardConfig.tiles.singleWhere(
+      (tile) => tile.position == book.tilePosition,
+    );
+    final label = book.boardLabel ?? book.title;
+
+    await tester.pumpWidget(
+      _tileApp(
+        tile,
+        players: players,
+        width: 240,
+        height: 160,
+        quarterTurns: 1,
+      ),
+    );
+
+    final sideFont = tester.widget<Text>(find.text(label)).style!.fontSize!;
+    expect(
+      sideFont,
+      greaterThan(11.0),
+      reason: 'side ceiling should now exceed the old 11.0 cap',
+    );
+    expect(sideFont, lessThanOrEqualTo(12.0));
+  });
+
+  /// The compact shave applied to "Çalıkuşu" and "9. Koğuş".
+  const compactScale = 0.92;
+
+  testWidgets('compact titles are shaved where the label is cap-constrained', (
+    tester,
+  ) async {
+    // On a roomy side tile every short side label is cap-constrained, so the
+    // unscaled fit is exactly the 12.0 side ceiling. The two listed titles must
+    // therefore land on 12.0 * 0.92, while an unlisted control keeps the full
+    // ceiling — proving the shave is title-scoped, not a global shrink.
+    Future<double> sideFontFor(String bookId) async {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final tile = BoardConfig.tiles.singleWhere(
+        (tile) => tile.position == book.tilePosition,
+      );
+      await tester.pumpWidget(
+        _tileApp(
+          tile,
+          players: players,
+          width: 240,
+          height: 160,
+          quarterTurns: 1,
+        ),
+      );
+      final label = book.boardLabel ?? book.title;
+      return tester.widget<Text>(find.text(label)).style!.fontSize!;
+    }
+
+    // Controls: unlisted titles still reach the full side ceiling untouched.
+    expect(await sideFontFor('huzur'), closeTo(12.0, 0.001));
+    expect(await sideFontFor('yaban'), closeTo(12.0, 0.001));
+
+    expect(await sideFontFor('calikusu'), closeTo(12.0 * compactScale, 0.001));
+    expect(
+      await sideFontFor('dokuzuncu_hariciye_kogusu'),
+      closeTo(12.0 * compactScale, 0.001),
+    );
+  });
+
+  testWidgets('compact titles are shaved at production phone geometry', (
+    tester,
+  ) async {
+    // The regression this pins: at phone/emulator scale these labels are
+    // *fit*-constrained, not cap-constrained — they land far below the 12.0
+    // ceiling — so an approach that only lowered the cap left them unchanged
+    // (and, because the fit search steps down in 0.2 increments from the cap,
+    // could even land a hair larger). Scaling the resolved size shrinks them
+    // here too.
+    //
+    // Baselines are the unscaled fits at this exact geometry, measured with the
+    // shave disabled. Each target must come in at baseline * 0.92 and strictly
+    // below its own baseline; the unlisted controls must still sit on theirs.
+    const unscaledBaseline = <String, double>{
+      'calikusu': 6.20,
+      'dokuzuncu_hariciye_kogusu': 9.80,
+    };
+    const unscaledControl = <String, double>{'huzur': 9.80, 'yaban': 9.80};
+
+    Future<double> realGeometryFontFor(String bookId) async {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final size = _realTileSize(book.tilePosition);
+      await tester.pumpWidget(
+        _tileApp(
+          BoardConfig.tiles.singleWhere(
+            (tile) => tile.position == book.tilePosition,
+          ),
+          players: players,
+          width: size.width,
+          height: size.height,
+          quarterTurns: _rotationQuarter(book.tilePosition),
+        ),
+      );
+      final label = book.boardLabel ?? book.title;
+      return tester.widget<Text>(find.text(label)).style!.fontSize!;
+    }
+
+    for (final entry in unscaledBaseline.entries) {
+      final font = await realGeometryFontFor(entry.key);
+      expect(
+        font,
+        closeTo(entry.value * compactScale, 0.001),
+        reason: '${entry.key} should be shaved off its unscaled fit',
+      );
+      expect(
+        font,
+        lessThan(entry.value),
+        reason: '${entry.key} must be strictly smaller than unscaled',
+      );
+    }
+
+    for (final entry in unscaledControl.entries) {
+      expect(
+        await realGeometryFontFor(entry.key),
+        closeTo(entry.value, 0.001),
+        reason: '${entry.key} must not be shaved',
+      );
+    }
+  });
+
+  testWidgets('compact titles render at their real left-column tile size', (
+    tester,
+  ) async {
+    // The two shaved titles both live on the left column at phone scale, where
+    // the rotated axis is tight. Guard that the shave never pushes them into an
+    // ellipsis or a mid-word fragment there.
+    for (final bookId in const ['calikusu', 'dokuzuncu_hariciye_kogusu']) {
+      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+      final size = _realTileSize(book.tilePosition);
+      await tester.pumpWidget(
+        _tileApp(
+          BoardConfig.tiles.singleWhere(
+            (tile) => tile.position == book.tilePosition,
+          ),
+          players: players,
+          width: size.width,
+          height: size.height,
+          quarterTurns: _rotationQuarter(book.tilePosition),
+        ),
+      );
+
+      final label = book.boardLabel ?? book.title;
+      expect(find.text(label), findsOneWidget, reason: bookId);
+      final textWidget = tester.widget<Text>(find.text(label));
+      expect(textWidget.overflow, isNot(TextOverflow.ellipsis), reason: bookId);
+      expect(
+        textWidget.style!.fontSize,
+        greaterThanOrEqualTo(5.0),
+        reason: bookId,
+      );
+      expect(tester.takeException(), isNull, reason: bookId);
+    }
   });
 
   testWidgets('side label collapses an explicit break to one line when it fits', (
@@ -462,7 +628,7 @@ void main() {
       expect(find.text(book.boardLabel!), findsOneWidget, reason: bookId);
       final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
       expect(textWidget.maxLines, 2, reason: bookId);
-      expect(textWidget.style!.fontSize, lessThanOrEqualTo(10.5), reason: bookId);
+      expect(textWidget.style!.fontSize, lessThanOrEqualTo(11.5), reason: bookId);
       expect(textWidget.overflow, isNot(TextOverflow.ellipsis), reason: bookId);
       // Each line is a whole word — no mid-word fragment.
       for (final line in book.boardLabel!.split('\n')) {
