@@ -39,6 +39,52 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('${type.name} deck stack stays inside its layout box', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: MonopolyStyleDeckCard(type: type, width: 64, height: 90),
+            ),
+          ),
+        ),
+      );
+
+      // Backing layers add depth *within* the given box — the centre area
+      // positions decks by this exact size, so it must not grow.
+      expect(
+        tester.getSize(find.byType(MonopolyStyleDeckCard)),
+        const Size(64, 90),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('${type.name} deck paints ground, frame and emblem', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: MonopolyStyleDeckCard(type: type, width: 64, height: 90),
+            ),
+          ),
+        ),
+      );
+
+      // Ground pattern + emblem + frame are three distinct painter layers.
+      expect(
+        find.descendant(
+          of: find.byType(MonopolyStyleDeckCard),
+          matching: find.byType(CustomPaint),
+        ),
+        findsNWidgets(3),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('${type.name} CardDialog renders without overflow', (
       tester,
     ) async {

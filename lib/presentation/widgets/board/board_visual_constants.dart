@@ -6,6 +6,16 @@ const double kCenterDiceVisualScale = 0.64;
 /// balance the center area without touching the roll controls.
 const double kCenterDeckVisualScale = 1.18;
 
+/// Number of cards visible *behind* the top deck card. Two backing layers is
+/// enough to read as a real stack; more just muddies the silhouette.
+const int kDeckStackLayers = 2;
+
+/// Offset of each backing deck layer, as a fraction of the deck's short side.
+/// The stack is drawn inside the deck's existing box (the face card shifts
+/// down-left by `kDeckStackLayers * ratio`), so adding depth never changes the
+/// deck's layout footprint in the centre area.
+const double kDeckStackOffsetRatio = 0.030;
+
 /// Shared dimensions for every player HUD panel. All players — current, next,
 /// or waiting — use the same panel size for a given screen class; turn
 /// emphasis is paint-only (gradient, border, glow, badge) and must never
