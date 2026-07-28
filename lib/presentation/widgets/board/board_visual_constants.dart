@@ -1,10 +1,15 @@
 /// Visual-only scale for the 3D dice animation in the board center.
-const double kCenterDiceVisualScale = 0.64;
+/// Trimmed from 0.64 so the dice sit back and let the named deck cards lead
+/// the centre composition; the roll button is scaled separately
+/// ([kCenterControlsVisualScale]) and is untouched, so tap targets are safe.
+const double kCenterDiceVisualScale = 0.59;
 
 /// Visual scale for the Şans/Kader deck cards in the board center.
 /// Kept separate from the dice/controls scales so the decks can grow to
-/// balance the center area without touching the roll controls.
-const double kCenterDeckVisualScale = 1.18;
+/// balance the center area without touching the roll controls. Raised from
+/// 1.18 to give the ŞANS/KADER wordmarks room to stay legible on phone-class
+/// landscape screens.
+const double kCenterDeckVisualScale = 1.30;
 
 /// Number of cards visible *behind* the top deck card. Two backing layers is
 /// enough to read as a real stack; more just muddies the silhouette.

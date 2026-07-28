@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:literature_board_game/data/board_config.dart';
 import 'package:literature_board_game/models/game_enums.dart';
 import 'package:literature_board_game/models/player.dart';
+import 'package:literature_board_game/presentation/widgets/board/center_area.dart';
 import 'package:literature_board_game/presentation/widgets/board/game_controls_overlay.dart';
+import 'package:literature_board_game/presentation/widgets/board/monopoly_style_deck_cards.dart';
 import 'package:literature_board_game/presentation/widgets/board/player_hud.dart';
 import 'package:literature_board_game/presentation/widgets/board/player_hud_manager.dart';
 import 'package:literature_board_game/presentation/widgets/board_view.dart';
@@ -83,6 +85,54 @@ void main() {
         );
       }
 
+      await _tearDownBoardView(tester);
+    }
+  });
+
+  testWidgets('both named deck cards fit the board centre at every landscape '
+      'size without touching the tile ring', (tester) async {
+    for (final size in _viewports) {
+      await _pumpBoardView(tester, size);
+
+      expect(
+        find.byType(MonopolyStyleDeckCard),
+        findsNWidgets(2),
+        reason: 'decks missing at $size',
+      );
+      // The wordmarks are what tell the two decks apart at a glance. Scoped
+      // to the deck cards, since the board also has ŞANS/KADER *tiles*.
+      for (final label in const ['ŞANS', 'KADER']) {
+        expect(
+          find.descendant(
+            of: find.byType(MonopolyStyleDeckCard),
+            matching: find.text(label),
+          ),
+          findsOneWidget,
+          reason: 'no $label deck wordmark at $size',
+        );
+      }
+
+      // The centre panel is the open area inside the tile ring; decks must
+      // stay within it so they never sit on top of a tile.
+      final centre = tester.getRect(find.byType(CenterArea));
+      for (var i = 0; i < 2; i++) {
+        final deck = tester.getRect(find.byType(MonopolyStyleDeckCard).at(i));
+        expect(deck.left, greaterThanOrEqualTo(centre.left - 0.5),
+            reason: 'deck $i @ $size');
+        expect(deck.top, greaterThanOrEqualTo(centre.top - 0.5),
+            reason: 'deck $i @ $size');
+        expect(deck.right, lessThanOrEqualTo(centre.right + 0.5),
+            reason: 'deck $i @ $size');
+        expect(deck.bottom, lessThanOrEqualTo(centre.bottom + 0.5),
+            reason: 'deck $i @ $size');
+      }
+
+      // The two decks sit in opposite corners and must not collide.
+      final a = tester.getRect(find.byType(MonopolyStyleDeckCard).at(0));
+      final b = tester.getRect(find.byType(MonopolyStyleDeckCard).at(1));
+      expect(a.overlaps(b), isFalse, reason: 'decks overlap at $size');
+
+      expect(tester.takeException(), isNull);
       await _tearDownBoardView(tester);
     }
   });
