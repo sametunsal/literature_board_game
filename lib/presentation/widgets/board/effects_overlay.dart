@@ -117,9 +117,15 @@ class EffectsOverlay extends ConsumerWidget {
         width: boxWidth,
         height: boxHeight,
         child: RewardToast(
-          key: ValueKey(
-            'score_${effect.text}_${DateTime.now().millisecondsSinceEpoch}',
-          ),
+          // Keyed by the effect *instance*, never by wall-clock time. A
+          // time-based key changes on every build, so any rebuild while the
+          // toast was on screen (hiding the question dialog, ending the turn)
+          // remounted it and replayed its entry animation — one reward read as
+          // two popups. Identity keying matches the notifier, which clears the
+          // toast only when `identical(state.floatingEffect, effect)`: the same
+          // reward keeps one element and one animation, while a genuinely new
+          // reward still gets a fresh element and a fresh animation.
+          key: ObjectKey(effect),
           text: effect.text,
           color: effect.color,
           title: effect.title,
