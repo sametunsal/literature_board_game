@@ -59,7 +59,9 @@ class _PawnManagerState extends State<PawnManager> {
 
     return Stack(
       clipBehavior: Clip.none,
-      children: players.map((player) {
+      children: players.asMap().entries.map((entry) {
+        final seatIndex = entry.key;
+        final player = entry.value;
         final tileIndex = player.position;
         final center = BoardLayoutHelper.getTileCenter(tileIndex, layout);
         final tileSize = BoardLayoutHelper.getTileSize(tileIndex, layout);
@@ -103,6 +105,10 @@ class _PawnManagerState extends State<PawnManager> {
             size: safePawnSize,
             isActive: player.id == currentPlayerId,
             isCurrentTurn: player.id == currentPlayerId,
+            // Seat order, not icon choice: two players who happened to pick
+            // the same avatar must still get two different figurines.
+            figurine: PawnFigurine
+                .values[seatIndex % PawnFigurine.values.length],
           ),
         );
       }).toList(),
