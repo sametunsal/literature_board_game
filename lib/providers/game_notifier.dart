@@ -43,6 +43,15 @@ class FloatingEffect {
   /// Optional icon rendered in the toast's accent medallion.
   final IconData? icon;
 
+  /// Publication step being announced, if any. Presentation only — the
+  /// authoritative level lives in [GameState.bookOwnerships]; this just tells
+  /// the toast to show the T/B/C medallion instead of a generic icon.
+  final BookLevel? bookLevel;
+
+  /// Colour of the player receiving the publication, so the medallion can
+  /// carry ownership. Presentation only.
+  final Color? ownerColor;
+
   /// Board tile the toast is anchored above, captured when the reward fires.
   /// Keeps the toast over the pawn that earned it even if the turn passes to
   /// another player while it is still visible.
@@ -53,6 +62,8 @@ class FloatingEffect {
     this.color, {
     this.title,
     this.icon,
+    this.bookLevel,
+    this.ownerColor,
     this.anchorTilePosition,
   });
 }
@@ -561,12 +572,16 @@ class GameNotifier extends StateNotifier<GameState> {
     Color color, {
     String? title,
     IconData? icon,
+    BookLevel? bookLevel,
+    Color? ownerColor,
   }) {
     final effect = FloatingEffect(
       text,
       color,
       title: title,
       icon: icon,
+      bookLevel: bookLevel,
+      ownerColor: ownerColor,
       anchorTilePosition: state.currentPlayer.position,
     );
     state = state.copyWith(floatingEffect: effect);
@@ -581,6 +596,7 @@ class GameNotifier extends StateNotifier<GameState> {
       ),
     );
   }
+
   void addLog(String message, {String? type}) =>
       _addLog(message, type: type ?? 'info');
   void logBot(String message) => _botController.log(message);
@@ -1422,6 +1438,8 @@ class GameNotifier extends StateNotifier<GameState> {
       Colors.amberAccent,
       title: 'TELİF ALINDI',
       icon: Icons.history_edu_rounded,
+      bookLevel: BookLevel.telif,
+      ownerColor: state.currentPlayer.color,
     );
   }
 
@@ -1482,6 +1500,8 @@ class GameNotifier extends StateNotifier<GameState> {
       Colors.lightBlueAccent,
       title: 'BASKI YÜKSELTİLDİ',
       icon: Icons.print_rounded,
+      bookLevel: BookLevel.baski,
+      ownerColor: state.currentPlayer.color,
     );
   }
 
@@ -1548,6 +1568,8 @@ class GameNotifier extends StateNotifier<GameState> {
       Colors.deepPurpleAccent,
       title: 'CİLT YÜKSELTİLDİ',
       icon: Icons.auto_stories_rounded,
+      bookLevel: BookLevel.cilt,
+      ownerColor: state.currentPlayer.color,
     );
     _checkPublishingWinCondition();
   }

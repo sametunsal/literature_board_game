@@ -5,8 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:literature_board_game/core/utils/board_layout_config.dart';
 import 'package:literature_board_game/data/board_config.dart';
+import 'package:literature_board_game/models/book_level.dart';
 import 'package:literature_board_game/models/player.dart';
 import 'package:literature_board_game/presentation/widgets/board/effects_overlay.dart';
+import 'package:literature_board_game/presentation/widgets/publication_badge.dart';
 import 'package:literature_board_game/presentation/widgets/reward_toast.dart';
 import 'package:literature_board_game/providers/game_notifier.dart';
 
@@ -158,6 +160,75 @@ void main() {
     expect(find.byType(RewardToast), findsOneWidget);
     expect(tester.element(find.byType(RewardToast)), isNot(same(firstElement)));
     expect(find.text('BASKI YÜKSELTİLDİ'), findsOneWidget);
+
+    await drain(tester);
+  });
+
+  testWidgets('a publication toast wears the receiving player colour', (
+    tester,
+  ) async {
+    final controller = ConfettiController();
+    addTearDown(controller.dispose);
+
+    // Player 2 (red) earns the Cilt while player 1 is nominally "current" —
+    // the toast must follow the receiver carried on the effect, not the seat.
+    final effect = FloatingEffect(
+      'Cilt: İntibah',
+      Colors.deepPurpleAccent,
+      title: 'CİLT YÜKSELTİLDİ',
+      icon: Icons.auto_stories_rounded,
+      bookLevel: BookLevel.cilt,
+      ownerColor: Colors.red,
+      anchorTilePosition: 0,
+    );
+
+    await tester.pumpWidget(app(stateWith(effect), controller));
+    await tester.pump();
+
+    final badge = tester.widget<PublicationBadge>(
+      find.descendant(
+        of: find.byType(RewardToast),
+        matching: find.byType(PublicationBadge),
+      ),
+    );
+    expect(badge.level, BookLevel.cilt);
+    expect(badge.ownerColor, Colors.red);
+    // The medallion replaces the generic icon rather than sitting beside it.
+    expect(
+      find.descendant(
+        of: find.byType(RewardToast),
+        matching: find.byIcon(Icons.auto_stories_rounded),
+      ),
+      findsNothing,
+    );
+    // The level still reads as a letter.
+    expect(
+      find.descendant(of: find.byType(RewardToast), matching: find.text('C')),
+      findsOneWidget,
+    );
+
+    await drain(tester);
+  });
+
+  testWidgets('a non-publication reward keeps its plain icon medallion', (
+    tester,
+  ) async {
+    final controller = ConfettiController();
+    addTearDown(controller.dispose);
+
+    final effect = FloatingEffect(
+      'Royalty: -40 Akce',
+      Colors.orangeAccent,
+      title: 'ROYALTY ÖDENDİ',
+      icon: Icons.receipt_long_rounded,
+      anchorTilePosition: 0,
+    );
+
+    await tester.pumpWidget(app(stateWith(effect), controller));
+    await tester.pump();
+
+    expect(find.byType(PublicationBadge), findsNothing);
+    expect(find.byIcon(Icons.receipt_long_rounded), findsOneWidget);
 
     await drain(tester);
   });

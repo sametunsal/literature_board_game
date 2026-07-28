@@ -13,6 +13,7 @@ import 'package:literature_board_game/models/player.dart';
 import 'package:literature_board_game/models/tile_type.dart';
 import 'package:literature_board_game/presentation/widgets/board/tile_widget.dart';
 import 'package:literature_board_game/presentation/widgets/enhanced_tile_widget.dart';
+import 'package:literature_board_game/presentation/widgets/publication_badge.dart';
 
 void main() {
   final players = [
@@ -628,7 +629,11 @@ void main() {
       expect(find.text(book.boardLabel!), findsOneWidget, reason: bookId);
       final textWidget = tester.widget<Text>(find.text(book.boardLabel!));
       expect(textWidget.maxLines, 2, reason: bookId);
-      expect(textWidget.style!.fontSize, lessThanOrEqualTo(11.5), reason: bookId);
+      expect(
+        textWidget.style!.fontSize,
+        lessThanOrEqualTo(11.5),
+        reason: bookId,
+      );
       expect(textWidget.overflow, isNot(TextOverflow.ellipsis), reason: bookId);
       // Each line is a whole word — no mid-word fragment.
       for (final line in book.boardLabel!.split('\n')) {
@@ -637,50 +642,51 @@ void main() {
     }
   });
 
-  testWidgets('single-word side labels never split into fragments at phone scale', (
-    tester,
-  ) async {
-    // Regression for the real bug: at production phone geometry the rotated long
-    // axis is only ~45px, so without the lower single-line side floor an
-    // 8-letter word like "Çalıkuşu" fragmented into "Çalık/uşu". It must stay
-    // whole on one line.
-    for (final bookId in ['calikusu', 'huzur', 'yaban']) {
-      final book = BookConfig.books.singleWhere((book) => book.id == bookId);
-      final tile = BoardConfig.tiles.singleWhere(
-        (tile) => tile.position == book.tilePosition,
-      );
-      final label = book.boardLabel ?? book.title;
-      final size = _realTileSize(tile.position);
+  testWidgets(
+    'single-word side labels never split into fragments at phone scale',
+    (tester) async {
+      // Regression for the real bug: at production phone geometry the rotated long
+      // axis is only ~45px, so without the lower single-line side floor an
+      // 8-letter word like "Çalıkuşu" fragmented into "Çalık/uşu". It must stay
+      // whole on one line.
+      for (final bookId in ['calikusu', 'huzur', 'yaban']) {
+        final book = BookConfig.books.singleWhere((book) => book.id == bookId);
+        final tile = BoardConfig.tiles.singleWhere(
+          (tile) => tile.position == book.tilePosition,
+        );
+        final label = book.boardLabel ?? book.title;
+        final size = _realTileSize(tile.position);
 
-      await tester.pumpWidget(
-        _tileApp(
-          tile,
-          players: players,
-          width: size.width,
-          height: size.height,
-          quarterTurns: _rotationQuarter(tile.position),
-        ),
-      );
+        await tester.pumpWidget(
+          _tileApp(
+            tile,
+            players: players,
+            width: size.width,
+            height: size.height,
+            quarterTurns: _rotationQuarter(tile.position),
+          ),
+        );
 
-      final textWidget = tester.widget<Text>(find.text(label));
-      expect(
-        textWidget.maxLines,
-        1,
-        reason: '$bookId side label should stay on one rotated line',
-      );
-      expect(textWidget.data, isNot(contains('\n')), reason: bookId);
-      expect(
-        textWidget.overflow,
-        isNot(TextOverflow.ellipsis),
-        reason: bookId,
-      );
-      expect(
-        textWidget.style!.fontSize,
-        greaterThanOrEqualTo(5.0),
-        reason: bookId,
-      );
-    }
-  });
+        final textWidget = tester.widget<Text>(find.text(label));
+        expect(
+          textWidget.maxLines,
+          1,
+          reason: '$bookId side label should stay on one rotated line',
+        );
+        expect(textWidget.data, isNot(contains('\n')), reason: bookId);
+        expect(
+          textWidget.overflow,
+          isNot(TextOverflow.ellipsis),
+          reason: bookId,
+        );
+        expect(
+          textWidget.style!.fontSize,
+          greaterThanOrEqualTo(5.0),
+          reason: bookId,
+        );
+      }
+    },
+  );
 
   testWidgets('top and bottom book labels render normally without rotation', (
     tester,
@@ -871,7 +877,9 @@ void main() {
     expect(bookFont, greaterThan(tesvikFont));
   });
 
-  testWidgets('Fatih-Harbiye renders as a clean two-word break', (tester) async {
+  testWidgets('Fatih-Harbiye renders as a clean two-word break', (
+    tester,
+  ) async {
     final book = BookConfig.books.singleWhere(
       (book) => book.id == 'fatih_harbiye',
     );
@@ -904,13 +912,13 @@ void main() {
     expect(find.textContaining('Tutuna'), findsNothing);
   });
 
-  testWidgets('level badges wear their publication accent with an owner rim', (
+  testWidgets('level badges stamp T/B/C and ring it in the owner colour', (
     tester,
   ) async {
-    final expectedTopAccents = {
-      BookLevel.telif: const Color(0xFFD8A05C), // bronze
-      BookLevel.baski: const Color(0xFF4F94DC), // ink blue
-      BookLevel.cilt: const Color(0xFFA476DC), // bound purple
+    const expectedLetters = {
+      BookLevel.telif: 'T',
+      BookLevel.baski: 'B',
+      BookLevel.cilt: 'C',
     };
 
     for (final level in [BookLevel.telif, BookLevel.baski, BookLevel.cilt]) {
@@ -919,6 +927,8 @@ void main() {
         (tile) => tile.position == book.tilePosition,
       );
 
+      // The *second* player owns it, so a badge that silently fell back to
+      // "first player" or to the level accent alone would be caught.
       await tester.pumpWidget(
         _tileApp(
           tile,
@@ -926,7 +936,7 @@ void main() {
           bookOwnerships: {
             book.id: BookOwnership(
               bookId: book.id,
-              ownerPlayerId: players.first.id,
+              ownerPlayerId: players[1].id,
               level: level,
             ),
           },
@@ -941,17 +951,33 @@ void main() {
       expect(badgeSize.width, lessThanOrEqualTo(12.0), reason: '$level');
       expect(badgeSize.height, lessThanOrEqualTo(12.0), reason: '$level');
 
-      final decoration =
-          tester.widget<Container>(badgeFinder).decoration! as BoxDecoration;
-      final gradient = decoration.gradient! as LinearGradient;
-      expect(gradient.colors.first, expectedTopAccents[level],
-          reason: '$level should use its own accent');
-      expect(decoration.border!.top.color, players.first.color,
-          reason: '$level rim should name the owner');
+      final badge = tester.widget<PublicationBadge>(
+        find.descendant(
+          of: badgeFinder,
+          matching: find.byType(PublicationBadge),
+        ),
+      );
+      expect(badge.level, level);
+      expect(
+        badge.ownerColor,
+        players[1].color,
+        reason: '$level badge must carry the receiving player colour',
+      );
+
+      // The level still has to be readable as a letter, not colour alone.
+      expect(
+        find.descendant(
+          of: badgeFinder,
+          matching: find.text(expectedLetters[level]!),
+        ),
+        findsOneWidget,
+        reason: '$level',
+      );
+      expect(tester.takeException(), isNull, reason: '$level');
     }
   });
 
-  testWidgets('unlevelled ownership badge keeps the flat owner disc', (
+  testWidgets('unlevelled ownership badge falls back to the seat number', (
     tester,
   ) async {
     final book = BookConfig.books.first;
@@ -966,7 +992,7 @@ void main() {
         bookOwnerships: {
           book.id: BookOwnership(
             bookId: book.id,
-            ownerPlayerId: players.first.id,
+            ownerPlayerId: players[1].id,
             level: BookLevel.none,
           ),
         },
@@ -974,10 +1000,16 @@ void main() {
     );
 
     final badgeFinder = find.byKey(const ValueKey('ownership-level-badge'));
-    final decoration =
-        tester.widget<Container>(badgeFinder).decoration! as BoxDecoration;
-    expect(decoration.gradient, isNull);
-    expect(decoration.color, players.first.color);
+    final badge = tester.widget<PublicationBadge>(
+      find.descendant(of: badgeFinder, matching: find.byType(PublicationBadge)),
+    );
+    expect(badge.level, BookLevel.none);
+    expect(badge.ownerColor, players[1].color);
+    // No publication step yet, so the badge names the seat instead of T/B/C.
+    expect(
+      find.descendant(of: badgeFinder, matching: find.text('2')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('book strip thickness is 12.0', (tester) async {

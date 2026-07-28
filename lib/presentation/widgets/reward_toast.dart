@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../models/book_level.dart';
+import 'publication_badge.dart';
+
 /// Premium reward toast for in-game feedback: earned Akçe, Telif/Baskı/Cilt
 /// progression, royalty payments, bonuses and penalties.
 ///
@@ -10,11 +13,24 @@ import 'package:google_fonts/google_fonts.dart';
 /// give each reward type its own identity. Animates in with a soft
 /// slide/scale, holds briefly, then fades out (total ~2s, matching the
 /// notifier's floating-effect timer).
+///
+/// Publication rewards ([bookLevel] plus [ownerColor]) swap the generic icon
+/// medallion for the shared [PublicationBadge], so the announcement carries
+/// the receiving player's colour exactly the way the board tile will once the
+/// toast is gone.
 class RewardToast extends StatelessWidget {
   final String text;
   final Color color;
   final String? title;
   final IconData? icon;
+
+  /// Publication step being announced. When set (and not [BookLevel.none])
+  /// the toast shows the T/B/C medallion instead of [icon].
+  final BookLevel? bookLevel;
+
+  /// Colour of the player receiving the publication.
+  final Color? ownerColor;
+
   final VoidCallback onComplete;
 
   const RewardToast({
@@ -23,15 +39,29 @@ class RewardToast extends StatelessWidget {
     required this.color,
     this.title,
     this.icon,
+    this.bookLevel,
+    this.ownerColor,
     required this.onComplete,
   });
+
+  /// Diameter of the leading medallion, icon or badge alike.
+  static const double _kMedallionSize = 34;
 
   static const _ink = Color(0xFF241A10);
   static const _inkDeep = Color(0xFF17100A);
   static const _ivory = Color(0xFFF8EEDC);
 
+  /// The badge only stands in for the icon when both halves of its identity
+  /// are known — a level to stamp and an owner colour to ring it with.
+  BookLevel? get _badgeLevel {
+    final level = bookLevel;
+    if (level == null || level == BookLevel.none) return null;
+    return ownerColor == null ? null : level;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final badgeLevel = _badgeLevel;
     return Center(
       child: Material(
         color: Colors.transparent,
@@ -58,8 +88,11 @@ class RewardToast extends StatelessWidget {
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
+                      // Outer bloom: for a publication the receiving player's
+                      // colour, so ownership is legible even in peripheral
+                      // vision; otherwise the reward's own accent.
                       BoxShadow(
-                        color: color.withValues(alpha: 0.28),
+                        color: (ownerColor ?? color).withValues(alpha: 0.28),
                         blurRadius: 22,
                         spreadRadius: -2,
                       ),
@@ -70,10 +103,17 @@ class RewardToast extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (icon != null) ...[
+                        if (badgeLevel != null) ...[
+                          PublicationBadge(
+                            level: badgeLevel,
+                            ownerColor: ownerColor!,
+                            size: _kMedallionSize,
+                          ),
+                          const SizedBox(width: 10),
+                        ] else if (icon != null) ...[
                           Container(
-                            width: 34,
-                            height: 34,
+                            width: _kMedallionSize,
+                            height: _kMedallionSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: color.withValues(alpha: 0.16),
@@ -90,7 +130,8 @@ class RewardToast extends StatelessWidget {
                           constraints: const BoxConstraints(maxWidth: 220),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: icon != null
+                            crossAxisAlignment:
+                                icon != null || badgeLevel != null
                                 ? CrossAxisAlignment.start
                                 : CrossAxisAlignment.center,
                             children: [

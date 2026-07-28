@@ -130,6 +130,8 @@ class EffectsOverlay extends ConsumerWidget {
           color: effect.color,
           title: effect.title,
           icon: effect.icon,
+          bookLevel: effect.bookLevel,
+          ownerColor: effect.ownerColor,
           onComplete: () {
             // Effect is auto-cleared by game_notifier after delay
             // No action needed here

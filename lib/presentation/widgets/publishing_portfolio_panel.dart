@@ -9,6 +9,7 @@ import '../../models/book_level.dart';
 import '../../models/book_ownership.dart';
 import '../../models/game_enums.dart';
 import '../../models/player.dart';
+import 'publication_badge.dart';
 
 class PublishingPortfolioPanel extends StatelessWidget {
   const PublishingPortfolioPanel({
@@ -475,12 +476,10 @@ class _LevelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (level) {
-      BookLevel.none => Colors.grey,
-      BookLevel.telif => const Color(0xFF607D8B),
-      BookLevel.baski => const Color(0xFF1976D2),
-      BookLevel.cilt => const Color(0xFF7B1FA2),
-    };
+    // Same enamel hues the board badges and acquisition toasts use, so a
+    // level reads as one colour wherever it appears.
+    final color =
+        PublicationLevelStyle.forLevel(level)?.enamelDark ?? Colors.grey;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

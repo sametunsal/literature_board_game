@@ -75,6 +75,30 @@ void main() {
       expect(effect.text, contains(book.title));
     });
 
+    test(
+      'Telif toast carries the receiving player identity for its badge',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(gameProvider.notifier);
+        final book = BookConfig.books.first;
+        final tile = BoardConfig.tiles.singleWhere(
+          (tile) => tile.position == book.tilePosition,
+        );
+
+        notifier.updateState(_stateFor(tile: tile));
+        final receiver = container.read(gameProvider).currentPlayer;
+
+        await notifier.answerQuestion(true);
+
+        // Presentation payload only: it tells the toast to draw the owner-ringed
+        // T medallion instead of a generic icon.
+        final effect = container.read(gameProvider).floatingEffect!;
+        expect(effect.bookLevel, BookLevel.telif);
+        expect(effect.ownerColor, receiver.color);
+      },
+    );
+
     test('ownership belongs to the current player', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
