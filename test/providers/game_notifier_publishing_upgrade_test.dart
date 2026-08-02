@@ -124,6 +124,37 @@ void main() {
       },
     );
 
+    test('Baski upgrade surfaces the progression celebration', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = BookConfig.books.first;
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(
+        _stateFor(
+          tile: tile,
+          playerAkce: book.baskiCostAkce,
+          bookOwnerships: _ownedBy(playerId: 'p1', level: BookLevel.telif),
+        ),
+      );
+
+      await notifier.answerQuestion(true);
+
+      final celebration = container.read(gameProvider).progressionCelebration;
+      expect(celebration, isNotNull);
+      expect(celebration!.levelLabel, 'Baskı');
+      expect(celebration.toLevel, BookLevel.baski);
+      expect(celebration.bookTitle, book.title);
+      expect(celebration.royaltyBefore, 2);
+      expect(celebration.royaltyAfter, 4);
+      expect(celebration.ciltCount, 0);
+      expect(
+        celebration.ciltTarget,
+        GameConstants.publishingCiltBooksToWin,
+      );
+    });
+
     test('wrong answer does not upgrade or spend', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -281,6 +312,40 @@ void main() {
         expect(state.floatingEffect?.text, contains(book.title));
       },
     );
+
+    test('Cilt upgrade surfaces the progression celebration', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.medium);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(
+        _stateFor(
+          tile: tile,
+          playerAkce: book.ciltCostAkce,
+          currentPlayerCategoryLevels: {
+            book.category.name: MasteryLevel.kalfa.value,
+          },
+          bookOwnerships: _ownedBy(
+            bookId: book.id,
+            playerId: 'p1',
+            level: BookLevel.baski,
+          ),
+        ),
+      );
+      _showQuestion(container, book: book, difficulty: 'hard');
+
+      await notifier.answerQuestion(true);
+
+      final celebration = container.read(gameProvider).progressionCelebration;
+      expect(celebration, isNotNull);
+      expect(celebration!.levelLabel, 'Cilt');
+      expect(celebration.toLevel, BookLevel.cilt);
+      expect(celebration.royaltyBefore, 4);
+      expect(celebration.royaltyAfter, 6);
+      expect(celebration.ciltCount, 1);
+    });
 
     test('own Baski + hard question + Usta upgrades to Cilt', () async {
       final container = ProviderContainer();

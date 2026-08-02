@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/constants/game_constants.dart';
+import '../../../core/services/win_condition_service.dart';
 import '../../../core/theme/game_theme.dart';
 import '../../../models/game_enums.dart';
 import '../../../providers/game_notifier.dart';
@@ -147,6 +150,8 @@ class CenterArea extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        _buildCiltObjective(),
+        const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
@@ -161,6 +166,59 @@ class CenterArea extends StatelessWidget {
           child: const DiceRoller(visualScale: kCenterControlsVisualScale),
         ),
       ],
+    );
+  }
+
+  /// Persistent victory-path objective for the current player: how many Cilt
+  /// (Volume) books they hold out of the 3 needed to win. Always visible,
+  /// updates live as ownership changes.
+  Widget _buildCiltObjective() {
+    const service = WinConditionService();
+    final player = state.currentPlayer;
+    final count = service.ciltBookCount(
+      playerId: player.id,
+      ownerships: state.bookOwnerships,
+    );
+    final target = GameConstants.publishingCiltBooksToWin;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: GameTheme.ottomanGold.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: GameTheme.ottomanGold.withValues(alpha: 0.7),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.emoji_events_rounded,
+            color: GameTheme.ottomanGold,
+            size: 18,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Cilt',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: GameTheme.tableBackgroundColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$count / $target',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: GameTheme.ottomanGold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -68,6 +68,32 @@ class FloatingEffect {
   });
 }
 
+/// Richer, centered celebration shown when a book advances a publishing
+/// level (Telif → Baskı or Baskı → Cilt). Carries enough context to make the
+/// victory path legible: the level reached, the royalty upgrade and the
+/// player's progress toward the 3-Cilt win.
+class ProgressionCelebration {
+  final String bookTitle;
+  final String levelLabel;
+  final BookLevel toLevel;
+  final int royaltyBefore;
+  final int royaltyAfter;
+  final int ciltCount;
+  final int ciltTarget;
+  final Color ownerColor;
+
+  const ProgressionCelebration({
+    required this.bookTitle,
+    required this.levelLabel,
+    required this.toLevel,
+    required this.royaltyBefore,
+    required this.royaltyAfter,
+    required this.ciltCount,
+    required this.ciltTarget,
+    required this.ownerColor,
+  });
+}
+
 class GameState {
   final List<Player> players;
   final List<BoardTile> tiles;
@@ -86,6 +112,10 @@ class GameState {
 
   // Floating Effect (Visual)
   final FloatingEffect? floatingEffect;
+
+  // Richer progression celebration (book level upgrade). Sticky like
+  // [floatingEffect] and cleared by its own timer.
+  final ProgressionCelebration? progressionCelebration;
 
   // Pause State
   final bool isGamePaused;
@@ -136,6 +166,7 @@ class GameState {
     this.phase = GamePhase.setup,
     this.logs = const [],
     this.floatingEffect,
+    this.progressionCelebration,
     this.isDoubleTurn = false,
     this.currentTile,
     this.winner,
@@ -170,6 +201,8 @@ class GameState {
     List<String>? logs,
     FloatingEffect? floatingEffect,
     bool clearFloatingEffect = false,
+    ProgressionCelebration? progressionCelebration,
+    bool clearProgressionCelebration = false,
     bool? isDoubleTurn,
     BoardTile? currentTile,
     Player? winner,
@@ -204,6 +237,9 @@ class GameState {
       floatingEffect: clearFloatingEffect
           ? null
           : (floatingEffect ?? this.floatingEffect),
+      progressionCelebration: clearProgressionCelebration
+          ? null
+          : (progressionCelebration ?? this.progressionCelebration),
       isDoubleTurn: isDoubleTurn ?? this.isDoubleTurn,
       currentTile: currentTile ?? this.currentTile,
       winner: winner ?? this.winner,
@@ -591,6 +627,47 @@ class GameNotifier extends StateNotifier<GameState> {
         () {
           if (mounted && identical(state.floatingEffect, effect)) {
             state = state.copyWith(clearFloatingEffect: true);
+          }
+        },
+      ),
+    );
+  }
+
+  /// Centered, richer celebration shown on a book level upgrade
+  /// (Telif → Baskı or Baskı → Cilt). Sticky and self-clearing like
+  /// [showRewardToast], but carries the royalty upgrade and Cilt progress so
+  /// the victory path stays obvious.
+  static const int _progressionCelebrationSeconds = 3;
+
+  void showProgressionCelebration({
+    required String bookTitle,
+    required String levelLabel,
+    required BookLevel toLevel,
+    required int royaltyBefore,
+    required int royaltyAfter,
+    required Color ownerColor,
+  }) {
+    final celebration = ProgressionCelebration(
+      bookTitle: bookTitle,
+      levelLabel: levelLabel,
+      toLevel: toLevel,
+      royaltyBefore: royaltyBefore,
+      royaltyAfter: royaltyAfter,
+      ciltCount: _winConditionService.ciltBookCount(
+        playerId: state.currentPlayer.id,
+        ownerships: state.bookOwnerships,
+      ),
+      ciltTarget: GameConstants.publishingCiltBooksToWin,
+      ownerColor: ownerColor,
+    );
+    state = state.copyWith(progressionCelebration: celebration);
+    _activeTimers.add(
+      Timer(
+        const Duration(seconds: _progressionCelebrationSeconds),
+        () {
+          if (mounted &&
+              identical(state.progressionCelebration, celebration)) {
+            state = state.copyWith(clearProgressionCelebration: true);
           }
         },
       ),
@@ -1550,6 +1627,14 @@ class GameNotifier extends StateNotifier<GameState> {
       bookLevel: BookLevel.baski,
       ownerColor: state.currentPlayer.color,
     );
+    showProgressionCelebration(
+      bookTitle: book.title,
+      levelLabel: 'Baskı',
+      toLevel: BookLevel.baski,
+      royaltyBefore: BookProgressionService.royaltyForLevel(BookLevel.telif),
+      royaltyAfter: BookProgressionService.royaltyForLevel(BookLevel.baski),
+      ownerColor: state.currentPlayer.color,
+    );
   }
 
   void _upgradeOwnedBaskiToCiltIfEligible(
@@ -1616,6 +1701,14 @@ class GameNotifier extends StateNotifier<GameState> {
       title: 'CİLT YÜKSELTİLDİ',
       icon: Icons.auto_stories_rounded,
       bookLevel: BookLevel.cilt,
+      ownerColor: state.currentPlayer.color,
+    );
+    showProgressionCelebration(
+      bookTitle: book.title,
+      levelLabel: 'Cilt',
+      toLevel: BookLevel.cilt,
+      royaltyBefore: BookProgressionService.royaltyForLevel(BookLevel.baski),
+      royaltyAfter: BookProgressionService.royaltyForLevel(BookLevel.cilt),
       ownerColor: state.currentPlayer.color,
     );
     _checkPublishingWinCondition();

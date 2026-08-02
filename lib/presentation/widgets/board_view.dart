@@ -21,6 +21,7 @@ import 'board/player_hud_manager.dart';
 import 'board/game_controls_overlay.dart';
 import 'board/turn_order_dialog.dart';
 import 'animated_question_card.dart';
+import 'progression_celebration_dialog.dart';
 import '../dialogs/card_dialog.dart';
 import '../dialogs/notification_dialogs.dart';
 import '../dialogs/kiraathane_dialog.dart';
@@ -582,6 +583,22 @@ class _BoardViewState extends ConsumerState<BoardView> {
             child: Container(
               color: Colors.black.withValues(alpha: 0.7),
               child: const ShopDialog(),
+            ),
+          ),
+
+        // Progression celebration (book level upgrade) — centered,
+        // self-clearing and non-blocking so play continues underneath.
+        if (state.progressionCelebration != null)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: SafeArea(
+                child: Center(
+                  child: ProgressionCelebrationDialog(
+                    celebration: state.progressionCelebration!,
+                    onComplete: () {},
+                  ),
+                ),
+              ),
             ),
           ),
       ],
