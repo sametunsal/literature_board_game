@@ -436,7 +436,7 @@ class _ShopDialogState extends ConsumerState<ShopDialog> {
               child: SizedBox(
                 height: 72,
                 child: RewardToast(
-                  text: '${quote.author} sözü (-${quote.starCost} ⭐)',
+                  text: '${quote.author} sözü (-${quote.starCost} Akçe)',
                   color: Colors.amber,
                   title: 'KIRAATHANE',
                   icon: Icons.format_quote_rounded,

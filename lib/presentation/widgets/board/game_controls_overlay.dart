@@ -354,7 +354,7 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
               ),
             ),
             const SizedBox(height: 4),
-            Text('${currentPlayer.name} Akce: ${currentPlayer.akce}'),
+            Text('${currentPlayer.name} Akçe: ${currentPlayer.akce}'),
             const SizedBox(height: 6),
             if (ownedBooks.isEmpty)
               const Text('Owned books: none')

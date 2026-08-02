@@ -407,7 +407,7 @@ class _PlayerScoreRowState extends ConsumerState<_PlayerScoreRow>
                     : (rank == 1 ? GameTheme.goldAccent : Colors.black87),
                 shadows: const [Shadow(color: Colors.black26, blurRadius: 1)],
               ),
-              child: Text("⭐$_displayedStars"),
+              child: Text("Akçe $_displayedStars"),
             ),
 
             // Current turn indicator

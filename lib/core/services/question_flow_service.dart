@@ -281,10 +281,10 @@ class QuestionFlowService {
     if (!isCorrect) {
       if (isBot) {
         logs.add(
-          LogEntry('🤖 Bot: Yanlış cevap. Yıldız kazanamadın.', type: 'error'),
+          LogEntry('🤖 Bot: Yanlış cevap. Akçe kazanamadın.', type: 'error'),
         );
       } else {
-        logs.add(LogEntry('Yanlış cevap. Yıldız kazanamadın.', type: 'error'));
+        logs.add(LogEntry('Yanlış cevap. Akçe kazanamadın.', type: 'error'));
       }
       return AnswerResult(
         updatedPlayer: player,
@@ -354,12 +354,12 @@ class QuestionFlowService {
     if (derivedBonus > 0) {
       if (isBot) {
         logs.add(
-          LogEntry('🔥 Bot: Denge Bonusu! +$derivedBonus ⭐', type: 'success'),
+          LogEntry('🔥 Bot: Denge Bonusu! +$derivedBonus Akçe', type: 'success'),
         );
       } else {
         logs.add(
           LogEntry(
-            '🔥 Denge Bonusu! +$derivedBonus ⭐ (Geriden gelme bonusu)',
+            '🔥 Denge Bonusu! +$derivedBonus Akçe (Geriden gelme bonusu)',
             type: 'success',
           ),
         );
@@ -416,14 +416,14 @@ class QuestionFlowService {
     if (isBot) {
       logs.add(
         LogEntry(
-          '🤖 Bot: Doğru cevap! +$baseStars ⭐ ($difficultyName)',
+          '🤖 Bot: Doğru cevap! +$baseStars Akçe ($difficultyName)',
           type: 'success',
         ),
       );
     } else {
       logs.add(
         LogEntry(
-          'Doğru cevap! +$baseStars ⭐ ($difficultyName)',
+          'Doğru cevap! +$baseStars Akçe ($difficultyName)',
           type: 'success',
         ),
       );
@@ -433,14 +433,14 @@ class QuestionFlowService {
       if (isBot) {
         logs.add(
           LogEntry(
-            '🤖 Bot: $promotionMessage (+$promotionReward ⭐ bonus)',
+            '🤖 Bot: $promotionMessage (+$promotionReward Akçe bonus)',
             type: 'success',
           ),
         );
       } else {
         logs.add(
           LogEntry(
-            '$promotionMessage (+$promotionReward ⭐ bonus)',
+            '$promotionMessage (+$promotionReward Akçe bonus)',
             type: 'success',
           ),
         );

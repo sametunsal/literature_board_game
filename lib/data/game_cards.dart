@@ -7,21 +7,21 @@ class GameCards {
     // Telif ödülleri (düşük miktarlarda, 0'dan başlayan oyuncular için)
     GameCard(
       description:
-          "Telif hakkı ödemesi aldın! +8 Yıldız kazandın.",
+          "Telif hakkı ödemesi aldın! +8 Akçe kazandın.",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
       value: 8,
     ),
     GameCard(
       description:
-          "Küçük bir edebi ödül kazandın. +10 Yıldız!",
+          "Küçük bir edebi ödül kazandın. +10 Akçe!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
       value: 10,
     ),
     GameCard(
       description:
-          "Makalen dergide yayınlandı. +12 Yıldız kazandın.",
+          "Makalen dergide yayınlandı. +12 Akçe kazandın.",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
       value: 12,
@@ -49,7 +49,7 @@ class GameCards {
     ),
     GameCard(
       description:
-          "Okuyucularından güzel mektuplar aldın. +10 Yıldız motivasyon!",
+          "Okuyucularından güzel mektuplar aldın. +10 Akçe motivasyon!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
       value: 8,
@@ -63,7 +63,7 @@ class GameCards {
     ),
     GameCard(
       description:
-          "Yayınevinden küçük bir avans geldi. +10 Yıldız!",
+          "Yayınevinden küçük bir avans geldi. +10 Akçe!",
       type: CardType.sans,
       effectType: CardEffectType.moneyChange,
       value: 10,
@@ -107,14 +107,14 @@ class GameCards {
     // Yüzdeli kayıplar (0 olduğunda güvenli)
     GameCard(
       description:
-          "Cüzdanını düşürdün. Mevcut yıldızlarının %40'ını kaybettin.",
+          "Cüzdanını düşürdün. Mevcut Akçenin %40'ını kaybettin.",
       type: CardType.kader,
       effectType: CardEffectType.loseStarsPercentage,
       value: 40, // cap ile uyumlu üst sınır
     ),
     GameCard(
       description:
-          "Kötü bir yatırım yaptın. Yıldızlarının %30'unu kaybettin.",
+          "Kötü bir yatırım yaptın. Akçenin %30'unu kaybettin.",
       type: CardType.kader,
       effectType: CardEffectType.loseStarsPercentage,
       value: 30,
@@ -123,21 +123,21 @@ class GameCards {
     // Küçük düz cezalar (minimum 0 koruması ile)
     GameCard(
       description:
-          "Kahve faturası öde. 4 Yıldız. (Yıldızın yoksa 0 olur)",
+          "Kahve faturası öde. 4 Akçe. (Akçen yoksa 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
       value: -4,
     ),
     GameCard(
       description:
-          "Kırtasiye masrafı. 6 Yıldız öde. (Yetersiz bakiyede 0 olur)",
+          "Kırtasiye masrafı. 6 Akçe öde. (Yetersiz bakiyede 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
       value: -6,
     ),
     GameCard(
       description:
-          "Kütüphane cezası. 8 Yıldız öde. (Yetersiz bakiyede 0 olur)",
+          "Kütüphane cezası. 8 Akçe öde. (Yetersiz bakiyede 0 olur)",
       type: CardType.kader,
       effectType: CardEffectType.moneyChange,
       value: -8,

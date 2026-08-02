@@ -53,7 +53,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Publishing Debug'), findsOneWidget);
-    expect(find.text('Player 1 Akce: 12'), findsOneWidget);
+    expect(find.text('Player 1 Akçe: 12'), findsOneWidget);
     expect(
       find.text('${book.title}: ${BookLevel.baski.displayName}'),
       findsOneWidget,

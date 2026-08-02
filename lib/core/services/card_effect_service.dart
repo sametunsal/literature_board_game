@@ -87,7 +87,7 @@ class CardEffectService {
         turnsToSkip: player.turnsToSkip + 1,
       );
       logs.add(LogEntry(
-        "$prefix⚠️ ${player.name} ödeyemedi! Yıldızlar 0'a düştü + 1 tur ceza!",
+        "$prefix⚠️ ${player.name} ödeyemedi! Akçe 0'a düştü + 1 tur ceza!",
         type: 'error',
       ));
       return CardEffectResult(
@@ -102,13 +102,13 @@ class CardEffectService {
 
     if (card.value > 0) {
       logs.add(LogEntry(
-        '$prefix💰 ${player.name} +${card.value} yıldız kazandı!',
+        '$prefix💰 ${player.name} +${card.value} Akçe kazandı!',
         type: 'success',
       ));
     } else {
       final lost = originalStars - newStars;
       logs.add(LogEntry(
-        '$prefix💸 ${player.name} $lost yıldız kaybetti!',
+        '$prefix💸 ${player.name} $lost Akçe kaybetti!',
         type: 'error',
       ));
     }
@@ -137,7 +137,7 @@ class CardEffectService {
     if (passedStart && targetPos != BoardConfig.startPosition) {
       newStars += GameConstants.passingStartBonus;
       logs.add(LogEntry(
-        '$prefix🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!',
+        '$prefix🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Akçe!',
         type: 'success',
       ));
     }
@@ -174,7 +174,7 @@ class CardEffectService {
     if (card.value > 0 && targetPos < currentPos) {
       newStars += GameConstants.passingStartBonus;
       logs.add(LogEntry(
-        '$prefix🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Yıldız!',
+        '$prefix🏁 Başlangıçtan geçtin: +${GameConstants.passingStartBonus} Akçe!',
         type: 'success',
       ));
     }
@@ -279,7 +279,7 @@ class CardEffectService {
     return CardEffectResult(
       updatedPlayers: updated,
       logs: [LogEntry(
-        "$prefix📉 ${player.name} yıldızlarının %%$percentage'ini kaybetti! (-$loss ⭐)",
+        "$prefix📉 ${player.name} Akçesinin %%$percentage'i kaybetti! (-$loss Akçe)",
         type: 'error',
       )],
       starsDelta: newStars - player.stars,
@@ -328,12 +328,12 @@ class CardEffectService {
     final List<LogEntry> logs = [];
     if (card.value > 0) {
       logs.add(LogEntry(
-        '$prefix🏆 ${player.name} herkesten toplam $totalTransfer ⭐ aldı!',
+        '$prefix🏆 ${player.name} herkesten toplam $totalTransfer Akçe aldı!',
         type: 'success',
       ));
     } else {
       logs.add(LogEntry(
-        '$prefix💸 ${player.name} herkese toplam $totalTransfer ⭐ ödedi!',
+        '$prefix💸 ${player.name} herkese toplam $totalTransfer Akçe ödedi!',
         type: 'error',
       ));
     }

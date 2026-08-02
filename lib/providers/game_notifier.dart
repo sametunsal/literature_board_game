@@ -1080,7 +1080,7 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(players: newPlayers);
 
     _addLog(
-      "ğŸ ${player.name} BaÅŸlangÄ±Ã§'tan geÃ§ti! +$salaryAmount YÄ±ldÄ±z kazandÄ±!",
+      "🏁 ${player.name} Başlangıç'tan geçti! +$salaryAmount Akçe kazandı!",
       type: 'success',
     );
 
@@ -1266,14 +1266,14 @@ class GameNotifier extends StateNotifier<GameState> {
       );
       state = state.copyWith(players: newPlayers);
       showRewardToast(
-        '+$bonusStars ⭐',
+        '+$bonusStars Akçe',
         Colors.amber,
         title: 'TEŞVİK BONUSU',
         icon: Icons.trending_up_rounded,
       );
 
       _addLog(
-        '${player.name} Teşvik bonusu kazandı: +$bonusStars ⭐',
+        '${player.name} Teşvik bonusu kazandı: +$bonusStars Akçe',
         type: 'success',
       );
       endTurn();
@@ -1408,9 +1408,56 @@ class GameNotifier extends StateNotifier<GameState> {
       _addLog(log.message, type: log.type);
     }
 
+    if (isCorrect) {
+      final masteryAfter = result.updatedPlayer.getMasteryLevel(
+        category.name,
+      );
+      if (result.promoted && result.newMastery != null) {
+        showRewardToast(
+          category.displayName,
+          Colors.amberAccent,
+          title: '${result.newMastery!.displayName.toUpperCase()} OLDUN',
+          icon: Icons.school_rounded,
+        );
+      } else if (masteryAfter == MasteryLevel.usta) {
+        showRewardToast(
+          '${category.displayName} · Usta',
+          Colors.amberAccent,
+          title: 'MEŞK BAŞARILI',
+          icon: Icons.school_rounded,
+        );
+      } else {
+        final count = result.updatedPlayer.getCorrectAnswerCount(
+          category.name,
+          difficulty,
+        );
+        final nextName = _nextMasteryDisplayName(masteryAfter);
+        showRewardToast(
+          '${category.displayName} $count/${GameConstants.answersRequiredForPromotion} → $nextName',
+          Colors.lightBlueAccent,
+          title: 'MEŞK BAŞARILI',
+          icon: Icons.trending_up_rounded,
+        );
+      }
+    }
+
     _isMeskQuestionActive = false;
     _activeMeskCategory = null;
     _activeMeskDifficulty = null;
+  }
+
+  /// Display name of the mastery rank a player is working toward next.
+  String _nextMasteryDisplayName(MasteryLevel level) {
+    switch (level) {
+      case MasteryLevel.novice:
+        return MasteryLevel.cirak.displayName;
+      case MasteryLevel.cirak:
+        return MasteryLevel.kalfa.displayName;
+      case MasteryLevel.kalfa:
+        return MasteryLevel.usta.displayName;
+      case MasteryLevel.usta:
+        return MasteryLevel.usta.displayName;
+    }
   }
 
   void _acquireTelifForCurrentBookIfEligible(BoardTile? tile, bool isCorrect) {
@@ -1636,10 +1683,46 @@ class GameNotifier extends StateNotifier<GameState> {
       type: 'success',
     );
     showRewardToast(
-      'Royalty: -${result.royaltyPaid} Akce',
+      'Royalty: -${result.royaltyPaid} Akçe',
       Colors.orangeAccent,
       title: 'ROYALTY ÖDENDİ',
       icon: Icons.receipt_long_rounded,
+    );
+  }
+
+  /// When a player answers correctly on a book owned by an opponent, no
+  /// royalty is owed. Surface that dodge so players learn that the right
+  /// answer protects their wallet.
+  void _showRoyaltyDodgeIfApplicable(BoardTile? tile, bool isCorrect) {
+    if (!isCorrect || tile == null) return;
+
+    final book = BoardBookLookupService.bookForTile(tile);
+    if (book == null) return;
+
+    final ownership = state.bookOwnerships[book.id];
+    if (ownership == null ||
+        ownership.ownerPlayerId == state.currentPlayer.id) {
+      return;
+    }
+
+    final avoided = BookProgressionService.royaltyForLevel(ownership.level);
+    if (avoided <= 0) return;
+
+    final owner = state.players.firstWhere(
+      (player) => player.id == ownership.ownerPlayerId,
+      orElse: () => state.currentPlayer,
+    );
+
+    _addLog(
+      'Doğru cevap: ${book.title} telif ödemesinden korundun '
+      '($avoided Akçe ${owner.name} adına ödenmedi).',
+      type: 'success',
+    );
+    showRewardToast(
+      'Telif ödemesinden kurtuldun (+$avoided Akçe ödemedin)',
+      Colors.greenAccent,
+      title: 'DOĞRU CEVAP',
+      icon: Icons.shield_rounded,
     );
   }
 
@@ -1806,6 +1889,7 @@ class GameNotifier extends StateNotifier<GameState> {
       answeredDifficulty: result.answeredDifficulty,
       ownershipsBeforeAnswer: ownershipsBeforeAnswer,
     );
+    _showRoyaltyDodgeIfApplicable(state.currentTile, result.wasCorrect);
   }
 
   void closeDialogs() {
@@ -1885,7 +1969,7 @@ class GameNotifier extends StateNotifier<GameState> {
           boostedPlayers[next] = boosted;
           state = state.copyWith(players: boostedPlayers);
           _addLog(
-            "🔄 Recenter: ${boosted.name} +$turnEndCompressionBonus ⭐ (catch-up)",
+            "🔄 Recenter: ${boosted.name} +$turnEndCompressionBonus Akçe (catch-up)",
             type: 'success',
           );
         }
@@ -2249,7 +2333,7 @@ class GameNotifier extends StateNotifier<GameState> {
     }
 
     if (player.stars < cost) {
-      _addLog('Yeterli yÄ±ldÄ±zÄ±n yok!', type: 'error');
+      _addLog('Yeterli Akçen yok!', type: 'error');
       return;
     }
 
@@ -2264,7 +2348,7 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     state = state.copyWith(players: newPlayers);
-    _addLog('SÃ¶z satÄ±n alÄ±ndÄ±! (-$cost â­)', type: 'purchase');
+    _addLog('Söz satın alındı! (-$cost Akçe)', type: 'purchase');
   }
 
   /// DEBUG: Instantly trigger publishing win for current player.

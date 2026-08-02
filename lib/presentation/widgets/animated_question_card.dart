@@ -111,8 +111,10 @@ class _AnimatedQuestionCardState extends State<AnimatedQuestionCard>
         AudioManager.instance.playWrong();
       }
 
-      // After revealing + star animation, callback
-      final callbackDelay = isCorrect ? 1600 : 800;
+      // After revealing + star animation, callback.
+      // Wrong answers hold the reveal longer so the correct answer
+      // (highlighted green) is visible long enough to learn from.
+      final callbackDelay = isCorrect ? 1600 : 1500;
       Future.delayed(Duration(milliseconds: callbackDelay), () {
         if (mounted) widget.onAnswer(isCorrect);
       });

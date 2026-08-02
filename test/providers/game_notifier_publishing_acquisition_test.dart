@@ -176,7 +176,11 @@ void main() {
         same(existingOwnership),
       );
       expect(_telifLogs(container), isEmpty);
-      expect(container.read(gameProvider).floatingEffect, isNull);
+      // Correct answer on an opponent-owned book now surfaces the
+      // royalty-dodge toast instead of no feedback.
+      final dodgeEffect = container.read(gameProvider).floatingEffect;
+      expect(dodgeEffect, isNotNull);
+      expect(dodgeEffect!.text, contains('kurtuldun'));
     });
 
     test('already-owned book does not emit duplicate Telif effects', () async {
