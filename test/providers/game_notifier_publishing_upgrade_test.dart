@@ -118,9 +118,11 @@ void main() {
         final state = container.read(gameProvider);
         expect(_logsContaining(state, 'Baski'), isNotEmpty);
         expect(_logsContaining(state, 'Telif'), isEmpty);
-        expect(state.floatingEffect, isNotNull);
-        expect(state.floatingEffect!.text, contains('Baski'));
-        expect(state.floatingEffect!.text, contains(book.title));
+        // Duplicate toast removed: only the richer progression celebration
+        // remains, and no floating toast is emitted for the upgrade.
+        expect(state.progressionCelebration, isNotNull);
+        expect(state.progressionCelebration!.bookTitle, book.title);
+        expect(state.floatingEffect, isNull);
       },
     );
 
@@ -308,8 +310,10 @@ void main() {
         final state = container.read(gameProvider);
         expect(state.bookOwnerships[book.id]?.level, BookLevel.cilt);
         expect(_logsContaining(state, 'Cilt yukseltildi'), isNotEmpty);
-        expect(state.floatingEffect?.text, contains('Cilt'));
-        expect(state.floatingEffect?.text, contains(book.title));
+        // Duplicate toast removed: the upgrade surfaces the progression
+        // celebration, not a floating toast.
+        expect(state.progressionCelebration, isNotNull);
+        expect(state.progressionCelebration!.bookTitle, book.title);
       },
     );
 
@@ -472,9 +476,10 @@ void main() {
 
         final state = container.read(gameProvider);
         expect(state.bookOwnerships[book.id]?.level, BookLevel.baski);
+        // Reward follows the DISPLAYED (medium) question, not the hard tile.
         expect(
           state.players.single.akce,
-          initialAkce + GameConstants.rewardHard,
+          initialAkce + GameConstants.rewardMedium,
         );
         expect(_logsContaining(state, 'Cilt'), isEmpty);
       },
@@ -615,6 +620,167 @@ void main() {
       },
     );
   });
+
+  // Regression: reward, progress and promotion must follow the question the
+  // player actually saw (mastery-based), not the tile's fixed difficulty.
+  // Single-player setup => no catch-up bonuses, so the answer reward is
+  // isolated.
+  group('mastery difficulty follows the displayed question, not the tile', () {
+    const baseAkce = 40;
+
+    test('Novice on a hard tile is paid for the easy question shown', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.hard);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(_stateFor(
+        tile: tile,
+        playerAkce: baseAkce,
+        currentPlayerCategoryLevels: {
+          book.category.name: MasteryLevel.novice.value,
+        },
+      ));
+      _showQuestion(container, book: book, difficulty: 'easy');
+
+      await notifier.answerQuestion(true);
+
+      final player = container.read(gameProvider).players.single;
+      expect(player.akce, baseAkce + GameConstants.rewardEasy);
+      // Progress is recorded against the displayed (easy) difficulty.
+      expect(player.categoryProgress[book.category.name]?['easy'], 1);
+      expect(player.categoryProgress[book.category.name]?['hard'], isNull);
+    });
+
+    test('Çırak on an easy tile is paid for the medium question shown', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.easy);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(_stateFor(
+        tile: tile,
+        playerAkce: baseAkce,
+        currentPlayerCategoryLevels: {
+          book.category.name: MasteryLevel.cirak.value,
+        },
+      ));
+      _showQuestion(container, book: book, difficulty: 'medium');
+
+      await notifier.answerQuestion(true);
+
+      final player = container.read(gameProvider).players.single;
+      expect(player.akce, baseAkce + GameConstants.rewardMedium);
+    });
+
+    test('Kalfa on an easy tile is paid for the hard question shown', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.easy);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(_stateFor(
+        tile: tile,
+        playerAkce: baseAkce,
+        currentPlayerCategoryLevels: {
+          book.category.name: MasteryLevel.kalfa.value,
+        },
+      ));
+      _showQuestion(container, book: book, difficulty: 'hard');
+
+      await notifier.answerQuestion(true);
+
+      final player = container.read(gameProvider).players.single;
+      expect(player.akce, baseAkce + GameConstants.rewardHard);
+    });
+
+    test('Novice promotes to Çırak via the easy question on a hard tile', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.hard);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(_stateFor(
+        tile: tile,
+        playerAkce: baseAkce,
+        currentPlayerCategoryLevels: {
+          book.category.name: MasteryLevel.novice.value,
+        },
+        currentPlayerCategoryProgress: {
+          book.category.name: {'easy': 2},
+        },
+      ));
+      _showQuestion(container, book: book, difficulty: 'easy');
+
+      await notifier.answerQuestion(true);
+
+      final player = container.read(gameProvider).players.single;
+      expect(
+        player.categoryLevels[book.category.name],
+        MasteryLevel.cirak.value,
+      );
+    });
+
+    test('Çırak promotes to Kalfa via the medium question on an easy tile', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.easy);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(_stateFor(
+        tile: tile,
+        playerAkce: baseAkce,
+        currentPlayerCategoryLevels: {
+          book.category.name: MasteryLevel.cirak.value,
+        },
+        currentPlayerCategoryProgress: {
+          book.category.name: {'medium': 2},
+        },
+      ));
+      _showQuestion(container, book: book, difficulty: 'medium');
+
+      await notifier.answerQuestion(true);
+
+      final player = container.read(gameProvider).players.single;
+      expect(
+        player.categoryLevels[book.category.name],
+        MasteryLevel.kalfa.value,
+      );
+    });
+
+    test('Kalfa promotes to Usta via the hard question on an easy tile', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(gameProvider.notifier);
+      final book = _bookWithTileDifficulty(Difficulty.easy);
+      final tile = _tileForBook(book.tilePosition);
+
+      notifier.updateState(_stateFor(
+        tile: tile,
+        playerAkce: baseAkce,
+        currentPlayerCategoryLevels: {
+          book.category.name: MasteryLevel.kalfa.value,
+        },
+        currentPlayerCategoryProgress: {
+          book.category.name: {'hard': 2},
+        },
+      ));
+      _showQuestion(container, book: book, difficulty: 'hard');
+
+      await notifier.answerQuestion(true);
+
+      final player = container.read(gameProvider).players.single;
+      expect(
+        player.categoryLevels[book.category.name],
+        MasteryLevel.usta.value,
+      );
+    });
+  });
 }
 
 BoardTile _tileForBook(int tilePosition) {
@@ -664,6 +830,7 @@ GameState _stateFor({
   required int playerAkce,
   int? otherPlayerAkce,
   Map<String, int> currentPlayerCategoryLevels = const {},
+  Map<String, Map<String, int>> currentPlayerCategoryProgress = const {},
   Map<String, BookOwnership> bookOwnerships = const {},
 }) {
   return GameState(
@@ -675,6 +842,7 @@ GameState _stateFor({
         iconIndex: 0,
         stars: playerAkce,
         categoryLevels: currentPlayerCategoryLevels,
+        categoryProgress: currentPlayerCategoryProgress,
       ),
       if (otherPlayerAkce != null)
         Player(

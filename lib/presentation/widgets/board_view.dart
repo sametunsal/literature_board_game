@@ -242,9 +242,10 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // ═══════════════════════════════════════════════════════════════════════════
           // Dice-animation skip catcher — tap anywhere to reveal the result
           // early. Transparent so the rolling dice stay visible; active only
-          // while a roll is in progress. skipDiceAnimation() is a no-op for
-          // bots (no completer), so their pacing is unaffected.
-          if (state.isDiceRolling)
+          // for a HUMAN roll (bot mode auto-plays the current turn, so the
+          // catcher must never intercept bot rolls).
+          if (state.isDiceRolling &&
+              !ref.read(gameProvider.notifier).isBotPlaying)
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,

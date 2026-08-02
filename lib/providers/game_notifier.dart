@@ -598,6 +598,18 @@ class GameNotifier extends StateNotifier<GameState> {
   GameState get currentState => state;
   void updateState(GameState newState) => state = newState;
 
+  /// Schedules a one-shot timer that removes itself from [_activeTimers]
+  /// after firing, so the list does not accumulate dead timers over a long
+  /// session. Behaviour is unchanged on dispose (still cancelled in bulk).
+  void _addSelfRemovingTimer(Duration duration, VoidCallback callback) {
+    late Timer timer;
+    timer = Timer(duration, () {
+      _activeTimers.remove(timer);
+      callback();
+    });
+    _activeTimers.add(timer);
+  }
+
   /// Single entry point for the polished reward toast family (Akçe, Telif,
   /// Baskı, Cilt, royalty, bonuses). Anchors the toast to the current
   /// player's tile and schedules its dismissal. The timer clears only *its
@@ -621,15 +633,13 @@ class GameNotifier extends StateNotifier<GameState> {
       anchorTilePosition: state.currentPlayer.position,
     );
     state = state.copyWith(floatingEffect: effect);
-    _activeTimers.add(
-      Timer(
-        const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
-        () {
-          if (mounted && identical(state.floatingEffect, effect)) {
-            state = state.copyWith(clearFloatingEffect: true);
-          }
-        },
-      ),
+    _addSelfRemovingTimer(
+      const Duration(seconds: GameConstants.floatingEffectDurationSeconds),
+      () {
+        if (mounted && identical(state.floatingEffect, effect)) {
+          state = state.copyWith(clearFloatingEffect: true);
+        }
+      },
     );
   }
 
@@ -661,16 +671,14 @@ class GameNotifier extends StateNotifier<GameState> {
       ownerColor: ownerColor,
     );
     state = state.copyWith(progressionCelebration: celebration);
-    _activeTimers.add(
-      Timer(
-        const Duration(seconds: _progressionCelebrationSeconds),
-        () {
-          if (mounted &&
-              identical(state.progressionCelebration, celebration)) {
-            state = state.copyWith(clearProgressionCelebration: true);
-          }
-        },
-      ),
+    _addSelfRemovingTimer(
+      const Duration(seconds: _progressionCelebrationSeconds),
+      () {
+        if (mounted &&
+            identical(state.progressionCelebration, celebration)) {
+          state = state.copyWith(clearProgressionCelebration: true);
+        }
+      },
     );
   }
 
@@ -1458,7 +1466,11 @@ class GameNotifier extends StateNotifier<GameState> {
           isCorrect: isCorrect,
           player: state.currentPlayer,
           categoryName: categoryName,
-          difficulty: difficulty,
+          // Reward, mastery progression and promotion must follow the question
+          // the player actually saw (mastery-based), not the tile's fixed
+          // difficulty — otherwise off-tier tiles pay the wrong reward and
+          // silently fail to advance mastery.
+          difficulty: actualQuestionDifficulty,
           actualQuestionDifficulty: actualQuestionDifficulty,
           allPlayers: state.players,
           currentPlayerIndex: state.currentPlayerIndex,
@@ -1650,14 +1662,6 @@ class GameNotifier extends StateNotifier<GameState> {
       'Baski yukseltildi: ${state.currentPlayer.name} - ${book.title}',
       type: 'success',
     );
-    showRewardToast(
-      'Baski: ${book.title}',
-      Colors.lightBlueAccent,
-      title: 'BASKI YÜKSELTİLDİ',
-      icon: Icons.print_rounded,
-      bookLevel: BookLevel.baski,
-      ownerColor: state.currentPlayer.color,
-    );
     showProgressionCelebration(
       bookTitle: book.title,
       levelLabel: 'Baskı',
@@ -1725,14 +1729,6 @@ class GameNotifier extends StateNotifier<GameState> {
     _addLog(
       'Cilt yukseltildi: ${state.currentPlayer.name} - ${book.title}',
       type: 'success',
-    );
-    showRewardToast(
-      'Cilt: ${book.title}',
-      Colors.deepPurpleAccent,
-      title: 'CİLT YÜKSELTİLDİ',
-      icon: Icons.auto_stories_rounded,
-      bookLevel: BookLevel.cilt,
-      ownerColor: state.currentPlayer.color,
     );
     showProgressionCelebration(
       bookTitle: book.title,

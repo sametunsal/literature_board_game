@@ -135,7 +135,9 @@ class BotController {
         isCorrect: isCorrect,
         player: allPlayers[currentPlayerIndex],
         categoryName: categoryName,
-        difficulty: difficulty,
+        // Use the actually-selected (mastery-based) question difficulty for
+        // reward/progression, consistent with the human path.
+        difficulty: actualQuestionDifficulty,
         actualQuestionDifficulty: actualQuestionDifficulty,
         allPlayers: allPlayers,
         currentPlayerIndex: currentPlayerIndex,
