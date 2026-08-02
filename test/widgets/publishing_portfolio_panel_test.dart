@@ -16,6 +16,16 @@ void main() {
   testWidgets('portfolio groups books by player and shows assets', (
     tester,
   ) async {
+    // The richer per-book checklist makes each group card taller, so the
+    // scrollable list needs a realistic landscape viewport to build every
+    // player's card (incl. the empty "Henüz kitap yok" player).
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     final books = BookConfig.books;
     final ownerships = {
       books[0].id: BookOwnership(
@@ -170,6 +180,42 @@ void main() {
     expect(find.text(book.title), findsOneWidget);
     expect(find.text('24 Ak\u00e7e'), findsWidgets);
     expect(find.byTooltip('Portf\u00f6y\u00fc kapat'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('portfolio shows next-objective checklist and royalty total', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final book = BookConfig.books.first;
+    final ownerships = {
+      book.id: BookOwnership(
+        bookId: book.id,
+        ownerPlayerId: 'p1',
+        level: BookLevel.baski,
+      ),
+    };
+
+    await tester.pumpWidget(_panelApp(ownerships));
+
+    // Cilt checklist rendered for the Baskı book.
+    expect(find.text('Cilt için'), findsOneWidget);
+    expect(find.text('Kalfa'), findsOneWidget);
+    expect(find.text('${book.ciltCostAkce} Akçe'), findsOneWidget);
+    expect(find.text('Zor soru'), findsOneWidget);
+    // Player 1 (24 Akçe) can afford the Cilt cost → at least one satisfied
+    // marker; mastery (novice) and the hard-question stay pending.
+    expect(find.text('✓'), findsWidgets);
+    expect(find.text('✗'), findsNWidgets(2));
+    // Single Baskı book earns 4 royalty → total income line.
+    expect(find.text('Toplam Royalty Geliri'), findsOneWidget);
+    expect(find.text('4 Akçe'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

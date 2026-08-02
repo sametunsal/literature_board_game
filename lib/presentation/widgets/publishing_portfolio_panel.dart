@@ -94,6 +94,14 @@ class _PlayerPortfolioGroup {
 
   int count(BookLevel level) =>
       books.where((book) => book.ownership.level == level).length;
+
+  /// Sum of the royalty each owned book would earn when an opponent lands on
+  /// it and answers wrong — the player's passive royalty income potential.
+  int get totalRoyaltyIncome => books.fold<int>(
+        0,
+        (sum, entry) =>
+            sum + BookProgressionService.royaltyForLevel(entry.ownership.level),
+      );
 }
 
 class _OwnedBookView {
@@ -254,10 +262,17 @@ class _PlayerBookGroupCard extends StatelessWidget {
                 for (final ownedBook in group.books)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: _OwnedBookRow(ownedBook: ownedBook),
+                    child: _OwnedBookRow(
+                      ownedBook: ownedBook,
+                      player: group.player,
+                    ),
                   ),
               ],
             ),
+          if (group.books.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _RoyaltyTotalLine(total: group.totalRoyaltyIncome),
+          ],
         ],
       ),
     );
@@ -265,14 +280,16 @@ class _PlayerBookGroupCard extends StatelessWidget {
 }
 
 class _OwnedBookRow extends StatelessWidget {
-  const _OwnedBookRow({required this.ownedBook});
+  const _OwnedBookRow({required this.ownedBook, required this.player});
 
   final _OwnedBookView ownedBook;
+  final Player player;
 
   @override
   Widget build(BuildContext context) {
     final level = ownedBook.ownership.level;
     final royalty = BookProgressionService.royaltyForLevel(level);
+    final checklist = _objectiveChecklist();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -281,43 +298,198 @@ class _OwnedBookRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ownedBook.book.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ownedBook.book.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Kategori: ${ownedBook.book.category.displayName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Kategori: ${ownedBook.book.category.displayName}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    color: Colors.black54,
-                  ),
+              ),
+              const SizedBox(width: 8),
+              _LevelChip(level: level),
+              const SizedBox(width: 6),
+              Text(
+                'Gelir: $royalty Ak\u00e7e',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF5F4A1B),
                 ),
-              ],
+              ),
+            ],
+          ),
+          ?checklist,
+        ],
+      ),
+    );
+  }
+
+  /// Next publishing objective for this book as a live checklist, or null when
+  /// the book is already at Cilt (max). Mastery and Akçe items reflect the
+  /// owning player's current state; the question item is satisfied at upgrade
+  /// time, so it is shown as pending.
+  Widget? _objectiveChecklist() {
+    final level = ownedBook.ownership.level;
+    final book = ownedBook.book;
+    switch (level) {
+      case BookLevel.telif:
+        return _ObjectiveChecklist(
+          title: 'Baskı için',
+          items: [
+            _ChecklistItem(
+              label: '${book.baskiCostAkce} Akçe',
+              met: player.akce >= book.baskiCostAkce,
+            ),
+            const _ChecklistItem(label: 'Doğru cevap', met: false),
+          ],
+        );
+      case BookLevel.baski:
+        final mastery = player.getMasteryLevel(book.category.name);
+        return _ObjectiveChecklist(
+          title: 'Cilt için',
+          items: [
+            _ChecklistItem(
+              label: 'Kalfa',
+              met: mastery.value >= MasteryLevel.kalfa.value,
+            ),
+            _ChecklistItem(
+              label: '${book.ciltCostAkce} Akçe',
+              met: player.akce >= book.ciltCostAkce,
+            ),
+            const _ChecklistItem(label: 'Zor soru', met: false),
+          ],
+        );
+      case BookLevel.none:
+      case BookLevel.cilt:
+        return null;
+    }
+  }
+}
+
+/// A single requirement line: a ✓/✗ marker plus its label.
+class _ChecklistItem {
+  const _ChecklistItem({required this.label, required this.met});
+
+  final String label;
+  final bool met;
+}
+
+class _ObjectiveChecklist extends StatelessWidget {
+  const _ObjectiveChecklist({required this.title, required this.items});
+
+  final String title;
+  final List<_ChecklistItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF4A3B22),
             ),
           ),
-          const SizedBox(width: 8),
-          _LevelChip(level: level),
-          const SizedBox(width: 6),
+          const SizedBox(height: 2),
+          Wrap(
+            spacing: 10,
+            runSpacing: 2,
+            children: [for (final item in items) _ChecklistLine(item: item)],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChecklistLine extends StatelessWidget {
+  const _ChecklistLine({required this.item});
+
+  final _ChecklistItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final met = item.met;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          met ? '✓' : '✗',
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: met ? const Color(0xFF2E7D32) : const Color(0xFFB05A2A),
+          ),
+        ),
+        const SizedBox(width: 3),
+        Text(
+          item.label,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: met ? FontWeight.w700 : FontWeight.w600,
+            color: met ? const Color(0xFF2E7D32) : Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoyaltyTotalLine extends StatelessWidget {
+  const _RoyaltyTotalLine({required this.total});
+
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
           Text(
-            'Gelir: $royalty Ak\u00e7e',
+            'Toplam Royalty Geliri',
             style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '$total Akçe',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
               color: const Color(0xFF5F4A1B),
             ),
           ),
