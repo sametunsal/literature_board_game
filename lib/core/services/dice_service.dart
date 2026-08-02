@@ -40,11 +40,17 @@ class DiceService {
     );
     AudioManager.instance.playSfx('audio/dice_roll.wav');
 
-    // Hareket + sonuç bekleme (bot kısa)
+    // Hareket + sonuç bekleme (bot kısa, insan atlanabilir)
     final diceDelay = isBotPlaying
         ? const Duration(milliseconds: 500)
         : const Duration(milliseconds: GameConstants.diceAnimationDelay);
-    await Future.delayed(diceDelay);
+    if (isBotPlaying) {
+      await Future.delayed(diceDelay);
+    } else {
+      // Humans can tap anywhere to skip straight to the result; bots keep
+      // their fixed delay so their pacing is unchanged.
+      await notifier.waitForDiceAnimation(diceDelay);
+    }
 
     // Overlay kapanır; sonuç HUD’da gösterilsin
     notifier.updateState(

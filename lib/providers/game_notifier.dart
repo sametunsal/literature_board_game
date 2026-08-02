@@ -824,6 +824,37 @@ class GameNotifier extends StateNotifier<GameState> {
   // 2. ZAR ATMA & HAREKET (Dice Rolling & Movement)
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
+  Completer<void>? _diceAnimationCompleter;
+
+  /// Awaits the human dice-roll animation but can be resolved early by
+  /// [skipDiceAnimation]. Used instead of a plain [Future.delayed] so a tap
+  /// can reveal the result immediately. Bots bypass this (see [DiceService])
+  /// and keep their fixed delay, so they are unaffected by skipping.
+  Future<void> waitForDiceAnimation(Duration delay) async {
+    final completer = Completer<void>();
+    _diceAnimationCompleter = completer;
+    final timer = Timer(delay, () {
+      if (!completer.isCompleted) completer.complete();
+    });
+    _activeTimers.add(timer);
+    try {
+      await completer.future;
+    } finally {
+      timer.cancel();
+      _diceAnimationCompleter = null;
+    }
+  }
+
+  /// Skip the remaining human dice animation and reveal the result. A no-op
+  /// when no animation is running — which covers every bot roll, since bots
+  /// never create the dice completer.
+  void skipDiceAnimation() {
+    final completer = _diceAnimationCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
   /// Roll dice - handles MOVEMENT rolls during playerTurn phase.
   /// NOTE: Turn order rolls are handled automatically by startAutomatedTurnOrder().
   Future<void> rollDice() async {

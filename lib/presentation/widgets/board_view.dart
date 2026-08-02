@@ -240,6 +240,20 @@ class _BoardViewState extends ConsumerState<BoardView> {
           // FLAT DIALOG LAYER - All dialogs appear flat (orthogonal to screen)
           // This stays above the board transform so dialogs remain screen-aligned.
           // ═══════════════════════════════════════════════════════════════════════════
+          // Dice-animation skip catcher — tap anywhere to reveal the result
+          // early. Transparent so the rolling dice stay visible; active only
+          // while a roll is in progress. skipDiceAnimation() is a no-op for
+          // bots (no completer), so their pacing is unaffected.
+          if (state.isDiceRolling)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () =>
+                    ref.read(gameProvider.notifier).skipDiceAnimation(),
+                child: const SizedBox.expand(),
+              ),
+            ),
+
           _buildFlatDialogLayer(state, ref),
 
           // GAME OVER DIALOG REMOVED - Handled by Navigation
