@@ -305,6 +305,7 @@ class GameNotifier extends StateNotifier<GameState> {
   Completer<void>? _imzaGunuDialogCompleter;
   Completer<void>? _kiraathaneDialogCompleter;
   Completer<void>? _shopDialogCompleter;
+  Completer<void>? _threeDoublesWarningCompleter;
 
   // Dialog lock flag - prevents turn actions while dialog is open
   bool get _isDialogOpen => ref.read(dialogProvider).isAnyDialogOpen;
@@ -394,6 +395,17 @@ class GameNotifier extends StateNotifier<GameState> {
     );
     return decayedBase + promotionReward + underdogBonus;
   }
+
+  /// Test seam to drive the (otherwise private) movement-roll flow
+  /// deterministically, e.g. to reproduce the three-consecutive-doubles case.
+  @visibleForTesting
+  Future<void> handleMovementRollForTest(
+    int d1,
+    int d2,
+    int roll,
+    bool isDouble,
+  ) =>
+      _handleMovementRoll(d1, d2, roll, isDouble);
 
   @visibleForTesting
   int computeLeadCompressionTurnBonus({
@@ -511,6 +523,9 @@ class GameNotifier extends StateNotifier<GameState> {
         } else if (dialog.showTurnSkippedDialog) {
           _logBot('Watchdog: Closing stuck turn skipped dialog');
           closeTurnSkippedDialog();
+        } else if (dialog.showThreeDoublesWarning) {
+          _logBot('Watchdog: Closing stuck three-doubles warning');
+          closeThreeDoublesWarning();
         } else {
           // No dialog open, try to roll dice or end turn
           _logBot('Watchdog: No dialog detected, attempting rollDice()');
@@ -977,6 +992,9 @@ class GameNotifier extends StateNotifier<GameState> {
           type: 'error',
         );
 
+        // Explain the rule before moving, so the jail trip is not a teleport.
+        await _showThreeDoublesWarning();
+
         // Move player to jail immediately
         List<Player> temp = List.from(state.players);
         temp[state.currentPlayerIndex] = state.currentPlayer.copyWith(
@@ -1209,6 +1227,38 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// Handle KÃ¼tÃ¼phane (Library) landing - Apply 2-turn penalty
+  /// Show the "three consecutive doubles" warning before the pawn is sent to
+  /// the Library, so the jail move reads as an explained rule rather than a
+  /// teleport. Humans dismiss it via the dialog button
+  /// ([closeThreeDoublesWarning]); bots auto-dismiss after a short delay.
+  Future<void> _showThreeDoublesWarning() async {
+    _threeDoublesWarningCompleter = Completer<void>();
+    ref.read(dialogProvider.notifier).showThreeDoublesWarning();
+
+    if (_isBotPlaying) {
+      await Future.delayed(
+        const Duration(milliseconds: GameConstants.botDialogAutoCloseDelay),
+      );
+      if (_threeDoublesWarningCompleter != null &&
+          !_threeDoublesWarningCompleter!.isCompleted) {
+        _threeDoublesWarningCompleter!.complete();
+      }
+    }
+
+    await _threeDoublesWarningCompleter!.future;
+    _threeDoublesWarningCompleter = null;
+    ref.read(dialogProvider.notifier).hideThreeDoublesWarning();
+  }
+
+  /// Dismiss the three-consecutive-doubles warning (human dismiss button or
+  /// watchdog recovery).
+  void closeThreeDoublesWarning() {
+    if (_threeDoublesWarningCompleter != null &&
+        !_threeDoublesWarningCompleter!.isCompleted) {
+      _threeDoublesWarningCompleter!.complete();
+    }
+  }
+
   Future<void> _handleLibraryLanding() async {
     final player = state.currentPlayer;
     const libraryPenaltyTurns = 2;

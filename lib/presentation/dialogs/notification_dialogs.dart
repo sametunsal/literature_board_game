@@ -127,6 +127,27 @@ class NotificationDialogBase extends ConsumerWidget {
   }
 }
 
+/// "Three consecutive doubles" rule warning, shown before the pawn is sent to
+/// the Library so the jail move reads as an explained rule, not a teleport.
+class ThreeDoublesWarningDialog extends ConsumerWidget {
+  const ThreeDoublesWarningDialog({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return NotificationDialogBase(
+      icon: Icons.casino_rounded,
+      baseColor: const Color(0xFFB05A2A),
+      title: 'Üç Çift Zar!',
+      message:
+          'Üç kez üst üste çift zar attığın için Kütüphaneye gönderildin.\n'
+          'Burada 2 tur bekleyeceksin.',
+      buttonText: 'Tamam',
+      onPressed: () =>
+          ref.read(gameProvider.notifier).closeThreeDoublesWarning(),
+    );
+  }
+}
+
 /// Kütüphane — kompakt dikey kart, otomatik kapanır ve sıra geçer
 class LibraryPenaltyDialog extends ConsumerStatefulWidget {
   const LibraryPenaltyDialog({super.key});

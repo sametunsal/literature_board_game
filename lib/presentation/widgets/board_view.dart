@@ -572,6 +572,16 @@ class _BoardViewState extends ConsumerState<BoardView> {
             ),
           ),
 
+        // Three consecutive doubles — explain the jail trip before it happens
+        if (dialog.showThreeDoublesWarning)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.55),
+              alignment: Alignment.center,
+              child: const ThreeDoublesWarningDialog(),
+            ),
+          ),
+
         // İmza Günü — soru kartı boyutu, ortada
         if (dialog.showImzaGunuDialog)
           Positioned.fill(

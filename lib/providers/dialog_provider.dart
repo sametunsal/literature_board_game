@@ -17,6 +17,7 @@ class DialogState {
   final bool showKiraathaneDialog;
   final bool showShopDialog;
   final bool showTurnOrderDialog;
+  final bool showThreeDoublesWarning;
 
   const DialogState({
     this.currentQuestion,
@@ -30,6 +31,7 @@ class DialogState {
     this.showKiraathaneDialog = false,
     this.showShopDialog = false,
     this.showTurnOrderDialog = false,
+    this.showThreeDoublesWarning = false,
   });
 
   DialogState copyWith({
@@ -44,6 +46,7 @@ class DialogState {
     bool? showKiraathaneDialog,
     bool? showShopDialog,
     bool? showTurnOrderDialog,
+    bool? showThreeDoublesWarning,
     bool clearQuestion = false,
     bool clearCard = false,
   }) {
@@ -64,6 +67,8 @@ class DialogState {
       showKiraathaneDialog: showKiraathaneDialog ?? this.showKiraathaneDialog,
       showShopDialog: showShopDialog ?? this.showShopDialog,
       showTurnOrderDialog: showTurnOrderDialog ?? this.showTurnOrderDialog,
+      showThreeDoublesWarning:
+          showThreeDoublesWarning ?? this.showThreeDoublesWarning,
     );
   }
 
@@ -79,6 +84,7 @@ class DialogState {
       showKiraathaneDialog: false,
       showShopDialog: false,
       showTurnOrderDialog: false,
+      showThreeDoublesWarning: false,
     );
   }
 
@@ -92,7 +98,8 @@ class DialogState {
       showTurnSkippedDialog ||
       showKiraathaneDialog ||
       showShopDialog ||
-      showTurnOrderDialog;
+      showTurnOrderDialog ||
+      showThreeDoublesWarning;
 }
 
 class DialogNotifier extends StateNotifier<DialogState> {
@@ -142,6 +149,10 @@ class DialogNotifier extends StateNotifier<DialogState> {
     state = state.clearVisibility().copyWith(showTurnOrderDialog: true);
   }
 
+  void showThreeDoublesWarning() {
+    state = state.clearVisibility().copyWith(showThreeDoublesWarning: true);
+  }
+
   // --- Hide Methods ---
 
   void hideQuestion() {
@@ -178,6 +189,10 @@ class DialogNotifier extends StateNotifier<DialogState> {
 
   void hideTurnOrder() {
     state = state.copyWith(showTurnOrderDialog: false);
+  }
+
+  void hideThreeDoublesWarning() {
+    state = state.copyWith(showThreeDoublesWarning: false);
   }
 
   /// Clears all dialogs and resets their mapped content securely
