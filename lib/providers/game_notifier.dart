@@ -278,6 +278,30 @@ class GameNotifier extends StateNotifier<GameState> {
   final List<Timer> _activeTimers = [];
   bool _isProcessing = false;
 
+  /// Monotonic token for processing scopes. Async flows that own the
+  /// processing lock capture the current epoch when they take over and may
+  /// only release the lock while their epoch is still current. A stale
+  /// `finally` (e.g. an outer dice roll unwinding after an in-flight
+  /// `endTurn` or a chained card-movement tile arrival took over) can no
+  /// longer clear a newer scope and re-open a rapid-tap race window.
+  int _processingEpoch = 0;
+
+  /// Starts a processing scope owned by the caller and returns its epoch
+  /// token, which must be handed back to [_endProcessingScope].
+  int _beginProcessingScope() {
+    _processingEpoch++;
+    _isProcessing = true;
+    return _processingEpoch;
+  }
+
+  /// Releases the processing lock only when [epoch] is still the current
+  /// epoch. Stale completions from older scopes leave the lock untouched.
+  void _endProcessingScope(int epoch) {
+    if (epoch == _processingEpoch) {
+      _isProcessing = false;
+    }
+  }
+
   /// Global action lock to prevent race conditions from rapid UI tapping
   bool _isProcessingAction = false;
 
@@ -327,6 +351,7 @@ class GameNotifier extends StateNotifier<GameState> {
         closeShopDialog: () => closeShopDialog(),
         closeTurnOrderDialog: () => closeTurnOrderDialog(),
         closeTurnSkippedDialog: () => closeTurnSkippedDialog(),
+        closeThreeDoublesWarning: () => closeThreeDoublesWarning(),
         answerQuestion: (isCorrect) => answerQuestion(isCorrect),
         readDialogState: () {
           final d = ref.read(dialogProvider);
@@ -340,6 +365,7 @@ class GameNotifier extends StateNotifier<GameState> {
             showKiraathaneDialog: d.showKiraathaneDialog,
             showShopDialog: d.showShopDialog,
             showTurnOrderDialog: d.showTurnOrderDialog,
+            showThreeDoublesWarning: d.showThreeDoublesWarning,
           );
         },
         readIsDiceRolling: () => state.isDiceRolling,
@@ -898,6 +924,10 @@ class GameNotifier extends StateNotifier<GameState> {
     }
     _isProcessingAction = true;
 
+    // 0 = no processing scope was started by this roll (guards may return
+    // before the scope begins). Epoch tokens start at 1.
+    int processingEpoch = 0;
+
     try {
       _logBot(
         'rollDice() START - ${_isProcessing ? "BLOCKED (processing)" : "OK"}',
@@ -905,6 +935,16 @@ class GameNotifier extends StateNotifier<GameState> {
 
       if (_isProcessing) {
         _logBot('rollDice() BLOCKED - isProcessing: $_isProcessing');
+        return;
+      }
+
+      // A finished roll still owns the turn until its tile events and the
+      // turn change have completed. Every legitimate re-roll path (doubles,
+      // roll-again cards, turn change, skipped-turn entry) resets
+      // isDiceRolled before the next roll is expected — mirroring the UI,
+      // which already hides the roll button while isDiceRolled is true.
+      if (state.isDiceRolled) {
+        _logBot('rollDice() BLOCKED - previous roll still resolving');
         return;
       }
 
@@ -924,7 +964,7 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
-      _isProcessing = true;
+      processingEpoch = _beginProcessingScope();
       _startWatchdog(); // Start watchdog for this operation
 
       await _diceService.executeRoll(
@@ -944,10 +984,14 @@ class GameNotifier extends StateNotifier<GameState> {
       // Try to recover
       _scheduleBotTurn();
     } finally {
-      // SAFETY: Always reset processing flag to prevent freezing
-      _isProcessing = false;
+      // SAFETY: Always reset processing flag to prevent freezing. The
+      // epoch check ensures a newer scope (chained tile arrival, endTurn)
+      // that took over while this roll was awaiting is not stomped.
+      if (processingEpoch != 0) {
+        _endProcessingScope(processingEpoch);
+      }
       _isProcessingAction = false; // Reset action guard
-      _logBot('rollDice() finally - _isProcessing reset to false');
+      _logBot('rollDice() finally - _isProcessing: $_isProcessing');
     }
   }
 
@@ -968,6 +1012,11 @@ class GameNotifier extends StateNotifier<GameState> {
     _logBot(
       '_handleMovementRoll() START - roll: $roll, isDouble: $isDouble, phase: ${state.phase}',
     );
+
+    // This method runs inside rollDice's processing scope. If a handler in
+    // this roll starts its own scope (endTurn, chained tile arrival), the
+    // finally below must not release that newer scope's lock.
+    final int processingEpochAtStart = _processingEpoch;
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // DEFENSIVE CHECK: Ensure doubles logic only applies during playerTurn phase
@@ -1108,9 +1157,10 @@ class GameNotifier extends StateNotifier<GameState> {
           false; // Reset before calling endTurn() to prevent blocking
       endTurn();
     } finally {
-      // SAFETY: Always reset processing flag to prevent freezing
-      _isProcessing = false;
-      _logBot('_handleMovementRoll() finally - _isProcessing reset to false');
+      // SAFETY: Release the lock this roll held — unless a newer scope
+      // (endTurn turn change, chained card tile arrival) already took over.
+      _endProcessingScope(processingEpochAtStart);
+      _logBot('_handleMovementRoll() finally - _isProcessing: $_isProcessing');
     }
   }
 
@@ -1986,9 +2036,7 @@ class GameNotifier extends StateNotifier<GameState> {
               'Card moved player to ${newTile.name} (${newTile.type}) - triggering tile arrival',
             );
             scheduledChainedTileArrival = true;
-            Future.microtask(() async {
-              await _handleTileArrival(newTile);
-            });
+            _scheduleChainedTileArrival(newTile);
           }
         }
       }
@@ -1998,15 +2046,62 @@ class GameNotifier extends StateNotifier<GameState> {
         _cardDialogCompleter!.complete();
       }
 
-      _isProcessing = false;
-
       if (!scheduledChainedTileArrival) {
+        _isProcessing = false;
         endTurn();
+      }
+    } catch (e, stackTrace) {
+      safePrint('🚨 ERROR in closeCardDialog: $e');
+      safePrint('Stack trace: $stackTrace');
+      _addLog('Kart etkisi uygulanırken hata oluştu: $e', type: 'error');
+      // SAFETY: never leave the card completer pending — `_drawCardAndApply`
+      // awaits it inside the dice-roll flow and an uncompleted completer
+      // would freeze the game with the turn never ending.
+      ref.read(dialogProvider.notifier).hideCard();
+      if (_cardDialogCompleter != null && !_cardDialogCompleter!.isCompleted) {
+        _cardDialogCompleter!.complete();
+      }
+      if (!scheduledChainedTileArrival) {
+        _isProcessing = false;
+        // endTurn reads the current player; skip on corrupt state rather
+        // than throwing out of this recovery path.
+        if (state.currentPlayerIndex < state.players.length) {
+          endTurn();
+        }
       }
     } finally {
       // Release action guard
       _isProcessingAction = false;
     }
+  }
+
+  /// Runs a card-induced tile arrival as the new owner of the processing
+  /// lock. The chained arrival re-asserts `_isProcessing` and bumps the
+  /// processing epoch synchronously, so the outer dice-roll flow's `finally`
+  /// blocks cannot release the lock while the tile event resolves — a rapid
+  /// tap must not start a new roll mid-event (the previous implementation
+  /// left an unlocked window via an unawaited [Future.microtask]).
+  void _scheduleChainedTileArrival(BoardTile tile) {
+    final int processingEpoch = _beginProcessingScope();
+    Future.microtask(() async {
+      try {
+        await _handleTileArrival(tile);
+        // Tile paths that end with a bare endTurn() no-op while this scope
+        // still holds the lock — release it and finish the turn here.
+        if (_processingEpoch == processingEpoch && _isProcessing) {
+          _isProcessing = false;
+          endTurn();
+        }
+      } catch (e, stackTrace) {
+        safePrint('🚨 ERROR in chained tile arrival: $e');
+        safePrint('Stack trace: $stackTrace');
+        _addLog('Kart etkisi işlenirken hata oluştu: $e', type: 'error');
+        if (_processingEpoch == processingEpoch) {
+          _isProcessing = false;
+          endTurn();
+        }
+      }
+    });
   }
 
   void _applyCardEffectResult(CardEffectResult result) {
@@ -2087,7 +2182,7 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    _isProcessing = true;
+    final int processingEpoch = _beginProcessingScope();
     _startWatchdog(); // Restart watchdog for turn change
 
     try {
@@ -2155,17 +2250,19 @@ class GameNotifier extends StateNotifier<GameState> {
         'endTurn() COMPLETED - next: ${nextPlayer.name}, skipped: $isSkipped',
       );
     } catch (e, stackTrace) {
-      safePrint('ğŸš¨ ERROR in endTurn: $e');
+      safePrint('🚨 ERROR in endTurn: $e');
       safePrint('Stack trace: $stackTrace');
-      _logBot('ğŸš¨ ERROR in endTurn: $e');
+      _logBot('🚨 ERROR in endTurn: $e');
       _scheduleBotTurn();
     } finally {
-      _isProcessing = false;
-      _logBot('endTurn() finally - _isProcessing reset to false');
+      // Only release if no newer scope (e.g. a chained tile arrival started
+      // during the turn change) took over the lock meanwhile.
+      _endProcessingScope(processingEpoch);
+      _logBot('endTurn() finally - _isProcessing: $_isProcessing');
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // BOT MODE METHODS
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
@@ -2207,14 +2304,12 @@ class GameNotifier extends StateNotifier<GameState> {
         () {
           if (_isBotPlaying && state.phase != GamePhase.gameOver) {
             _logBot('_scheduleBotTurn() executing check...');
-            // Check if any dialogs are open
-            if (!ref.read(dialogProvider).showQuestionDialog &&
-                !ref.read(dialogProvider).showCardDialog &&
-                !ref.read(dialogProvider).showLibraryPenaltyDialog &&
-                !ref.read(dialogProvider).showImzaGunuDialog &&
-                !ref.read(dialogProvider).showKiraathaneDialog &&
-                !ref.read(dialogProvider).showShopDialog &&
-                !ref.read(dialogProvider).showTurnOrderDialog &&
+            // Canonical dialog barrier: DialogState.isAnyDialogOpen covers
+            // every supported dialog (question, card, library, imza günü,
+            // printer issue, turn skipped, kıraathane, shop, turn order and
+            // the three-doubles warning) so this list can never drift out
+            // of sync with the dialog provider again.
+            if (!ref.read(dialogProvider).isAnyDialogOpen &&
                 !state.isDiceRolling &&
                 !_isProcessing) {
               _logBot('No dialogs/blockers, calling rollDice()');
@@ -2241,6 +2336,9 @@ class GameNotifier extends StateNotifier<GameState> {
       _logBot('Closing TurnOrderDialog');
       closeTurnOrderDialog();
       _scheduleBotTurn();
+    } else if (ref.read(dialogProvider).showThreeDoublesWarning) {
+      _logBot('Closing ThreeDoublesWarning');
+      closeThreeDoublesWarning();
     } else if (ref.read(dialogProvider).showLibraryPenaltyDialog) {
       _logBot('Closing LibraryPenaltyDialog');
       closeLibraryPenaltyDialog();
@@ -2522,7 +2620,16 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   /// DEBUG: Instantly trigger publishing win for current player.
+  ///
+  /// Debug-only: `kDebugMode` is a compile-time constant, so release builds
+  /// tree-shake this body away entirely and no production code path — UI,
+  /// bot, or watchdog — can grant a win. (Its siblings
+  /// [debugJumpCurrentPlayerToPosition], [debugPrepareBookForCiltTest] and
+  /// [debugTriggerCurrentTile] use the same guard.) A unit test cannot
+  /// exercise the release-mode no-op because `flutter test` always runs with
+  /// `kDebugMode == true`; the compile-time guard is the protection.
   void debugTriggerWin() {
+    if (!kDebugMode) return;
     final player = state.currentPlayer;
 
     safePrint('ğŸ† DEBUG: Triggering Instant Win for ${player.name}');

@@ -14,6 +14,7 @@ class BotDialogSnapshot {
   final bool showKiraathaneDialog;
   final bool showShopDialog;
   final bool showTurnOrderDialog;
+  final bool showThreeDoublesWarning;
 
   const BotDialogSnapshot({
     this.showQuestionDialog = false,
@@ -25,6 +26,7 @@ class BotDialogSnapshot {
     this.showKiraathaneDialog = false,
     this.showShopDialog = false,
     this.showTurnOrderDialog = false,
+    this.showThreeDoublesWarning = false,
   });
 
   bool get isAnyDialogOpen =>
@@ -36,7 +38,8 @@ class BotDialogSnapshot {
       showTurnSkippedDialog ||
       showKiraathaneDialog ||
       showShopDialog ||
-      showTurnOrderDialog;
+      showTurnOrderDialog ||
+      showThreeDoublesWarning;
 }
 
 class BotCallbacks {
@@ -54,6 +57,7 @@ class BotCallbacks {
   final void Function() closeShopDialog;
   final void Function() closeTurnOrderDialog;
   final void Function() closeTurnSkippedDialog;
+  final void Function() closeThreeDoublesWarning;
   final void Function(bool isCorrect) answerQuestion;
   final BotDialogSnapshot Function() readDialogState;
   final bool Function() readIsDiceRolling;
@@ -76,6 +80,7 @@ class BotCallbacks {
     required this.closeShopDialog,
     required this.closeTurnOrderDialog,
     required this.closeTurnSkippedDialog,
+    required this.closeThreeDoublesWarning,
     required this.answerQuestion,
     required this.readDialogState,
     required this.readIsDiceRolling,

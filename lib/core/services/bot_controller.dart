@@ -264,6 +264,9 @@ class BotController {
         log('Watchdog: Closing stuck turn order dialog');
         _cb.closeTurnOrderDialog();
         scheduleNextTurn();
+      } else if (dialog.showThreeDoublesWarning) {
+        log('Watchdog: Closing stuck three-doubles warning');
+        _cb.closeThreeDoublesWarning();
       } else if (dialog.showTurnSkippedDialog) {
         log('Watchdog: Closing stuck turn skipped dialog');
         _cb.closeTurnSkippedDialog();
@@ -295,6 +298,9 @@ class BotController {
         log('Closing TurnOrderDialog');
         _cb.closeTurnOrderDialog();
         scheduleNextTurn();
+      } else if (dialog.showThreeDoublesWarning) {
+        log('Closing ThreeDoublesWarning');
+        _cb.closeThreeDoublesWarning();
       } else if (dialog.showLibraryPenaltyDialog) {
         log('Closing LibraryPenaltyDialog');
         _cb.closeLibraryPenaltyDialog();

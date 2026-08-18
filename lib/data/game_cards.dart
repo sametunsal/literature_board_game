@@ -28,7 +28,7 @@ class GameCards {
     ),
     GameCard(
       description:
-          "İlham perisi geldi! 2 kare ileri git.",
+          "İlham perisi geldi! 1 kare ileri git.",
       type: CardType.sans,
       effectType: CardEffectType.moveRelative,
       value: 1,
@@ -91,14 +91,14 @@ class GameCards {
     // Geri hareket (konum kaybı)
     GameCard(
       description:
-          "Yanlış anlaşılma yüzünden tekzip yayınladın. 2 kare geri git.",
+          "Yanlış anlaşılma yüzünden tekzip yayınladın. 1 kare geri git.",
       type: CardType.kader,
       effectType: CardEffectType.moveRelative,
       value: -1,
     ),
     GameCard(
       description:
-          "Eserin eleştirildi. 3 kare geri çekil.",
+          "Eserin eleştirildi. 2 kare geri çekil.",
       type: CardType.kader,
       effectType: CardEffectType.moveRelative,
       value: -2,

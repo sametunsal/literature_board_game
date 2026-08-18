@@ -159,6 +159,31 @@ void main() {
       });
     });
 
+    test('closes the three-doubles warning instead of rolling', () {
+      fakeAsync((async) {
+        tracker.gamePhase = GamePhase.playerTurn;
+        tracker.dialogSnapshot = const BotDialogSnapshot(
+          showThreeDoublesWarning: true,
+        );
+        controller.activateForTest();
+        controller.scheduleNextTurn();
+        async.elapse(
+          Duration(milliseconds: GameConstants.botTurnScheduleDelay + 600),
+        );
+        expect(tracker.rollDiceCalls, 0);
+        expect(tracker.closeThreeDoublesWarningCalls, 1);
+      });
+    });
+
+    test('BotDialogSnapshot.isAnyDialogOpen includes three-doubles warning',
+        () {
+      expect(
+        const BotDialogSnapshot(showThreeDoublesWarning: true).isAnyDialogOpen,
+        isTrue,
+      );
+      expect(const BotDialogSnapshot().isAnyDialogOpen, isFalse);
+    });
+
     test('does not roll when isProcessing is true', () {
       fakeAsync((async) {
         tracker.gamePhase = GamePhase.playerTurn;
@@ -595,6 +620,7 @@ class _CallbackTracker {
   int closeShopCalls = 0;
   int closeTurnOrderCalls = 0;
   int closeTurnSkippedCalls = 0;
+  int closeThreeDoublesWarningCalls = 0;
   int answerQuestionCalls = 0;
   final List<String> logs = [];
   final List<bool> setProcessingCalls = [];
@@ -641,6 +667,10 @@ class _CallbackTracker {
     },
     closeTurnSkippedDialog: () {
       closeTurnSkippedCalls++;
+      dialogSnapshot = const BotDialogSnapshot();
+    },
+    closeThreeDoublesWarning: () {
+      closeThreeDoublesWarningCalls++;
       dialogSnapshot = const BotDialogSnapshot();
     },
     answerQuestion: (_) {
