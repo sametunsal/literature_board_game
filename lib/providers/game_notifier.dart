@@ -8,6 +8,7 @@ import '../models/board_tile.dart';
 import '../models/book_level.dart';
 import '../models/book_ownership.dart';
 import '../models/game_enums.dart';
+import '../models/game_card.dart';
 import '../models/question.dart';
 import '../../core/utils/logger.dart';
 import '../models/tile_type.dart';
@@ -294,11 +295,35 @@ class GameNotifier extends StateNotifier<GameState> {
     return _processingEpoch;
   }
 
+  /// Deferred end-turn request. Set when a bare `endTurn()` arrives while a
+  /// processing scope (dice roll, chained card arrival) holds the lock —
+  /// such a call would otherwise no-op against the `_isProcessing` guard
+  /// and strand the turn. The request fires exactly once when that scope
+  /// releases.
+  int? _pendingEndTurnEpoch;
+
+  /// Ends the turn now when no processing scope is active, otherwise
+  /// defers the transition to the moment the current scope releases.
+  void _endTurnOrDefer() {
+    if (!_isProcessing) {
+      _pendingEndTurnEpoch = null;
+      endTurn();
+      return;
+    }
+    _pendingEndTurnEpoch = _processingEpoch;
+  }
+
   /// Releases the processing lock only when [epoch] is still the current
   /// epoch. Stale completions from older scopes leave the lock untouched.
+  /// If a deferred end-turn was registered against this scope, it fires
+  /// here — exactly one transition per request.
   void _endProcessingScope(int epoch) {
-    if (epoch == _processingEpoch) {
-      _isProcessing = false;
+    if (epoch != _processingEpoch) return;
+    _isProcessing = false;
+    final pending = _pendingEndTurnEpoch;
+    if (pending != null && pending == epoch) {
+      _pendingEndTurnEpoch = null;
+      endTurn();
     }
   }
 
@@ -338,7 +363,10 @@ class GameNotifier extends StateNotifier<GameState> {
     _botController = BotController(
       callbacks: BotCallbacks(
         rollDice: () => rollDice(),
-        endTurn: () => endTurn(),
+        // Bot card/question handlers execute inside the dice-roll scope;
+        // the deferred variant guarantees the transition runs exactly once
+        // when that scope releases instead of no-oping against the guard.
+        endTurn: () => _endTurnOrDefer(),
         addLog: (msg, {type = 'info'}) => _addLog(msg, type: type),
         applyAnswerResult: (r) => _applyAnswerResult(r),
         applyCardEffectResult: (r) => _applyCardEffectResult(r),
@@ -1112,10 +1140,17 @@ class GameNotifier extends StateNotifier<GameState> {
 
         final playerAfterMove = state.currentPlayer;
         if (playerAfterMove.turnsToSkip > 0 || playerAfterMove.inJail) {
-          // Player sent to jail via 3rd consecutive double
-          _logBot('CASE B: Player sent to Jail via 3rd double - ending turn');
-          _isProcessing = false;
-          endTurn();
+          // A penalty path that ran during the move already started the
+          // turn transition: a library landing ends the turn in
+          // closeLibraryPenaltyDialog (directly for humans, via the bot
+          // dialog timer for bots) and a skip-turn card ends it in
+          // closeCardDialog. Clearing the lock and calling endTurn() here
+          // would stomp that in-flight transition and advance the turn a
+          // second time. The epoch-checked finally below releases this
+          // roll's scope without touching the newer transition scope.
+          _logBot(
+            'CASE B: penalty set during move - turn end owned by penalty path',
+          );
           return;
         }
 
@@ -1174,7 +1209,7 @@ class GameNotifier extends StateNotifier<GameState> {
       onTileArrival: (tile) async {
         await _handleTileArrival(tile);
       },
-      endTurn: endTurn,
+      endTurn: _endTurnOrDefer,
     );
   }
 
@@ -1186,7 +1221,7 @@ class GameNotifier extends StateNotifier<GameState> {
         '⚠️ Tile arrival chain depth exceeded $_maxTileArrivalDepth — breaking loop',
       );
       _tileArrivalDepth = 0;
-      endTurn();
+      _endTurnOrDefer();
       return;
     }
     _tileArrivalDepth++;
@@ -1197,7 +1232,7 @@ class GameNotifier extends StateNotifier<GameState> {
           if (tile.category != null) {
             await _triggerQuestion(tile);
           } else {
-            endTurn();
+            _endTurnOrDefer();
           }
           break;
         case TileType.tesvik:
@@ -1228,12 +1263,12 @@ class GameNotifier extends StateNotifier<GameState> {
         case TileType.corner:
           _logBot('Tile type: CORNER');
           // Generic corners - end turn
-          endTurn();
+          _endTurnOrDefer();
           break;
         case TileType.collection:
           _logBot('Tile type: COLLECTION');
           // Generic corners - end turn
-          endTurn();
+          _endTurnOrDefer();
           break;
         case TileType.chance:
           _logBot('Tile type: CHANCE (ÅžANS)');
@@ -1469,7 +1504,10 @@ class GameNotifier extends StateNotifier<GameState> {
     }
 
     if (selectionResult.noQuestionsFound) {
-      endTurn();
+      // Runs inside the dice-roll/chained processing scope: defer the
+      // transition to the scope's release instead of no-oping against the
+      // guard (which previously stranded the turn with no question shown).
+      _endTurnOrDefer();
       return;
     }
 
@@ -1492,7 +1530,7 @@ class GameNotifier extends StateNotifier<GameState> {
         '${player.name} Teşvik bonusu kazandı: +$bonusStars Akçe',
         type: 'success',
       );
-      endTurn();
+      _endTurnOrDefer();
       return;
     }
 
@@ -1953,6 +1991,22 @@ class GameNotifier extends StateNotifier<GameState> {
     await _drawCardAndApply(cardType);
   }
 
+  /// Test seam: forces the next card drawn from any deck (consumed on the
+  /// next draw) so card flows can be exercised deterministically.
+  @visibleForTesting
+  void debugOverrideNextCard(GameCard? card) {
+    _debugNextCardOverride = card;
+  }
+
+  GameCard? _debugNextCardOverride;
+
+  /// Test seam: activates bot behaviour without arming the turn scheduler,
+  /// so deterministic dice helpers can drive bot flows.
+  @visibleForTesting
+  void debugActivateBotWithoutScheduling() {
+    _botController.activateSilently();
+  }
+
   /// Draw a card from Åžans or Kader deck and apply its effect
   /// For human players: Shows card dialog, effect applied when dialog is closed
   /// For bot players: Auto-applies effect without showing dialog
@@ -1966,17 +2020,36 @@ class GameNotifier extends StateNotifier<GameState> {
 
     final isSans = cardType == CardType.sans;
     final deck = isSans ? GameCards.sansCards : GameCards.kaderCards;
-    final card = deck[_random.nextInt(deck.length)];
+    final card = _debugNextCardOverride ?? deck[_random.nextInt(deck.length)];
+    _debugNextCardOverride = null;
     final cardName = isSans ? "ÅžANS" : "KADER";
 
     // BOT MODE: Auto-apply card effect without showing dialog
     if (_isBotPlaying) {
       _addLog('🤖 Bot: $cardName kartı çekildi');
-      await _botController.handleCardEffect(
+      final moved = await _botController.handleCardEffect(
         card: card,
         players: state.players,
         currentPlayerIndex: state.currentPlayerIndex,
       );
+      if (moved) {
+        // Movement parity with the human card flow: the card-induced move
+        // resolves the destination tile's arrival effect, and that path
+        // owns the turn transition (deferred end-turn, dialog close or bot
+        // dialog timer).
+        final position = state.currentPlayer.position;
+        if (position >= 0 && position < state.tiles.length) {
+          await _handleTileArrival(state.tiles[position]);
+        }
+        return;
+      }
+      if (card.effectType == CardEffectType.rollAgain) {
+        // Same player rolls again once this flow unwinds and releases the
+        // processing scope — mirror of the human roll-again path, which
+        // resets the dice state and waits for the next roll.
+        state = state.copyWith(isDiceRolled: false, isDiceRolling: false);
+        _scheduleBotTurn();
+      }
       return;
     }
 
@@ -2000,6 +2073,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   void closeCardDialog() {
     var scheduledChainedTileArrival = false;
+    var printerDialogOwnsTurnEnd = false;
 
     try {
       final card = ref.read(dialogProvider).currentCard;
@@ -2025,6 +2099,11 @@ class GameNotifier extends StateNotifier<GameState> {
         }
 
         _applyCardEffectResult(result);
+        // The printer-issue dialog applies its skip penalty on the player
+        // who drew the card and ends the turn when it closes — ending the
+        // turn here as well would advance first, penalise the NEXT player
+        // and trigger a second transition.
+        printerDialogOwnsTurnEnd = result.showPrinterIssue;
 
         // CRITICAL FIX: After applying a movement card effect, trigger tile arrival
         if (result.movementOccurred) {
@@ -2046,7 +2125,7 @@ class GameNotifier extends StateNotifier<GameState> {
         _cardDialogCompleter!.complete();
       }
 
-      if (!scheduledChainedTileArrival) {
+      if (!scheduledChainedTileArrival && !printerDialogOwnsTurnEnd) {
         _isProcessing = false;
         endTurn();
       }
@@ -2086,20 +2165,19 @@ class GameNotifier extends StateNotifier<GameState> {
     Future.microtask(() async {
       try {
         await _handleTileArrival(tile);
-        // Tile paths that end with a bare endTurn() no-op while this scope
-        // still holds the lock — release it and finish the turn here.
-        if (_processingEpoch == processingEpoch && _isProcessing) {
-          _isProcessing = false;
-          endTurn();
-        }
       } catch (e, stackTrace) {
         safePrint('🚨 ERROR in chained tile arrival: $e');
         safePrint('Stack trace: $stackTrace');
         _addLog('Kart etkisi işlenirken hata oluştu: $e', type: 'error');
-        if (_processingEpoch == processingEpoch) {
-          _isProcessing = false;
-          endTurn();
-        }
+      }
+      // Finish the turn exactly once. Bare endTurn() calls inside the
+      // arrival deferred to this scope's release; if none did, register
+      // the request now. Both cases funnel through the same epoch-checked
+      // release. A newer scope (a dialog close that ended the turn) means
+      // the transition is already owned elsewhere — do nothing.
+      if (_processingEpoch == processingEpoch) {
+        _pendingEndTurnEpoch = processingEpoch;
+        _endProcessingScope(processingEpoch);
       }
     });
   }
@@ -2181,6 +2259,9 @@ class GameNotifier extends StateNotifier<GameState> {
       );
       return;
     }
+
+    // Consume any deferred end-turn request: this transition fulfils it.
+    _pendingEndTurnEpoch = null;
 
     final int processingEpoch = _beginProcessingScope();
     _startWatchdog(); // Restart watchdog for turn change
@@ -2281,6 +2362,7 @@ class GameNotifier extends StateNotifier<GameState> {
       _activeTimers.clear();
       _isProcessing = false;
       _isProcessingAction = false;
+      _pendingEndTurnEpoch = null;
       state = state.copyWith(isDiceRolling: false, isDiceRolled: false);
     }
   }
@@ -2433,7 +2515,10 @@ class GameNotifier extends StateNotifier<GameState> {
   Future<void> openKiraathaneDialog() async {
     if (_isBotPlaying) {
       _addLog('Bot: Kıraathane pas geçildi.', type: 'info');
-      endTurn();
+      // Bot card/question flows run inside the dice-roll scope; deferring
+      // keeps the transition exactly-once instead of no-oping against the
+      // processing guard.
+      _endTurnOrDefer();
       return;
     }
 

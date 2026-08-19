@@ -42,6 +42,13 @@ class BotController {
     _isActive = true;
   }
 
+  /// Activates bot behaviour without logging or arming the turn
+  /// scheduler. Entry point for the notifier's deterministic-flow test
+  /// seam ([GameNotifier.debugActivateBotWithoutScheduling]).
+  void activateSilently() {
+    _isActive = true;
+  }
+
   @visibleForTesting
   void startWatchdogForTest() {
     _startWatchdog();
@@ -161,7 +168,11 @@ class BotController {
     }
   }
 
-  Future<void> handleCardEffect({
+  /// Applies a card effect for the bot. Returns whether the card moved the
+  /// bot: movement parity requires the caller to resolve the destination
+  /// tile's arrival effect, which owns the turn transition — exactly like
+  /// the human card flow. Non-movement effects end the turn here.
+  Future<bool> handleCardEffect({
     required GameCard card,
     required List<Player> players,
     required int currentPlayerIndex,
@@ -175,14 +186,33 @@ class BotController {
       );
       _cb.applyCardEffectResult(result);
 
-      if (result.rollAgain) return;
+      if (result.rollAgain) return false;
+
+      if (result.movementOccurred) {
+        // The destination tile's arrival effect owns the turn end — the
+        // bot controller must not end it here (human-flow parity).
+        return true;
+      }
+
+      if (result.showPrinterIssue) {
+        // Closing the printer dialog applies the skip penalty to the
+        // player who drew the card and ends the turn. Ending the turn
+        // here instead would advance first and penalise the next player.
+        await Future.delayed(
+          const Duration(milliseconds: GameConstants.botDialogAutoCloseDelay),
+        );
+        _cb.closePrinterIssueDialog();
+        return false;
+      }
 
       await Future.delayed(const Duration(milliseconds: 500));
       _cb.endTurn();
+      return false;
     } catch (e, stackTrace) {
       safePrint('🚨 ERROR in BotController.handleCardEffect: $e');
       safePrint('Stack trace: $stackTrace');
       _cb.endTurn();
+      return false;
     }
   }
 

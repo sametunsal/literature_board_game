@@ -525,6 +525,48 @@ void main() {
       );
       expect(tracker.endTurnCalls, 1);
     });
+
+    test('movement card returns moved=true and defers the turn end',
+        () async {
+      controller.toggle();
+      const card = GameCard(
+        description: 'İleri git',
+        type: CardType.sans,
+        effectType: CardEffectType.moveRelative,
+        value: 1,
+      );
+      final moved = await controller.handleCardEffect(
+        card: card,
+        players: [makePlayer(position: 5)],
+        currentPlayerIndex: 0,
+      );
+      expect(moved, isTrue);
+      expect(tracker.applyCardEffectCalls, 1);
+      // Movement parity: the destination tile's arrival effect owns the
+      // turn transition — the controller must not end it here.
+      expect(tracker.endTurnCalls, 0);
+    });
+
+    test('printer card closes the printer dialog instead of ending turn',
+        () async {
+      controller.toggle();
+      const card = GameCard(
+        description: 'Mürekkepin bitti. Bir tur bekle.',
+        type: CardType.kader,
+        effectType: CardEffectType.skipTurn,
+        value: 1,
+      );
+      final moved = await controller.handleCardEffect(
+        card: card,
+        players: [makePlayer()],
+        currentPlayerIndex: 0,
+      );
+      expect(moved, isFalse);
+      // The printer dialog close applies the skip penalty and ends the
+      // turn on the correct player.
+      expect(tracker.closePrinterIssueCalls, 1);
+      expect(tracker.endTurnCalls, 0);
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
