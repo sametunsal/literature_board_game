@@ -66,10 +66,44 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
     }
     // Embedded in the HUD column: the pause surface must cover the whole
     // screen, so it goes into the root overlay rather than this subtree.
+    _insertPauseEntry();
+  }
+
+  /// Inserts the pause surface into the root overlay as a fresh entry.
+  ///
+  /// Always creates a new [OverlayEntry]: a removed/disposed entry must never
+  /// be reused, and duplicates are prevented by removing the previous one.
+  void _insertPauseEntry() {
     _removePauseEntry();
     final entry = OverlayEntry(builder: (_) => _buildPauseSurface());
     _pauseEntry = entry;
     Overlay.of(context, rootOverlay: true).insert(entry);
+  }
+
+  /// Opens the settings dialog while temporarily hiding the pause surface.
+  ///
+  /// The embedded pause surface lives in the root [Overlay] above every
+  /// navigator route, so a dialog pushed with [showDialog] would be layered
+  /// behind it and remain unreachable. The surface is therefore removed before
+  /// showing the dialog and recreated (as a fresh entry) once it closes. The
+  /// game intentionally stays paused the whole time.
+  Future<void> _openSettings() async {
+    if (widget.embedded) {
+      _removePauseEntry();
+    } else {
+      setState(() => _showPauseMenu = false);
+    }
+    await showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) => const SettingsDialog(),
+    );
+    if (!mounted) return;
+    if (widget.embedded) {
+      _insertPauseEntry();
+    } else {
+      setState(() => _showPauseMenu = true);
+    }
   }
 
   void _closePauseMenu() {
@@ -460,10 +494,7 @@ class _GameControlsOverlayState extends ConsumerState<GameControlsOverlay> {
           _closePauseMenu();
         },
         onSettings: () {
-          showDialog(
-            context: context,
-            builder: (context) => const SettingsDialog(),
-          );
+          _openSettings();
         },
 
         onCollection: () {
