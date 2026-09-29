@@ -35,6 +35,12 @@ class AudioManager {
   // Fade Timer
   Timer? _fadeTimer;
 
+  /// Generation token for fade operations. Every new fade bumps it, so a
+  /// cancelled fade's already-running periodic callback can no longer touch
+  /// the player — a stale final `stop()` would otherwise land after a newer
+  /// fade already called `play()` and kill the new track.
+  int _fadeGeneration = 0;
+
   // State
   bool _isMusicEnabled = true;
   bool _isSoundEnabled = true;
@@ -115,6 +121,7 @@ class AudioManager {
   }) async {
     // Cancel any existing fade operation
     _fadeTimer?.cancel();
+    final generation = ++_fadeGeneration;
 
     if (!_isMusicEnabled || _activePlaylist.isEmpty) return;
 
@@ -142,6 +149,12 @@ class AudioManager {
     // Gradually increase volume
     int currentStep = 0;
     _fadeTimer = Timer.periodic(Duration(milliseconds: stepDuration), (timer) {
+      if (generation != _fadeGeneration) {
+        // A newer fade took over: this one must not touch the player any
+        // more, so it cannot fight the new fade's volume ramp.
+        timer.cancel();
+        return;
+      }
       currentStep++;
       final newVolume = (volumeStep * currentStep).clamp(0.0, targetVolume);
       _bgmPlayer.setVolume(newVolume);
@@ -161,6 +174,7 @@ class AudioManager {
   }) async {
     // Cancel any existing fade operation
     _fadeTimer?.cancel();
+    final generation = ++_fadeGeneration;
 
     final currentVolume = _bgmVolume * _maxBgmGain;
     if (currentVolume <= 0.01) {
@@ -182,6 +196,14 @@ class AudioManager {
     _fadeTimer = Timer.periodic(Duration(milliseconds: stepDuration), (
       timer,
     ) async {
+      if (generation != _fadeGeneration) {
+        // A newer fade took over (or this fade was cancelled by dispose):
+        // this one must not touch the player any more — a stale final
+        // stop() could land after the newer fade already called play()
+        // and kill the new track.
+        timer.cancel();
+        return;
+      }
       currentStep++;
       final newVolume = (currentVolume - (volumeStep * currentStep)).clamp(
         0.0,
@@ -379,6 +401,9 @@ class AudioManager {
   /// Dispose resources
   void dispose() {
     _fadeTimer?.cancel();
+    // Invalidate any in-flight fade callback so it cannot touch the
+    // players after they are disposed below.
+    _fadeGeneration++;
     _bgmPlayer.dispose();
     _sfxPlayer.dispose();
   }

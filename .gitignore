@@ -57,6 +57,7 @@ test_machine*.json
 test_utf8*.json
 *.bat
 *.ps1
+audio_cache_tmp/
 
 # Screenshot files
 *.png
