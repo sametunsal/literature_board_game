@@ -121,11 +121,17 @@ class _BoardViewState extends ConsumerState<BoardView> {
         AudioManager.instance.playCorrect();
 
         // Determine Winner
-        final sortedPlayers = List<Player>.from(next.players)
+        // The notifier owns the authoritative winner: the publishing win
+        // (_checkPublishingWinCondition) sets the player who completed three
+        // Cilt books, and endGame() sets the stars leader. Only fall back to
+        // the stars sort when a gameOver state somehow carries no winner.
+        final fallbackByStars = List<Player>.from(next.players)
           ..sort((a, b) => b.stars.compareTo(a.stars));
-        final winner = sortedPlayers.isNotEmpty
-            ? sortedPlayers.first
-            : next.players.first;
+        final winner =
+            next.winner ??
+            (fallbackByStars.isNotEmpty
+                ? fallbackByStars.first
+                : next.players.first);
 
         // Navigate to Victory Screen
         // Using addPostFrameCallback to ensure context is stable
