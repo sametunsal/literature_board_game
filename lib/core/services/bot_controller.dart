@@ -24,6 +24,10 @@ class BotController {
   bool _isActive = false;
   bool get isActive => _isActive;
 
+  /// Whether the game is paused, read through the callbacks. Absent
+  /// callbacks (legacy test fakes) read as "not paused".
+  bool get _isPaused => _cb.readIsPaused?.call() ?? false;
+
   Timer? _watchdog;
   final List<Timer> _activeTimers = [];
 
@@ -99,6 +103,13 @@ class BotController {
         const Duration(milliseconds: GameConstants.botTurnScheduleDelay),
         () {
           if (_isActive && _cb.readGamePhase() != GamePhase.gameOver) {
+            // PAUSE GUARD: never advance the bot's turn while paused. The
+            // caller-owned scheduling (GameNotifier) re-arms the next turn
+            // after resume, so skipping here loses nothing.
+            if (_isPaused) {
+              log('scheduleNextTurn() timer fired while paused - skipping');
+              return;
+            }
             log('scheduleNextTurn() executing check...');
             final dialog = _cb.readDialogState();
             if (!dialog.isAnyDialogOpen &&
@@ -234,7 +245,18 @@ class BotController {
         closeAction = _cb.closeShopDialog;
     }
 
-    _activeTimers.add(Timer(Duration(milliseconds: delayMs), closeAction));
+    // PAUSE GUARD: auto-closing a dialog ends the turn and mutates state;
+    // that must not happen while the game is paused. The scheduled bot turn
+    // that re-runs after resume re-evaluates and closes the dialog.
+    _activeTimers.add(
+      Timer(Duration(milliseconds: delayMs), () {
+        if (_isPaused) {
+          log('Dialog auto-close skipped - game paused');
+          return;
+        }
+        closeAction();
+      }),
+    );
     return true;
   }
 
@@ -261,7 +283,10 @@ class BotController {
     _watchdog?.cancel();
 
     _watchdog = Timer(const Duration(seconds: 4), () {
-      if (!_isActive) return;
+      // PAUSE GUARD: a paused game legitimately looks "stuck" (flows are
+      // waiting for resume); the watchdog must not force a recovery then.
+      // The bot flow re-arms the watchdog as soon as it resumes.
+      if (!_isActive || _isPaused) return;
 
       log('🚨 WATCHDOG: Bot stuck! Forcing recovery...');
       safePrint('[BOT 🤖] WATCHDOG TRIGGERED');
@@ -321,7 +346,9 @@ class BotController {
     log('_handleDialog() - checking dialogs...');
 
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (!_isActive) return;
+      // PAUSE GUARD: dialogs/state must not be mutated while paused. The
+      // scheduled bot turn re-runs this evaluation after resume.
+      if (!_isActive || _isPaused) return;
 
       final dialog = _cb.readDialogState();
       if (dialog.showTurnOrderDialog) {

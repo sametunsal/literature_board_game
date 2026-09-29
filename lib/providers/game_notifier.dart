@@ -400,6 +400,7 @@ class GameNotifier extends StateNotifier<GameState> {
         readIsProcessing: () => _isProcessing,
         setProcessing: (v) => _isProcessing = v,
         readGamePhase: () => state.phase,
+        readIsPaused: () => state.isGamePaused,
       ),
       cardEffectService: _cardEffectService,
       questionFlowService: _questionFlowService,
@@ -524,7 +525,10 @@ class GameNotifier extends StateNotifier<GameState> {
 
     // Start new watchdog with 4 second timeout
     _botWatchdog = Timer(const Duration(seconds: 4), () {
-      if (_isBotPlaying) {
+      // PAUSE GUARD: a paused game legitimately looks "stuck" (the bot flow
+      // is waiting for resume); the watchdog must not force a recovery then.
+      // The flow re-arms the watchdog as soon as it resumes.
+      if (_isBotPlaying && !state.isGamePaused) {
         final dialog = ref.read(dialogProvider);
         _logBot('ğŸš¨ WATCHDOG: Bot stuck! Forcing recovery...');
         safePrint('[BOT ğŸ¤–] WATCHDOG TRIGGERED - Current state:');
@@ -2383,8 +2387,19 @@ class GameNotifier extends StateNotifier<GameState> {
     _activeTimers.add(
       Timer(
         const Duration(milliseconds: GameConstants.botTurnScheduleDelay),
-        () {
+        () async {
           if (_isBotPlaying && state.phase != GamePhase.gameOver) {
+            // PAUSE GUARD: a timer that fires while the game is paused must
+            // not advance the bot's turn. Wait here (polling until resume)
+            // instead of dropping the request, so the scheduled turn is not
+            // lost and no new scheduling is needed after resume.
+            if (state.isGamePaused) {
+              _logBot(
+                '_scheduleBotTurn() timer fired while paused - waiting',
+              );
+              await _checkPauseStatus();
+              if (!_isBotPlaying || state.phase == GamePhase.gameOver) return;
+            }
             _logBot('_scheduleBotTurn() executing check...');
             // Canonical dialog barrier: DialogState.isAnyDialogOpen covers
             // every supported dialog (question, card, library, imza günü,
@@ -2413,6 +2428,17 @@ class GameNotifier extends StateNotifier<GameState> {
 
     _logBot('_handleBotDialog() - checking dialogs...');
     await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!_isBotPlaying) return;
+
+    // PAUSE GUARD: never close dialogs or force-reset state while paused.
+    // Wait for resume so the dialog survives the pause, then re-check: the
+    // bot/game-over guards below the wait keep a disabled bot from acting.
+    if (state.isGamePaused) {
+      _logBot('_handleBotDialog() waiting - game paused');
+      await _checkPauseStatus();
+      if (!_isBotPlaying || state.phase == GamePhase.gameOver) return;
+    }
 
     if (ref.read(dialogProvider).showTurnOrderDialog) {
       _logBot('Closing TurnOrderDialog');

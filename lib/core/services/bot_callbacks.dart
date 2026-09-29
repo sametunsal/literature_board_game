@@ -65,6 +65,10 @@ class BotCallbacks {
   final void Function(bool value) setProcessing;
   final GamePhase Function() readGamePhase;
 
+  /// Whether the game is currently paused. Optional so existing test fakes
+  /// keep working; absent callbacks read as "not paused".
+  final bool Function()? readIsPaused;
+
   const BotCallbacks({
     required this.rollDice,
     required this.endTurn,
@@ -87,5 +91,6 @@ class BotCallbacks {
     required this.readIsProcessing,
     required this.setProcessing,
     required this.readGamePhase,
+    this.readIsPaused,
   });
 }
